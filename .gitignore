@@ -1,0 +1,18 @@
+# Rojoのビルド成果物
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+!assets/**
+
+# Studioのロック/自動保存
+*.rbxl.lock
+*.rbxlx.lock
+
+# 自動生成されるselene用の定義
+roblox.yml
+
+# エディタ・OS
+.DS_Store
+Thumbs.db
+sourcemap.json
