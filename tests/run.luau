@@ -287,7 +287,7 @@ H.test(
 )
 
 print("FishBuilder (見た目の生成)")
-H.test("全30種 × 全変異 × シルエット で魚のモデルを組み立てられる", function()
+H.test("全種 × 全変異 × シルエット で魚のモデルを組み立てられる", function()
 	local FishBuilder = H.require(shared.Lib.FishBuilder)
 	local count = 0
 	for _, def in Config.Fish do
@@ -308,7 +308,7 @@ H.test("全30種 × 全変異 × シルエット で魚のモデルを組み立�
 					)
 				end
 			end
-			H.assert(parts >= 4 and parts <= 60, def.id .. ": part count " .. parts)
+			H.assert(parts >= 4 and parts <= 110, def.id .. ": part count " .. parts)
 			count += 1
 		end
 	end
@@ -457,6 +457,52 @@ H.test(
 		end
 	end
 )
+
+H.test("レア度が上がるほど大きく、派手になる(大きさ・部品の数・光)", function()
+	local FishBuilder = H.require(shared.Lib.FishBuilder)
+	local prevScale = 0
+	for _, r in Config.Rarities do
+		local st = FishBuilder.RarityStyle[r.id]
+		H.assert(st and st.scale > prevScale, r.id .. " is not bigger than the rarity below")
+		prevScale = st.scale
+	end
+	-- レア度ごとの平均の部品数が下がらない
+	local sum, count = {}, {}
+	for _, def in Config.Fish do
+		local n = 0
+		for _, d in FishBuilder.build(def, {}):GetDescendants() do
+			if d:IsA("BasePart") then
+				n += 1
+			end
+		end
+		sum[def.rarity] = (sum[def.rarity] or 0) + n
+		count[def.rarity] = (count[def.rarity] or 0) + 1
+	end
+	local prev = 0
+	for _, r in Config.Rarities do
+		local avg = sum[r.id] / count[r.id]
+		H.assert(avg >= prev, ("%s avg parts %.1f < previous %.1f"):format(r.id, avg, prev))
+		prev = avg
+	end
+	H.assert(
+		FishBuilder.sizeOf(Config.FishById.yamata_chochin) > FishBuilder.sizeOf(Config.FishById.doro_funa) * 2,
+		"secret vs common size"
+	)
+end)
+H.test("50種そろっていて、釣り場ごとに全レア度がいる", function()
+	H.assertEq(#Config.Fish, 50)
+	for _, spot in { "swamp", "nushi_lake" } do
+		for _, r in Config.Rarities do
+			local found = false
+			for _, f in Config.Fish do
+				if f.spot == spot and f.rarity == r.id then
+					found = true
+				end
+			end
+			H.assert(found, spot .. " has no " .. r.id)
+		end
+	end
+end)
 
 local ok = H.summary()
 process.exit(if ok then 0 else 1)

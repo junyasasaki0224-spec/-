@@ -76,8 +76,9 @@ local function broadcast()
 end
 
 local function spawnModel()
-	local def = Config.FishById["numa_mizuchi"] or Config.Fish[1]
-	local model = FishBuilder.build(def, { scale = 4.5, anchored = true })
+	-- ぬしの湖の本当の主「龍神」が現れる
+	local def = Config.FishById["ryujin"] or Config.FishById["numa_mizuchi"] or Config.Fish[1]
+	local model = FishBuilder.build(def, { scale = 2.6, anchored = true })
 	model.Name = "Nushi"
 	local c = lakeCenter()
 	model:PivotTo(CFrame.new(c + Vector3.new(0, 1.5, 0)))

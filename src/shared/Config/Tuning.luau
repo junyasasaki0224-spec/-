@@ -112,6 +112,7 @@ Tuning.Titles = {
 	"vip",
 	"oni_slayer",
 	"yokai_master",
+	"lake_master",
 }
 
 return Tuning

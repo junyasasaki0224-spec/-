@@ -4,7 +4,9 @@
 
 ## 妖怪魚を1匹足す
 
-`src/shared/Config/Fish/Swamp.luau` に1行足します。
+魚の表(`Config/Fish/Swamp.luau` / `NushiLake.luau`)は `tools/fish_designs.py` から作っています。
+新しい魚は `tools/fish_designs.py` に1行足して `python3 tools/fish_designs.py` を実行してください(表に直接書いても動きますが、次に生成した時に消えます)。
+見た目の項目(目・口・体つき・尾の本数・飾り)は [FISH_DESIGN.md](FISH_DESIGN.md) を参照。表の1行の例:
 
 ```lua
 { id = "kawa_tengu", ja = "川天狗", en = "River Tengu", rarity = "rare", time = "night", weather = "any",
@@ -18,9 +20,13 @@
 | time | any / day / night / morning(朝は昼にも含まれる) |
 | weather | any / sunny / rain / fog / thunder |
 | shape | koi(鯉) / catfish(鯰) / puffer(河豚) / eel(鰻) / angler(提灯) / ray(鱏) |
-| pattern | plain / stripes / spots / belly |
-| deco | horns / lantern / whiskers / third_eye / big_eye / crown / flame / long_tail / noface / glow(いくつでも) |
-| size | 見た目の大きさ(省略で1) |
+| pattern | plain / stripes / spots / belly / patches / saddle / gradient / ribs / dango |
+| eyes | normal / cute / angry / sleepy / big / cat / glow / dot / none |
+| mouth | small / wide / o / smile / frown / open / tongue / fangs / grin / geta / beak / none |
+| body | 体つき { 幅, 高さ, 長さ } の倍率(省略で {1,1,1}) |
+| tails | 尾の本数(1〜9) |
+| deco | 目印の飾り(38種。一覧は Config/init.luau の DECOS) |
+| size | 見た目の大きさの微調整(省略で1。レア度の大きさに掛け算) |
 | c3 | (省略可)差し色。ひれ・角の先・皿の縁に使う |
 | element | 相棒バトルの属性 water / fire / thunder / earth / spirit |
 | price | 基本の売値を上書きしたい時だけ |

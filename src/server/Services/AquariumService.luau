@@ -56,7 +56,9 @@ function AquariumService.refresh(player: Player)
 		local def = Config.FishById[caught.fishId]
 		if def then
 			-- 水槽に収まる大きさに縮める
-			local scale = math.clamp(1.4 / (def.size or 1), 0.4, 1.2)
+			-- 水槽に収まるように。ただしレアほど大きく見えるよう、差は残す
+			local size = FishBuilder.sizeOf(def)
+			local scale = math.clamp(1.15 / math.sqrt(size), 0.45, 1.1)
 			local model =
 				FishBuilder.build(def, { mutation = caught.mutation, scale = scale, anchored = true })
 			local half = tank.Size / 2 - Vector3.new(1.2, 1, 1.2)

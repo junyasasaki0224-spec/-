@@ -51,7 +51,7 @@ local function renderDetail()
 	Kit.corner(vpHolder)
 	Kit.gradient(vpHolder, Color3.fromRGB(70, 140, 170), C.waterDeep)
 	local model = FishBuilder.build(def, { silhouette = entry == nil })
-	Kit.viewport(vpHolder, model)
+	Kit.viewport(vpHolder, model, nil, 2.4) -- レアな魚ほど大きく映る
 	detailModel = model
 	Kit.label({
 		Size = UDim2.new(1, 0, 0, 24),
@@ -178,8 +178,47 @@ function Codex.init(gui: ScreenGui)
 	panel.close.Activated:Connect(function()
 		Root.close()
 	end)
+	-- 釣り場のタブ(魚がいる釣り場だけ)
+	local tabs = Kit.new(
+		"Frame",
+		{ Size = UDim2.new(0.62, 0, 0, 36), BackgroundTransparency = 1, Parent = panel.body }
+	)
+	Kit.new(
+		"UIListLayout",
+		{ FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), Parent = tabs }
+	)
+	local spotIds = {}
+	for _, f in Config.Fish do
+		if not table.find(spotIds, f.spot) then
+			table.insert(spotIds, f.spot)
+		end
+	end
+	local tabButtons: { [string]: TextButton } = {}
+	local function paintTabs()
+		for id, b in tabButtons do
+			b.BackgroundColor3 = if id == spotFilter then C.vermilion else C.panelDark
+			b.Text = Locale.t("spot_" .. id)
+		end
+	end
+	for _, id in spotIds do
+		tabButtons[id] = Kit.button({
+			Text = "",
+			Size = UDim2.new(0, 170, 1, 0),
+			Color = C.panelDark,
+			MaxTextSize = 16,
+			Parent = tabs,
+		}, function()
+			spotFilter = id
+			selected = nil
+			paintTabs()
+			buildGrid()
+			renderDetail()
+		end)
+	end
+	paintTabs()
 	progressLabel = Kit.label({
-		Size = UDim2.new(0.62, 0, 0, 30),
+		Size = UDim2.new(0.62, 0, 0, 26),
+		Position = UDim2.fromOffset(0, 40),
 		Text = "",
 		TextXAlignment = Enum.TextXAlignment.Left,
 		MaxTextSize = 20,
@@ -187,8 +226,8 @@ function Codex.init(gui: ScreenGui)
 		Parent = panel.body,
 	})
 	local gridHolder = Kit.new("Frame", {
-		Size = UDim2.new(0.62, -8, 1, -38),
-		Position = UDim2.fromOffset(0, 38),
+		Size = UDim2.new(0.62, -8, 1, -72),
+		Position = UDim2.fromOffset(0, 72),
 		BackgroundTransparency = 1,
 		Parent = panel.body,
 	})

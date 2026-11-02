@@ -246,7 +246,12 @@ function Kit.bar(parent: Instance, color: Color3): (Frame, Frame)
 end
 
 -- ビューポートにモデルを映す(回転させる場合は呼び出し側で)
-function Kit.viewport(parent: Instance, model: Model?, props: { [string]: any }?): ViewportFrame
+function Kit.viewport(
+	parent: Instance,
+	model: Model?,
+	props: { [string]: any }?,
+	minRadius: number?
+): ViewportFrame
 	local vpf = Kit.new("ViewportFrame", {
 		BackgroundTransparency = 1,
 		Size = UDim2.fromScale(1, 1),
@@ -261,12 +266,13 @@ function Kit.viewport(parent: Instance, model: Model?, props: { [string]: any }?
 		end
 	end
 	if model then
-		Kit.setViewportModel(vpf, model)
+		Kit.setViewportModel(vpf, model, minRadius)
 	end
 	return vpf
 end
 
-function Kit.setViewportModel(vpf: ViewportFrame, model: Model)
+-- minRadius: これより小さい魚は小さく映す(釣果の画面で、レアな大物ほど大きく見せる)
+function Kit.setViewportModel(vpf: ViewportFrame, model: Model, minRadius: number?)
 	for _, c in vpf:GetChildren() do
 		if c:IsA("Model") or c:IsA("Camera") or c:IsA("WorldModel") then
 			c:Destroy()
@@ -278,11 +284,15 @@ function Kit.setViewportModel(vpf: ViewportFrame, model: Model)
 	vpf.CurrentCamera = cam
 	model:PivotTo(CFrame.new())
 	model.Parent = vpf
-	local _, size = model:GetBoundingBox()
-	local radius = size.Magnitude / 2
+	local center, size = model:GetBoundingBox()
+	local radius = math.max(size.Magnitude / 2, minRadius or 0)
 	local dist = radius / math.tan(math.rad(cam.FieldOfView / 2)) * 1.05
-	-- 斜め横から(魚の頭 = -Z を左に向ける)
-	cam.CFrame = CFrame.lookAt(Vector3.new(dist, dist * 0.25, -dist * 0.05), Vector3.zero)
+	-- 鱏は前の斜め上から(翼の広がりが見えるように)、ほかは斜め横から(魚の頭 = -Z)
+	local target = center.Position
+	local eye = if model:GetAttribute("Shape") == "ray"
+		then Vector3.new(0.18, 0.8, -0.75)
+		else Vector3.new(1, 0.25, -0.05)
+	cam.CFrame = CFrame.lookAt(target + eye.Unit * dist, target)
 end
 
 return Kit

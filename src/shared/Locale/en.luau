@@ -291,4 +291,5 @@ return {
 	help_battle = "⚔ Battle yokai with up to 3 partners. Water > Fire > Earth > Thunder > Water, and Spirit beats Spirit",
 	help_nushi = "🐲 At :30 every hour the Nushi appears in the village lake. Reel it in together for rewards",
 	help_time = "🌙 A day lasts 20 minutes and the weather changes every 10. Some secret fish appear only on rainy nights...",
+	title_lake_master = "Lake Master",
 }

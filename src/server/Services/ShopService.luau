@@ -122,8 +122,8 @@ function ShopService.checkCodexCompletion(player: Player, poolSpot: string)
 	data.codexRewards[poolSpot] = true
 	local reward = spot and spot.completionReward or 0
 	ShopService.addCoins(player, reward, "CodexComplete", poolSpot)
-	if poolSpot == "swamp" and not table.find(data.titles, "swamp_master") then
-		table.insert(data.titles, "swamp_master")
+	if spot and spot.title and not table.find(data.titles, spot.title) then
+		table.insert(data.titles, spot.title)
 	end
 	S.Data.changed(player)
 	S.notify(player, "notify_codex_complete", { spotKey = "spot_" .. poolSpot, coins = reward })

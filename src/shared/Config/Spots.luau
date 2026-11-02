@@ -18,6 +18,7 @@ export type Spot = {
 	water: { x: number, z: number, rx: number, rz: number, y: number },
 	spawn: { x: number, y: number, z: number },
 	completionReward: number,
+	title: string?, -- 図鑑を完成させるともらえる称号
 }
 
 local Spots: { Spot } = {
@@ -33,6 +34,7 @@ local Spots: { Spot } = {
 		water = { x = 0, z = -10, rx = 46, rz = 38, y = 0 },
 		spawn = { x = 0, y = 4, z = 46 },
 		completionReward = 25000,
+		title = "swamp_master",
 	},
 	{
 		id = "nushi_lake",
@@ -42,11 +44,11 @@ local Spots: { Spot } = {
 		unlockRodTier = 1,
 		priceMultiplier = 1.5,
 		mutations = { "onibi" },
-		fishPool = "swamp",
 		origin = { x = 0, y = 0, z = 600 },
 		water = { x = 0, z = 0, rx = 34, rz = 34, y = 0 },
 		spawn = { x = 0, y = 4, z = 62 },
-		completionReward = 0,
+		completionReward = 60000,
+		title = "lake_master",
 	},
 	{
 		id = "river",

@@ -51,18 +51,86 @@ local Config = {
 }
 
 local SHAPES = { koi = true, catfish = true, puffer = true, eel = true, angler = true, ray = true }
-local PATTERNS = { plain = true, stripes = true, spots = true, belly = true }
-local DECOS = {
-	horns = true,
-	lantern = true,
-	whiskers = true,
-	third_eye = true,
-	big_eye = true,
-	crown = true,
-	flame = true,
-	long_tail = true,
-	noface = true,
+local PATTERNS = {
+	plain = true,
+	stripes = true,
+	spots = true,
+	belly = true,
+	patches = true,
+	saddle = true,
+	gradient = true,
+	ribs = true,
+	dango = true,
+}
+local DECOS = {}
+for _, d in
+	{
+		"horns",
+		"antlers",
+		"lantern",
+		"whiskers",
+		"beard",
+		"third_eye",
+		"big_eye",
+		"crown",
+		"flame",
+		"long_tail",
+		"noface",
+		"glow",
+		"ears",
+		"leaf",
+		"umbrella",
+		"hat",
+		"okappa",
+		"hair",
+		"nose",
+		"crest",
+		"bell",
+		"shimenawa",
+		"lotus",
+		"kanzashi",
+		"coin",
+		"wind_bag",
+		"drums",
+		"fire_wheel",
+		"sun_disc",
+		"moon",
+		"orb",
+		"mane",
+		"plumes",
+		"frills",
+		"blush",
+		"bighead",
+		"cloth",
+		"smooth",
+	}
+do
+	DECOS[d] = true
+end
+local EYES = {
+	normal = true,
+	cute = true,
+	angry = true,
+	sleepy = true,
+	big = true,
+	cat = true,
 	glow = true,
+	dot = true,
+	none = true,
+}
+local MOUTHS = {
+	small = true,
+	wide = true,
+	o = true,
+	smile = true,
+	frown = true,
+	open = true,
+	tongue = true,
+	fangs = true,
+	grin = true,
+	geta = true,
+	beak = true,
+	none = true,
 }
 local TIMES = { any = true, day = true, night = true, morning = true }
 local WEATHERS = { any = true, sunny = true, rain = true, fog = true, thunder = true }
@@ -122,6 +190,18 @@ function Config.Validate(): { string }
 			if type(c) ~= "string" or not c:match("^#%x%x%x%x%x%x$") then
 				bad(where .. ": 色は #RRGGBB 形式")
 			end
+		end
+		if f.eyes and not EYES[f.eyes] then
+			bad(where .. ": 不明な目 " .. tostring(f.eyes))
+		end
+		if f.mouth and not MOUTHS[f.mouth] then
+			bad(where .. ": 不明な口 " .. tostring(f.mouth))
+		end
+		if f.body and (#f.body ~= 3 or f.body[1] <= 0 or f.body[2] <= 0 or f.body[3] <= 0) then
+			bad(where .. ": body は { 幅, 高さ, 長さ } の正の数")
+		end
+		if f.tails and (f.tails < 1 or f.tails > 9) then
+			bad(where .. ": tails は 1〜9")
 		end
 		if type(f.ja) ~= "string" or type(f.en) ~= "string" or f.ja == "" or f.en == "" then
 			bad(where .. ": 名前(ja/en)が必要です")
