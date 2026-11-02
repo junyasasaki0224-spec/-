@@ -202,7 +202,7 @@ function M.build()
 	end
 
 	-- お店
-	for _, p in { at(-26, 46), at(-50, 22), at(50, 22), at(26, 46), at(0, -50) } do
+	for _, p in { at(-26, 46), at(-50, 22), at(50, 22), at(26, 46), at(0, -50), at(58, 54) } do
 		Terrain.flatten(facing(p), 16, 12)
 	end
 	local fishShop = Build.stall(
@@ -216,6 +216,8 @@ function M.build()
 	Build.tanuki(root, facing(at(-26, 46)) * CFrame.new(0, 0, 3.4))
 	Build.stall(root, facing(at(-50, 22)), "sign_rod_shop", "open:shop:rods", Color3.fromRGB(120, 40, 40))
 	Build.stall(root, facing(at(50, 22)), "sign_bait_shop", "open:shop:bait", Color3.fromRGB(60, 110, 60))
+	-- 妖怪退治の道場(相棒バトル)
+	Build.stall(root, facing(at(58, 54)), "sign_battle_dojo", "open:battle", Color3.fromRGB(90, 50, 130))
 
 	-- 依頼板
 	local qPos = at(26, 46)

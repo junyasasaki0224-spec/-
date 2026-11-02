@@ -8,6 +8,7 @@ export type FishDef = {
 	spot: string,
 	index: number,
 	rarity: string,
+	element: string,
 	time: string,
 	weather: string,
 	kg: { number },
@@ -30,6 +31,13 @@ export type CaughtFish = {
 	mutation: string?,
 	spot: string,
 	at: number,
+	locked: boolean?, -- お気に入り(売れない・食べさせられない)
+}
+
+-- 相棒(魚籠の魚 + レベルと経験値)
+export type Partner = CaughtFish & {
+	level: number,
+	xp: number,
 }
 
 export type Conditions = {

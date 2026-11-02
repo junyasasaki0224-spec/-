@@ -48,6 +48,10 @@ function Quests.describe(q: any): string
 		return Locale.t("quest_catch_shape_any", { count = count, shape = shape })
 	elseif q.kind == "catch_mutation" then
 		return Locale.t("quest_catch_mutation", { count = count })
+	elseif q.kind == "feed" then
+		return Locale.t("quest_feed", { count = count })
+	elseif q.kind == "battle_win" then
+		return Locale.t("quest_battle_win", { count = count })
 	elseif q.kind == "sell_coins" then
 		return Locale.t("quest_sell_coins", { count = Format.coins(count, Locale.get()) })
 	end

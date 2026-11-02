@@ -16,6 +16,7 @@ Roblox game written in Luau, synced to Studio with Rojo. Japanese comments/docs;
 - Server services live in `src/server/Services`, are wired in `src/server/init.server.luau` through a registry `S` (`S.Data`, `S.Fishing`, …) with `init(S)` then `start()`. Do not `require` services from each other directly (avoids cycles); use `S`.
 - All client→server traffic goes through `RemoteGuard.connect` (rate limit + pcall). Shop/settings actions share the `Request` remote and are routed by `handleRequest`.
 - Client modules in `src/client/Controllers` only render and send intents. UI is built in code via `src/client/UI/Kit.luau`.
+- Partner battles: data in `Config/Battle.luau` + `Config/Trainers.luau`; pure engine `Lib/Battle.luau` (stats, moves, damage, turn resolution, AI; rng injected). `PartnerService` (add/feed/team/lock) and `BattleService` (one server-side battle session per player, `BattleAction` remote in, `BattleState` remote out). Client `Controllers/BattleUI.luau` only replays server events.
 - World is generated at runtime (`src/server/World`): Terrain + Parts. Text on signs/prompts is localized on the client via the `LocKey` attribute.
 
 ## Rules (security / privacy)

@@ -47,6 +47,28 @@
 
 ほぼすべて `Config/Tuning.luau` にあります(アタリの時間、引き上げの難しさ、ぬしの必要量、デイリー報酬、自動保存の間隔など)。レア度ごとの値は `Rarities.luau`、竿は `Rods.luau`。
 
+## 妖怪退治の相手を足す
+
+`Config/Trainers.luau` に1行。上から順番に挑戦できます(前の相手に勝つと次が開く)。
+
+```lua
+{ id = "kawauso", ja = "川獺", en = "River Otter", jaLine = "勝負だ!", enLine = "Let's go!",
+  team = { { fish = "nure_unagi", level = 12 }, { fish = "tengu_ei", level = 13, mutation = "gold" } },
+  reward = { coins = 4000, bait = { id = "glow_shrimp", amount = 2 } } },
+```
+
+- `team` は最大3匹。魚は図鑑の魚の id を使います(見た目・能力・技は自動で決まる)
+- `title` を付ける場合は `Tuning.Titles` と Locale(`title_<id>`)にも足す
+- テストが「一番強い魚のレベルが前の相手より高いか」を確認します
+
+## 属性・技を足す
+
+`Config/Battle.luau`
+- 魚の属性は魚の表の `element`(water / fire / thunder / earth / spirit)
+- 技は `Moves` に1行。`effect` は atk_down / def_down / atk_up / def_up / heal / stun / first
+- 属性ごとに覚える技は `ElementMoves`、体の形ごとの技は `ShapeMove`、覚えるレベルは `LearnLevels`
+- 相性は `Chart`、能力は `ShapeStats` と `RarityPower`、経験値は `xpToNext` と `FeedXp`
+
 ## 文言
 
 `Locale/ja.luau` と `Locale/en.luau` の両方に同じキーで足します(片方だけだとテストが失敗します)。

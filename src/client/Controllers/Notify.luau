@@ -5,6 +5,7 @@ local TextChatService = game:GetService("TextChatService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Locale = require(Shared.Locale)
+local Config = require(Shared.Config)
 local Remotes = require(Shared.Lib.Remotes)
 local Format = require(Shared.Lib.Format)
 
@@ -30,6 +31,9 @@ function Notify.localizeArgs(args: any): { [string]: any }
 			out[k:sub(1, -4)] = Locale.t(v, args)
 		elseif k == "coins" and type(v) == "number" then
 			out[k] = Format.coins(v, Locale.get())
+		elseif k == "fishId" and type(v) == "string" then
+			local def = Config.FishById[v]
+			out.fish = if def then Locale.fishName(def) else "?"
 		elseif k == "weather" and type(v) == "string" then
 			out[k] = Locale.t("weather_" .. v)
 		elseif type(v) == "string" then

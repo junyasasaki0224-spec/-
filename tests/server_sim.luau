@@ -641,6 +641,104 @@ H.test("水槽: 飾ると小屋に魚が出る、戻すと消える", function()
 	H.assertEq(#hut.TankFish:GetChildren(), 0)
 end)
 
+H.test("相棒: 魚籠の魚を相棒にして、魚を食べさせるとレベルが上がる", function()
+	local d = data(alice)
+	d.creel = {
+		{ uid = "pa", fishId = "kappa_koi", grams = 2000, spot = "swamp", at = 0 },
+		{ uid = "f1", fishId = "kyubi_koi", grams = 9000, spot = "swamp", at = 0 },
+		{ uid = "f2", fishId = "doro_funa", grams = 800, spot = "swamp", at = 0, locked = true },
+	}
+	Shop.handleRequest(alice, "addPartner", "pa") -- Shop ではなく Partner の操作 → 何も起きない
+	H.assertEq(#d.partners, 0, "wrong service handled addPartner")
+	local Partner = H.require(server.Services.PartnerService)
+	Partner.handleRequest(alice, "addPartner", "pa")
+	H.assertEq(#d.partners, 1, "partner not added")
+	H.assertEq(d.team[1], "pa", "not added to team")
+	H.assertEq(d.partners[1].level, 1)
+	Partner.handleRequest(alice, "feed", { partner = "pa", food = "f2" })
+	H.assertEq(#d.creel, 2, "ate a locked fish")
+	Partner.handleRequest(alice, "feed", { partner = "pa", food = "f1" })
+	H.assertEq(#d.creel, 1, "food not consumed")
+	H.assert(d.partners[1].level > 5, "legendary food should give many levels, got Lv" .. d.partners[1].level)
+	Partner.handleRequest(alice, "setTeam", { "pa", "nope" })
+	H.assertEq(#d.team, 1, "team accepted unknown uid")
+	Partner.handleRequest(alice, "setTeam", { "pa", "pa" })
+	H.assertEq(#d.team, 1, "team accepted duplicate")
+end)
+
+H.test(
+	"妖怪退治: 順番を飛ばせない / 勝つと小判・経験値・依頼が進む / 戦闘中は釣れない",
+	function()
+		local d = data(alice)
+		local Partner = H.require(server.Services.PartnerService)
+		local Battle = H.require(server.Services.BattleService)
+		d.partners[1].level = 20
+		d.quests.list[2] = { id = "battle2", p = 0, done = false, claimed = false }
+		Battle.handleRequest(alice, "startBattle", "kitsune_bride")
+		H.assert(not Battle.inBattle(alice), "skipped ahead")
+		Battle.handleRequest(alice, "startBattle", "kappa_kid")
+		H.assert(Battle.inBattle(alice), "battle not started")
+		H.assertEq(lastSent(alice, "BattleState")[1].kind, "start")
+		-- 戦闘中は投げられず、相棒もいじれない
+		task.wait(0.6)
+		local before = countSent(alice, "FishingState")
+		clientSend(alice, "Cast", 0.5, 0, -1)
+		H.assertEq(countSent(alice, "FishingState"), before, "cast during battle")
+		Partner.handleRequest(alice, "removePartner", "pa")
+		H.assertEq(#d.partners, 1, "partner removed during battle")
+		-- 不正な行動は無視される
+		local turns = countSent(alice, "BattleState")
+		clientSend(alice, "BattleAction", { kind = "move", index = 9 })
+		clientSend(alice, "BattleAction", { kind = "hack" })
+		clientSend(alice, "BattleAction", "move")
+		H.assertEq(countSent(alice, "BattleState"), turns, "invalid action processed")
+		task.wait(1)
+		local coinsBefore = d.coins
+		local xpLevelBefore = d.partners[1].level
+		local guard = 0
+		while Battle.inBattle(alice) and guard < 40 do
+			guard += 1
+			clientSend(alice, "BattleAction", { kind = "move", index = 1 })
+			task.wait(0.3)
+		end
+		local r = lastSent(alice, "BattleState")[1]
+		H.assertEq(r.kind, "result", "no result")
+		H.assert(r.win, "Lv20 partner lost to Lv3 kappa")
+		H.assert(r.firstClear, "first clear flag")
+		H.assertEq(d.coins, coinsBefore + Config.TrainerById.kappa_kid.reward.coins, "reward coins")
+		H.assert(d.battle.cleared.kappa_kid, "not marked cleared")
+		H.assert(d.partners[1].level > xpLevelBefore or d.partners[1].xp > 0, "no xp")
+		H.assertEq(d.quests.list[2].p, 1, "battle quest progress")
+	end
+)
+
+H.test(
+	"妖怪退治: 2回目は小判が減る / 次の相手に挑めるようになる / 逃げると負け",
+	function()
+		local d = data(alice)
+		local Battle = H.require(server.Services.BattleService)
+		local coinsBefore = d.coins
+		Battle.handleRequest(alice, "startBattle", "kappa_kid")
+		task.wait(1)
+		local guard = 0
+		while Battle.inBattle(alice) and guard < 40 do
+			guard += 1
+			clientSend(alice, "BattleAction", { kind = "move", index = 1 })
+			task.wait(0.3)
+		end
+		local expected = math.floor(Config.TrainerById.kappa_kid.reward.coins * Config.Battle.RematchCoinRate)
+		H.assertEq(d.coins, coinsBefore + expected, "rematch coins")
+		Battle.handleRequest(alice, "startBattle", "tanuki")
+		H.assert(Battle.inBattle(alice), "next trainer not unlocked")
+		task.wait(0.6)
+		clientSend(alice, "BattleAction", { kind = "run" })
+		local r = lastSent(alice, "BattleState")[1]
+		H.assertEq(r.kind, "result")
+		H.assert(not r.win, "run counted as win")
+		H.assert(not d.battle.cleared.tanuki, "cleared by running")
+	end
+)
+
 H.test("退出時に保存され、セッションロックが外れる", function()
 	data(alice).coins = 12345
 	table.remove(playerList, table.find(playerList, alice))

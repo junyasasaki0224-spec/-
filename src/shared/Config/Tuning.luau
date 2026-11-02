@@ -110,6 +110,8 @@ Tuning.Titles = {
 	"swamp_master",
 	"nushi_hunter",
 	"vip",
+	"oni_slayer",
+	"yokai_master",
 }
 
 return Tuning

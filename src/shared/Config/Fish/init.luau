@@ -16,6 +16,7 @@ for _, src in SOURCES do
 		def.index = index
 		def.deco = def.deco or {}
 		def.size = def.size or 1
+		def.element = def.element or "water"
 		table.insert(all, def :: any)
 	end
 end

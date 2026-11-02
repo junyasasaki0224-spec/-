@@ -315,5 +315,137 @@ H.test("全30種 × 全変異 × シルエット で魚のモデルを組み立�
 	H.assert(count == #Config.Fish * (2 + #Config.Mutations), "count")
 end)
 
+print("Battle (相棒バトル)")
+local BattleLib = H.require(shared.Lib.Battle)
+local function fighterOf(id: string, level: number, mutation: string?)
+	local def = Config.FishById[id]
+	return BattleLib.fighter(def, math.floor((def.kg[1] + def.kg[2]) * 500), mutation, level)
+end
+H.test("相性: 水→火 2倍、火→水 0.5倍、霊→霊 2倍、無属性は1倍", function()
+	H.assertEq(BattleLib.effectiveness("water", "fire"), 2)
+	H.assertEq(BattleLib.effectiveness("fire", "water"), 0.5)
+	H.assertEq(BattleLib.effectiveness("spirit", "spirit"), 2)
+	H.assertEq(BattleLib.effectiveness("none", "fire"), 1)
+	H.assertEq(BattleLib.effectiveness("thunder", "water"), 2)
+	H.assertEq(BattleLib.effectiveness("earth", "thunder"), 2)
+end)
+H.test("レベル・レア度・変異で能力が上がる", function()
+	local lo = fighterOf("doro_funa", 1)
+	local hi = fighterOf("doro_funa", 30)
+	H.assert(hi.maxHp > lo.maxHp and hi.atk > lo.atk, "level")
+	local rare = fighterOf("kyubi_koi", 1)
+	local common = fighterOf("hasu_koi", 1)
+	H.assert(rare.atk > common.atk, "rarity")
+	local gold = fighterOf("doro_funa", 10, "rainbow")
+	H.assert(gold.atk > fighterOf("doro_funa", 10).atk, "mutation")
+end)
+H.test("技はレベルで増え、最大4つ。極以上は Lv25 で必殺技", function()
+	H.assertEq(#BattleLib.movesFor(Config.FishById.doro_funa, 1), 2)
+	H.assertEq(#BattleLib.movesFor(Config.FishById.doro_funa, 15), 4)
+	H.assertEq(#BattleLib.movesFor(Config.FishById.doro_funa, 50), 4)
+	local epic = BattleLib.movesFor(Config.FishById.oni_unagi, 25)
+	H.assertEq(#epic, 4)
+	H.assert(table.find(epic, "yoki_burst"), "special move")
+	H.assert(
+		not table.find(BattleLib.movesFor(Config.FishById.doro_funa, 50), "yoki_burst"),
+		"common learned special"
+	)
+end)
+H.test("経験値: レベルが上がり、最大レベルで止まる", function()
+	local lv, xp, gained = BattleLib.addXp(1, 0, Config.Battle.xpToNext(1))
+	H.assertEq(lv, 2)
+	H.assertEq(xp, 0)
+	H.assertEq(gained, 1)
+	lv = BattleLib.addXp(1, 0, 10 ^ 9)
+	H.assertEq(lv, Config.Battle.MaxLevel)
+end)
+H.test("魚を食べさせた経験値: レアほど多く、同じ属性は1.5倍", function()
+	local partner = Config.FishById.kappa_koi -- 水
+	local water = Config.FishById.hasu_koi
+	local earth = Config.FishById.doro_funa
+	local grams = function(d)
+		return math.floor((d.kg[1] + d.kg[2]) * 500)
+	end
+	local a = BattleLib.feedXp(water, grams(water), partner)
+	local b = BattleLib.feedXp(earth, grams(earth), partner)
+	H.assert(a > b, "same element bonus")
+	H.assert(BattleLib.feedXp(Config.FishById.kyubi_koi, 5000, partner) > a * 20, "rarity")
+end)
+H.test("同じレベル同士の1対1は数ターン(3〜12)で決着する", function()
+	local turns = {}
+	for i = 1, 200 do
+		-- 水 vs 土(相性なし)
+		local p = fighterOf("kappa_koi", 15)
+		local e = fighterOf("ko_namazu", 15)
+		local st = BattleLib.new({ p }, { e })
+		while not st.over do
+			BattleLib.turn(st, { kind = "move", index = 1 }, rng)
+		end
+		table.insert(turns, st.turn)
+	end
+	table.sort(turns)
+	local median = turns[100]
+	H.assert(median >= 3 and median <= 12, "median turns " .. median)
+end)
+H.test("レベルが10高い方がほぼ勝つ / 相性の良い方が勝ちやすい", function()
+	local wins = 0
+	for _ = 1, 200 do
+		local st = BattleLib.new({ fighterOf("hasu_koi", 20) }, { fighterOf("hasu_koi", 10) })
+		while not st.over do
+			BattleLib.turn(st, { kind = "move", index = 1 }, rng)
+		end
+		if st.winner == "player" then
+			wins += 1
+		end
+	end
+	H.assert(wins > 180, "level advantage wins " .. wins)
+	wins = 0
+	for _ = 1, 200 do
+		-- 水(有利) vs 火、同じレベル・同じ形。プレイヤーは属性技(1番目)を使う
+		local st = BattleLib.new({ fighterOf("hasu_koi", 12) }, { fighterOf("kitsunebi_ayu", 12) })
+		while not st.over do
+			BattleLib.turn(st, { kind = "move", index = 1 }, rng)
+		end
+		if st.winner == "player" then
+			wins += 1
+		end
+	end
+	H.assert(wins > 120, "type advantage wins " .. wins)
+end)
+H.test("倒れると次の魚が出て、全員倒れたら決着。交代・逃げるも動く", function()
+	local st = BattleLib.new(
+		{ fighterOf("doro_funa", 1), fighterOf("hasu_koi", 1) },
+		{ fighterOf("numa_mizuchi", 40) }
+	)
+	H.assert(not BattleLib.validAction(st, { kind = "switch", slot = 1 }), "switch to active")
+	H.assert(BattleLib.validAction(st, { kind = "switch", slot = 2 }), "switch")
+	H.assert(not BattleLib.validAction(st, { kind = "move", index = 9 }), "bad move index")
+	local events = BattleLib.turn(st, { kind = "switch", slot = 2 }, rng)
+	H.assertEq(events[1].kind, "switch")
+	local guard = 0
+	while not st.over and guard < 100 do
+		guard += 1
+		BattleLib.turn(st, { kind = "move", index = 1 }, rng)
+	end
+	H.assertEq(st.winner, "enemy")
+	local st2 = BattleLib.new({ fighterOf("doro_funa", 1) }, { fighterOf("doro_funa", 1) })
+	BattleLib.turn(st2, { kind = "run" }, rng)
+	H.assert(st2.over and st2.winner == "enemy", "run")
+end)
+H.test(
+	"妖怪退治の相手はだんだん強くなる(一番強い魚のレベルが上がっていく)",
+	function()
+		local prev = 0
+		for _, t in Config.Trainers do
+			local top = 0
+			for _, m in t.team do
+				top = math.max(top, m.level)
+			end
+			H.assert(top > prev, t.id .. " not stronger than previous")
+			prev = top
+		end
+	end
+)
+
 local ok = H.summary()
 process.exit(if ok then 0 else 1)

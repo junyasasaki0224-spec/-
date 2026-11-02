@@ -295,6 +295,9 @@ local function startCast(player: Player, power: number, isAuto: boolean, aim: Ve
 	if not data or s.state ~= "idle" then
 		return false
 	end
+	if S.Battle.inBattle(player) then
+		return false
+	end
 	local root = rootPart(player)
 	if not root then
 		return false

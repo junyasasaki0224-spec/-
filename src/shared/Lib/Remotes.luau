@@ -15,6 +15,7 @@ Remotes.Events = {
 	"CancelFishing", -- ()
 	"NushiReel", -- (inZoneSeconds: number)
 	"Request", -- (action: string, payload: table) 店・水槽・設定などの操作
+	"BattleAction", -- (action: { kind, index?, slot? }) 相棒バトルの1ターンの行動
 	-- サーバー → クライアント
 	"FishingState", -- (state: string, data: table)
 	"Profile", -- (snapshot: table) 自分のデータの差分
@@ -22,6 +23,7 @@ Remotes.Events = {
 	"Announce", -- (key: string, args: table) サーバー全体へのお知らせ
 	"CatchResult", -- (result: table)
 	"NushiState", -- (state: table)
+	"BattleState", -- (msg: table) 相棒バトルの状態・イベント・結果
 }
 
 Remotes.Functions = {

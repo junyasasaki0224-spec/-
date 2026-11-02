@@ -13,6 +13,8 @@ local Baits = require(script.Baits)
 local Quests = require(script.Quests)
 local Products = require(script.Products)
 local Tuning = require(script.Tuning)
+local Battle = require(script.Battle)
+local Trainers = require(script.Trainers)
 local Fish: { Types.FishDef } = require(script.Fish) :: any
 
 local function index<T>(list: { T }, key: string): { [any]: T }
@@ -33,6 +35,8 @@ local Config = {
 	Products = Products,
 	Tuning = Tuning,
 	Fish = Fish,
+	Battle = Battle,
+	Trainers = Trainers,
 
 	RarityById = index(Rarities, "id"),
 	MutationById = index(Mutations, "id"),
@@ -41,6 +45,9 @@ local Config = {
 	BaitById = index(Baits, "id"),
 	QuestById = index(Quests, "id"),
 	FishById = index(Fish, "id"),
+	MoveById = index(Battle.Moves, "id"),
+	ElementById = index(Battle.Elements, "id"),
+	TrainerById = index(Trainers, "id"),
 }
 
 local SHAPES = { koi = true, catfish = true, puffer = true, eel = true, angler = true, ray = true }
@@ -172,6 +179,62 @@ function Config.Validate(): { string }
 	end
 	if #Rods ~= 10 then
 		bad("Rods: 竿は10段階のはず")
+	end
+
+	-- 相棒バトル
+	for _, f in Fish do
+		if not Battle.ElementMoves[f.element] then
+			bad(("Fish[%s]: 不明な属性 %s"):format(f.id, tostring(f.element)))
+		end
+		if not Battle.ShapeStats[f.shape] then
+			bad(("Fish[%s]: Battle.ShapeStats に形 %s がありません"):format(f.id, f.shape))
+		end
+	end
+	for _, r in Rarities do
+		if not Battle.RarityPower[r.id] or not Battle.FeedXp[r.id] then
+			bad("Battle: レア度 " .. r.id .. " の RarityPower / FeedXp がありません")
+		end
+	end
+	local function checkMove(id: string, where: string)
+		if not Config.MoveById[id] then
+			bad(where .. ": 不明な技 " .. id)
+		end
+	end
+	for shape, id in Battle.ShapeMove do
+		checkMove(id, "Battle.ShapeMove." .. shape)
+	end
+	for el, ids in Battle.ElementMoves do
+		for _, id in ids do
+			checkMove(id, "Battle.ElementMoves." .. el)
+		end
+	end
+	local seenTrainer = {}
+	for _, t in Trainers do
+		local where = "Trainer[" .. t.id .. "]"
+		if seenTrainer[t.id] then
+			bad(where .. ": id が重複しています")
+		end
+		seenTrainer[t.id] = true
+		if #t.team < 1 or #t.team > Battle.TeamSize then
+			bad(where .. ": 魚は1〜" .. Battle.TeamSize .. "匹")
+		end
+		for _, m in t.team do
+			if not Config.FishById[m.fish] then
+				bad(where .. ": 不明な魚 " .. m.fish)
+			end
+			if m.level < 1 or m.level > Battle.MaxLevel then
+				bad(where .. ": レベルが範囲外")
+			end
+			if m.mutation and not Config.MutationById[m.mutation] then
+				bad(where .. ": 不明な変異 " .. m.mutation)
+			end
+		end
+		if t.reward.bait and not Config.BaitById[t.reward.bait.id] then
+			bad(where .. ": 不明なエサ " .. t.reward.bait.id)
+		end
+		if t.title and not table.find(Tuning.Titles, t.title) then
+			bad(where .. ": 称号 " .. t.title .. " が Tuning.Titles にありません")
+		end
 	end
 	return problems
 end

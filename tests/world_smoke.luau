@@ -94,6 +94,7 @@ H.test("看板・ボタン・魚屋のタグが付いている", function()
 			"open:shop:bait",
 			"open:quests",
 			"open:tank",
+			"open:battle",
 			"travel:swamp",
 			"travel:nushi_lake",
 		}

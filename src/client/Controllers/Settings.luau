@@ -93,6 +93,9 @@ function Settings.render()
 			Settings.render()
 		end
 	)
+	row(5, Locale.t("help_title"), "?", true, function()
+		Root.open("help")
+	end)
 end
 
 function Settings.init(gui: ScreenGui, languageChanged: () -> ())

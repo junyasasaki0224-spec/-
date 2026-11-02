@@ -431,6 +431,8 @@ function WorldFX.init()
 			Root.open("shop", action:sub(11))
 		elseif action == "open:quests" then
 			Root.open("quests")
+		elseif action == "open:battle" then
+			Root.open("battle")
 		elseif action == "open:tank" then
 			local hut = prompt.Parent and prompt.Parent.Parent
 			if hut and hut:GetAttribute("OwnerId") == player.UserId then

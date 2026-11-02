@@ -39,6 +39,8 @@ local S = {
 	Leaderboard = require(Services.LeaderboardService),
 	Aquarium = require(Services.AquariumService),
 	Nushi = require(Services.NushiService),
+	Partner = require(Services.PartnerService),
+	Battle = require(Services.BattleService),
 	notify = nil :: any,
 	announce = nil :: any,
 }
@@ -68,6 +70,8 @@ local ORDER = {
 	"Leaderboard",
 	"Aquarium",
 	"Nushi",
+	"Partner",
+	"Battle",
 }
 for _, name in ORDER do
 	(S :: any)[name].init(S)
@@ -77,7 +81,7 @@ for _, name in ORDER do
 end
 
 -- 店・設定などの操作はひとつの通信にまとめ、操作名で振り分ける
-local REQUEST_HANDLERS: { any } = { S.Shop, S.Quest, S.Monetization }
+local REQUEST_HANDLERS: { any } = { S.Shop, S.Quest, S.Monetization, S.Partner, S.Battle }
 RemoteGuard.connect(Remotes.event("Request"), 6, 12, function(player, action, payload)
 	if not RemoteGuard.isId(action, 24) then
 		return

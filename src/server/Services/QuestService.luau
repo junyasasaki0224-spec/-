@@ -107,6 +107,18 @@ function QuestService.onCatch(
 	end)
 end
 
+function QuestService.onFeed(player: Player)
+	progress(player, function(q)
+		return if q.kind == "feed" then 1 else 0
+	end)
+end
+
+function QuestService.onBattleWin(player: Player)
+	progress(player, function(q)
+		return if q.kind == "battle_win" then 1 else 0
+	end)
+end
+
 function QuestService.onSell(player: Player, coins: number)
 	progress(player, function(q)
 		return if q.kind == "sell_coins" then coins else 0

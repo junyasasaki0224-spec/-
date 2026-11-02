@@ -113,7 +113,7 @@ local function smallButton(
 	onClick: () -> ()
 ): TextButton
 	local b = Kit.button(
-		{ Text = text, Size = UDim2.fromOffset(96, 42), Color = color, MaxTextSize = 18, Parent = parent },
+		{ Text = text, Size = UDim2.fromOffset(84, 42), Color = color, MaxTextSize = 16, Parent = parent },
 		onClick
 	)
 	Kit.setEnabled(b, enabled, color)
@@ -130,7 +130,9 @@ local function fishRows(list: Instance, entries: { any }, mode: string)
 		local def = Config.FishById[f.fishId]
 		if def then
 			local rarity = Config.RarityById[def.rarity]
-			local title = Locale.fishName(def)
+			local title = (if f.locked then "🔒" else "")
+				.. Locale.fishName(def)
+				.. (if f.level then (" Lv%d"):format(f.level) else "")
 				.. (if f.mutation then " ✦" .. Locale.t("mutation_" .. f.mutation) else "")
 			local sub = ("%s · %s · %s %s"):format(
 				Locale.t("rarity_" .. def.rarity),
@@ -139,10 +141,24 @@ local function fishRows(list: Instance, entries: { any }, mode: string)
 				Locale.t("coins")
 			)
 			local _, right = itemRow(list, i, Color3.fromHex(rarity.color), title, sub)
+			-- お気に入り(売る・食べさせるのを防ぐ)
+			local lock = smallButton(right, if f.locked then "🔒" else "🔓", C.panelDark, true, function()
+				State.request("toggleLock", f.uid)
+			end)
+			lock.Size = UDim2.fromOffset(42, 42)
 			if mode == "sell" then
-				smallButton(right, Locale.t("shop_sell"), C.vermilion, near, function()
+				smallButton(right, Locale.t("shop_sell"), C.vermilion, near and not f.locked, function()
 					State.request("sell", f.uid)
 				end)
+				smallButton(
+					right,
+					Locale.t("partner_add"),
+					C.jadeDark,
+					#p.partners < Config.Battle.MaxPartners,
+					function()
+						State.request("addPartner", f.uid)
+					end
+				)
 				smallButton(
 					right,
 					Locale.t("shop_to_tank"),

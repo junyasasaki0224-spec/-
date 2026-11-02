@@ -159,6 +159,10 @@ handlers.sell = function(player, data, payload)
 	end
 	local i = findCreel(data, payload)
 	if i then
+		if data.creel[i].locked then
+			S.notify(player, "fish_locked")
+			return
+		end
 		sellIndices(player, { i })
 	end
 end
@@ -171,7 +175,7 @@ handlers.sellAll = function(player, data, payload)
 	for i, f in data.creel do
 		local fish = Config.FishById[f.fishId]
 		-- 変異つきは大事なので一括売却しない(個別には売れる)
-		if fish and not f.mutation and Config.RarityById[fish.rarity].order <= payload then
+		if fish and not f.mutation and not f.locked and Config.RarityById[fish.rarity].order <= payload then
 			table.insert(indices, i)
 		end
 	end

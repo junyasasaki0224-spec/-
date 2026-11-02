@@ -71,6 +71,9 @@ local function template(): any
 		firstCatch = false,
 		uidCounter = 0,
 		purchases = {},
+		partners = {}, -- 相棒(魚 + level, xp)
+		team = {}, -- 戦いに出す相棒の uid(順番どおり)
+		battle = { cleared = {}, wins = 0 },
 	}
 end
 

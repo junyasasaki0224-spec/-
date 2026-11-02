@@ -70,7 +70,7 @@ local function menuButton(
 ): TextButton
 	local b = Kit.button({
 		Name = labelKey,
-		Size = UDim2.fromOffset(72, 72),
+		Size = UDim2.fromOffset(64, 64),
 		Color = color,
 		Text = "",
 		LayoutOrder = order,
@@ -207,7 +207,7 @@ function HUD.init(gui: ScreenGui)
 
 	-- メニュー(右側の縦並び)
 	local menu = Kit.new("Frame", {
-		Size = UDim2.fromOffset(72, 480),
+		Size = UDim2.fromOffset(64, 600),
 		Position = UDim2.new(1, -20, 0, 70),
 		AnchorPoint = Vector2.new(1, 0),
 		BackgroundTransparency = 1,
@@ -236,13 +236,19 @@ function HUD.init(gui: ScreenGui)
 		Parent = qb,
 	})
 	Kit.corner(questDot, UDim.new(1, 0))
-	menuButton(menu, 4, "🧺", "hud_bag", C.panelLight, function()
+	menuButton(menu, 4, "🐉", "hud_partners", C.jade, function()
+		Root.toggle("partners")
+	end)
+	menuButton(menu, 5, "⚔", "hud_battle", C.vermilionDark, function()
+		Root.toggle("battle")
+	end)
+	menuButton(menu, 6, "🧺", "hud_bag", C.panelLight, function()
 		Root.toggle("shop", "sell")
 	end)
-	autoButton = menuButton(menu, 5, "⚙", "hud_auto_off", C.panelLight, function()
+	autoButton = menuButton(menu, 7, "⚙", "hud_auto_off", C.panelLight, function()
 		State.request("setAuto", player:GetAttribute("AutoFishing") ~= true)
 	end)
-	menuButton(menu, 6, "☰", "hud_settings", C.panelDark, function()
+	menuButton(menu, 8, "☰", "hud_settings", C.panelDark, function()
 		Root.toggle("settings")
 	end)
 

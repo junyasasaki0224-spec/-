@@ -8,6 +8,8 @@
 --   catch_shape     : shape の形の魚で minWeight kg 以上を count 匹
 --   catch_mutation  : 変異つきの魚を count 匹
 --   sell_coins      : 合計 count 小判ぶん売る
+--   feed            : 相棒に魚を count 回食べさせる
+--   battle_win      : 妖怪退治で count 回勝つ
 -- reward: coins = 小判, bait = { id, amount }
 
 export type Quest = {
@@ -104,6 +106,13 @@ local Quests: { Quest } = {
 		kind = "sell_coins",
 		count = 2000,
 		reward = { coins = 500, bait = { id = "dango", amount = 2 } },
+	},
+	{ id = "feed3", kind = "feed", count = 3, reward = { coins = 600, bait = { id = "dango", amount = 3 } } },
+	{
+		id = "battle2",
+		kind = "battle_win",
+		count = 2,
+		reward = { coins = 1200, bait = { id = "glow_shrimp", amount = 2 } },
 	},
 }
 
