@@ -8,6 +8,29 @@ local Harness = {}
 
 local cache = {}
 
+-- Roblox の Random の代わり(テスト用の簡単な乱数)
+Harness.Random = {
+	new = function(seed: number?)
+		local state = (seed or 1) % 2147483647
+		if state <= 0 then
+			state += 2147483646
+		end
+		local r = {}
+		local function nextRaw(): number
+			state = (state * 16807) % 2147483647
+			return (state - 1) / 2147483646
+		end
+		function r:NextNumber(a: number?, b: number?): number
+			local lo, hi = a or 0, b or 1
+			return lo + (hi - lo) * nextRaw()
+		end
+		function r:NextInteger(a: number, b: number): number
+			return a + math.floor(nextRaw() * (b - a + 1))
+		end
+		return r
+	end,
+}
+
 -- フォルダを先に全部読み込んで、Instance のような木構造(ただのテーブル)を作る
 -- (Lune のファイル操作はメタメソッド内で呼べないため)
 local function scan(path: string, name: string, parent: any): any
@@ -18,7 +41,7 @@ local function scan(path: string, name: string, parent: any): any
 			local full = path .. "/" .. entry
 			local childName = entry:gsub("%.luau$", ""):gsub("%.lua$", "")
 			if fs.isDir(full) or entry:match("%.luau?$") then
-				if childName ~= "init" then
+				if childName ~= "init" and childName ~= "init.server" and childName ~= "init.client" then
 					node[childName] = scan(full, childName, node)
 				else
 					node.__init = full
@@ -52,7 +75,22 @@ local function requireNode(node: any): any
 		Color3 = roblox.Color3,
 		Vector3 = roblox.Vector3,
 		CFrame = roblox.CFrame,
+		Vector2 = roblox.Vector2,
+		UDim = roblox.UDim,
+		UDim2 = roblox.UDim2,
+		ColorSequence = roblox.ColorSequence,
+		ColorSequenceKeypoint = roblox.ColorSequenceKeypoint,
+		NumberSequence = roblox.NumberSequence,
+		NumberSequenceKeypoint = roblox.NumberSequenceKeypoint,
+		NumberRange = roblox.NumberRange,
+		Instance = roblox.Instance,
+		Enum = roblox.Enum,
+		Random = Harness.Random,
 	}, { __index = _G })
+	-- テストごとに game / workspace などを差し込める
+	for k, v in Harness.globals or {} do
+		env[k] = v
+	end
 	local fn = luau.load(src, { debugName = node.__init or key, environment = env })
 	local result = fn()
 	cache[key] = result
@@ -66,6 +104,11 @@ function Harness.root(path: string)
 end
 
 Harness.require = requireNode
+
+-- モジュールを偽物に差し替える(テスト用)
+function Harness.override(node: any, value: any)
+	cache[node.__path] = value
+end
 
 -- 小さなテストランナー
 local passed, failed = 0, 0

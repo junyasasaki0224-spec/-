@@ -5,7 +5,9 @@ Roblox game written in Luau, synced to Studio with Rojo. Japanese comments/docs;
 ## Commands
 - Build: `rojo build default.project.json -o YokaiFishing.rbxl`
 - Format: `stylua src tests` (CI runs `stylua --check src tests`)
-- Tests: `lune run tests/run.luau` (pure modules only: Config, Lib/Roll, Lib/Pricing, Lib/WorldClock, Lib/Format, Locale)
+- Unit tests: `lune run tests/run.luau` (Config, Lib/Roll, Lib/Pricing, Lib/WorldClock, Lib/Format, Locale, FishBuilder)
+- World smoke test: `lune run tests/world_smoke.luau` (Terrain calls are stubbed)
+- Server integration: `lune run tests/server_sim.luau` — boots the real `src/server/init.server.luau` on fake Players/DataStore/remotes and plays through join → fish → sell → purchases → save. Add a case here when changing server logic. Note Lune quirks: set `Position` explicitly (not derived from CFrame), no Instance events (use fakes).
 - Economy pacing: `lune run tests/economy_sim.luau`
 
 ## Architecture

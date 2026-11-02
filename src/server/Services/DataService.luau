@@ -107,10 +107,12 @@ local function loadFromStore(player: Player): (boolean, any)
 	end
 	local key = keyFor(player.UserId)
 	local userIds = { player.UserId }
-	for attempt = 1, T.loadRetries do
+	-- Studio で API アクセスが無効だと毎回失敗するので、待たずに一時データへ切り替える
+	local retries = if RunService:IsStudio() then 1 else T.loadRetries
+	for attempt = 1, retries do
 		local blocked = false
 		local loaded = nil
-		local steal = attempt == T.loadRetries
+		local steal = attempt == retries
 		local ok, err = pcall(function()
 			s:UpdateAsync(key, function(old)
 				local data = old or template()
@@ -135,7 +137,7 @@ local function loadFromStore(player: Player): (boolean, any)
 				)
 			)
 		end
-		if player.Parent ~= Players then
+		if player.Parent ~= Players or attempt == retries then
 			return false, nil
 		end
 		task.wait(if blocked then 5 else 2 ^ attempt)

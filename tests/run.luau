@@ -286,5 +286,34 @@ H.test(
 	end
 )
 
+print("FishBuilder (見た目の生成)")
+H.test("全30種 × 全変異 × シルエット で魚のモデルを組み立てられる", function()
+	local FishBuilder = H.require(shared.Lib.FishBuilder)
+	local count = 0
+	for _, def in Config.Fish do
+		local variants = { {}, { silhouette = true } }
+		for _, m in Config.Mutations do
+			table.insert(variants, { mutation = m.id, scale = 1.3, anchored = true })
+		end
+		for _, opts in variants do
+			local model = FishBuilder.build(def, opts)
+			H.assert(model.PrimaryPart ~= nil and model.PrimaryPart.Name == "Body", def.id .. ": no Body")
+			local parts = 0
+			for _, d in model:GetDescendants() do
+				if d:IsA("BasePart") then
+					parts += 1
+					H.assert(
+						d.Size.X > 0 and d.Size.Y > 0 and d.Size.Z > 0,
+						def.id .. ": zero-size part " .. d.Name
+					)
+				end
+			end
+			H.assert(parts >= 4 and parts <= 60, def.id .. ": part count " .. parts)
+			count += 1
+		end
+	end
+	H.assert(count == #Config.Fish * (2 + #Config.Mutations), "count")
+end)
+
 local ok = H.summary()
 process.exit(if ok then 0 else 1)

@@ -48,7 +48,9 @@ docs/                  設計・安全・公開手順・データの足し方
 
 ```bash
 stylua --check src tests          # 書式
-lune run tests/run.luau           # テスト(抽選確率・売値・時計・設定の整合性・文言)
+lune run tests/run.luau           # 単体テスト(抽選確率・売値・時計・設定の整合性・文言・魚の見た目生成)
+lune run tests/world_smoke.luau   # 沼と村の生成が最後まで動くか
+lune run tests/server_sim.luau    # サーバーの結合テスト(偽の DataStore/Players の上で本物のサーバーを動かす)
 lune run tests/economy_sim.luau   # 進行ペースのシミュレーション
 ```
 

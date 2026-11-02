@@ -26,5 +26,9 @@ jobs:
         run: stylua --check src tests
       - name: Build place
         run: rojo build default.project.json -o YokaiFishing.rbxl
-      - name: Tests
+      - name: Unit tests
         run: lune run tests/run.luau
+      - name: World generation smoke test
+        run: lune run tests/world_smoke.luau
+      - name: Server simulation (join → fish → sell → purchases → save)
+        run: lune run tests/server_sim.luau
