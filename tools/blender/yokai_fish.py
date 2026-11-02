@@ -39,6 +39,7 @@ GOLD = (0.95, 0.76, 0.31)
 PINK = (1.0, 0.56, 0.66)
 RED = (0.84, 0.15, 0.24)
 LIGHT = Vector((0.35, 0.45, 0.82)).normalized()  # 塗りの影の向き
+OUTLINE = 0.011  # 輪郭線(裏返しの殻)の厚み。細めにして、描いた線より立体の縁に見せる
 
 
 def hexc(h):
@@ -381,10 +382,10 @@ def build_fish(d, parts_only=False):
             c = mix(root_col, tip_col, smoothstep(0.0, 0.9, t))
             phi = math.atan2(z, y + 1.0)
             if rays and abs(math.sin(phi * rays)) < 0.16 and t > 0.1:
-                c = mix(c, ray_col, 0.75)
+                c = mix(c, ray_col, 0.3)  # 筋はうっすら(形の凹凸でも見える)
             rr = math.sqrt(y * y + z * z)
             if rr > 1 - edge_w and t > 0.22:
-                c = rim if order >= 3 else mix(c, rim, 0.5)
+                c = rim if order >= 5 else mix(c, rim, 0.6 if order >= 3 else 0.35)
             return c
 
         def sfn(x, y, z):
@@ -604,8 +605,6 @@ def paint_body(obj, d, head, c1, c2, c3, rng, S, feats=None):
         verts = [v.co.copy() for v in mesh.vertices if v.co.z > (zmin + zmax) / 2 - 0.05]
         for _ in range(n):
             spots.append(rng.choice(verts))
-    hc = Vector(head[0])
-    head_r = max(head[1])
     belly_c = lighten(c1, 0.45) if pat != "belly" else c2
     for poly in mesh.polygons:
         for li in poly.loop_indices:
@@ -640,27 +639,25 @@ def paint_body(obj, d, head, c1, c2, c3, rng, S, feats=None):
             f = feats.get(mesh.loops[li].vertex_index) if feats else None
             if f:
                 scale_edge, gill, lateral, spot, speck = f
+                # 色はひかえめに(形の凹凸は法線マップと光で見せる)
                 if scale_edge:
-                    c = mix(c, darken(c, 0.32), scale_edge * 0.8)
+                    c = mix(c, darken(c, 0.16), scale_edge * 0.6)
                 if spot:
-                    c = mix(c, darken(c, 0.25), spot * 0.7)
+                    c = mix(c, darken(c, 0.15), spot * 0.6)
                 if speck:
-                    c = mix(c, lighten(c, 0.55), 0.85)
+                    c = mix(c, lighten(c, 0.45), 0.7)
                 if lateral:
-                    c = mix(c, darken(c, 0.35), 0.8)
+                    c = mix(c, darken(c, 0.2), 0.6)
             # お腹は明るく、背中は少し濃く(アニメの塗り)
             if pat not in ("dango",):
                 c = mix(c, belly_c, smoothstep(0.42, 0.22, h))
             c = mix(c, darken(c, 0.1), smoothstep(0.8, 0.98, h))
-            # 2段のアニメ影(光は斜め上前から)と、頭の上のツヤの帯
+            # 影は描き込まない(ゲームの光で立体に見せる)。光の当たらない下側だけ、ほんのり暗くする
             nrm = mesh.loops[li].normal if hasattr(mesh.loops[li], "normal") else poly.normal
-            ndl = nrm.dot(LIGHT)
-            if ndl < -0.05:
-                c = (c[0] * 0.84, c[1] * 0.82, c[2] * 0.9)
-            if nrm.z > 0.8 and (v - hc).length < head_r * 1.05 and abs(nrm.x) < 0.45:
-                c = lighten(c, 0.32)
+            k = smoothstep(-0.8, 0.2, nrm.dot(LIGHT))
+            c = mix((c[0] * 0.92, c[1] * 0.92, c[2] * 0.95), c, k)
             if f and f[1]:
-                c = mix(c, darken(c, 0.55), f[1])  # えらの線は影より上に描く
+                c = mix(c, darken(c, 0.3), f[1] * 0.8)  # えらの線
             lc = to_linear(c)
             col.data[li].color = (lc[0], lc[1], lc[2], 1.0)
 
@@ -676,9 +673,8 @@ def eye_frame(n):
 
 
 def add_eye(g, center, n, w, h, style, iris, order, glow=False, curve=0.0):
-    """アニメの目。w, h は白目の幅と高さ。
-    白目(上まぶたの影) → 虹彩(放射の筋・縁の濃い輪・上が濃いグラデーション) → 瞳 → 光(楕円・小さな丸・星) →
-    まつげ(目尻の跳ね3本)・下まつげ・二重の線"""
+    """立体のフィギュアのような目。w, h は白目の幅と高さ。
+    白目(上にわずかな影) → 虹彩(なめらかなグラデーションと淡い縁) → 瞳 → 光1つ → 細い上まぶたの線"""
     up = eye_frame(n)
     side = up.cross(n).normalized()
     # 目尻(後ろ側)の向き: 頭の前(+Y)と反対の横方向
@@ -699,66 +695,49 @@ def add_eye(g, center, n, w, h, style, iris, order, glow=False, curve=0.0):
         if LOD["decals"]:
             disc(c, rx, ry, color, **kw)
 
+    # まぶたの線の色: 真っ黒ではなく、肌の色を濃くした色(描いた線より、立体の縁に見える)
+    lid = mix(INK, darken(g_skin[0] or INK, 0.55), 0.35)
+
     if style == "dot":
         disc(at(0, 0, 0.01), w * 0.42, h * 0.5, INK, up=up, thick=0.02, seg=24)
-        decal(at(-w * 0.1, h * 0.18, 0.025), w * 0.13, w * 0.13, WHITE, up=up, thick=0.01)
-        decal(at(w * 0.12, -h * 0.15, 0.025), w * 0.06, w * 0.06, WHITE, up=up, thick=0.008)
+        decal(at(-w * 0.1, h * 0.18, 0.025), w * 0.11, w * 0.11, WHITE, up=up, thick=0.01)
         return
 
-    # 白目: 上に向かって少し影
+    # 白目: 上に向かってわずかに影
     sclera = (1.0, 0.86, 0.32) if style == "cat" else WHITE
-    shade = mix(sclera, (0.72, 0.74, 0.9), 0.55)
-    disc(at(0, 0, 0.0), w, h, sclera, up=up, thick=0.02, seg=32, color_fn=lambda u, v: mix(sclera, shade, smoothstep(0.25, 0.95, v)))
+    shade = mix(sclera, (0.78, 0.8, 0.9), 0.4)
+    disc(at(0, 0, 0.0), w, h, sclera, up=up, thick=0.02, seg=32, color_fn=lambda u, v: mix(sclera, shade, smoothstep(0.35, 1.0, v)))
 
     if style == "cat":
         decal(at(0, 0, 0.016), w * 0.78, h * 0.86, sclera, up=up, thick=0.012, seg=32, color_fn=lambda u, v: mix((1.0, 0.92, 0.45), (0.95, 0.62, 0.12), smoothstep(-0.8, 0.8, v)))
         decal(at(0, 0, 0.024), w * 0.16, h * 0.8, INK, up=up, thick=0.012, seg=24)
     else:
-        dark, light = darken(iris, 0.5), lighten(iris, 0.4)
+        dark, light = darken(iris, 0.4), lighten(iris, 0.22)
 
         def iris_fn(u, v):
+            # 上が少し濃く下が少し明るい、なめらかな虹彩と、細く淡い縁(筋や模様は入れない)
             r = math.sqrt(u * u + v * v)
-            a = math.atan2(v, u)
-            c = mix(light, iris, smoothstep(-0.9, 0.2, v))  # 下が明るい
-            c = mix(c, dark, smoothstep(0.1, 0.95, v) * 0.85)  # 上が濃い
-            if abs(math.sin(a * 9)) < 0.22 and 0.35 < r < 0.86:
-                c = mix(c, lighten(c, 0.35), 0.6)  # 放射の筋
-            if r > 0.84:
-                c = mix(c, darken(iris, 0.65), 0.9)  # 縁の濃い輪
+            c = mix(light, iris, smoothstep(-0.9, 0.1, v))
+            c = mix(c, dark, smoothstep(0.2, 1.0, v) * 0.55)
+            if r > 0.9:
+                c = mix(c, darken(iris, 0.45), 0.5)
             return c
 
         decal(at(0, -h * 0.04, 0.012), w * 0.76, h * 0.82, iris, up=up, thick=0.014, seg=40, color_fn=iris_fn)
-        pupil = INK if not glow else lighten(iris, 0.65)
-        ring = darken(iris, 0.3) if not glow else WHITE
-        decal(at(0, -h * 0.02, 0.022), w * 0.36, h * 0.44, pupil, up=up, thick=0.012, seg=28, color_fn=lambda u, v: ring if u * u + v * v > 0.8 else pupil)
+        pupil = mix(INK, darken(iris, 0.7), 0.25) if not glow else lighten(iris, 0.65)
+        decal(at(0, -h * 0.02, 0.022), w * 0.36, h * 0.44, pupil, up=up, thick=0.012, seg=28)
     if not glow:
-        # 光: 斜めの大きな楕円、小さな丸、レアな魚とかわいい目には星のきらめき
-        tilt = up * 0.85 + side * (0.3 * outer)
-        decal(at(-w * 0.26 * outer, h * 0.3, 0.034), w * 0.22, w * 0.3, WHITE, up=tilt, thick=0.012, seg=24)
-        decal(at(w * 0.28 * outer, -h * 0.36, 0.034), w * 0.1, w * 0.1, WHITE, up=up, thick=0.01)
-        if order >= 3 or style == "cute":
-            sp = at(w * 0.18 * outer, h * 0.12, 0.036)
-            for ax in (up, side):
-                decal(sp, w * 0.035, w * 0.16, WHITE, up=ax, thick=0.008)
-    # 上まつげ: 縁に沿った太い線と、目尻の3本の跳ね
-    pts = [at(math.cos(math.radians(a)) * w * 1.04 * outer * -1, math.sin(math.radians(a)) * h * 0.99, 0.02) for a in range(170, 5, -15)]
-    g.add_tube(pts, lw, INK, radius_end=lw * 0.9)
-    bu, bv = w * 1.0 * outer, h * 0.12
-    for dx, dy, L in ((1.0, 0.55, 0.42), (1.05, 0.15, 0.36), (0.9, -0.2, 0.26)):
-        tu, tv = bu + w * dx * L * outer, bv + h * dy * L
-        mid = at((bu + tu) / 2, (bv + tv) / 2 + h * 0.04, 0.022)
-        g.add_tube([at(bu, bv, 0.02), mid, at(tu, tv, 0.024)], lw * 0.8, INK, radius_end=lw * 0.15)
-    # 下まつげ(目尻側の短い線)
-    low = [at(w * 0.95 * outer * math.cos(math.radians(a)), -h * 0.98 * math.sin(math.radians(a)), 0.02) for a in (15, 35, 55)]
-    g.add_tube(low, lw * 0.45, INK, radius_end=lw * 0.2)
-    # 二重の線
-    crease = [at(math.cos(math.radians(a)) * w * 1.0 * outer * -1, h * 1.18 + math.sin(math.radians(a)) * h * 0.12, 0.018) for a in (150, 110, 70, 30)]
-    g.add_tube(crease, lw * 0.35, mix(INK, g_skin[0] or INK, 0.4), radius_end=lw * 0.15)
+        # 光は1つだけ(ひかえめな楕円)
+        decal(at(-w * 0.22 * outer, h * 0.26, 0.034), w * 0.14, w * 0.18, WHITE, up=up, thick=0.012, seg=24)
+    # 上まぶたの線: 細めで、目尻に向かって少し細くなる(跳ね・下まつげ・二重の線は描かない)
+    # 白目は縁が頭に埋まるので、見えている白目の縁(半径の約 92%)に沿わせる
+    pts = [at(math.cos(math.radians(a)) * w * 0.93 * outer * -1, math.sin(math.radians(a)) * h * 0.92, 0.016) for a in range(168, 8, -16)]
+    g.add_tube(pts, lw * 0.6, lid, radius_end=lw * 0.4)
     if style == "sleepy":
         disc(at(0, h * 0.42, 0.04), w * 1.12, h * 0.6, g_skin[0], up=up, thick=0.03, seg=28)
-        g.add_tube([at(-w, h * 0.0, 0.05), at(0, -h * 0.08, 0.055), at(w, h * 0.0, 0.05)], lw * 0.9, INK)
+        g.add_tube([at(-w, h * 0.0, 0.05), at(0, -h * 0.08, 0.055), at(w, h * 0.0, 0.05)], lw * 0.6, lid)
     if style == "angry":
-        g.add_tube([at(-w * 0.9 * outer, h * 1.5, 0.03), at(0, h * 1.38, 0.03), at(w * 0.9 * outer, h * 1.15, 0.03)], lw * 1.3, INK, radius_end=lw * 0.6)
+        g.add_tube([at(-w * 0.9 * outer, h * 1.5, 0.03), at(0, h * 1.38, 0.03), at(w * 0.9 * outer, h * 1.15, 0.03)], lw * 0.9, lid, radius_end=lw * 0.5)
 
 
 g_skin = [None]
@@ -1072,30 +1051,18 @@ def ink_material(name, color):
 
 
 def toon_material(name, use_vertex=True, color=(0, 0, 0)):
+    """確認用の材質: ゲーム(SurfaceAppearance)に近い、少しつやのある立体の塗り"""
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
     nt = mat.node_tree
-    nt.nodes.clear()
-    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    bsdf = nt.nodes.get("Principled BSDF")
     if use_vertex:
         attr = nt.nodes.new("ShaderNodeVertexColor")
         attr.layer_name = "Col"
-        col_out = attr.outputs["Color"]
+        nt.links.new(attr.outputs["Color"], bsdf.inputs["Base Color"])
     else:
-        rgb = nt.nodes.new("ShaderNodeRGB")
-        rgb.outputs[0].default_value = (*color, 1)
-        col_out = rgb.outputs[0]
-    # アニメの塗り: 影を「2段」にする(拡散光 → しきい値 → 影色/明るい色)
-    diff = nt.nodes.new("ShaderNodeBsdfDiffuse")
-    nt.links.new(col_out, diff.inputs["Color"])
-    s2r = None
-    emis = nt.nodes.new("ShaderNodeEmission")
-    nt.links.new(col_out, emis.inputs["Color"])
-    emis.inputs["Strength"].default_value = 0.8
-    add = nt.nodes.new("ShaderNodeAddShader")
-    nt.links.new(diff.outputs[0], add.inputs[0])
-    nt.links.new(emis.outputs[0], add.inputs[1])
-    nt.links.new(add.outputs[0], out.inputs["Surface"])
+        bsdf.inputs["Base Color"].default_value = (*color, 1)
+    bsdf.inputs["Roughness"].default_value = 0.45
     return mat
 
 
@@ -1162,7 +1129,7 @@ def bake_texture(hi, lo, size, path, normal_path=None):
     tex = nt.nodes.new("ShaderNodeTexImage")
     tex.image = img
     nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
-    bsdf.inputs["Roughness"].default_value = 0.6
+    bsdf.inputs["Roughness"].default_value = 0.45
     nt.nodes.active = tex
     lo.data.materials.append(mat)
     sc = bpy.context.scene
@@ -1275,7 +1242,7 @@ def export_fish(d, outdir, budget=15000, tex_size=1024):
         p.use_smooth = True
     bake_texture(hi, lo, tex_size, os.path.join(outdir, d["id"] + ".png"), os.path.join(outdir, d["id"] + "_nrm.png"))
     bpy.data.objects.remove(hi)
-    ol = make_outline(lo, 0.022)
+    ol = make_outline(lo, OUTLINE)
     ol.name = d["id"] + "_Outline"
     ol.data.materials.clear()
     ol.data.materials.append(flat_material("Outline", (0.03, 0.02, 0.04)))
@@ -1307,10 +1274,10 @@ def setup_render(res):
     world.use_nodes = True
     bg = world.node_tree.nodes["Background"]
     bg.inputs[0].default_value = (0.75, 0.8, 0.9, 1)
-    bg.inputs[1].default_value = 0.25
+    bg.inputs[1].default_value = 0.9
     sc.world = world
     sun = bpy.data.lights.new("sun", "SUN")
-    sun.energy = 1.2
+    sun.energy = 2.4
     sun.angle = math.radians(8)
     so = bpy.data.objects.new("sun", sun)
     so.rotation_euler = (math.radians(40), math.radians(-25), math.radians(140))
@@ -1389,9 +1356,14 @@ def main():
         cam = setup_render(a.res) if a.render else None
         body, detail = build_fish(d)
         obj = finish(body, detail, d, 1.0)
-        ol = make_outline(obj, 0.022)
+        ol = make_outline(obj, OUTLINE)
         obj.data.materials.append(toon_material("toon"))
         ol.data.materials.append(ink_material("ink", (0.08, 0.05, 0.1)))
+        # 輪郭線はカメラにだけ見せる(光や映り込みをさえぎらない。Roblox の CastShadow=false と同じ)
+        ol.visible_shadow = False
+        ol.visible_diffuse = False
+        ol.visible_glossy = False
+        ol.visible_transmission = False
         tris = sum(len(p.vertices) - 2 for p in obj.data.polygons)
         print(f"{d['id']}: {tris} tris body+detail, outline {sum(len(p.vertices) - 2 for p in ol.data.polygons)}")
         if a.render:
@@ -1506,6 +1478,8 @@ def run_verify(glb, out, res):
             o.data.materials.append(ink_material("ink", (0.08, 0.05, 0.1)))
             o.hide_render = True
             o.visible_shadow = False  # 輪郭線は影を作らない(Roblox の CastShadow=false と同じ)
+            o.visible_diffuse = False
+            o.visible_glossy = False
     for b in bodies:
         for o in objs:
             o.hide_render = not (o.name == b.name or o.name == b.name + "_Outline")
