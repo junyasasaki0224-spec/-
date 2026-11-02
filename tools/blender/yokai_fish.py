@@ -79,11 +79,14 @@ def frame(forward, up_hint=Vector((0, 0, 1))):
     return Matrix((x, f, z)).transposed()
 
 
-QUALITY = 2.0  # 部品の細かさ(1 = 軽い試作、2 = 本番)
+QUALITY = 2.0  # 体の細かさ(1 = 軽い試作、2 = 本番)
+# 部品(目・ひれ・飾り)の作り方。ゲーム用の軽い版は LOD["parts"] を下げ、目の上に重ねる薄い模様
+# (虹彩・瞳・光)を省く。その色は細かい版からテクスチャに焼き込まれるので見た目は同じ
+LOD = {"parts": QUALITY, "decals": True}
 
 
 def q(n):
-    return max(6, int(round(n * QUALITY)))
+    return max(6, int(round(n * LOD["parts"])))
 
 
 def catmull(points, per=4):
@@ -134,6 +137,9 @@ class Geo:
         m = rot if rot is not None else Matrix.Identity(3)
         for v in tmp.verts:
             v.co = m @ v.co + Vector(center)
+        if m.determinant() < 0:
+            # 鏡に映す向きの回転だと面が裏返るので、表(外向き)に戻す(法線マップの焼き込みに必要)
+            bmesh.ops.reverse_faces(tmp, faces=tmp.faces[:])
         self._merge(tmp, color, (lambda v: color_fn(*unit[v.index])) if color_fn else None)
 
     def add_torus(self, center, normal, major, minor, color, seg=64, sides=14, arc=1.0, start=0.0):
@@ -298,7 +304,8 @@ def head_point(head, yaw_deg, pitch_deg):
 # 1匹を組み立てる
 
 
-def build_fish(d):
+def build_fish(d, parts_only=False):
+    """(体, 部品) を作る。parts_only なら体は作らず (None, 部品) を返す(軽い版の部品だけ作り直す時)"""
     rng = random.Random(d["id"])
     shape = SHAPES.get(d["shape"], SHAPES["koi"])
     deco = set(d.get("deco") or [])
@@ -313,45 +320,47 @@ def build_fish(d):
 
     head = (tuple(sp(shape["head"][0])), tuple(S @ Vector(shape["head"][1])))
 
-    # --- 体(溶かして一体化) ---
-    body = Geo()
-    if d["shape"] == "eel":
-        # 背骨の点を細かく補間して、つなぎ目の無い一本の体にする
-        for k in range(len(EEL_SPINE) - 1):
-            a0, a1 = EEL_SPINE[k], EEL_SPINE[k + 1]
-            for j in range(5):
-                t = j / 5
-                x, y, z, r = (a0[i] + (a1[i] - a0[i]) * t for i in range(4))
-                body.add_sphere(sp((x, y, z)), tuple(S @ Vector((r, r * 1.1, r * 1.08))), c1, seg=20, rings=12)
-        x, y, z, r = EEL_SPINE[-1]
-        body.add_sphere(sp((x, y, z)), tuple(S @ Vector((r, r * 1.1, r * 1.08))), c1, seg=20, rings=12)
-    else:
-        for c, r in shape["parts"]:
-            body.add_sphere(sp(c), tuple(S @ Vector(r)), c1)
-    if "bighead" in deco:
-        (hc, hr) = head
-        body.add_sphere(Vector(hc) + Vector((0, -hr[1] * 0.25, hr[2] * 0.7)), (hr[0] * 0.95, hr[1] * 0.9, hr[2] * 0.85), c1)
-    if d["shape"] == "angler":
-        body.add_sphere(sp((0, 0.62, -0.26)), tuple(S @ Vector((0.56, 0.32, 0.24))), c1)  # 大きなあご
-    if d["shape"] == "catfish":
-        body.add_sphere(sp((0, 0.82, -0.12)), tuple(S @ Vector((0.42, 0.2, 0.2))), c1)  # 平たい口先
+    body_mesh = None
+    if not parts_only:
+        # --- 体(溶かして一体化) ---
+        body = Geo()
+        if d["shape"] == "eel":
+            # 背骨の点を細かく補間して、つなぎ目の無い一本の体にする
+            for k in range(len(EEL_SPINE) - 1):
+                a0, a1 = EEL_SPINE[k], EEL_SPINE[k + 1]
+                for j in range(5):
+                    t = j / 5
+                    x, y, z, r = (a0[i] + (a1[i] - a0[i]) * t for i in range(4))
+                    body.add_sphere(sp((x, y, z)), tuple(S @ Vector((r, r * 1.1, r * 1.08))), c1, seg=20, rings=12)
+            x, y, z, r = EEL_SPINE[-1]
+            body.add_sphere(sp((x, y, z)), tuple(S @ Vector((r, r * 1.1, r * 1.08))), c1, seg=20, rings=12)
+        else:
+            for c, r in shape["parts"]:
+                body.add_sphere(sp(c), tuple(S @ Vector(r)), c1)
+        if "bighead" in deco:
+            (hc, hr) = head
+            body.add_sphere(Vector(hc) + Vector((0, -hr[1] * 0.25, hr[2] * 0.7)), (hr[0] * 0.95, hr[1] * 0.9, hr[2] * 0.85), c1)
+        if d["shape"] == "angler":
+            body.add_sphere(sp((0, 0.62, -0.26)), tuple(S @ Vector((0.56, 0.32, 0.24))), c1)  # 大きなあご
+        if d["shape"] == "catfish":
+            body.add_sphere(sp((0, 0.82, -0.12)), tuple(S @ Vector((0.42, 0.2, 0.2))), c1)  # 平たい口先
 
-    body_obj = body.to_object(d["id"] + "_raw")
-    size = max(prop) * 2.3
-    rm = body_obj.modifiers.new("remesh", "REMESH")
-    rm.mode = "VOXEL"
-    rm.voxel_size = 0.028 * size / 2.3 / (1.1 * QUALITY)
-    rm.use_smooth_shade = True
-    sm = body_obj.modifiers.new("smooth", "SMOOTH")
-    sm.factor = 1.0
-    sm.iterations = int(14 * (1.1 * QUALITY) ** 2)
-    body_mesh = evaluated_copy(body_obj, d["id"] + "_body")
-    bpy.data.objects.remove(body_obj)
+        body_obj = body.to_object(d["id"] + "_raw")
+        size = max(prop) * 2.3
+        rm = body_obj.modifiers.new("remesh", "REMESH")
+        rm.mode = "VOXEL"
+        rm.voxel_size = 0.028 * size / 2.3 / (1.1 * QUALITY)
+        rm.use_smooth_shade = True
+        sm = body_obj.modifiers.new("smooth", "SMOOTH")
+        sm.factor = 1.0
+        sm.iterations = int(14 * (1.1 * QUALITY) ** 2)
+        body_mesh = evaluated_copy(body_obj, d["id"] + "_body")
+        bpy.data.objects.remove(body_obj)
 
-    # 表面の細部(鱗・えら・側線・いぼ・毛穴)を彫り、色の手がかりを作る
-    feats = sculpt_body(body_mesh, d, head)
-    # 体の色: 明るいお腹・少し濃い背中・模様・細部
-    paint_body(body_mesh, d, head, c1, c2, c3, rng, S, feats)
+        # 表面の細部(鱗・えら・側線・いぼ・毛穴)を彫り、色の手がかりを作る
+        feats = sculpt_body(body_mesh, d, head)
+        # 体の色: 明るいお腹・少し濃い背中・模様・細部
+        paint_body(body_mesh, d, head, c1, c2, c3, rng, S, feats)
 
     # --- 細かい部品(目・ひれ・飾り) ---
     g = Geo()
@@ -522,17 +531,16 @@ def sculpt_body(obj, d, head):
         t = (p.y - ymin) / max(1e-4, ymax - ymin)
         disp = 0.0
         scale_edge = gill = lateral = spot = speck = 0.0
-        # えらの線: 頭と胴の境目(頭の楕円体の後ろ側の縁)
+        # えらの線: 頭と胴の境目。横から見て「)」の形の細い弧(えらぶた)で、真ん中ほど尾の側へふくらむ
+        zz = (p.z - hcz) / (hrz * 0.72)
+        gy = hcy - hry * (0.62 if shape != "puffer" else 0.75) + hry * 0.32 * min(1.0, zz * zz)
         if shape in ("koi", "catfish", "angler", "puffer"):
-            # 横から見て「)」の形の細い弧(えらぶた)。真ん中ほど尾の側へふくらむ
-            zz = (p.z - hcz) / (hrz * 0.72)
             if abs(zz) < 1.0 and abs(p.x) > hrx * 0.35:
-                gy = hcy - hry * (0.62 if shape != "puffer" else 0.75) + hry * 0.32 * zz * zz
-                gill = (1 - smoothstep(0.004, 0.016, abs(p.y - gy))) * (1 - smoothstep(0.75, 1.0, abs(zz)))
-                disp -= 0.008 * gill
-        # 鱗(鯉型)
+                gill = (1 - smoothstep(0.006, 0.02, abs(p.y - gy))) * (1 - smoothstep(0.75, 1.0, abs(zz)))
+                disp -= 0.01 * gill
+        # 鱗(鯉型)。えらぶたより後ろだけ
         if shape == "koi":
-            fade = smoothstep(0.28, 0.42, h) * smoothstep(0.1, 0.22, t) * (1 - smoothstep(hcy - hry * 0.45, hcy - hry * 0.2, p.y))
+            fade = smoothstep(0.28, 0.42, h) * smoothstep(0.1, 0.22, t) * (1 - smoothstep(gy - 0.09, gy - 0.04, p.y))
             if fade > 0:
                 theta = math.atan2(p.z, p.x)
                 a, b = p.y / sy, theta * 0.42 / ss
@@ -652,7 +660,7 @@ def paint_body(obj, d, head, c1, c2, c3, rng, S, feats=None):
             if nrm.z > 0.8 and (v - hc).length < head_r * 1.05 and abs(nrm.x) < 0.45:
                 c = lighten(c, 0.32)
             if f and f[1]:
-                c = mix(c, darken(c, 0.45), f[1] * 0.9)  # えらの線は影より上に描く
+                c = mix(c, darken(c, 0.55), f[1])  # えらの線は影より上に描く
             lc = to_linear(c)
             col.data[li].color = (lc[0], lc[1], lc[2], 1.0)
 
@@ -678,16 +686,23 @@ def add_eye(g, center, n, w, h, style, iris, order, glow=False, curve=0.0):
     lw = 0.022 * (h / 0.2)  # 線の太さの基準
 
     def at(du, dv, dn):
-        # 頭の丸みに沿って、目の中心から離れるほど沈める
+        # 頭の丸みに沿って、目の中心から離れるほど沈める。
+        # 全体を少し頭に埋める(横から見て目が飛び出しにくい)。重ねる間隔は変えない(輪郭線がきれいに出る間隔)
+        dn = dn - 0.008
         return center + side * du + up * dv + n * (dn - curve * (du * du + dv * dv) * 0.5)
 
     def disc(c, rx, ry, color, **kw):
         g.add_disc(c, n, rx, ry, color, curve=curve, **kw)
 
+    def decal(c, rx, ry, color, **kw):
+        # 白目の上に重ねる薄い模様。軽い版では省く(色は焼き込まれる)
+        if LOD["decals"]:
+            disc(c, rx, ry, color, **kw)
+
     if style == "dot":
         disc(at(0, 0, 0.01), w * 0.42, h * 0.5, INK, up=up, thick=0.02, seg=24)
-        disc(at(-w * 0.1, h * 0.18, 0.025), w * 0.13, w * 0.13, WHITE, up=up, thick=0.01)
-        disc(at(w * 0.12, -h * 0.15, 0.025), w * 0.06, w * 0.06, WHITE, up=up, thick=0.008)
+        decal(at(-w * 0.1, h * 0.18, 0.025), w * 0.13, w * 0.13, WHITE, up=up, thick=0.01)
+        decal(at(w * 0.12, -h * 0.15, 0.025), w * 0.06, w * 0.06, WHITE, up=up, thick=0.008)
         return
 
     # 白目: 上に向かって少し影
@@ -696,8 +711,8 @@ def add_eye(g, center, n, w, h, style, iris, order, glow=False, curve=0.0):
     disc(at(0, 0, 0.0), w, h, sclera, up=up, thick=0.02, seg=32, color_fn=lambda u, v: mix(sclera, shade, smoothstep(0.25, 0.95, v)))
 
     if style == "cat":
-        disc(at(0, 0, 0.016), w * 0.78, h * 0.86, sclera, up=up, thick=0.012, seg=32, color_fn=lambda u, v: mix((1.0, 0.92, 0.45), (0.95, 0.62, 0.12), smoothstep(-0.8, 0.8, v)))
-        disc(at(0, 0, 0.024), w * 0.16, h * 0.8, INK, up=up, thick=0.012, seg=24)
+        decal(at(0, 0, 0.016), w * 0.78, h * 0.86, sclera, up=up, thick=0.012, seg=32, color_fn=lambda u, v: mix((1.0, 0.92, 0.45), (0.95, 0.62, 0.12), smoothstep(-0.8, 0.8, v)))
+        decal(at(0, 0, 0.024), w * 0.16, h * 0.8, INK, up=up, thick=0.012, seg=24)
     else:
         dark, light = darken(iris, 0.5), lighten(iris, 0.4)
 
@@ -712,19 +727,19 @@ def add_eye(g, center, n, w, h, style, iris, order, glow=False, curve=0.0):
                 c = mix(c, darken(iris, 0.65), 0.9)  # 縁の濃い輪
             return c
 
-        disc(at(0, -h * 0.04, 0.012), w * 0.76, h * 0.82, iris, up=up, thick=0.014, seg=40, color_fn=iris_fn)
+        decal(at(0, -h * 0.04, 0.012), w * 0.76, h * 0.82, iris, up=up, thick=0.014, seg=40, color_fn=iris_fn)
         pupil = INK if not glow else lighten(iris, 0.65)
         ring = darken(iris, 0.3) if not glow else WHITE
-        disc(at(0, -h * 0.02, 0.022), w * 0.36, h * 0.44, pupil, up=up, thick=0.012, seg=28, color_fn=lambda u, v: ring if u * u + v * v > 0.8 else pupil)
+        decal(at(0, -h * 0.02, 0.022), w * 0.36, h * 0.44, pupil, up=up, thick=0.012, seg=28, color_fn=lambda u, v: ring if u * u + v * v > 0.8 else pupil)
     if not glow:
         # 光: 斜めの大きな楕円、小さな丸、レアな魚とかわいい目には星のきらめき
         tilt = up * 0.85 + side * (0.3 * outer)
-        disc(at(-w * 0.26 * outer, h * 0.3, 0.034), w * 0.22, w * 0.3, WHITE, up=tilt, thick=0.012, seg=24)
-        disc(at(w * 0.28 * outer, -h * 0.36, 0.034), w * 0.1, w * 0.1, WHITE, up=up, thick=0.01)
+        decal(at(-w * 0.26 * outer, h * 0.3, 0.034), w * 0.22, w * 0.3, WHITE, up=tilt, thick=0.012, seg=24)
+        decal(at(w * 0.28 * outer, -h * 0.36, 0.034), w * 0.1, w * 0.1, WHITE, up=up, thick=0.01)
         if order >= 3 or style == "cute":
             sp = at(w * 0.18 * outer, h * 0.12, 0.036)
             for ax in (up, side):
-                disc(sp, w * 0.035, w * 0.16, WHITE, up=ax, thick=0.008)
+                decal(sp, w * 0.035, w * 0.16, WHITE, up=ax, thick=0.008)
     # 上まつげ: 縁に沿った太い線と、目尻の3本の跳ね
     pts = [at(math.cos(math.radians(a)) * w * 1.04 * outer * -1, math.sin(math.radians(a)) * h * 0.99, 0.02) for a in range(170, 5, -15)]
     g.add_tube(pts, lw, INK, radius_end=lw * 0.9)
@@ -979,17 +994,13 @@ def add_decos(g, d, head, deco, c1, c2, c3, order, S, tailY):
 # 仕上げ: 結合・輪郭線・材質
 
 
-def finish(body, detail, d, scale, body_ratio=None):
-    # 一つにまとめる(body_ratio を指定すると体だけ軽くしてから合わせる)
-    if body_ratio is not None and body_ratio < 1:
-        dm = body.modifiers.new("dec", "DECIMATE")
-        dm.ratio = body_ratio
-        light = evaluated_copy(body, body.name + "_lo")
-        bpy.data.objects.remove(body)
-        body = light
+def finish(body, detail, d, scale, keep_body=False):
+    """体と部品を一つのメッシュにまとめる(keep_body なら体は消さずに残す)"""
     bm = bmesh.new()
     bm.from_mesh(body.data)
     bm.from_mesh(detail.data)
+    # 部品ごとに面を外向きにそろえる(管・輪など手で面を張った部品も含めて)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
     mesh = bpy.data.meshes.new(d["id"])
     bm.to_mesh(mesh)
     bm.free()
@@ -998,7 +1009,8 @@ def finish(body, detail, d, scale, body_ratio=None):
     for p in mesh.polygons:
         p.use_smooth = True
     obj.scale = (scale, scale, scale)
-    bpy.data.objects.remove(body)
+    if not keep_body:
+        bpy.data.objects.remove(body)
     bpy.data.objects.remove(detail)
     return obj
 
@@ -1024,6 +1036,11 @@ def make_outline(obj, thickness):
     n_orig = len(bm.faces) // 2
     bm.faces.ensure_lookup_table()
     bmesh.ops.delete(bm, geom=[bm.faces[i] for i in range(n_orig)], context="FACES")
+    # 間引きでつぶれた(面積ほぼ0の)三角形を消す(glTF で「壊れたメッシュ」にならないように)
+    bmesh.ops.dissolve_degenerate(bm, dist=1e-5, edges=bm.edges[:])
+    flat = [f for f in bm.faces if f.calc_area() < 1e-10]
+    if flat:
+        bmesh.ops.delete(bm, geom=flat, context="FACES")
     # 向きをそろえる: 部品ごとに外向きへ計算し直してから、全部を内向きに裏返す
     # (Roblox は内向きの面を正面から描かないので、外周だけが線として見える)
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
@@ -1228,23 +1245,26 @@ def decimate_to(obj, budget):
 
 def export_fish(d, outdir, budget=15000, tex_size=1024):
     """1匹分を作り、軽いメッシュ・テクスチャ(色 + 法線)・輪郭線を返す。
-    Roblox の 1メッシュの上限は 20,000 三角形。体・目・ひれをまとめて budget まで減らし、
-    細かい凹凸は高解像度のモデルから法線マップに焼き込んで見た目に残す"""
+    Roblox の 1メッシュの上限は 20,000 三角形。
+    - 細かい版: 体(十数万三角形)+ 目の模様まで全部入りの部品 → 焼き込みの元
+    - 軽い版: 部品は作り直す(目は白目の形だけ・面は少なめ)、体は左右対称に間引いて合わせて budget 以下
+    細かい凹凸(鱗・えら・いぼ・ひれの筋)は法線マップに、模様と目の絵は色のテクスチャに焼き込む"""
     body, detail = build_fish(d)
-    # 細かい版(焼き込みの元)
-    body_hi = body.copy()
-    body_hi.data = body.data.copy()
-    bpy.context.scene.collection.objects.link(body_hi)
-    detail_hi = detail.copy()
-    detail_hi.data = detail.data.copy()
-    bpy.context.scene.collection.objects.link(detail_hi)
-    hi = finish(body_hi, detail_hi, d, 1.0)
+    hi = finish(body, detail, d, 1.0, keep_body=True)
     hi.name = d["id"] + "_hi"
     hi_tris = tri_count(hi)
-    # 軽い版: まとめてから左右対称に間引く
-    lo = finish(body, detail, d, 1.0)
+    LOD.update(parts=1.0, decals=False)
+    try:
+        _, detail_lo = build_fish(d, parts_only=True)
+    finally:
+        LOD.update(parts=QUALITY, decals=True)
+    room = budget - tri_count(detail_lo)
+    if room < 3000:
+        raise RuntimeError(f"{d['id']}: 部品だけで {tri_count(detail_lo)} 三角形(体に回す分が足りない)")
+    body = decimate_to(body, room)
+    lo = finish(body, detail_lo, d, 1.0)
     lo.name = d["id"]
-    lo = decimate_to(lo, budget)
+    lo.data.name = d["id"]
     # 面の向きを外向きにそろえる(Roblox は裏面を描かない)
     bm = bmesh.new()
     bm.from_mesh(lo.data)
@@ -1356,7 +1376,7 @@ def main():
         return
     if a.export:
         if a.part:
-            run_export(defs, ids, a.out, a.part, "PNG")
+            run_export(defs, ids, a.out, a.part, "AUTO")
             return
         manifest = run_export(defs, ids, a.out)
         if a.luau:
@@ -1386,7 +1406,7 @@ def main():
 
 def run_export(defs, ids, out, name="YokaiFishMeshes", image_format="JPEG"):
     """全魚を1つのシーンに並べて GLB に書き出す(Studio の「3D をインポート」1回で全部入る)。
-    name/image_format は並列で作る時の途中のファイル用(PNG で書いて、--merge で1つにまとめる)"""
+    name/image_format は並列で作る時の途中のファイル用(PNG のまま書いて、--merge で1つにまとめる)"""
     texdir = os.path.join(out, "textures")
     os.makedirs(texdir, exist_ok=True)
     bpy.ops.wm.read_factory_settings(use_empty=True)
