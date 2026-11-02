@@ -223,4 +223,5 @@ return {
 	shop_tab_tank = "Aquarium",
 	shop_need_merchant = "Sell near a fish shop",
 	robux_none = "Coming soon",
+	sign_vip_seat = "VIP Seat",
 }

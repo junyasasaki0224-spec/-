@@ -238,4 +238,5 @@ return {
 	shop_tab_tank = "水槽",
 	shop_need_merchant = "魚屋の近くで売れる",
 	robux_none = "準備中",
+	sign_vip_seat = "VIP 釣り座",
 }

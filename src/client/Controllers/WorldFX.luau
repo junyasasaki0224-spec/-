@@ -390,6 +390,19 @@ function WorldFX.init()
 		end
 	end)
 	onTag("YokaiPrompt", localizePrompt)
+	-- VIP の釣り座の門: VIP パスを持っている人だけ当たり判定を消す(自分の画面と自分のキャラクターだけに効く)
+	local State = require(script.Parent.Parent.ClientState)
+	local function refreshVipGates()
+		local vip = State.hasPass("vip")
+		for _, g in CollectionService:GetTagged("VipGate") do
+			if g:IsA("BasePart") then
+				g.CanCollide = not vip
+				g.Transparency = if vip then 0.75 else 0.2
+			end
+		end
+	end
+	onTag("VipGate", refreshVipGates)
+	player:GetAttributeChangedSignal("Passes"):Connect(refreshVipGates)
 	onTag("Bobber", addBobber)
 	onTag("TankFish", addSwimmer)
 	onTag("RainbowFish", function(m)

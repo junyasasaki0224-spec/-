@@ -34,8 +34,23 @@ function M.build()
 	local function ground(x: number, z: number): number
 		return Terrain.heightAt(basin, x, z)
 	end
+	-- VIP の釣り座の位置(下で作る)
+	local vipDir = Vector3.new(math.cos(math.rad(25)), 0, math.sin(math.rad(25)))
+	local vipShore = center + Vector3.new(vipDir.X * spot.water.rx * 1.12, 0, vipDir.Z * spot.water.rz * 1.12)
+	local vipEnd = center + Vector3.new(vipDir.X * spot.water.rx * 0.78, 0, vipDir.Z * spot.water.rz * 0.78)
+	local function nearVip(x: number, z: number): boolean
+		local p = Vector3.new(x, 0, z)
+		local a, b = Vector3.new(vipShore.X, 0, vipShore.Z), Vector3.new(vipEnd.X, 0, vipEnd.Z)
+		local ab = b - a
+		local t = math.clamp((p - a):Dot(ab) / ab:Dot(ab), -0.4, 1)
+		return (p - (a + ab * t)).Magnitude < 9
+	end
+
 	-- 桟橋や施設の周りは木を置かない
 	local function clear(x: number, z: number): boolean
+		if nearVip(x, z) then
+			return false
+		end
 		if math.abs(x - o.X) < 12 and z > center.Z + 10 then
 			return false
 		end
@@ -145,7 +160,9 @@ function M.build()
 		local r = math.sqrt(rng:NextNumber(0.05, 0.75))
 		local x = center.X + math.cos(a) * spot.water.rx * r
 		local zz = center.Z + math.sin(a) * spot.water.rz * r
-		Build.lotus(deco, Vector3.new(x, center.Y + 0.08, zz), rng)
+		if not nearVip(x, zz) then
+			Build.lotus(deco, Vector3.new(x, center.Y + 0.08, zz), rng)
+		end
 	end
 
 	-- 石灯籠
@@ -272,6 +289,60 @@ function M.build()
 	CollectionService:AddTag(counter, "Merchant")
 	counter:SetAttribute("TutorialTarget", "sell")
 	Build.tanuki(root, stallCF * CFrame.new(0, 0, 3.4))
+
+	-- VIP の釣り座: 池に張り出した金色の台。入口の光の幕は VIP だけ通れる(クライアント側で当たり判定を切る)
+	local vipFolder = Build.folder("VipSeat", root)
+	local deckCF =
+		CFrame.lookAt((vipShore + vipEnd) / 2 + Vector3.new(0, 1.4, 0), vipEnd + Vector3.new(0, 1.4, 0))
+	local len = (vipShore - vipEnd).Magnitude
+	Build.part({
+		name = "VipDeck",
+		size = Vector3.new(9, 0.4, len),
+		cframe = deckCF,
+		color = Color3.fromRGB(150, 40, 34),
+		material = Enum.Material.WoodPlanks,
+		parent = vipFolder,
+	})
+	for _, x in { -4.6, 4.6 } do
+		Build.part({
+			name = "VipRail",
+			size = Vector3.new(0.3, 0.3, len),
+			cframe = deckCF * CFrame.new(x, 1.6, 0),
+			color = Color3.fromRGB(232, 194, 106),
+			material = Enum.Material.Foil,
+			parent = vipFolder,
+		})
+	end
+	local tip = deckCF * CFrame.new(0, 0, -len / 2 + 3)
+	Build.part({
+		name = "VipCarpet",
+		size = Vector3.new(6, 0.1, 5),
+		cframe = tip * CFrame.new(0, 0.25, 0),
+		color = Color3.fromRGB(232, 194, 106),
+		material = Enum.Material.Fabric,
+		collide = false,
+		parent = vipFolder,
+	})
+	Build.lantern(vipFolder, (tip * CFrame.new(-3.8, 0.2, -1)).Position)
+	Build.lantern(vipFolder, (tip * CFrame.new(3.8, 0.2, -1)).Position)
+	local gate = Build.part({
+		name = "VipGate",
+		size = Vector3.new(9, 8, 0.4),
+		cframe = deckCF * CFrame.new(0, 4, len / 2 - 0.5),
+		color = Color3.fromRGB(255, 214, 120),
+		material = Enum.Material.ForceField,
+		transparency = 0.2,
+		parent = vipFolder,
+	})
+	CollectionService:AddTag(gate, "VipGate")
+	Build.sign(
+		vipFolder,
+		deckCF * CFrame.new(0, 9, len / 2 - 0.5) * CFrame.Angles(0, math.rad(180), 0),
+		Vector2.new(5, 1.4),
+		"sign_vip_seat",
+		Color3.fromRGB(120, 30, 26)
+	)
+	Terrain.flatten(CFrame.new(vipShore + vipDir * 6), 12, 12, Enum.Material.Grass)
 
 	-- 村への鳥居
 	local toriiPos = spawnPos + Vector3.new(22, 0, 10)
