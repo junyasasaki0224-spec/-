@@ -17,3 +17,7 @@ Thumbs.db
 .env.*
 *.key
 secrets/
+
+# Python のキャッシュ
+__pycache__/
+*.pyc
