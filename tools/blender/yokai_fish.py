@@ -144,6 +144,9 @@ class Geo:
         self._merge(tmp, color, (lambda v: color_fn(*unit[v.index])) if color_fn else None)
 
     def add_torus(self, center, normal, major, minor, color, seg=64, sides=14, arc=1.0, start=0.0):
+        # 軽い版では輪の分割も減らす(細かい版はそのまま)
+        f = LOD["parts"] / QUALITY
+        seg, sides = max(16, int(seg * f)), max(6, int(sides * f))
         tmp = bmesh.new()
         n = Vector(normal).normalized()
         a = Vector((1, 0, 0)) if abs(n.x) < 0.9 else Vector((0, 1, 0))
@@ -1225,9 +1228,11 @@ def export_fish(d, outdir, budget=15000, tex_size=1024):
         _, detail_lo = build_fish(d, parts_only=True)
     finally:
         LOD.update(parts=QUALITY, decals=True)
-    room = budget - tri_count(detail_lo)
+    # 体には最低 5,000 三角形を回す(飾りの多い魚は合計が budget を少し超えてよい。上限は 19,000)
+    parts_tris = tri_count(detail_lo)
+    room = min(max(budget - parts_tris, 5000), 19000 - parts_tris)
     if room < 3000:
-        raise RuntimeError(f"{d['id']}: 部品だけで {tri_count(detail_lo)} 三角形(体に回す分が足りない)")
+        raise RuntimeError(f"{d['id']}: 部品だけで {parts_tris} 三角形(体に回す分が足りない)")
     body = decimate_to(body, room)
     lo = finish(body, detail_lo, d, 1.0)
     lo.name = d["id"]
