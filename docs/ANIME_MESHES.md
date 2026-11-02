@@ -64,15 +64,15 @@ blender -b -P tools/blender/yokai_fish.py -- --defs build/fish.json --out build/
 cp build/fish/YokaiFishMeshes.glb assets/fish/
 ```
 
-細かい版を作るので、1匹 1〜2分かかります。CPU が4つ以上あるなら、4つに分けて同時に作り、最後に1つにまとめると速くなります(`--ids` は魚の id をカンマ区切り)。
+細かい版を作るので、1匹 2〜5分かかります。1匹ずつ別のファイルに書き出して同時に4匹ずつ作り、最後に1つにまとめると速く、途中で止まっても続きから作り直せます(できた魚は飛ばす)。
 
 ```bash
-B="blender -b -P tools/blender/yokai_fish.py --"
-$B --defs build/fish.json --out build/fish --export --part part0 --ids <id,id,...> &
-$B --defs build/fish.json --out build/fish --export --part part1 --ids <id,id,...> &
-# …part2, part3 も同じ
-wait
-$B --out build/fish --merge build/fish/part0.glb build/fish/part1.glb build/fish/part2.glb build/fish/part3.glb --luau src/shared/Config/FishMeshes.luau
+lune run tools/export_fish.luau build/fish.json
+python3 -c "import json; print('\n'.join(f['id'] for f in json.load(open('build/fish.json'))['fish']))" > build/ids.txt
+mkdir -p build/fish/each
+xargs -P 4 -I{} sh -c '[ -f build/fish/each/{}.glb ] || blender -b -P tools/blender/yokai_fish.py -- --defs build/fish.json --out build/fish/each --ids {} --export --part {}' < build/ids.txt
+blender -b -P tools/blender/yokai_fish.py -- --out build/fish --merge build/fish/each/*.glb --luau src/shared/Config/FishMeshes.luau
+cp build/fish/YokaiFishMeshes.glb assets/fish/
 ```
 
 - お手元の Blender(4.2 以降)で動きます。Blender が無い環境では `pip install bpy==4.2.0`(Python 3.11)でも動きます
