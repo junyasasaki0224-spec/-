@@ -21,7 +21,7 @@ local grid: ScrollingFrame
 local detail: Frame
 local progressLabel: TextLabel
 local selected: string? = nil
-local cards: { [string]: { frame: TextButton, known: boolean? } } = {}
+local cards: { [string]: { frame: TextButton, known: boolean?, stroke: UIStroke } } = {}
 local detailModel: Model? = nil
 local spotFilter = "swamp"
 
@@ -127,10 +127,10 @@ local function buildGrid()
 				Parent = grid,
 			})
 			Kit.corner(card, Theme.CornerSmall)
-			Kit.stroke(
+			local stroke = Kit.stroke(
 				card,
 				Color3.fromHex(rarity.color),
-				if selected == def.id then 3 else 1.5,
+				if selected == def.id then 3.5 else 1.5,
 				if known then 0 else 0.5
 			)
 			local vp = Kit.new("Frame", {
@@ -149,11 +149,16 @@ local function buildGrid()
 				Parent = card,
 			})
 			card.Activated:Connect(function()
+				-- 選択の枠だけ更新(30個のビューポートを作り直さない)
+				local prev = selected and cards[selected]
+				if prev then
+					prev.stroke.Thickness = 1.5
+				end
 				selected = def.id
-				buildGrid()
+				stroke.Thickness = 3.5
 				renderDetail()
 			end)
-			cards[def.id] = { frame = card, known = known }
+			cards[def.id] = { frame = card, known = known, stroke = stroke }
 		end
 	end
 	local spot = Config.SpotById[spotFilter]
