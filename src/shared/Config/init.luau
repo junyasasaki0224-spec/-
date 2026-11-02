@@ -118,7 +118,7 @@ function Config.Validate(): { string }
 		if type(f.kg) ~= "table" or #f.kg ~= 2 or f.kg[1] <= 0 or f.kg[2] < f.kg[1] then
 			bad(where .. ": kg は { 最小, 最大 } (0 < 最小 <= 最大)")
 		end
-		for _, c in { f.c1, f.c2 } do
+		for _, c in { f.c1, f.c2, f.c3 or "#000000" } do
 			if type(c) ~= "string" or not c:match("^#%x%x%x%x%x%x$") then
 				bad(where .. ": 色は #RRGGBB 形式")
 			end

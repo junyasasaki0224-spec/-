@@ -21,8 +21,11 @@
 | pattern | plain / stripes / spots / belly |
 | deco | horns / lantern / whiskers / third_eye / big_eye / crown / flame / long_tail / noface / glow(いくつでも) |
 | size | 見た目の大きさ(省略で1) |
+| c3 | (省略可)差し色。ひれ・角の先・皿の縁に使う |
+| element | 相棒バトルの属性 water / fire / thunder / earth / spirit |
 | price | 基本の売値を上書きしたい時だけ |
 
+- 色と飾りの決め方は [FISH_DESIGN.md](FISH_DESIGN.md) のルールに合わせてください。見た目は `lune run tools/export_fish.luau out.json` で確認できます
 - `id` は保存データのキーです。**公開後に変えない・消さない**こと(消すと図鑑から消えます)。
 - 遊べる釣り場には、並〜神話の各レア度に `time = "any", weather = "any"` の魚が1匹以上必要です(テストで確認)。
 

@@ -51,8 +51,20 @@ Battle.MutationBonus = 0.08 -- 変異の売値倍率 1 につき能力 +8%(金1.
 Battle.WeightBonus = { 0.95, 1.1 } -- 一番軽い〜一番重い個体の能力倍率
 
 -- 次のレベルまでの経験値: floor(10 × Lv^1.5)(魚を食べさせるだけなら Lv20 まで約80分の釣りが目安)
-function Battle.xpToNext(level: number): number
-	return math.floor(10 * level ^ 1.5)
+-- レア度による育ちやすさ: 必要な経験値の倍率(レアほど育つのが遅い。そのぶん能力は高い)
+Battle.RarityGrowth = {
+	common = 1.0,
+	uncommon = 1.15,
+	rare = 1.35,
+	epic = 1.6,
+	legendary = 2.0,
+	mythic = 2.5,
+	secret = 3.0,
+}
+
+function Battle.xpToNext(level: number, rarity: string?): number
+	local mult = if rarity then (Battle.RarityGrowth[rarity] or 1) else 1
+	return math.floor(10 * level ^ 1.5 * mult)
 end
 
 -- 魚を食べさせた時の経験値(食べた魚のレア度)。同じ属性なら 1.5倍、重いほど少し多い(0.75〜1.25倍)

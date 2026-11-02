@@ -41,7 +41,7 @@ function PartnerService.giveXp(player: Player, partner: any, xp: number): number
 	if not def or xp <= 0 then
 		return 0
 	end
-	local level, rest, gained = BattleLib.addXp(partner.level, partner.xp, xp)
+	local level, rest, gained = BattleLib.addXp(partner.level, partner.xp, xp, def.rarity)
 	partner.level = level
 	partner.xp = rest
 	if gained > 0 then

@@ -258,7 +258,7 @@ local function renderDetail()
 		Parent = top,
 	})
 	Partners.elementChip(top, def.element, UDim2.fromOffset(100, 26), UDim2.new(0.72, 0, 0, 46))
-	local need = B.xpToNext(partner.level)
+	local need = B.xpToNext(partner.level, def.rarity)
 	local bg, fill = Kit.bar(top, C.success)
 	bg.Size = UDim2.new(0.46, 0, 0, 12)
 	bg.Position = UDim2.new(0.5, 0, 0, 86)

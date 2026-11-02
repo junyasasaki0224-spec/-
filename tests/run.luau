@@ -359,6 +359,17 @@ H.test("経験値: レベルが上がり、最大レベルで止まる", functio
 	lv = BattleLib.addXp(1, 0, 10 ^ 9)
 	H.assertEq(lv, Config.Battle.MaxLevel)
 end)
+H.test("レアな魚ほどレベルが上がりにくい(同じ経験値で比べる)", function()
+	local prev = math.huge
+	for _, r in Config.Rarities do
+		local lv = BattleLib.addXp(1, 0, 20000, r.id)
+		H.assert(lv <= prev, r.id .. " levels faster than a commoner rarity")
+		prev = lv
+	end
+	local common = BattleLib.addXp(1, 0, 20000, "common")
+	local secret = BattleLib.addXp(1, 0, 20000, "secret")
+	H.assert(common - secret >= 8, ("common Lv%d vs secret Lv%d"):format(common, secret))
+end)
 H.test("魚を食べさせた経験値: レアほど多く、同じ属性は1.5倍", function()
 	local partner = Config.FishById.kappa_koi -- 水
 	local water = Config.FishById.hasu_koi

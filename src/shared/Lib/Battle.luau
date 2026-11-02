@@ -117,11 +117,12 @@ end
 
 -- 経験値 -------------------------------------------------------------------
 -- 経験値を足してレベルを上げる。戻り値: 新しいレベル, 残りの経験値, 上がったレベル数
-function BattleLib.addXp(level: number, xp: number, gain: number): (number, number, number)
+-- rarity: 育てる魚のレア度(レアほど次のレベルまでの経験値が多い)
+function BattleLib.addXp(level: number, xp: number, gain: number, rarity: string?): (number, number, number)
 	local gained = 0
 	xp += math.max(0, math.floor(gain))
-	while level < B.MaxLevel and xp >= B.xpToNext(level) do
-		xp -= B.xpToNext(level)
+	while level < B.MaxLevel and xp >= B.xpToNext(level, rarity) do
+		xp -= B.xpToNext(level, rarity)
 		level += 1
 		gained += 1
 	end

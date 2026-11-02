@@ -16,6 +16,7 @@ export type FishDef = {
 	shape: string,
 	c1: string,
 	c2: string,
+	c3: string?, -- 差し色(省略可)
 	pattern: string,
 	deco: { string },
 	size: number,
