@@ -213,7 +213,8 @@ local function updateSwimmers(dt: number)
 			rainbow[m] = nil
 			continue
 		end
-		local body = m:FindFirstChild("Body") :: BasePart?
+		-- アニメ風メッシュは上塗り(Tint)、パーツの魚は体の色を変える
+		local body = (m:FindFirstChild("Tint") or m:FindFirstChild("Body")) :: BasePart?
 		if body then
 			body.Color = Color3.fromHSV(hue, 0.6, 1)
 		end

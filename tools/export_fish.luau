@@ -71,6 +71,8 @@ for _, def in Config.Fish do
 		eyes = def.eyes,
 		mouth = def.mouth,
 		visualScale = FishBuilder.sizeOf(def),
+		body = def.body,
+		tails = def.tails,
 		deco = def.deco,
 		size = def.size,
 		index = def.index,

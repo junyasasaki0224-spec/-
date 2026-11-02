@@ -105,6 +105,14 @@ end
 
 Harness.require = requireNode
 
+-- キャッシュを使わずに読み直す(テストごとに game などを差し替えたい時)
+function Harness.fresh(node: any): any
+	cache[node.__path] = nil
+	local m = requireNode(node)
+	cache[node.__path] = nil
+	return m
+end
+
 -- モジュールを偽物に差し替える(テスト用)
 function Harness.override(node: any, value: any)
 	cache[node.__path] = value

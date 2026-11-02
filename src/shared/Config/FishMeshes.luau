@@ -1,0 +1,62 @@
+--!strict
+-- アニメ風メッシュ(Blender で作った妖怪魚)の設定。
+-- sizes は tools/blender/yokai_fish.py --export が書き出す(手で直さない)。
+-- メッシュは Studio で assets/fish/YokaiFishMeshes.glb を読み込み、ReplicatedStorage.FishMeshes に置く(docs/ANIME_MESHES.md)。
+-- 置いていない間は、これまでどおりパーツで組み立てた魚が出る。
+
+return {
+	unit = 1.2, -- Blender の 1 単位 = 何スタッド(大きさの調整)
+	rotationY = 0, -- 読み込んだ魚が後ろ向きに泳ぐ場合は 180 にする
+	sizes = {
+		akaname_namazu = { length = 2.908, width = 1.9604, height = 1.0334 },
+		ame_gaeru = { length = 2.1523, width = 1.6299, height = 1.2886 },
+		ashi_medaka = { length = 2.883, width = 1.0219, height = 1.1343 },
+		bake_fugu = { length = 2.1874, width = 1.5877, height = 1.7592 },
+		chochin_anko = { length = 2.6954, width = 1.5642, height = 1.5958 },
+		dango_unagi = { length = 3.9073, width = 1.0203, height = 0.6505 },
+		doro_funa = { length = 2.6905, width = 1.2099, height = 1.1743 },
+		fujin_ei = { length = 2.8321, width = 2.8072, height = 1.764 },
+		furin_kingyo = { length = 2.3414, width = 1.2475, height = 1.4876 },
+		gasha_unagi = { length = 4.4096, width = 1.1532, height = 0.8401 },
+		geta_fugu = { length = 2.1566, width = 1.7106, height = 1.4866 },
+		hasu_koi = { length = 2.6821, width = 1.1723, height = 1.2164 },
+		hitotsume_namazu = { length = 2.908, width = 1.9604, height = 1.0334 },
+		hotaru_dojo = { length = 3.9073, width = 1.0203, height = 0.651 },
+		houou_koi = { length = 3.3131, width = 1.2621, height = 1.4617 },
+		ittan_ei = { length = 4.1257, width = 2.8104, height = 0.6707 },
+		kappa_haze = { length = 2.3743, width = 1.3323, height = 0.8691 },
+		kappa_koi = { length = 2.9696, width = 1.1877, height = 1.2401 },
+		karakasa_fugu = { length = 2.4529, width = 1.9829, height = 1.9274 },
+		kasha_namazu = { length = 2.8007, width = 1.4362, height = 2.38 },
+		kawara_ei = { length = 2.7857, width = 2.8104, height = 0.6707 },
+		kingyo_hime = { length = 2.5575, width = 1.8336, height = 1.5091 },
+		kiri_shirauo = { length = 4.075, width = 0.9003, height = 0.5387 },
+		kitsunebi_ayu = { length = 2.7204, width = 1.1877, height = 1.2401 },
+		ko_namazu = { length = 2.7157, width = 2.0049, height = 0.8842 },
+		koban_funa = { length = 2.3761, width = 1.2851, height = 1.2034 },
+		kodama_koi = { length = 2.6022, width = 1.2452, height = 1.5465 },
+		komainu_koi = { length = 2.6823, width = 1.2658, height = 1.4872 },
+		kyubi_koi = { length = 3.0094, width = 1.2621, height = 1.3946 },
+		nekomata_koi = { length = 2.6442, width = 1.2282, height = 1.4422 },
+		nopperabo = { length = 2.8411, width = 1.363, height = 1.5612 },
+		nue_namazu = { length = 2.9478, width = 1.9604, height = 1.0719 },
+		numa_mizuchi = { length = 4.2724, width = 1.7378, height = 1.3093 },
+		nurari_unagi = { length = 4.014, width = 1.0762, height = 0.929 },
+		nure_unagi = { length = 3.9475, width = 1.0357, height = 0.8849 },
+		oni_unagi = { length = 4.0533, width = 1.1832, height = 1.0031 },
+		raijin_namazu = { length = 2.9136, width = 1.9604, height = 2.06 },
+		rokurokubi_unagi = { length = 5.2383, width = 1.0332, height = 0.8985 },
+		ryujin = { length = 4.2724, width = 1.7378, height = 1.327 },
+		sunakake_dojo = { length = 4.0981, width = 1.7378, height = 1.0693 },
+		tengu_ei = { length = 3.345, width = 2.8046, height = 0.9677 },
+		tsuchinoko_fugu = { length = 3.0369, width = 1.7604, height = 1.3563 },
+		tsukuyomi_koi = { length = 2.9439, width = 2.1355, height = 1.9943 },
+		tsurube_fugu = { length = 2.1919, width = 1.7106, height = 1.6274 },
+		umibozu_ei = { length = 2.8577, width = 2.8104, height = 0.8439 },
+		ushioni_ei = { length = 2.8321, width = 2.808, height = 0.9891 },
+		yamata_chochin = { length = 2.8063, width = 2.1355, height = 2.1837 },
+		yatagarasu_ei = { length = 3.0888, width = 2.8046, height = 1.5542 },
+		yukionna_ei = { length = 2.8237, width = 2.8046, height = 0.7014 },
+		zashiki_koi = { length = 2.7143, width = 1.1877, height = 1.2401 },
+	} :: { [string]: { length: number, width: number, height: number } },
+}

@@ -504,5 +504,60 @@ H.test("50種そろっていて、釣り場ごとに全レア度がいる", func
 	end
 end)
 
+print("Anime meshes (アニメ風メッシュ)")
+H.test("Blender で作ったメッシュの大きさの表が全50種そろっている", function()
+	local M = H.require(shared.Config.FishMeshes)
+	for _, f in Config.Fish do
+		local info = M.sizes[f.id]
+		H.assert(info and info.length > 0 and info.height > 0, "missing mesh size for " .. f.id)
+	end
+end)
+H.test(
+	"ReplicatedStorage.FishMeshes があればメッシュで組み立て、なければパーツで組み立てる",
+	function()
+		local roblox = require("@lune/roblox")
+		-- Studio で読み込んだ状態を真似る(MeshPart の代わりに Part)
+		local rs = roblox.Instance.new("Folder")
+		local folder = roblox.Instance.new("Model")
+		folder.Name = "FishMeshes"
+		folder.Parent = rs
+		local function mesh(name: string, size)
+			local p = roblox.Instance.new("Part")
+			p.Name = name
+			p.Size = size
+			p.Parent = folder
+		end
+		mesh("hasu_koi", roblox.Vector3.new(1.17, 1.22, 2.68))
+		mesh("hasu_koi_Outline", roblox.Vector3.new(1.2, 1.26, 2.72))
+		H.globals = {
+			game = {
+				GetService = function(_, name)
+					assert(name == "ReplicatedStorage")
+					return rs
+				end,
+			},
+		}
+		local FB = H.fresh(shared.Lib.FishBuilder)
+		H.globals = nil
+		local def = Config.FishById.hasu_koi
+		local m = FB.build(def, {})
+		H.assert(m:GetAttribute("Anime") == true, "did not use the mesh")
+		H.assert(m:FindFirstChild("Body") and m:FindFirstChild("Outline"), "body/outline missing")
+		local M = H.require(shared.Config.FishMeshes)
+		local expected = M.sizes.hasu_koi.height * M.unit * FB.sizeOf(def)
+		H.assertNear(m.Body.Size.Y, expected, 0.01, "scaled height")
+		local gold = FB.build(def, { mutation = "gold" })
+		H.assert(gold:FindFirstChild("Tint") ~= nil, "gold tint shell")
+		local sil = FB.build(def, { silhouette = true })
+		H.assert(sil.Body.Color.R < 0.15, "silhouette is dark")
+		-- 置いていない魚・強制パーツはパーツで組み立てる
+		H.assert(
+			FB.build(Config.FishById.doro_funa, {}):GetAttribute("Anime") == nil,
+			"fallback for missing mesh"
+		)
+		H.assert(FB.build(def, { forceParts = true }):GetAttribute("Anime") == nil, "forceParts")
+	end
+)
+
 local ok = H.summary()
 process.exit(if ok then 0 else 1)

@@ -17,6 +17,7 @@ Roblox game written in Luau, synced to Studio with Rojo. Japanese comments/docs;
 - All client→server traffic goes through `RemoteGuard.connect` (rate limit + pcall). Shop/settings actions share the `Request` remote and are routed by `handleRequest`.
 - Client modules in `src/client/Controllers` only render and send intents. UI is built in code via `src/client/UI/Kit.luau`.
 - Partner battles: data in `Config/Battle.luau` + `Config/Trainers.luau`; pure engine `Lib/Battle.luau` (stats, moves, damage, turn resolution, AI; rng injected). `PartnerService` (add/feed/team/lock) and `BattleService` (one server-side battle session per player, `BattleAction` remote in, `BattleState` remote out). Client `Controllers/BattleUI.luau` only replays server events.
+- Fish visuals: `Lib/FishBuilder.luau` uses anime meshes from `ReplicatedStorage.FishMeshes` (imported in Studio from `assets/fish/YokaiFishMeshes.glb`, made by `tools/blender/yokai_fish.py`) and falls back to the part-built fish when absent. Sizes come from `Config/FishMeshes.luau` (generated, scaled by height). Rarity flair that is not in the mesh (aura, lights, fire, mutation tint shell) is added in code.
 - World is generated at runtime (`src/server/World`): Terrain + Parts. Text on signs/prompts is localized on the client via the `LocKey` attribute.
 
 ## Rules (security / privacy)

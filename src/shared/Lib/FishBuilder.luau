@@ -11,7 +11,10 @@ local Types = require(script.Parent.Types)
 
 local FishBuilder = {}
 
+local MeshConfig = require(script.Parent.Parent.Config.FishMeshes)
+
 export type BuildOptions = {
+	forceParts: boolean?, -- 読み込んだアニメ風メッシュがあっても、パーツで組み立てる
 	mutation: string?,
 	scale: number?, -- 全体の大きさ(既定 1)。レア度の大きさに掛け算される
 	anchored: boolean?,
@@ -235,8 +238,199 @@ function FishBuilder.sizeOf(def: Types.FishDef): number
 	return style.scale * (def.size or 1)
 end
 
+-- Studio で読み込んだアニメ風メッシュ(ReplicatedStorage.FishMeshes)から1匹分の部品を探す
+-- 見つからない(まだ読み込んでいない・テスト環境)なら nil → パーツで組み立てる
+local function findMesh(name: string): BasePart?
+	local ok, result = pcall(function()
+		local folder = (game :: any):GetService("ReplicatedStorage"):FindFirstChild("FishMeshes")
+		if not folder then
+			return nil
+		end
+		local found = folder:FindFirstChild(name, true)
+		if found and not found:IsA("BasePart") then
+			found = found:FindFirstChildWhichIsA("BasePart", true)
+		end
+		return found
+	end)
+	return if ok then result else nil
+end
+
+-- 色やエフェクト(メッシュ版・パーツ版で共通)
+local function addEffects(
+	model: Model,
+	body: BasePart,
+	def: Types.FishDef,
+	style: Style,
+	o: BuildOptions,
+	scale: number
+)
+	if o.silhouette then
+		return
+	end
+	local accent = Color3.fromHex(def.c3 or def.c2)
+	if table.find(def.deco, "glow") then
+		local light = Instance.new("PointLight")
+		light.Color = Color3.fromHex(def.c2)
+		light.Range = 6
+		light.Brightness = 0.8
+		light.Parent = body
+	end
+	if style.light then
+		local light = Instance.new("PointLight")
+		light.Color = accent
+		light.Range = 10 * scale
+		light.Brightness = 1
+		light.Parent = body
+	end
+	if style.aura > 0 then
+		local pe = Instance.new("ParticleEmitter")
+		pe.Name = "Aura"
+		pe.Color = ColorSequence.new(accent:Lerp(WHITE, 0.3))
+		pe.LightEmission = 1
+		pe.Size = NumberSequence.new(0.18 * scale, 0)
+		pe.Lifetime = NumberRange.new(0.8, 1.6)
+		pe.Rate = style.aura
+		pe.Speed = NumberRange.new(0.3, 0.9)
+		pe.SpreadAngle = Vector2.new(180, 180)
+		pe.Parent = body
+	end
+	if table.find(def.deco, "flame") then
+		local fire = Instance.new("Fire")
+		fire.Color = accent
+		fire.SecondaryColor = Color3.fromHex(def.c1)
+		fire.Size = 2 * scale
+		fire.Heat = 2
+		fire.Parent = body
+	end
+	local mutLook = if o.mutation then MUTATION_LOOK[o.mutation] else nil
+	if o.mutation then
+		local mutColor = mutLook and (mutLook.color or mutLook.tint)
+		if o.mutation == "gold" then
+			local sp = Instance.new("Sparkles")
+			sp.SparkleColor = Color3.fromHex("#FFE38A")
+			sp.Parent = body
+		elseif o.mutation == "onibi" then
+			local fire = Instance.new("Fire")
+			fire.Color = Color3.fromHex("#6BE3FF")
+			fire.SecondaryColor = Color3.fromHex("#1F3BFF")
+			fire.Size = 3 * scale
+			fire.Parent = body
+		elseif mutColor then
+			local pe = Instance.new("ParticleEmitter")
+			pe.Color = ColorSequence.new(mutColor)
+			pe.LightEmission = 0.8
+			pe.Size = NumberSequence.new(0.25 * scale, 0)
+			pe.Lifetime = NumberRange.new(0.6, 1.2)
+			pe.Rate = 12
+			pe.Speed = NumberRange.new(0.5, 1.5)
+			pe.SpreadAngle = Vector2.new(180, 180)
+			pe.Parent = body
+		end
+		if mutLook and mutLook.tag then
+			model:AddTag(mutLook.tag)
+		end
+		model:SetAttribute("Mutation", o.mutation)
+	end
+end
+
+-- アニメ風メッシュ版。テクスチャの絵柄はそのまま使い、変異は半透明の「上塗り」で表す
+local function buildFromMesh(
+	def: Types.FishDef,
+	o: BuildOptions,
+	template: BasePart,
+	outlineTemplate: BasePart?
+): Model
+	local style = RARITY_STYLE[def.rarity] or RARITY_STYLE.common
+	local scale = (o.scale or 1) * (def.size or 1) * (if o.noRarityScale then 1 else style.scale)
+	local model = Instance.new("Model")
+	model.Name = def.id
+	model:SetAttribute("Shape", def.shape)
+	model:SetAttribute("Rarity", def.rarity)
+	model:SetAttribute("Anime", true)
+
+	-- 大きさは「高さ(Y)」で合わせる(上下の向きは glTF と Roblox で必ず同じなので、取り込み時に回転していても正しい)
+	local info = MeshConfig.sizes[def.id]
+	local baseHeight = if info then info.height else template.Size.Y
+	local k = (baseHeight * MeshConfig.unit * scale) / math.max(template.Size.Y, 0.01)
+	local rot = CFrame.Angles(0, math.rad(MeshConfig.rotationY), 0)
+
+	local function prep(p: BasePart, name: string): BasePart
+		p.Name = name
+		p.Size = p.Size * k
+		p.CFrame = rot
+		p.Anchored = o.anchored == true
+		p.CanCollide = false
+		p.CanQuery = false
+		p.CanTouch = false
+		p.Massless = true
+		p.CastShadow = false
+		p.Parent = model
+		return p
+	end
+	local body = prep(template:Clone(), "Body")
+	model.PrimaryPart = body
+	if o.silhouette then
+		-- 図鑑の未発見: 真っ黒の影
+		for _, d in body:GetDescendants() do
+			if d:IsA("SurfaceAppearance") then
+				d:Destroy()
+			end
+		end
+		if body:IsA("MeshPart") then
+			body.TextureID = ""
+		end
+		body.Color = Color3.fromRGB(18, 20, 32)
+	end
+	if outlineTemplate then
+		local ol = prep(outlineTemplate:Clone(), "Outline")
+		ol.Color = Color3.fromRGB(10, 6, 14)
+		ol.Material = Enum.Material.SmoothPlastic
+		if ol:IsA("MeshPart") then
+			ol.TextureID = ""
+		end
+	end
+	-- 変異の上塗り(金・桜・雷・虹・鬼火・水晶・真珠)
+	local mutLook = if o.mutation then MUTATION_LOOK[o.mutation] else nil
+	if mutLook and not o.silhouette then
+		local tint = template:Clone()
+		for _, d in tint:GetDescendants() do
+			d:Destroy()
+		end
+		if tint:IsA("MeshPart") then
+			tint.TextureID = ""
+		end
+		prep(tint, "Tint")
+		tint.Size = tint.Size * 1.01
+		tint.Color = mutLook.color or mutLook.tint or Color3.new(1, 1, 1)
+		tint.Material = mutLook.material
+			or (if mutLook.neonPattern then Enum.Material.Neon else Enum.Material.SmoothPlastic)
+		tint.Transparency = if o.mutation == "gold" then 0.35 elseif o.mutation == "rainbow" then 0.55 else 0.6
+		tint.Reflectance = mutLook.reflectance or 0
+	end
+	addEffects(model, body, def, style, o, scale)
+	for _, d in model:GetChildren() do
+		if d:IsA("BasePart") and d ~= body then
+			local w = Instance.new("WeldConstraint")
+			w.Part0 = body
+			w.Part1 = d
+			w.Parent = d
+		end
+	end
+	return model
+end
+
+function FishBuilder.hasAnimeMesh(id: string): boolean
+	return findMesh(id) ~= nil
+end
+
 function FishBuilder.build(def: Types.FishDef, opts: BuildOptions?): Model
 	local o: BuildOptions = opts or ({} :: BuildOptions)
+	if not o.forceParts then
+		local template = findMesh(def.id)
+		if template then
+			return buildFromMesh(def, o, template, findMesh(def.id .. "_Outline"))
+		end
+	end
 	local shape = SHAPES[def.shape] or SHAPES.koi
 	local style = RARITY_STYLE[def.rarity] or RARITY_STYLE.common
 	local scale = (o.scale or 1) * (def.size or 1) * (if o.noRarityScale then 1 else style.scale)
