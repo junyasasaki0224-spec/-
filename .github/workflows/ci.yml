@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install tools (pinned versions, same as rokit.toml)
+        run: |
+          mkdir -p "$HOME/bin"
+          cd "$HOME/bin"
+          curl -sSL -o stylua.zip https://github.com/JohnnyMorganz/StyLua/releases/download/v0.20.0/stylua-linux-x86_64.zip
+          curl -sSL -o lune.zip https://github.com/lune-org/lune/releases/download/v0.8.9/lune-0.8.9-linux-x86_64.zip
+          curl -sSL -o rojo.zip https://github.com/rojo-rbx/rojo/releases/download/v7.4.4/rojo-7.4.4-linux-x86_64.zip
+          for z in *.zip; do unzip -o -q "$z"; done
+          chmod +x stylua lune rojo
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+      - name: Format
+        run: stylua --check src tests
+      - name: Build place
+        run: rojo build default.project.json -o YokaiFishing.rbxl
+      - name: Tests
+        run: lune run tests/run.luau

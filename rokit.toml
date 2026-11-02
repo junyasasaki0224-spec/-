@@ -1,0 +1,6 @@
+# ツールのバージョン固定 (rokit install で一括インストール)
+[tools]
+rojo = "rojo-rbx/rojo@7.4.4"
+selene = "Kampfkarren/selene@0.27.1"
+stylua = "JohnnyMorganz/StyLua@0.20.0"
+lune = "lune-org/lune@0.8.9"

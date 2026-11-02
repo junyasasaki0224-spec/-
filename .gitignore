@@ -1,0 +1,19 @@
+# ビルド成果物・Studioのローカルファイル(個人の作業データを誤ってコミットしない)
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+*.rbxl.lock
+*.rbxlx.lock
+sourcemap.json
+roblox.yml
+roblox.toml
+/build/
+/node_modules/
+.DS_Store
+Thumbs.db
+# 秘密情報(Open Cloud APIキーなど)は絶対にコミットしない
+.env
+.env.*
+*.key
+secrets/
