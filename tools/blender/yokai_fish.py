@@ -706,9 +706,14 @@ def add_eye(g, center, n, w, h, style, iris, order, glow=False, curve=0.0):
         decal(at(-w * 0.1, h * 0.18, 0.025), w * 0.11, w * 0.11, WHITE, up=up, thick=0.01)
         return
 
-    # 白目: 上に向かってわずかに影
+    # 白目: 上に向かってわずかに影。光る目(神話・秘伝)は白目を暗くして、虹彩が光って見えるようにする
     sclera = (1.0, 0.86, 0.32) if style == "cat" else WHITE
     shade = mix(sclera, (0.78, 0.8, 0.9), 0.4)
+    if glow:
+        sclera = mix(INK, darken(g_skin[0] or INK, 0.5), 0.45)
+        shade = darken(sclera, 0.3)
+        if sum(iris) / 3 > 0.8:  # 白っぽい虹彩は光って見えないので金色に寄せる
+            iris = mix(iris, (1.0, 0.8, 0.3), 0.6)
     disc(at(0, 0, 0.0), w, h, sclera, up=up, thick=0.02, seg=32, color_fn=lambda u, v: mix(sclera, shade, smoothstep(0.35, 1.0, v)))
 
     if style == "cat":
