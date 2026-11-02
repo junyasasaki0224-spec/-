@@ -1223,15 +1223,22 @@ def export_fish(d, outdir, budget=15000, tex_size=1024):
     hi = finish(body, detail, d, 1.0, keep_body=True)
     hi.name = d["id"] + "_hi"
     hi_tris = tri_count(hi)
-    LOD.update(parts=1.0, decals=False)
-    try:
-        _, detail_lo = build_fish(d, parts_only=True)
-    finally:
-        LOD.update(parts=QUALITY, decals=True)
-    # 体には最低 5,000 三角形を回す(飾りの多い魚は合計が budget を少し超えてよい。上限は 19,000)
+    # 軽い版の部品。飾りの多い魚(九尾の尾・後光の輪・太鼓など)は、体の分が残るまで部品の分割を減らす
+    detail_lo = None
+    for parts_q in (1.0, 0.75, 0.55, 0.4):
+        if detail_lo is not None:
+            bpy.data.objects.remove(detail_lo)
+        LOD.update(parts=parts_q, decals=False)
+        try:
+            _, detail_lo = build_fish(d, parts_only=True)
+        finally:
+            LOD.update(parts=QUALITY, decals=True)
+        if tri_count(detail_lo) <= budget * 0.55:
+            break
+    # 体には最低 6,000 三角形を回す(合計の上限は 19,000。Roblox の上限 20,000 より少し下)
     parts_tris = tri_count(detail_lo)
-    room = min(max(budget - parts_tris, 5000), 19000 - parts_tris)
-    if room < 3000:
+    room = min(max(budget - parts_tris, 6000), 19000 - parts_tris)
+    if room < 4000:
         raise RuntimeError(f"{d['id']}: 部品だけで {parts_tris} 三角形(体に回す分が足りない)")
     body = decimate_to(body, room)
     lo = finish(body, detail_lo, d, 1.0)
