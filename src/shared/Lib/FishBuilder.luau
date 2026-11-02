@@ -383,6 +383,12 @@ local function buildFromMesh(
 	end
 	if outlineTemplate then
 		local ol = prep(outlineTemplate:Clone(), "Outline")
+		-- 読み込み時に材質(SurfaceAppearance)が付いていても、輪郭線は単色にする
+		for _, d in ol:GetDescendants() do
+			if d:IsA("SurfaceAppearance") then
+				d:Destroy()
+			end
+		end
 		ol.Color = Color3.fromRGB(10, 6, 14)
 		ol.Material = Enum.Material.SmoothPlastic
 		if ol:IsA("MeshPart") then

@@ -529,6 +529,10 @@ H.test(
 		end
 		mesh("hasu_koi", roblox.Vector3.new(1.17, 1.22, 2.68))
 		mesh("hasu_koi_Outline", roblox.Vector3.new(1.2, 1.26, 2.72))
+		-- 読み込み時に色・法線のテクスチャ(SurfaceAppearance)が付く
+		for _, n in { "hasu_koi", "hasu_koi_Outline" } do
+			roblox.Instance.new("SurfaceAppearance").Parent = folder:FindFirstChild(n)
+		end
 		H.globals = {
 			game = {
 				GetService = function(_, name)
@@ -546,10 +550,14 @@ H.test(
 		local M = H.require(shared.Config.FishMeshes)
 		local expected = M.sizes.hasu_koi.height * M.unit * FB.sizeOf(def)
 		H.assertNear(m.Body.Size.Y, expected, 0.01, "scaled height")
+		H.assert(m.Body:FindFirstChildWhichIsA("SurfaceAppearance") ~= nil, "body keeps its textures")
+		H.assert(m.Outline:FindFirstChildWhichIsA("SurfaceAppearance") == nil, "outline is a flat color")
 		local gold = FB.build(def, { mutation = "gold" })
 		H.assert(gold:FindFirstChild("Tint") ~= nil, "gold tint shell")
+		H.assert(gold.Tint:FindFirstChildWhichIsA("SurfaceAppearance") == nil, "tint shell has no texture")
 		local sil = FB.build(def, { silhouette = true })
 		H.assert(sil.Body.Color.R < 0.15, "silhouette is dark")
+		H.assert(sil.Body:FindFirstChildWhichIsA("SurfaceAppearance") == nil, "silhouette drops textures")
 		-- 置いていない魚・強制パーツはパーツで組み立てる
 		H.assert(
 			FB.build(Config.FishById.doro_funa, {}):GetAttribute("Anime") == nil,
