@@ -570,23 +570,35 @@ H.test(
 				"off screen " .. fmt(r)
 			)
 		end
-		-- 引くゲーム: 押したり離したりしながら時間を進める(終われば結果を送る)
+		-- 引くゲーム: 人のように、画面の魚が網より上なら押す・下なら離す(終われば結果を送る)
 		before = #fired
-		for i = 1, 120 do
-			if i % 6 < 3 then
+		local function named(name: string): any
+			return F.walkFind(reelPanel, function(d)
+				return d.Name == name
+			end)[1]
+		end
+		local netF, fishF = named("Net"), named("Fish")
+		H.assert(netF and fishF, "reel gauge has no net / fish")
+		local netSize = dec(reel.args)[2].netSize
+		local result = nil
+		local t = 0
+		while not result and t < Config.Tuning.Fishing.reelTimeoutSeconds do
+			local net = 1 - netF.Position.Y.Scale
+			local fish = 1 - fishF.Position.Y.Scale
+			if fish > net + netSize / 2 then
 				Input.press("test")
 			else
 				Input.release("test")
 			end
-			advance(0.25)
-		end
-		Input.release("test")
-		local result = nil
-		for i = before + 1, #fired do
-			if fired[i].name == "ReelResult" then
-				result = fired[i]
+			advance(0.1)
+			t += 0.1
+			for i = before + 1, #fired do
+				if fired[i].name == "ReelResult" then
+					result = fired[i]
+				end
 			end
 		end
+		Input.release("test")
 		H.assert(result and type(result.args[1]) == "boolean", "no ReelResult sent")
 		-- 釣果の画面(本物の CatchResult)
 		for _, m in rec.fishing do

@@ -1,11 +1,13 @@
 # 公開前チェックリスト
 
+まず `lune run tools/launch_check.luau` で、コード側に残っている設定(課金の ID・鳴き声の音・アイコンなど)を一覧にする。✗ が 0 になれば、コード側の準備は終わり。
+
 ## Studio / Creator Dashboard の設定
 - [ ] ゲーム設定 → セキュリティ → **API サービスへの Studio アクセスを有効化**(テスト時のみでOK。本番の保存には不要)
 - [ ] ゲーム設定 → 場所 → **最大プレイヤー数 = 10**(村の釣り小屋が10軒のため。増やす場合は `World/Village.luau` の `HUT_COUNT` も同じ数に)
 - [ ] アバターの設定: R15 推奨(R6 でも竿は右腕に付きます)
 - [ ] 体験のアンケート(Experience Questionnaire)に回答し、年齢区分を確認(暴力表現なし・課金あり)
-- [ ] ゲームのアイコン・サムネイル(日本語・英語)
+- [ ] ゲームのアイコン・サムネイル: `assets/marketing/`(icon.png = 題字つき / icon_plain.png = 題字なし、thumb_*.png = 1920×1080)。作り直すときは `python tools/marketing/render_marketing.py build/battle.json assets/marketing`(ゲームと同じ舞台と本物の魚のモデルで描く)
 
 ## 課金商品を作って ID を入れる
 Creator Dashboard → 体験 → 収益化 で作成し、`src/shared/Config/Products.luau` の `id = 0` を書き換えます。

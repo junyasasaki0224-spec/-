@@ -21,3 +21,6 @@ secrets/
 # Python のキャッシュ
 __pycache__/
 *.pyc
+
+# 題字の字体(OFL。Google Fonts から入手。リポジトリには入れない)
+tools/marketing/fonts/

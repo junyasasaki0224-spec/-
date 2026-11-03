@@ -98,13 +98,34 @@ for _, d in workspace:GetDescendants() do
 	elseif d:IsA("PointLight") or d:IsA("SpotLight") or d:IsA("SurfaceLight") then
 		local p = d.Parent
 		if p and p:IsA("BasePart") then
-			table.insert(lights, { pos = v3(p.CFrame.Position), color = { d.Color.R, d.Color.G, d.Color.B }, range = d.Range })
+			table.insert(
+				lights,
+				{ pos = v3(p.CFrame.Position), color = { d.Color.R, d.Color.G, d.Color.B }, range = d.Range }
+			)
 		end
 	end
 end
 
 -- 地形の色(Lune は SetMaterialColor を自前で持っているので、設定後に読み出す)
-for _, name in { "Grass", "LeafyGrass", "Mud", "Rock", "Ground", "Sand", "Slate", "Cobblestone", "Pavement", "Snow", "Basalt", "Limestone", "Sandstone", "WoodPlanks", "Brick" } do
+for _, name in
+	{
+		"Grass",
+		"LeafyGrass",
+		"Mud",
+		"Rock",
+		"Ground",
+		"Sand",
+		"Slate",
+		"Cobblestone",
+		"Pavement",
+		"Snow",
+		"Basalt",
+		"Limestone",
+		"Sandstone",
+		"WoodPlanks",
+		"Brick",
+	}
+do
 	local ok, c = pcall(function()
 		return terrain:GetMaterialColor(roblox.Enum.Material[name])
 	end)

@@ -532,6 +532,33 @@ H.test("引き上げが人間に不可能な速さなら無効になる", functi
 	H.assertEq(lastSent(alice, "FishingState")[2].reason, "escaped")
 end)
 
+H.test(
+	"引き上げに失敗すると逃げられ、分析に「逃げた」をレア度つきで記録する(難しさの見直し用)",
+	function()
+		clientSend(alice, "Cast", 0.5, 0, -1)
+		task.wait(0.45)
+		clientSend(alice, "Hook")
+		H.assertEq(lastSent(alice, "FishingState")[1], "reel", "no reel")
+		local before = #data(alice).creel
+		clientSend(alice, "ReelResult", false)
+		H.assertEq(#data(alice).creel, before, "escaped fish was kept")
+		H.assertEq(lastSent(alice, "FishingState")[2].reason, "broke")
+		local logged = nil
+		for i = #analyticsLog, 1, -1 do
+			local e = analyticsLog[i]
+			if
+				e.method == "LogCustomEvent"
+				and type(e.args[1]) == "string"
+				and e.args[1]:sub(1, 7) == "Escape_"
+			then
+				logged = e.args[1]
+				break
+			end
+		end
+		H.assert(logged and Config.RarityById[logged:sub(8)] ~= nil, "no Escape_<rarity> event")
+	end
+)
+
 H.test("合わせが遅すぎると逃げられる", function()
 	clientSend(alice, "Cast", 0.5, 0, -1)
 	task.wait(0.45)
@@ -1275,18 +1302,27 @@ local recordPath = process.env.RECORD_MESSAGES
 if recordPath then
 	local fs = require("@lune/fs")
 	local serde = require("@lune/serde")
+	-- 輪になった表(人 → キャラ → 親 …)は1度だけたどる。人の偽物は名前だけにする
+	local onPath: { [any]: boolean } = {}
 	local function enc(v: any, depth: number?): any
 		local d = depth or 0
 		local ty = typeof(v)
 		if d > 20 then
 			return nil
+		elseif ty == "table" and v.UserId ~= nil then
+			return { __t = "Instance", v = { tostring(v.Name or v.UserId) } }
 		elseif ty == "table" then
+			if onPath[v] then
+				return nil
+			end
+			onPath[v] = true
 			local out = {}
 			for k, x in v do
 				if type(k) == "string" or type(k) == "number" then
 					out[if type(k) == "number" then "#" .. k else k] = enc(x, d + 1)
 				end
 			end
+			onPath[v] = nil
 			return out
 		elseif ty == "Vector3" then
 			return { __t = "Vector3", v = { v.X, v.Y, v.Z } }
@@ -1298,7 +1334,7 @@ if recordPath then
 			return { __t = "CFrame", v = { v:GetComponents() } }
 		elseif ty == "EnumItem" then
 			return { __t = "Enum", v = { tostring(v.EnumType), v.Name } }
-		elseif ty == "Instance" or (ty == "table" and v.UserId) then
+		elseif ty == "Instance" then
 			return { __t = "Instance", v = { tostring(v) } }
 		elseif ty == "number" or ty == "string" or ty == "boolean" then
 			return v

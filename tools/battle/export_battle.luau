@@ -98,7 +98,12 @@ local views = {
 		-- 攻撃: 攻める側の後ろへ回りこみ、ぶつかる瞬間
 		name = "attack",
 		camera = cf(
-			Arena.orbit(pHome:Lerp(eHome, Arena.ATTACK_SHOT.at), -Arena.ATTACK_SHOT.yaw, Arena.ATTACK_SHOT.pitch, Arena.ATTACK_SHOT.dist)
+			Arena.orbit(
+				pHome:Lerp(eHome, Arena.ATTACK_SHOT.at),
+				-Arena.ATTACK_SHOT.yaw,
+				Arena.ATTACK_SHOT.pitch,
+				Arena.ATTACK_SHOT.dist
+			)
 		),
 		fov = Arena.ATTACK_SHOT.fov,
 		fish = {

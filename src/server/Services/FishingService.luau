@@ -556,6 +556,8 @@ local function finishReel(player: Player, s: Session, success: boolean)
 		return
 	end
 	if not success then
+		-- 逃げられた(レア度ごとの「釣れた / 逃げた」で、引き上げの難しさを公開後に見直す)
+		S.Analytics.custom(player, "Escape_" .. fish.rarity)
 		setIdle(player, s, "broke")
 		return
 	end
