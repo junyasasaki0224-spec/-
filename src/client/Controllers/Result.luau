@@ -13,6 +13,7 @@ local FishBuilder = require(Shared.Lib.FishBuilder)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Theme = require(script.Parent.Parent.UI.Theme)
 local Sound = require(script.Parent.Sound)
+local Cry = require(script.Parent.Cry)
 local C = Theme.Colors
 
 local Result = {}
@@ -254,6 +255,12 @@ local function showNext()
 	Sound.play(if rarity.order >= 4 then "rare" else "catch", 0.7, if rarity.order >= 4 then 0.8 else 1)
 
 	local closed = false
+	-- 少し遅れて魚が鳴く(吹き出しは映像の右上)
+	task.delay(0.45, function()
+		if not closed and vpHolder.Parent then
+			Cry.say(fish.id, vpHolder, nil, { volume = if rarity.order >= 5 then 0.9 else 0.75 }, 25)
+		end
+	end)
 	local function close()
 		if closed then
 			return

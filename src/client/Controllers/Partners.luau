@@ -13,6 +13,7 @@ local Kit = require(script.Parent.Parent.UI.Kit)
 local Theme = require(script.Parent.Parent.UI.Theme)
 local Root = require(script.Parent.Parent.UI.Root)
 local State = require(script.Parent.Parent.ClientState)
+local Cry = require(script.Parent.Cry)
 local C = Theme.Colors
 
 local B = Config.Battle
@@ -22,6 +23,7 @@ local panel: Kit.Panel
 local list: ScrollingFrame
 local detail: Frame
 local selected: string? = nil
+local detailTop: Frame? = nil -- 選んだ相棒の映像の枠(鳴き声の吹き出しを出す所)
 local feeding = false
 local detailModel: Model? = nil
 
@@ -130,9 +132,14 @@ local function renderList()
 			Kit.corner(badge, UDim.new(1, 0))
 		end
 		row.Activated:Connect(function()
+			local changed = selected ~= f.uid
 			selected = f.uid
 			feeding = false
 			Partners.render()
+			if changed and detailTop then
+				-- 選ぶと返事をするように鳴く
+				Cry.say(f.fishId, detailTop, UDim2.new(0.5, -6, 0, 6))
+			end
 		end)
 	end
 end
@@ -215,6 +222,7 @@ local function renderDetail()
 	Kit.clear(detail)
 	detailModel = nil
 	local partner = findPartner(selected)
+	detailTop = nil
 	if not partner then
 		Kit.label({
 			Size = UDim2.new(1, 0, 0, 60),
@@ -233,11 +241,26 @@ local function renderDetail()
 		Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 150), BackgroundColor3 = C.waterDeep, Parent = detail })
 	Kit.corner(top)
 	Kit.gradient(top, Color3.fromRGB(70, 140, 170), C.waterDeep)
+	detailTop = top
 	local vpHolder =
 		Kit.new("Frame", { Size = UDim2.new(0.5, 0, 1, 0), BackgroundTransparency = 1, Parent = top })
 	local model = FishBuilder.build(def, { mutation = partner.mutation })
 	Kit.viewport(vpHolder, model)
 	detailModel = model
+	if Cry.text(partner.fishId) then
+		Kit.button({
+			Name = "CryButton",
+			Text = "🔊",
+			Size = UDim2.fromOffset(40, 34),
+			Position = UDim2.new(0, 6, 1, -6),
+			AnchorPoint = Vector2.new(0, 1),
+			Color = C.indigo,
+			MaxTextSize = 18,
+			Parent = top,
+		}, function()
+			Cry.say(partner.fishId, top, UDim2.new(0.5, -6, 0, 6))
+		end)
+	end
 	Kit.label({
 		Size = UDim2.new(0.5, -10, 0, 34),
 		Position = UDim2.new(0.5, 0, 0, 8),

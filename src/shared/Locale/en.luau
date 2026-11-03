@@ -133,6 +133,7 @@ return {
 	codex_title = "Yokai Fish Index",
 	codex_progress = "{n}/{max} species",
 	codex_unknown = "???",
+	cry_play = "Cry",
 	codex_best = "Best {kg}",
 	codex_count = "Caught {n}",
 	codex_hint = "{time} · {weather}",

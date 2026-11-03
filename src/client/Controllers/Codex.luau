@@ -11,6 +11,7 @@ local FishBuilder = require(Shared.Lib.FishBuilder)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Theme = require(script.Parent.Parent.UI.Theme)
 local Root = require(script.Parent.Parent.UI.Root)
+local Cry = require(script.Parent.Cry)
 local State = require(script.Parent.Parent.ClientState)
 local C = Theme.Colors
 
@@ -53,6 +54,22 @@ local function renderDetail()
 	local model = FishBuilder.build(def, { silhouette = entry == nil })
 	Kit.viewport(vpHolder, model, nil, 2.4) -- レアな魚ほど大きく映る
 	detailModel = model
+	-- 見つけた魚は鳴き声を聞ける
+	local fid: string = id :: string
+	if entry and Cry.text(fid) then
+		Kit.button({
+			Name = "CryButton",
+			Text = "🔊 " .. Locale.t("cry_play"),
+			Size = UDim2.fromOffset(120, 36),
+			Position = UDim2.new(1, -8, 0, 8),
+			AnchorPoint = Vector2.new(1, 0),
+			Color = C.indigo,
+			MaxTextSize = 18,
+			Parent = vpHolder,
+		}, function()
+			Cry.say(fid, vpHolder, UDim2.new(1, -8, 0, 52))
+		end)
+	end
 	Kit.label({
 		Size = UDim2.new(1, 0, 0, 24),
 		Position = UDim2.fromScale(0, 0.47),

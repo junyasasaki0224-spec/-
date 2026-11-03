@@ -77,7 +77,7 @@ end
 
 local function spawnModel()
 	-- ぬしの湖の本当の主「龍神」が現れる
-	local def = Config.FishById["ryujin"] or Config.FishById["numa_mizuchi"] or Config.Fish[1]
+	local def = Config.FishById[NT.fishId] or Config.FishById["numa_mizuchi"] or Config.Fish[1]
 	local model = FishBuilder.build(def, { scale = 2.6, anchored = true })
 	model.Name = "Nushi"
 	local c = lakeCenter()

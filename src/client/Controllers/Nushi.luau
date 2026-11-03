@@ -17,6 +17,8 @@ local C = Theme.Colors
 local NT = Config.Tuning.Nushi
 local player = Players.LocalPlayer
 
+local Cry = require(script.Parent.Cry)
+
 local Nushi = {}
 local bar: Frame
 local fill: Frame
@@ -52,6 +54,7 @@ local function startGame()
 		return
 	end
 	Fishing.cancel()
+	Cry.play(NT.fishId, { volume = 0.9 }) -- ぬしが吠える
 	game_ = ReelGame.new(bar.Parent :: Instance, {
 		rarity = "mythic",
 		duration = 6,
@@ -113,8 +116,13 @@ function Nushi.init(gui: ScreenGui)
 
 	Remotes.event("NushiState").OnClientEvent:Connect(function(s)
 		if type(s) == "table" then
+			local appeared = s.active == true and latest.active ~= true
 			latest = s
 			refresh()
+			if appeared then
+				-- ぬしが現れた時に、湖の主の声が響く
+				Cry.say(NT.fishId, bar, UDim2.new(1, 0, 0, 30), { volume = 0.7 })
+			end
 		end
 	end)
 	local reelRemote = Remotes.event("NushiReel")

@@ -17,6 +17,7 @@ local Root = require(script.Parent.Parent.UI.Root)
 local State = require(script.Parent.Parent.ClientState)
 local Input = require(script.Parent.Input)
 local Sound = require(script.Parent.Sound)
+local Cry = require(script.Parent.Cry)
 local C = Theme.Colors
 
 local B = Config.Battle
@@ -286,6 +287,12 @@ local function setMessage(text: string)
 	if view then
 		view.message.Text = text
 	end
+end
+
+-- 魚が鳴く(場に出た時。倒れた時は低く・ゆっくり)
+local function cry(stage: any, fishId: string, fainted: boolean?)
+	local opts = if fainted then { pitch = 0.78, volume = 0.6 } else { volume = 0.75 }
+	Cry.say(fishId, stage.holder, UDim2.new(1, 0, 0, -8), opts)
 end
 
 local function shake(stage: any)
@@ -663,6 +670,7 @@ local function playEvents(events: { any })
 			setMessage(Locale.t("battle_faint", { name = sideName(side, e.fishId) }))
 			TweenService:Create(stage.vpf, TweenInfo.new(0.5), { ImageTransparency = 1 }):Play()
 			Sound.play("fail", 0.5, 0.7)
+			cry(stage, e.fishId, true)
 			if st then
 				st[side].team[st[side].active].hp = 0
 				updateCard(if side == "enemy" then view.enemyCard else view.playerCard, st[side])
@@ -681,7 +689,8 @@ local function playEvents(events: { any })
 					then Locale.t("battle_go", { name = n })
 					else Locale.t("battle_foe_sends", { name = n })
 			)
-			task.wait(0.7)
+			cry(stage, e.fishId)
+			task.wait(0.9)
 		elseif e.kind == "run" then
 			setMessage(Locale.t("battle_ran"))
 			task.wait(0.7)
@@ -794,10 +803,16 @@ local function handle(msg: any)
 		task.wait(1.4)
 		local ef = msg.state.enemy.team[msg.state.enemy.active]
 		setMessage(Locale.t("battle_foe_sends", { name = name(Config.FishById[ef.fishId]) }))
-		task.wait(0.9)
+		if view then
+			cry(view.enemyStage, ef.fishId)
+		end
+		task.wait(1.1)
 		local pf = msg.state.player.team[msg.state.player.active]
 		setMessage(Locale.t("battle_go", { name = name(Config.FishById[pf.fishId]) }))
-		task.wait(0.7)
+		if view then
+			cry(view.playerStage, pf.fishId)
+		end
+		task.wait(0.9)
 		busy = false
 		setMessage(Locale.t("battle_choose"))
 		refreshCommands()

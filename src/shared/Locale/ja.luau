@@ -139,6 +139,7 @@ return {
 	codex_title = "妖怪魚図鑑",
 	codex_progress = "{n}/{max} 種",
 	codex_unknown = "???",
+	cry_play = "鳴き声",
 	codex_best = "最高記録 {kg}",
 	codex_count = "釣った数 {n}",
 	codex_hint = "{time}・{weather}",

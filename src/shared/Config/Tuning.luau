@@ -71,6 +71,7 @@ Tuning.Nushi = {
 	rewardMinRarity = "epic", -- 報酬の魚は「極」以上
 	topTitleCount = 3, -- 称号をもらえる上位人数
 	joinRadius = 60,
+	fishId = "ryujin", -- 現れる「ぬし」の魚(姿と鳴き声)
 }
 
 -- デイリー報酬(7日周期)

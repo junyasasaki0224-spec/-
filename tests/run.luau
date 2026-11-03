@@ -567,5 +567,77 @@ H.test(
 	end
 )
 
+print("Cries (鳴き声)")
+H.test("全50種に鳴き声があり、区間は音のファイルの中で重ならない", function()
+	local fs = require("@lune/fs")
+	H.assert(fs.isFile("assets/sounds/YokaiCries.ogg"), "assets/sounds/YokaiCries.ogg がない")
+	local spans = {}
+	for _, f in Config.Fish do
+		local c = Config.Cries.cries[f.id]
+		H.assert(c ~= nil, "鳴き声がない: " .. f.id)
+		H.assert(#c.ja > 0 and #c.en > 0, "文字がない: " .. f.id)
+		table.insert(spans, { c.start, c.start + c.length, f.id })
+	end
+	table.sort(spans, function(a, b)
+		return a[1] < b[1]
+	end)
+	for i = 2, #spans do
+		H.assert(
+			spans[i][1] >= spans[i - 1][2] + 0.2,
+			"間が短い: " .. spans[i - 1][3] .. " → " .. spans[i][3]
+		)
+	end
+	H.assert(spans[#spans][2] <= Config.Cries.length, "最後の鳴き声が音の長さを超えている")
+	-- レアな魚ほど長く鳴く(残響も含めて)
+	local avg = {}
+	for _, f in Config.Fish do
+		local o = Config.RarityById[f.rarity].order
+		avg[o] = avg[o] or { 0, 0 }
+		avg[o][1] += Config.Cries.cries[f.id].length
+		avg[o][2] += 1
+	end
+	H.assert(
+		avg[7][1] / avg[7][2] > avg[1][1] / avg[1][2] * 2,
+		"秘伝の鳴き声が並より十分長くない"
+	)
+end)
+H.test("鳴き声の道具: 区間・言語ごとの文字・アップロード前は音なし", function()
+	local Cries = H.require(shared.Lib.Cries)
+	local c = Config.Cries.cries.hasu_koi
+	local a, b = Cries.region("hasu_koi")
+	H.assertNear(a :: number, c.start, 1e-9, "start")
+	H.assertNear(b :: number, c.start + c.length, 1e-9, "stop")
+	H.assertEq(Cries.text("hasu_koi", "ja"), c.ja)
+	H.assertEq(Cries.text("hasu_koi", "en"), c.en)
+	H.assert(Cries.text("no_such_fish", "ja") == nil, "unknown fish")
+	H.assert(select(1, Cries.region("no_such_fish")) == nil, "unknown region")
+	local saved = Config.Cries.soundId
+	Config.Cries.soundId = "rbxassetid://0"
+	H.assert(not Cries.hasAudio(), "0 は未アップロード")
+	Config.Cries.soundId = "rbxassetid://1234567"
+	H.assert(Cries.hasAudio(), "番号が入れば鳴る")
+	Config.Cries.soundId = saved
+end)
+H.test(
+	"Validate は鳴き声の表の間違い(重なり・知らない魚・長すぎる文字)を見つける",
+	function()
+		local cries = Config.Cries.cries
+		local saved = cries.ashi_medaka
+		cries.ashi_medaka = { start = cries.doro_funa.start + 0.1, length = 0.5, ja = "ぴぃ", en = "Pee" }
+		cries.ghost_fish = { start = 0, length = 0.1, ja = "あ", en = "a" }
+		local saved2 = cries.hasu_koi
+		cries.hasu_koi = table.clone(saved2)
+		cries.hasu_koi.ja = string.rep("あ", 31)
+		local problems = table.concat(Config.Validate(), "\n")
+		cries.ashi_medaka = saved
+		cries.ghost_fish = nil
+		cries.hasu_koi = saved2
+		H.assert(problems:find("重なって") ~= nil, "重なりを見つけていない")
+		H.assert(problems:find("ghost_fish") ~= nil, "知らない魚を見つけていない")
+		H.assert(problems:find("1〜30文字") ~= nil, "長すぎる文字を見つけていない")
+		H.assertEq(#Config.Validate(), 0, "元に戻したら問題なし")
+	end
+)
+
 local ok = H.summary()
 process.exit(if ok then 0 else 1)

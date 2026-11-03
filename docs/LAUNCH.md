@@ -14,6 +14,10 @@ Creator Dashboard → 体験 → 収益化 で作成し、`src/shared/Config/Pro
 - [ ] 報酬型広告: 利用条件を満たしてから、広告報酬用の開発者アイテムを作り `RewardedAd.devProductId` を設定し `enabled = true`。**有効にする前に Roblox の最新ドキュメントで AdService の関数名を確認**(`MonetizationService.showRewardedAd`)
 - [ ] Studio のテスト購入で各商品を1回ずつ買い、効果と「二重に付与されないこと」を確認
 
+## 見た目と音を入れる
+- [ ] `assets/fish/YokaiFishMeshes.glb` を読み込んで ReplicatedStorage.FishMeshes に置く([ANIME_MESHES.md](ANIME_MESHES.md))
+- [ ] `assets/sounds/YokaiCries.ogg` をアップロードし、ID を `Config/Cries.luau` の `soundId` に入れる([CRIES.md](CRIES.md))
+
 ## 遊んで確認(Studio の Play / 2人以上は「テスト → サーバーとクライアント」)
 - [ ] 沼の桟橋に出現 → 案内どおり 投げる → 「!」→ 引き上げ → 「上」以上の魚 → 図鑑登録 → 狸に売る(30秒以内)
 - [ ] 水辺から離れて投げると「水辺に近づこう」
@@ -24,6 +28,7 @@ Creator Dashboard → 体験 → 収益化 で作成し、`src/shared/Config/Pro
 - [ ] 昼夜(20分)・天気(10分)で見た目と釣れる魚が変わる
 - [ ] ぬし(毎時30分〜35分、サーバー時刻)に2人以上で参加して成功・失敗の両方
 - [ ] 日本語/英語の切替で看板・ボタン・画面がすべて切り替わる
+- [ ] 魚を釣った時・図鑑の「🔊 鳴き声」・バトルで魚が鳴き、吹き出しが出る(音をオフにすると鳴かない)
 - [ ] スマホ表示(Studio のデバイスエミュレーター)で右下ボタンだけで最後まで遊べる
 - [ ] 退出 → 再参加でデータが残っている / 2つのサーバーを素早く移動してもデータが巻き戻らない
 

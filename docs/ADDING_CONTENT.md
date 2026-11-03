@@ -34,6 +34,7 @@
 - 色と飾りの決め方は [FISH_DESIGN.md](FISH_DESIGN.md) のルールに合わせてください。見た目は `lune run tools/export_fish.luau out.json` で確認できます
 - `id` は保存データのキーです。**公開後に変えない・消さない**こと(消すと図鑑から消えます)。
 - 遊べる釣り場には、並〜神話の各レア度に `time = "any", weather = "any"` の魚が1匹以上必要です(テストで確認)。
+- 鳴き声: `tools/cries/yokai_cries.py` にレシピを足して作り直し、音をアップロードし直します([CRIES.md](CRIES.md))。レシピが無くても形から自動で作ります
 
 ## 釣り場を足す(例: 川)
 

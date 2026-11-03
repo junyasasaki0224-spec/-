@@ -15,6 +15,7 @@ local Products = require(script.Products)
 local Tuning = require(script.Tuning)
 local Battle = require(script.Battle)
 local Trainers = require(script.Trainers)
+local Cries = require(script.Cries)
 local Fish: { Types.FishDef } = require(script.Fish) :: any
 
 local function index<T>(list: { T }, key: string): { [any]: T }
@@ -37,6 +38,7 @@ local Config = {
 	Fish = Fish,
 	Battle = Battle,
 	Trainers = Trainers,
+	Cries = Cries,
 
 	RarityById = index(Rarities, "id"),
 	MutationById = index(Mutations, "id"),
@@ -314,6 +316,50 @@ function Config.Validate(): { string }
 		end
 		if t.title and not table.find(Tuning.Titles, t.title) then
 			bad(where .. ": 称号 " .. t.title .. " が Tuning.Titles にありません")
+		end
+	end
+
+	if not Config.FishById[Tuning.Nushi.fishId] then
+		bad("Tuning.Nushi.fishId: 不明な魚 " .. tostring(Tuning.Nushi.fishId))
+	end
+
+	-- 鳴き声(無い魚は鳴かないだけ。あるものは区間と文字を確かめる)
+	if type(Cries.soundId) ~= "string" or not Cries.soundId:match("^rbxassetid://%d+$") then
+		bad("Cries: soundId は rbxassetid://<数字> の形にしてください")
+	end
+	local spans = {}
+	for id, c in Cries.cries do
+		local where = "Cries[" .. id .. "]"
+		if not Config.FishById[id] then
+			bad(where .. ": 不明な魚")
+		end
+		if type(c.start) ~= "number" or type(c.length) ~= "number" or c.start < 0 or c.length <= 0 then
+			bad(where .. ": start / length が不正")
+		elseif c.start + c.length > Cries.length + 1e-3 then
+			bad(where .. ": 音のファイルの長さを超えています")
+		else
+			table.insert(spans, { id = id, a = c.start, b = c.start + c.length })
+		end
+		for _, lang in { "ja", "en" } do
+			local text = (c :: any)[lang]
+			if
+				type(text) ~= "string"
+				or #text == 0
+				or utf8.len(text) == nil
+				or (utf8.len(text) :: number) > 30
+			then
+				bad(where .. ": " .. lang .. " の文字は1〜30文字")
+			end
+		end
+	end
+	table.sort(spans, function(x, y)
+		return x.a < y.a
+	end)
+	for i = 2, #spans do
+		if spans[i].a < spans[i - 1].b then
+			bad(
+				"Cries: " .. spans[i - 1].id .. " と " .. spans[i].id .. " の区間が重なっています"
+			)
 		end
 	end
 	return problems

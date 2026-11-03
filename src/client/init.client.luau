@@ -28,6 +28,7 @@ local Tutorial = require(Controllers.Tutorial)
 local Partners = require(Controllers.Partners)
 local BattleUI = require(Controllers.BattleUI)
 local Help = require(Controllers.Help)
+local Cry = require(Controllers.Cry)
 
 local gui = Root.init()
 State.init()
@@ -51,6 +52,7 @@ Tutorial.init(gui)
 Partners.init(gui)
 BattleUI.init(gui)
 Help.init(gui)
+Cry.init()
 
 -- パネルを開いている間は釣りの入力を止める
 Root.OpenChanged:Connect(function(name)
