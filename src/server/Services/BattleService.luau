@@ -31,8 +31,11 @@ end
 
 local stateRemote: RemoteEvent
 
+-- 何かの戦い(妖怪退治・対戦・ボス戦)の最中か。釣り・相棒の入れ替えはこの間できない
 function BattleService.inBattle(player: Player): boolean
 	return sessions[player] ~= nil
+		or (S ~= nil and S.Pvp ~= nil and S.Pvp.busy(player))
+		or (S ~= nil and S.Raid ~= nil and S.Raid.fighting(player))
 end
 
 -- 挑戦できるか(上から順番に。前の相手に勝っていれば次に挑める)
@@ -57,6 +60,20 @@ local function teamFor(data: any): { any }
 	if #list == 0 then
 		for i = 1, math.min(B.TeamSize, #data.partners) do
 			table.insert(list, data.partners[i])
+		end
+	end
+	return list
+end
+
+BattleService.teamFor = teamFor
+
+-- 相棒の表から、戦う魚(能力値つき)の表を作る
+function BattleService.fighters(team: { any }): { BattleLib.Fighter }
+	local list = {}
+	for _, p in team do
+		local def = Config.FishById[p.fishId]
+		if def then
+			table.insert(list, BattleLib.fighter(def, p.grams, p.mutation, p.level, p.uid))
 		end
 	end
 	return list
@@ -139,7 +156,7 @@ local function finish(player: Player, sess: Session)
 end
 
 local function start(player: Player, trainerId: any)
-	if not RemoteGuard.isId(trainerId) or sessions[player] then
+	if not RemoteGuard.isId(trainerId) or BattleService.inBattle(player) then
 		return
 	end
 	local data = S.Data.get(player)
@@ -157,13 +174,8 @@ local function start(player: Player, trainerId: any)
 		return
 	end
 	S.Fishing.cancel(player)
-	local mine = {}
-	for _, p in team do
-		local def = Config.FishById[p.fishId]
-		if def then
-			table.insert(mine, BattleLib.fighter(def, p.grams, p.mutation, p.level, p.uid))
-		end
-	end
+	S.Pvp.leaveQueue(player)
+	local mine = BattleService.fighters(team)
 	local enemies = {}
 	for _, m in trainer.team do
 		local def = Config.FishById[m.fish]
@@ -185,19 +197,30 @@ local function start(player: Player, trainerId: any)
 end
 
 local function act(player: Player, action: any)
-	local sess = sessions[player]
-	if not sess then
-		return
-	end
 	-- 受け取った表から必要な値だけを取り出す(余計なキーは無視)
 	if type(action) ~= "table" then
 		return
 	end
 	local clean = { kind = action.kind, index = action.index, slot = action.slot }
+	if clean.kind ~= "move" and clean.kind ~= "switch" and clean.kind ~= "run" then
+		return
+	end
 	if clean.index ~= nil and not RemoteGuard.isInt(clean.index, 1, 4) then
 		return
 	end
 	if clean.slot ~= nil and not RemoteGuard.isInt(clean.slot, 1, B.TeamSize) then
+		return
+	end
+	-- 対戦・ボス戦の最中なら、そちらへ
+	if S.Pvp.busy(player) then
+		S.Pvp.act(player, clean)
+		return
+	elseif S.Raid.fighting(player) then
+		S.Raid.act(player, clean)
+		return
+	end
+	local sess = sessions[player]
+	if not sess then
 		return
 	end
 	if not BattleLib.validAction(sess.state, clean) then

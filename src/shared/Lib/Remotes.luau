@@ -15,7 +15,8 @@ Remotes.Events = {
 	"CancelFishing", -- ()
 	"NushiReel", -- (inZoneSeconds: number)
 	"Request", -- (action: string, payload: table) 店・水槽・設定などの操作
-	"BattleAction", -- (action: { kind, index?, slot? }) 相棒バトルの1ターンの行動
+	"BattleAction", -- (action: { kind, index?, slot? }) 相棒バトル・対戦・ボス戦の1ターンの行動
+	"Stamp", -- (stampId: string) 定型のスタンプ(Config.Online.Stamps のどれか)
 	-- サーバー → クライアント
 	"FishingState", -- (state: string, data: table)
 	"Profile", -- (snapshot: table) 自分のデータの差分
@@ -23,7 +24,9 @@ Remotes.Events = {
 	"Announce", -- (key: string, args: table) サーバー全体へのお知らせ
 	"CatchResult", -- (result: table)
 	"NushiState", -- (state: table)
-	"BattleState", -- (msg: table) 相棒バトルの状態・イベント・結果
+	"BattleState", -- (msg: table) 相棒バトル・対戦・ボス戦の状態・イベント・結果
+	"Arena", -- (msg: table) 対戦の申し込み・ランダム対戦の待ち状態・ボス戦の部屋の一覧
+	"StampShown", -- (userId: number, stampId: string) だれかがスタンプを出した
 }
 
 Remotes.Functions = {

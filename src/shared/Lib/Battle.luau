@@ -202,10 +202,12 @@ local function nextAlive(side: Side): number?
 	return nil
 end
 
--- 敵の行動(期待ダメージの高い技を選ぶ。2割はランダムで、たまに補助技も使う)
-function BattleLib.aiChoose(state: State, rng: Rng): Action
-	local me = active(state.sides.enemy)
-	local foe = active(state.sides.player)
+-- コンピューターの行動(期待ダメージの高い技を選ぶ。2割はランダムで、たまに補助技も使う)。
+-- sideName を省くと敵の側。対戦で時間切れになった人の代わりにも使う
+function BattleLib.aiChoose(state: State, rng: Rng, sideName: string?): Action
+	local mine = sideName or "enemy"
+	local me = active(if mine == "enemy" then state.sides.enemy else state.sides.player)
+	local foe = active(if mine == "enemy" then state.sides.player else state.sides.enemy)
 	if rng() < 0.2 then
 		return { kind = "move", index = math.floor(rng() * #me.moves) + 1 }
 	end
@@ -232,12 +234,12 @@ function BattleLib.aiChoose(state: State, rng: Rng): Action
 	return { kind = "move", index = best }
 end
 
--- 行動が正しいか(プレイヤーの入力の検証)
-function BattleLib.validAction(state: State, action: any): boolean
+-- 行動が正しいか(プレイヤーの入力の検証)。対戦では敵の側(sideName = "enemy")も人が選ぶ
+function BattleLib.validAction(state: State, action: any, sideName: string?): boolean
 	if type(action) ~= "table" or state.over then
 		return false
 	end
-	local side = state.sides.player
+	local side = if sideName == "enemy" then state.sides.enemy else state.sides.player
 	if action.kind == "move" then
 		local f = active(side)
 		return type(action.index) == "number" and f.moves[action.index] ~= nil
@@ -253,8 +255,9 @@ function BattleLib.validAction(state: State, action: any): boolean
 	return false
 end
 
--- 1ターン進める。表示用のイベントの列を返す
-function BattleLib.turn(state: State, playerAction: Action, rng: Rng): { any }
+-- 1ターン進める。表示用のイベントの列を返す。
+-- enemyAction を渡すと敵の側も人が動かす(対戦)。省くとコンピューターが選ぶ
+function BattleLib.turn(state: State, playerAction: Action, rng: Rng, enemyAction: Action?): { any }
 	local events = {}
 	local function push(e: any)
 		table.insert(events, e)
@@ -265,20 +268,35 @@ function BattleLib.turn(state: State, playerAction: Action, rng: Rng): { any }
 	if playerAction.kind == "run" then
 		state.over = true
 		state.winner = "enemy"
-		push({ kind = "run" })
+		push({ kind = "run", side = "player" })
 		push({ kind = "end", winner = "enemy" })
 		return events
 	end
 	state.turn += 1
 	local sides = state.sides
-	local enemyAction = BattleLib.aiChoose(state, rng)
+	local foeAction: Action = enemyAction or BattleLib.aiChoose(state, rng)
+	if foeAction.kind == "run" then
+		-- 対戦の相手が降参した
+		state.over = true
+		state.winner = "player"
+		push({ kind = "run", side = "enemy" })
+		push({ kind = "end", winner = "player" })
+		return events
+	end
 
-	-- 交代は技より先
-	if playerAction.kind == "switch" then
-		sides.player.active = playerAction.slot :: number
-		local f = active(sides.player)
-		f.stages = { atk = 0, def = 0 }
-		push({ kind = "switch", side = "player", slot = sides.player.active, fishId = f.fishId })
+	-- 交代は技より先(両方が交代するなら自分の側から)
+	type SideAction = { sideName: string, action: Action }
+	local order: { SideAction } =
+		{ { sideName = "player", action = playerAction }, { sideName = "enemy", action = foeAction } }
+	for _, pair in order do
+		local sideName, action = pair.sideName, pair.action
+		if action.kind == "switch" then
+			local side = if sideName == "enemy" then sides.enemy else sides.player
+			side.active = action.slot :: number
+			local f = active(side)
+			f.stages = { atk = 0, def = 0 }
+			push({ kind = "switch", side = sideName, slot = side.active, fishId = f.fishId })
+		end
 	end
 
 	type Planned = { sideName: string, actor: Fighter, move: any }
@@ -290,11 +308,11 @@ function BattleLib.turn(state: State, playerAction: Action, rng: Rng): { any }
 			{ sideName = "player", actor = f, move = Config.MoveById[f.moves[playerAction.index :: number]] }
 		)
 	end
-	do
+	if foeAction.kind == "move" then
 		local f = active(sides.enemy)
 		table.insert(
 			plans,
-			{ sideName = "enemy", actor = f, move = Config.MoveById[f.moves[enemyAction.index :: number]] }
+			{ sideName = "enemy", actor = f, move = Config.MoveById[f.moves[foeAction.index :: number]] }
 		)
 	end
 	table.sort(plans, function(a, b)
@@ -391,8 +409,36 @@ function BattleLib.turn(state: State, playerAction: Action, rng: Rng): { any }
 	return events
 end
 
--- クライアントに送る状態(相手の技の中身などは送らない)
-function BattleLib.publicState(state: State): any
+local SWAP = { player = "enemy", enemy = "player" }
+
+-- 対戦の相手側の画面用に、イベントの「自分・相手」を入れ替える
+function BattleLib.mirrorEvents(events: { any }): { any }
+	local out = {}
+	for _, e in events do
+		local c = table.clone(e)
+		if c.side then
+			c.side = SWAP[c.side] or c.side
+		end
+		if c.winner then
+			c.winner = SWAP[c.winner] or c.winner
+		end
+		table.insert(out, c)
+	end
+	return out
+end
+
+-- チームの強さ(能力値の合計)。ランダム対戦で近い強さの相手を選ぶのに使う
+function BattleLib.power(team: { Fighter }): number
+	local total = 0
+	for _, f in team do
+		total += f.maxHp + f.atk + f.def + f.spd
+	end
+	return total
+end
+
+-- クライアントに送る状態(相手の技の中身などは送らない)。
+-- perspective = "enemy" なら、敵の側の人から見た状態(自分が player になる)
+function BattleLib.publicState(state: State, perspective: string?): any
 	local function sideInfo(side: Side, withMoves: boolean)
 		local team = {}
 		for _, f in side.team do
@@ -412,12 +458,18 @@ function BattleLib.publicState(state: State): any
 			moves = if withMoves then table.clone(active(side).moves) else nil,
 		}
 	end
+	local me, foe = state.sides.player, state.sides.enemy
+	local winner = state.winner
+	if perspective == "enemy" then
+		me, foe = state.sides.enemy, state.sides.player
+		winner = if winner then SWAP[winner] else nil
+	end
 	return {
-		player = sideInfo(state.sides.player, true),
-		enemy = sideInfo(state.sides.enemy, false),
+		player = sideInfo(me, true),
+		enemy = sideInfo(foe, false),
 		turn = state.turn,
 		over = state.over,
-		winner = state.winner,
+		winner = winner,
 	}
 end
 

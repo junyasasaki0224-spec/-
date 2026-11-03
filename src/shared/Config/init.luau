@@ -16,6 +16,8 @@ local Tuning = require(script.Tuning)
 local Battle = require(script.Battle)
 local Trainers = require(script.Trainers)
 local Cries = require(script.Cries)
+local Online = require(script.Online)
+local Bosses = require(script.Bosses)
 local Fish: { Types.FishDef } = require(script.Fish) :: any
 
 local function index<T>(list: { T }, key: string): { [any]: T }
@@ -39,6 +41,8 @@ local Config = {
 	Battle = Battle,
 	Trainers = Trainers,
 	Cries = Cries,
+	Online = Online,
+	Bosses = Bosses,
 
 	RarityById = index(Rarities, "id"),
 	MutationById = index(Mutations, "id"),
@@ -50,6 +54,7 @@ local Config = {
 	MoveById = index(Battle.Moves, "id"),
 	ElementById = index(Battle.Elements, "id"),
 	TrainerById = index(Trainers, "id"),
+	BossById = index(Bosses, "id"),
 }
 
 local SHAPES = { koi = true, catfish = true, puffer = true, eel = true, angler = true, ray = true }
@@ -317,6 +322,34 @@ function Config.Validate(): { string }
 		if t.title and not table.find(Tuning.Titles, t.title) then
 			bad(where .. ": 称号 " .. t.title .. " が Tuning.Titles にありません")
 		end
+	end
+
+	-- ボス戦
+	local seenBoss = {}
+	for _, b in Bosses do
+		local where = "Boss[" .. b.id .. "]"
+		if seenBoss[b.id] then
+			bad(where .. ": id が重複しています")
+		end
+		seenBoss[b.id] = true
+		if not Config.FishById[b.fish] then
+			bad(where .. ": 不明な魚 " .. b.fish)
+		end
+		if b.level < 1 or b.hpMult <= 0 or b.atkMult <= 0 then
+			bad(where .. ": レベル・倍率が不正")
+		end
+		if b.reward.bait and not Config.BaitById[b.reward.bait.id] then
+			bad(where .. ": 不明なエサ " .. b.reward.bait.id)
+		end
+		if b.title and not table.find(Tuning.Titles, b.title) then
+			bad(where .. ": 称号 " .. b.title .. " が Tuning.Titles にありません")
+		end
+	end
+	if Online.MaxPlayers < 2 or Online.RaidPartyMax < 1 or Online.RaidPartyMax > Online.MaxPlayers then
+		bad("Online: 人数の設定が不正")
+	end
+	if #Online.Stamps == 0 or #Online.Stamps > 12 then
+		bad("Online: スタンプは1〜12個")
 	end
 
 	if not Config.FishById[Tuning.Nushi.fishId] then

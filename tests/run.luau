@@ -567,6 +567,80 @@ H.test(
 	end
 )
 
+print("Online (対戦・ボス戦)")
+H.test(
+	"対戦: 両方の行動を人が選べる(交代・技・降参)、相手側の画面は自分と相手が入れ替わる",
+	function()
+		local function mk(id: string, lv: number)
+			local def = Config.FishById[id]
+			return BattleLib.fighter(def, def.kg[1] * 1000, nil, lv)
+		end
+		local seed = 0
+		local rand = function()
+			seed = (seed * 16807 + 7) % 2147483647
+			return seed / 2147483647
+		end
+		-- 敵の側が交代を選ぶと、技より先に交代する
+		local st = BattleLib.new({ mk("hasu_koi", 20) }, { mk("doro_funa", 10), mk("kappa_haze", 10) })
+		H.assert(
+			BattleLib.validAction(st, { kind = "switch", slot = 2 }, "enemy"),
+			"enemy switch should be valid"
+		)
+		H.assert(
+			not BattleLib.validAction(st, { kind = "switch", slot = 2 }, "player"),
+			"player has no slot 2"
+		)
+		local ev = BattleLib.turn(st, { kind = "move", index = 1 }, rand, { kind = "switch", slot = 2 })
+		H.assertEq(ev[1].kind, "switch")
+		H.assertEq(ev[1].side, "enemy")
+		H.assertEq(st.sides.enemy.active, 2)
+		-- 相手側から見ると、イベントの side と勝ち負けが入れ替わる
+		local mirrored = BattleLib.mirrorEvents(ev)
+		H.assertEq(mirrored[1].side, "player")
+		local pub = BattleLib.publicState(st, "enemy")
+		H.assertEq(pub.player.team[pub.player.active].fishId, "kappa_haze", "enemy view: my active fish")
+		H.assertEq(pub.enemy.team[1].fishId, "hasu_koi", "enemy view: foe")
+		H.assert(pub.player.moves ~= nil and pub.enemy.moves == nil, "only my moves are sent")
+		-- 相手が降参すると自分の勝ち。相手側から見ると負け
+		local st2 = BattleLib.new({ mk("hasu_koi", 5) }, { mk("doro_funa", 5) })
+		local ev2 = BattleLib.turn(st2, { kind = "move", index = 1 }, rand, { kind = "run" })
+		H.assert(st2.over and st2.winner == "player", "forfeit should make the other side win")
+		H.assertEq(ev2[1].side, "enemy")
+		H.assertEq(BattleLib.publicState(st2, "enemy").winner, "enemy", "loser's view")
+		-- 時間切れの人の代わりにコンピューターが自分の側の技を選べる
+		local st3 = BattleLib.new({ mk("hasu_koi", 5) }, { mk("doro_funa", 5) })
+		local a = BattleLib.aiChoose(st3, rand, "player")
+		H.assert(BattleLib.validAction(st3, a, "player"), "ai action for the player side")
+		-- 強さ: レベルが高いほど強い
+		H.assert(BattleLib.power({ mk("hasu_koi", 30) }) > BattleLib.power({ mk("hasu_koi", 10) }), "power")
+	end
+)
+H.test("強さの点数: 格上に勝つと大きく上がり、合計は変わらない", function()
+	local Rating = H.require(shared.Lib.Rating)
+	H.assertNear(Rating.expected(1000, 1000), 0.5, 1e-9, "even")
+	local a1, b1 = Rating.update(1000, 1200, 1, 32)
+	local a2, _ = Rating.update(1000, 800, 1, 32)
+	H.assert(a1 - 1000 > a2 - 1000, "beating a stronger player gives more")
+	H.assertEq(a1 + b1, 2200, "points are conserved")
+	local a3, b3 = Rating.update(1000, 1000, 0, 32)
+	H.assertEq(a3, 984)
+	H.assertEq(b3, 1016)
+end)
+
+H.test("スタンプ・ボスの文言が日本語と英語でそろっている", function()
+	for _, id in Config.Online.Stamps do
+		for _, lang in { "ja", "en" } do
+			H.assert(Locale.t("stamp_" .. id, nil, lang) ~= "stamp_" .. id, lang .. ": stamp_" .. id)
+		end
+	end
+	for _, b in Config.Bosses do
+		H.assert(#b.ja > 0 and #b.en > 0 and #b.jaDesc > 0 and #b.enDesc > 0, "boss text " .. b.id)
+		if b.title then
+			H.assert(Locale.t("title_" .. b.title, nil, "ja") ~= "title_" .. b.title, "boss title text")
+		end
+	end
+end)
+
 print("Cries (鳴き声)")
 H.test("全50種に鳴き声があり、区間は音のファイルの中で重ならない", function()
 	local fs = require("@lune/fs")

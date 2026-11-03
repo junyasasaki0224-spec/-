@@ -66,7 +66,7 @@ local function template(): any
 		titles = {},
 		activeTitle = "",
 		boosts = { luckUntil = 0, adLuckUntil = 0 },
-		settings = { autoSell = 0, lang = "" },
+		settings = { autoSell = 0, lang = "", challenges = "all" }, -- challenges: 対戦の申し込みを受け取る相手(all / friends / off)
 		tutorial = 0,
 		firstCatch = false,
 		uidCounter = 0,
@@ -74,6 +74,8 @@ local function template(): any
 		partners = {}, -- 相棒(魚 + level, xp)
 		team = {}, -- 戦いに出す相棒の uid(順番どおり)
 		battle = { cleared = {}, wins = 0, rematchPaid = {} }, -- rematchPaid: 相手ごとに再戦の小判をもらった日
+		pvp = { rating = 1000, wins = 0, losses = 0, dailyWinDay = -1 }, -- オンライン対戦
+		raid = { paid = {}, clears = {} }, -- ボス戦(paid: ボスごとに小判をもらった日)
 	}
 end
 
@@ -331,9 +333,11 @@ function DataService.eraseUser(userId: number): boolean
 		warn("[DataService] erase failed: " .. tostring(err))
 		return false
 	end
-	-- ランキング側の記録も消す
+	-- ランキング側の記録と、対戦用のチームの写しも消す
 	local LeaderboardService = require(script.Parent.LeaderboardService) :: any
 	LeaderboardService.eraseUser(userId)
+	local PvpService = require(script.Parent.PvpService) :: any
+	PvpService.eraseUser(userId)
 	print(("[DataService] erased data for user %d"):format(userId))
 	return true
 end

@@ -158,6 +158,39 @@ function DataStoreService:GetOrderedDataStore(name)
 	}
 end
 
+-- 偽の MemoryStore(ほかのサーバーの対戦チームの写し)。sortKey で並べて範囲で取り出せる
+local memory: { [string]: { [string]: { value: any, sortKey: number? } } } = {}
+local MemoryStoreService = {}
+function MemoryStoreService:GetSortedMap(name)
+	memory[name] = memory[name] or {}
+	local data = memory[name]
+	return {
+		SetAsync = function(_, key, value, _ttl, sortKey)
+			data[key] = { value = deepCopy(value), sortKey = sortKey }
+			return true
+		end,
+		RemoveAsync = function(_, key)
+			data[key] = nil
+		end,
+		GetRangeAsync = function(_, _dir, count, lower, upper)
+			local list = {}
+			for k, v in data do
+				local sk = v.sortKey or 0
+				if (not lower or sk > lower.sortKey) and (not upper or sk < upper.sortKey) then
+					table.insert(list, { key = k, value = deepCopy(v.value), sortKey = sk })
+				end
+			end
+			table.sort(list, function(a, b)
+				return a.sortKey < b.sortKey
+			end)
+			while #list > count do
+				table.remove(list)
+			end
+			return list
+		end,
+	}
+end
+
 -- 偽の Players
 local Players = { PlayerAdded = Signal(), PlayerRemoving = Signal(), RespawnTime = 0, LocalPlayer = nil }
 local playerList = {}
@@ -204,6 +237,7 @@ local function makeCharacter(pos)
 end
 
 local kicked: { [number]: string } = {}
+local friendships: { [string]: boolean } = {}
 local function makePlayer(userId: number)
 	local attrs = {}
 	local attrSignals = {}
@@ -237,6 +271,9 @@ local function makePlayer(userId: number)
 		end,
 		Kick = function(_, msg)
 			kicked[userId] = msg
+		end,
+		IsFriendsWith = function(_, other)
+			return friendships[userId .. ":" .. other] == true or friendships[other .. ":" .. userId] == true
 		end,
 		LoadCharacter = function()
 			p.Character = makeCharacter(roblox.Vector3.new(0, 3, 17))
@@ -330,6 +367,7 @@ local services = {
 	Lighting = dm:GetService("Lighting"),
 	Players = Players,
 	DataStoreService = DataStoreService,
+	MemoryStoreService = MemoryStoreService,
 	CollectionService = CollectionService,
 	MarketplaceService = MarketplaceService,
 	AnalyticsService = AnalyticsService,
@@ -900,6 +938,308 @@ H.test("個人データ削除(eraseUser)でプレイヤーデータが消える"
 	H.assert(DataService.eraseUser(1001), "erase failed")
 	H.assert(stores[Config.Tuning.Data.storeName]["u_1001"] == nil, "still stored")
 end)
+
+-- オンライン(対戦・ボス戦・なかま) ------------------------------------------------
+local O = Config.Online
+local Pvp = H.require(server.Services.PvpService)
+local function onlinePlayer(userId: number, level: number)
+	local p = makePlayer(userId)
+	table.insert(playerList, p)
+	Players.PlayerAdded:Fire(p)
+	local t0 = os.clock()
+	while not data(p) and os.clock() - t0 < 5 do
+		task.wait(0.1)
+	end
+	local d = data(p)
+	d.partners = {}
+	d.team = {}
+	for i, fishId in { "hasu_koi", "kappa_koi", "bake_fugu" } do
+		local uid = ("u%d_%d"):format(userId, i)
+		table.insert(
+			d.partners,
+			{ uid = uid, fishId = fishId, grams = 1500, level = level, xp = 0, caughtAt = 0 }
+		)
+		table.insert(d.team, uid)
+	end
+	return p
+end
+local function request(p, action, payload)
+	clientSend(p, "Request", action, payload)
+end
+local function lastArena(p, kind)
+	for i = #(sent[p] or {}), 1, -1 do
+		local e = sent[p][i]
+		if e.name == "Arena" and e.args[1].kind == kind then
+			return e.args[1]
+		end
+	end
+	return nil
+end
+local function lastBattle(p, kind)
+	for i = #(sent[p] or {}), 1, -1 do
+		local e = sent[p][i]
+		if e.name == "BattleState" and e.args[1].kind == kind then
+			return e.args[1]
+		end
+	end
+	return nil
+end
+-- 結果が出るまで、両方(b は nil なら片方だけ)が行動を選び続ける
+local function playOut(a, actA, b, actB)
+	local guard = 0
+	while (Pvp.busy(a) or (b and Pvp.busy(b))) and guard < 80 do
+		guard += 1
+		clientSend(a, "BattleAction", actA)
+		if b then
+			clientSend(b, "BattleAction", actB)
+		end
+		task.wait(0.15)
+	end
+end
+local pA = onlinePlayer(7001, 20)
+local pB = onlinePlayer(7002, 20)
+
+H.test(
+	"対戦の申し込み: 受け取らない・友達だけの設定を守る / 受けると始まり、相手の画面は自分が手前になる",
+	function()
+		request(pB, "setChallengePref", "off")
+		request(pA, "pvpChallenge", 7002)
+		H.assertEq(lastSent(pA, "Notify")[1], "pvp_target_closed", "off")
+		request(pB, "setChallengePref", "friends")
+		request(pA, "pvpChallenge", 7002)
+		H.assertEq(lastSent(pA, "Notify")[1], "pvp_target_closed", "friends only, not friends")
+		friendships["7001:7002"] = true
+		request(pA, "pvpChallenge", 7002)
+		local inv = lastArena(pB, "invite")
+		H.assert(inv ~= nil and inv.from == 7001, "no invite")
+		H.assertEq(inv.name, pA.DisplayName)
+		request(pA, "pvpChallenge", 7002)
+		H.assertEq(lastSent(pA, "Notify")[1], "pvp_wait", "cooldown")
+		-- 知らない人からの「受ける」は無視
+		request(pB, "pvpRespond", { from = 9999, accept = true })
+		H.assert(not Pvp.busy(pB), "accepted a challenge nobody sent")
+		request(pB, "pvpRespond", { from = 7001, accept = true })
+		H.assert(Pvp.busy(pA) and Pvp.busy(pB), "match not started")
+		local sa, sb = lastBattle(pA, "start"), lastBattle(pB, "start")
+		H.assertEq(sa.mode, "pvp")
+		H.assertEq(sa.opponent.name, pB.DisplayName)
+		H.assertEq(sa.state.player.team[1].fishId, "hasu_koi")
+		H.assert(
+			sb.state.player.moves ~= nil and sa.state.enemy.moves == nil,
+			"each side sees only its own moves"
+		)
+		-- 戦っている間は釣れない・相棒をいじれない
+		local before = countSent(pA, "FishingState")
+		clientSend(pA, "Cast", 0.5, 0, -1)
+		H.assertEq(countSent(pA, "FishingState"), before, "cast during pvp")
+		-- 片方が選ぶと「待っています」、両方そろうとターンが進む
+		clientSend(pA, "BattleAction", { kind = "move", index = 1 })
+		H.assertEq(lastSent(pA, "BattleState")[1].kind, "waiting")
+		H.assertEq(lastSent(pB, "BattleState")[1].kind, "foeReady")
+		clientSend(pB, "BattleAction", { kind = "move", index = 1 })
+		local ta, tb = lastBattle(pA, "turn"), lastBattle(pB, "turn")
+		H.assert(ta ~= nil and tb ~= nil, "turn not sent to both")
+		H.assertEq(tb.state.player.team[1].fishId, ta.state.enemy.team[1].fishId, "mirrored view")
+		local wA, lA, rA = data(pA).pvp.wins, data(pA).pvp.losses, data(pA).pvp.rating
+		local coinsA = data(pA).coins
+		playOut(pA, { kind = "move", index = 1 }, pB, { kind = "move", index = 1 })
+		local ra, rb = lastBattle(pA, "result"), lastBattle(pB, "result")
+		H.assert(ra and rb and ra.win ~= rb.win, "exactly one winner")
+		H.assertEq(data(pA).pvp.wins + data(pA).pvp.losses, wA + lA + 1, "record")
+		H.assertEq(data(pA).pvp.rating, rA, "friendly match changed the rating")
+		H.assertEq(data(pA).coins, coinsA, "friendly match paid coins")
+	end
+)
+
+H.test(
+	"ランダム対戦: 同じサーバーで待つ2人が組まれ、点数が動き、小判は1日の最初の勝利だけ",
+	function()
+		request(pA, "pvpQueue")
+		H.assertEq(lastArena(pA, "queue").state, "searching")
+		request(pB, "pvpQueue")
+		H.assert(Pvp.busy(pA) and Pvp.busy(pB), "not paired")
+		H.assertEq(lastBattle(pA, "start").pvpKind, "random")
+		local coinsA, rA = data(pA).coins, data(pA).pvp.rating
+		data(pA).pvp.dailyWinDay = -1
+		playOut(pA, { kind = "move", index = 1 }, pB, { kind = "run" }) -- B は降参
+		H.assert(lastBattle(pA, "result").win, "A should win")
+		H.assert(data(pA).pvp.rating > rA and data(pB).pvp.rating < 1000 + 100, "rating did not move")
+		H.assertEq(data(pA).coins, coinsA + O.DailyWinCoins, "daily first win coins")
+		-- 同じ日の2勝目は小判なし
+		request(pA, "pvpQueue")
+		request(pB, "pvpQueue")
+		playOut(pA, { kind = "move", index = 1 }, pB, { kind = "run" })
+		H.assert(lastBattle(pA, "result").win, "A should win again")
+		H.assertEq(data(pA).coins, coinsA + O.DailyWinCoins, "paid twice in a day")
+	end
+)
+
+H.test(
+	"ランダム対戦: 相手がいなければ ほかのサーバーのチームの写しと戦う(名前は出さない・壊れた写しは使わない)",
+	function()
+		local oldAfter = O.QueueGhostAfter
+		O.QueueGhostAfter = 1
+		local pC = onlinePlayer(7003, 20)
+		local BattleLib = H.require(shared.Lib.Battle)
+		local Battle = H.require(server.Services.BattleService)
+		local power = BattleLib.power(Battle.fighters(Battle.teamFor(data(pC))))
+		local map = memory[O.GhostStore] or {}
+		memory[O.GhostStore] = map
+		map["8888"] = {
+			value = { team = { { f = "doro_funa", g = 900, l = 999 } }, power = power, rating = 1100 },
+			sortKey = power,
+		}
+		map["8889"] = {
+			value = {
+				team = { { f = "doro_funa", g = 900, l = 18 }, { f = "kappa_haze", g = 500, l = 18 } },
+				power = power,
+				rating = 1100,
+				title = "angler_novice",
+			},
+			sortKey = power,
+		}
+		request(pC, "pvpQueue")
+		local t0 = os.clock()
+		while not Pvp.busy(pC) and os.clock() - t0 < 6 do
+			task.wait(0.2)
+		end
+		O.QueueGhostAfter = oldAfter
+		H.assert(Pvp.busy(pC), "no ghost match")
+		local st = lastBattle(pC, "start")
+		H.assert(st.opponent.ghost == true and st.opponent.name == nil, "ghost owner's name was shown")
+		H.assertEq(st.state.enemy.team[1].fishId, "doro_funa")
+		H.assertEq(st.state.enemy.team[1].level, 18, "broken ghost used")
+		playOut(pC, { kind = "move", index = 1 })
+		H.assert(lastBattle(pC, "result") ~= nil, "no result vs ghost")
+		H.assert(data(pC).pvp.rating ~= 1000, "ghost match is ranked")
+	end
+)
+
+H.test(
+	"対戦: 選ばない人はコンピューターが代わりに選び、続けて選ばないと降参 / 抜けると負け",
+	function()
+		local oldTurn, oldFirst = O.TurnSeconds, O.FirstTurnSeconds
+		O.TurnSeconds, O.FirstTurnSeconds = 0.6, 0.6
+		request(pA, "pvpChallenge", 7002)
+		task.wait(O.ChallengeCooldown) -- 前の申し込みからの待ち
+		request(pA, "pvpChallenge", 7002)
+		request(pB, "pvpRespond", { from = 7001, accept = true })
+		H.assert(Pvp.busy(pA), "match not started")
+		local t0 = os.clock()
+		while Pvp.busy(pA) and os.clock() - t0 < 12 do
+			clientSend(pA, "BattleAction", { kind = "move", index = 1 })
+			task.wait(0.4)
+		end
+		O.TurnSeconds, O.FirstTurnSeconds = oldTurn, oldFirst
+		H.assert(not Pvp.busy(pA), "afk match never ended")
+		H.assert(lastBattle(pA, "result").win, "afk player should lose")
+		-- 抜けると相手の勝ち(抜けた人のデータは片付くので、別の人で試す)
+		local pL = onlinePlayer(7006, 20)
+		friendships["7006:7002"] = true -- B は「友達だけ」受け取る設定
+		request(pL, "pvpChallenge", 7002)
+		request(pB, "pvpRespond", { from = 7006, accept = true })
+		H.assert(Pvp.busy(pB), "second match not started")
+		table.remove(playerList, table.find(playerList, pL))
+		Players.PlayerRemoving:Fire(pL)
+		H.assert(not Pvp.busy(pB), "match kept after leaving")
+		H.assert(lastBattle(pB, "result").win, "remaining player should win")
+	end
+)
+
+H.test(
+	"ボス戦: 部屋 → 参加 → 開始 → みんなで1本の体力を削る → 小判は1日1回・経験値は毎回 / 部屋の数に上限",
+	function()
+		local boss = Config.Bosses[1]
+		local oldHp = boss.hpMult
+		boss.hpMult = 0.15
+		local Raid = H.require(server.Services.RaidService)
+		request(pA, "raidCreate", boss.id)
+		H.assert(Raid.inRoom(pA), "room not created")
+		local rooms = nil
+		for i = #announced, 1, -1 do
+			if announced[i].name == "Arena" and announced[i].args[1].kind == "rooms" then
+				rooms = announced[i].args[1].rooms
+				break
+			end
+		end
+		H.assert(rooms and #rooms == 1 and rooms[1].bossId == boss.id, "room list not broadcast")
+		request(pB, "raidJoin", rooms[1].id)
+		H.assert(Raid.inRoom(pB), "join failed")
+		request(pB, "raidStart") -- ホストではないので始まらない
+		H.assert(not Raid.fighting(pA), "non-host started the raid")
+		request(pA, "raidStart")
+		H.assert(Raid.fighting(pA) and Raid.fighting(pB), "raid not started")
+		local sa = lastBattle(pA, "start")
+		H.assertEq(sa.mode, "raid")
+		local max = sa.raid.max
+		H.assertEq(sa.state.enemy.team[1].maxHp, max, "boss hp is the shared pool")
+		clientSend(pA, "BattleAction", { kind = "move", index = 1 })
+		local afterA = lastBattle(pB, "raid").raid.hp
+		H.assert(afterA < max or lastBattle(pA, "result"), "A's damage did not reach the shared pool")
+		local coinsA, coinsB = data(pA).coins, data(pB).coins
+		local paidB = data(pB).raid.paid[boss.id]
+		local guard = 0
+		while (Raid.fighting(pA) or Raid.fighting(pB)) and guard < 60 do
+			guard += 1
+			clientSend(pA, "BattleAction", { kind = "move", index = 1 })
+			clientSend(pB, "BattleAction", { kind = "move", index = 1 })
+			task.wait(0.1)
+		end
+		local ra, rb = lastBattle(pA, "result"), lastBattle(pB, "result")
+		H.assert(ra.win and rb.win, "both should win")
+		H.assertEq(data(pA).coins, coinsA + boss.reward.coins, "A reward")
+		H.assertEq(data(pB).coins, coinsB + (if paidB then 0 else boss.reward.coins), "B reward")
+		H.assert(#ra.gains > 0 and ra.gains[1].xp > 0, "no xp")
+		-- 同じ日の2回目: 経験値はもらえて、小判は無し
+		request(pA, "raidCreate", boss.id)
+		request(pA, "raidStart")
+		guard = 0
+		while Raid.fighting(pA) and guard < 60 do
+			guard += 1
+			clientSend(pA, "BattleAction", { kind = "move", index = 1 })
+			task.wait(0.1)
+		end
+		local r2 = lastBattle(pA, "result")
+		H.assert(r2.win and r2.coins == 0 and r2.rewardPaidToday, "second clear paid coins")
+		H.assert(#r2.gains > 0, "no xp on the second clear")
+		boss.hpMult = oldHp
+		-- 部屋は同時に2つまで
+		local pD = onlinePlayer(7004, 10)
+		local pE = onlinePlayer(7005, 10)
+		request(pA, "raidCreate", boss.id)
+		request(pD, "raidCreate", boss.id)
+		request(pE, "raidCreate", boss.id)
+		H.assertEq(lastSent(pE, "Notify")[1], "raid_rooms_full")
+		request(pA, "raidLeave")
+		request(pD, "raidLeave")
+		H.assert(not Raid.inRoom(pA) and not Raid.inRoom(pD), "leave failed")
+	end
+)
+
+H.test(
+	"なかま: スタンプは決まったものだけ全員に届く / 公開する情報は進み具合だけ / 水槽を見に行ける",
+	function()
+		local n = #announced
+		clientSend(pA, "Stamp", "hello")
+		local last = announced[#announced]
+		H.assert(#announced == n + 1 and last.name == "StampShown", "stamp not broadcast")
+		H.assertEq(last.args[1], 7001)
+		H.assertEq(last.args[2], "hello")
+		clientSend(pA, "Stamp", "<font>free text</font>")
+		H.assertEq(#announced, n + 1, "unknown stamp broadcast")
+		task.wait(3.2)
+		H.assert(type(pA:GetAttribute("PvpRating")) == "number", "rating attribute")
+		H.assert(type(pA:GetAttribute("Codex")) == "number", "codex attribute")
+		-- 水槽を見に行く
+		local Aquarium = H.require(server.Services.AquariumService)
+		local hut = Aquarium.hutOf(pB)
+		H.assert(hut ~= nil, "B has no hut")
+		request(pA, "visitTank", 7002)
+		local floor = hut:FindFirstChild("Floor")
+		local pos = pA.Character.HumanoidRootPart.Position
+		H.assert((pos - floor.CFrame.Position).Magnitude < 16, "not moved to the hut")
+	end
+)
 
 local okAll = H.summary()
 process.exit(if okAll then 0 else 1)

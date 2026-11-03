@@ -10,7 +10,7 @@ local Build = require(script.Parent.Build)
 local Scenery = require(script.Parent.Scenery)
 local Terrain = require(script.Parent.Terrain)
 
-local HUT_COUNT = 10 -- 最大人数に合わせる(サーバー人数の設定と揃える)
+local HUT_COUNT = Config.Online.MaxPlayers -- 1人1軒(サーバーの最大人数と揃える)
 
 local M = {}
 
