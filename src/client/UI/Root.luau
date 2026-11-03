@@ -1,6 +1,7 @@
 --!strict
 -- 画面の土台。画面サイズに合わせた拡大縮小と、パネルの開閉(同時に1つだけ)を管理する。
 local Players = game:GetService("Players")
+local GuiService = game:GetService("GuiService")
 local TweenService = game:GetService("TweenService")
 
 local Kit = require(script.Parent.Kit)
@@ -43,11 +44,36 @@ function Root.gui(): ScreenGui
 	return gui
 end
 
+-- Roblox の上のバー(メニュー・チャットのボタン)の高さ。この画面は全体に描く(IgnoreGuiInset)ので、上に置く物はこれより下へ
+function Root.topInset(): number
+	local scale = gui and gui:FindFirstChildOfClass("UIScale")
+	local s = if scale then scale.Scale else 1
+	local ok, topLeft = pcall(function()
+		return GuiService:GetGuiInset()
+	end)
+	local y = if ok and typeof(topLeft) == "Vector2" then topLeft.Y else 36
+	return y / math.max(0.1, s)
+end
+
+-- 上端が top の物を、上のバーに重ならないように下げる量
+function Root.topShift(top: number): number
+	return math.max(0, Root.topInset() + 8 - top)
+end
+
 function Root.register(name: string, root: GuiObject, onOpen: ((any) -> ())?)
 	panels[name] = { root = root, onOpen = onOpen }
 end
 
+-- バトルの間は、ほかの画面を開かない(世界の「調べる」ボタンやキーで、バトルの上に重ならないように)
+local locked = false
+function Root.setLocked(on: boolean)
+	locked = on
+end
+
 function Root.open(name: string, arg: any?)
+	if locked then
+		return
+	end
 	for n, p in panels do
 		if n ~= name then
 			p.root.Visible = false

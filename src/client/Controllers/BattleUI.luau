@@ -6,6 +6,7 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
+local CollectionService = game:GetService("CollectionService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Config = require(Shared.Config)
@@ -924,6 +925,25 @@ end
 local KEEP_DURING_BATTLE = { Toasts = true, OnlineCards = true, Battle = true }
 local hiddenForBattle: { GuiObject } = {}
 
+local disabledPrompts: { ProximityPrompt } = {}
+
+-- バトルの間は、キャラクターを動かせないようにする(カメラは舞台にあるので、見えないまま歩いてしまう。
+-- スマホでは、スティックとジャンプボタンがバトルのボタンに重ならないように消える)
+local function setControls(on: boolean)
+	pcall(function()
+		local scripts = player:FindFirstChild("PlayerScripts")
+		local moduleScript = scripts and scripts:FindFirstChild("PlayerModule")
+		if moduleScript and moduleScript:IsA("ModuleScript") then
+			local controls = (require :: any)(moduleScript):GetControls()
+			if on then
+				controls:Enable()
+			else
+				controls:Disable()
+			end
+		end
+	end)
+end
+
 local function hideWorldUi()
 	for _, c in gui:GetChildren() do
 		if c:IsA("GuiObject") and c.Visible ~= false and not KEEP_DURING_BATTLE[c.Name] then
@@ -931,13 +951,30 @@ local function hideWorldUi()
 			table.insert(hiddenForBattle, c)
 		end
 	end
+	-- キャラクターは世界に立ったままなので、近くの「調べる」ボタンがバトルの上に出ないよう止める(この画面だけ)
+	for _, p in CollectionService:GetTagged("YokaiPrompt") do
+		if p:IsA("ProximityPrompt") and p.Enabled then
+			p.Enabled = false
+			table.insert(disabledPrompts, p)
+		end
+	end
+	Root.setLocked(true)
+	setControls(false)
 end
 
 local function showWorldUi()
+	Root.setLocked(false)
+	if #hiddenForBattle > 0 then
+		setControls(true)
+	end
 	for _, c in hiddenForBattle do
 		c.Visible = true
 	end
 	table.clear(hiddenForBattle)
+	for _, p in disabledPrompts do
+		p.Enabled = true
+	end
+	table.clear(disabledPrompts)
 end
 
 local function closeScreen()
@@ -1471,9 +1508,18 @@ local function openScreen()
 	scene:setShake(shakeOn())
 
 	local v: any = {}
-	v.playerPlate = makePlate(s, "player")
-	v.enemyPlate = makePlate(s, "enemy")
-	v.tools = makeToolbar(s)
+	-- 上の段(体力の札・丸・名前・仲間)。Roblox の上のバーに重ならないよう、まとめて下げる
+	local top = Kit.new("Frame", {
+		Name = "Top",
+		Size = UDim2.fromScale(1, 1),
+		Position = UDim2.fromOffset(0, Root.topShift(10)),
+		BackgroundTransparency = 1,
+		ZIndex = 2,
+		Parent = s,
+	})
+	v.playerPlate = makePlate(top, "player")
+	v.enemyPlate = makePlate(top, "enemy")
+	v.tools = makeToolbar(top)
 
 	-- 真ん中の丸(手番 / 対戦の残り秒 / ボス戦の残り時間)
 	local medal = Kit.new("Frame", {
@@ -1483,7 +1529,7 @@ local function openScreen()
 		BackgroundColor3 = C.panel,
 		BackgroundTransparency = 0.1,
 		ZIndex = 2,
-		Parent = s,
+		Parent = top,
 	})
 	Kit.corner(medal, UDim.new(1, 0))
 	v.medallionStroke = Kit.stroke(medal, C.gold, 3, 0.1)
@@ -1524,7 +1570,7 @@ local function openScreen()
 		TextXAlignment = Enum.TextXAlignment.Right,
 		MaxTextSize = 20,
 		ZIndex = 2,
-		Parent = s,
+		Parent = top,
 	})
 	Kit.new(
 		"UIStroke",
@@ -1541,7 +1587,7 @@ local function openScreen()
 		MaxTextSize = 16,
 		Visible = false,
 		ZIndex = 2,
-		Parent = s,
+		Parent = top,
 	})
 	Kit.corner(v.foeReady, UDim.new(1, 0))
 
@@ -1552,7 +1598,7 @@ local function openScreen()
 			AnchorPoint = Vector2.new(1, 0),
 			BackgroundTransparency = 1,
 			ZIndex = 2,
-			Parent = s,
+			Parent = top,
 		})
 		Kit.new("UIListLayout", {
 			FillDirection = Enum.FillDirection.Horizontal,
@@ -1571,7 +1617,7 @@ local function openScreen()
 			MaxTextSize = 15,
 			Visible = false,
 			ZIndex = 2,
-			Parent = s,
+			Parent = top,
 		})
 		Kit.corner(rage, UDim.new(1, 0))
 		v.raid = { rage = rage, party = party }

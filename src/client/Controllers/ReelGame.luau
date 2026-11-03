@@ -62,7 +62,8 @@ function ReelGame.new(
 	local root = Kit.new("Frame", {
 		Name = "ReelGame",
 		Size = UDim2.fromOffset(170, GAUGE_H + 70),
-		Position = UDim2.new(1, -40, 0.5, -10),
+		-- 右のメニューと「釣る」ボタンの左(重ならない。親指で押すボタンのすぐ横に見える)
+		Position = UDim2.new(1, -250, 0.5, -10),
 		AnchorPoint = Vector2.new(1, 0.5),
 		BackgroundTransparency = 1,
 		Parent = parent,

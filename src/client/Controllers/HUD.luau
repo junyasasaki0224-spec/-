@@ -147,6 +147,8 @@ function HUD.init(gui: ScreenGui)
 		"Frame",
 		{ Name = "HUD", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = gui }
 	)
+	-- いちばん上の物(時計)が Roblox の上のバーに重ならないように、全体を下げる
+	top.Position = UDim2.fromOffset(0, Root.topShift(64))
 	coinLabel = pill(top, UDim2.fromOffset(20, 70), 200, "¥", C.gold)
 	creelLabel = pill(top, UDim2.fromOffset(20, 120), 150, "🐟", C.indigo)
 	baitLabel = pill(top, UDim2.fromOffset(20, 170), 200, "🍡", C.jadeDark)

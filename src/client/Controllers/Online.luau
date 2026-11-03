@@ -517,7 +517,7 @@ function Online.init(g: ScreenGui)
 	cardStack = Kit.new("Frame", {
 		Name = "OnlineCards",
 		Size = UDim2.fromOffset(340, 400),
-		Position = UDim2.new(1, -92, 0, 70), -- 右のメニューと、上の時計の間
+		Position = UDim2.new(1, -92, 0, 70 + Root.topShift(64)), -- 右のメニューと、上の時計の間
 		AnchorPoint = Vector2.new(1, 0),
 		BackgroundTransparency = 1,
 		ZIndex = 20,

@@ -9,6 +9,7 @@ Roblox game written in Luau, synced to Studio with Rojo. Japanese comments/docs;
 - World smoke test: `lune run tests/world_smoke.luau` (Terrain calls are stubbed)
 - Server integration: `lune run tests/server_sim.luau` — boots the real `src/server/init.server.luau` on fake Players/DataStore/remotes and plays through join → fish → sell → purchases → save. Add a case here when changing server logic. Note Lune quirks: set `Position` explicitly (not derived from CFrame), no Instance events (use fakes).
 - Client UI simulation: `lune run tests/client_sim.luau` — runs the real Kit/Root/Online/Social/BattleUI on fake Instances with a manual clock (`advance(dt)`), feeds server messages and clicks buttons by their text. Add a case here when changing client screens.
+- Whole client boot: `lune run tests/client_boot.luau` (and `DEVICE=phone ...`) — boots the real `init.client.luau` with every controller on fakes (`tests/fakes.luau`), replays real server messages recorded by `RECORD_MESSAGES=tests/fixtures/server_messages.json lune run tests/server_sim.luau`, opens every panel and presses every visible button, plays a fishing round, and checks layout (no overlap with the menu / Roblox jump button / top bar). Property names and value types are validated against Roblox's API (Lune reflection); unset properties return Roblox defaults. Re-record the fixture when server messages change.
 - Economy pacing: `lune run tests/economy_sim.luau`
 
 ## Architecture

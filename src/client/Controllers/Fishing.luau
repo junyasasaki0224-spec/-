@@ -4,6 +4,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Config = require(Shared.Config)
@@ -203,7 +204,10 @@ function Fishing.init(gui: ScreenGui)
 	actionButton = Kit.new("TextButton", {
 		Name = "Action",
 		Size = UDim2.fromOffset(132, 132),
-		Position = UDim2.new(1, -36, 1, -40),
+		-- 右のメニューの列には入れない。スマホは Roblox のジャンプボタン(右下)の上に置く
+		Position = if UserInputService.TouchEnabled
+			then UDim2.new(1, -100, 1, -200)
+			else UDim2.new(1, -100, 1, -40),
 		AnchorPoint = Vector2.new(1, 1),
 		BackgroundColor3 = C.vermilion,
 		AutoButtonColor = false,

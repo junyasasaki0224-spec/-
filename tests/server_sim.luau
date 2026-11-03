@@ -1269,5 +1269,81 @@ H.test("バトルの好み(速さ・画面の揺れ): 決まった値だけ保�
 	H.assertEq(data.settings.battleSpeed, 1)
 end)
 
+-- RECORD_MESSAGES=ファイル を付けると、サーバーが送った本物の知らせと、遊んだ後の本物のデータを書き出す。
+-- tests/client_boot.luau が、それを本物のクライアントへ流し込んで画面を全部動かす(形の食い違いを見つける)
+local recordPath = process.env.RECORD_MESSAGES
+if recordPath then
+	local fs = require("@lune/fs")
+	local serde = require("@lune/serde")
+	local function enc(v: any, depth: number?): any
+		local d = depth or 0
+		local ty = typeof(v)
+		if d > 20 then
+			return nil
+		elseif ty == "table" then
+			local out = {}
+			for k, x in v do
+				if type(k) == "string" or type(k) == "number" then
+					out[if type(k) == "number" then "#" .. k else k] = enc(x, d + 1)
+				end
+			end
+			return out
+		elseif ty == "Vector3" then
+			return { __t = "Vector3", v = { v.X, v.Y, v.Z } }
+		elseif ty == "Vector2" then
+			return { __t = "Vector2", v = { v.X, v.Y } }
+		elseif ty == "Color3" then
+			return { __t = "Color3", v = { v.R, v.G, v.B } }
+		elseif ty == "CFrame" then
+			return { __t = "CFrame", v = { v:GetComponents() } }
+		elseif ty == "EnumItem" then
+			return { __t = "Enum", v = { tostring(v.EnumType), v.Name } }
+		elseif ty == "Instance" or (ty == "table" and v.UserId) then
+			return { __t = "Instance", v = { tostring(v) } }
+		elseif ty == "number" or ty == "string" or ty == "boolean" then
+			return v
+		end
+		return nil
+	end
+	local function messages(p): { any }
+		local out = {}
+		for _, m in sent[p] or {} do
+			table.insert(out, { name = m.name, args = enc(m.args) })
+		end
+		return out
+	end
+	local function profileOf(p): any
+		local d = DataService.get(p)
+		if not d then
+			-- 抜けた人は、最後に送ったデータ
+			for i = #(sent[p] or {}), 1, -1 do
+				local m = sent[p][i]
+				if m.name == "Profile" then
+					return enc(m.args[1])
+				end
+			end
+			return nil
+		end
+		local copy = {}
+		for k, v in d do
+			if k ~= "_lock" and k ~= "purchases" and k ~= "uidCounter" then
+				copy[k] = v
+			end
+		end
+		return enc(copy)
+	end
+	fs.writeFile(
+		recordPath,
+		serde.encode("json", {
+			fishing = messages(alice),
+			fishingProfile = profileOf(alice),
+			online = messages(pA),
+			onlineProfile = profileOf(pA),
+			announced = enc(announced),
+		})
+	)
+	print("recorded server messages → " .. recordPath)
+end
+
 local okAll = H.summary()
 process.exit(if okAll then 0 else 1)
