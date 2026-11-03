@@ -1,11 +1,14 @@
 --!strict
 -- 最初の釣り場「沼」。見た目の完成度を最優先で作り込む。
--- 霧のかかる水面、葦、蓮、石灯籠、蛍、島の祠、桟橋、狸の行商、村への鳥居。
+-- 山に囲まれた谷の沼: 霧のかかる水面、葦、蓮、枯れ木、石灯籠、蛍、島の祠、桟橋と小舟、狸の行商、村への鳥居。
+-- 西の岸に神木(しめ縄の大樹)、東に竹林、北は杉の森と、山から段になって落ちる沢と滝。
+-- 出現地点から店・鳥居・VIP の釣り座・神木へは土の道が通っている(地形の材質を塗るだけなのでパーツは増えない)。
 local CollectionService = game:GetService("CollectionService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Config = require(Shared.Config)
 local Build = require(script.Parent.Build)
+local Scenery = require(script.Parent.Scenery)
 local Terrain = require(script.Parent.Terrain)
 
 local M = {}
@@ -18,10 +21,13 @@ function M.build()
 		center = center,
 		rx = spot.water.rx,
 		rz = spot.water.rz,
-		half = 88,
+		half = 100,
 		groundY = 2,
 		hills = 12,
 		seed = 11,
+		ring = 106, -- この先は山(地形の端が見えないように谷を囲む)
+		ringHeight = 62,
+		extent = 184,
 	}
 	Terrain.build(basin)
 
@@ -46,9 +52,91 @@ function M.build()
 		return (p - (a + ab * t)).Magnitude < 9
 	end
 
+	-- 景色の目印の場所
+	local function onShore(deg: number, k: number): Vector3
+		local a = math.rad(deg)
+		return Vector3.new(
+			center.X + math.cos(a) * spot.water.rx * k,
+			0,
+			center.Z + math.sin(a) * spot.water.rz * k
+		)
+	end
+	local sacredPos = onShore(236, 1.42) -- 北西の杉林の神木(出現地点から池と島の祠の向こうに見える)
+	local shopPos = spawnPos + Vector3.new(-20, 0, 2)
+	local toriiPos2 = spawnPos + Vector3.new(22, 0, 10)
+	-- 北東の山から池へ落ちる沢(上流 → 下流)
+	local creekPts = {
+		Vector3.new(44, 0, -122),
+		Vector3.new(37, 0, -104),
+		Vector3.new(30, 0, -88),
+		Vector3.new(24, 0, -73),
+		Vector3.new(19, 0, -59),
+		Vector3.new(14, 0, -40),
+	}
+	local function distToLine(pts: { Vector3 }, x: number, z: number): number
+		local best = math.huge
+		local p = Vector3.new(x, 0, z)
+		for i = 1, #pts - 1 do
+			local a, b = Vector3.new(pts[i].X, 0, pts[i].Z), Vector3.new(pts[i + 1].X, 0, pts[i + 1].Z)
+			local ab = b - a
+			local t = math.clamp((p - a):Dot(ab) / ab:Dot(ab), 0, 1)
+			best = math.min(best, (p - (a + ab * t)).Magnitude)
+		end
+		return best
+	end
+	-- 道(出現地点 → 店 / 鳥居 / VIP の釣り座 / 神木)
+	local paths = {
+		{ spawnPos + Vector3.new(0, 0, 2), shopPos + Vector3.new(6, 0, -2) },
+		{
+			spawnPos + Vector3.new(2, 0, 2),
+			spawnPos + Vector3.new(11, 0, 7),
+			toriiPos2 + Vector3.new(0, 0, -3),
+		},
+		{
+			spawnPos + Vector3.new(3, 0, -3),
+			Vector3.new(18, 0, 37),
+			Vector3.new(32, 0, 28),
+			Vector3.new(41, 0, 17),
+		},
+		{
+			shopPos + Vector3.new(-4, 0, -4),
+			Vector3.new(-36, 0, 38),
+			Vector3.new(-52, 0, 24),
+			Vector3.new(-60, 0, 6),
+			Vector3.new(-59, 0, -16),
+			Vector3.new(-50, 0, -36),
+			sacredPos + Vector3.new(-2, 0, 8),
+		},
+	}
+	local function nearPath(x: number, z: number, w: number): boolean
+		for _, pts in paths do
+			if distToLine(pts, x, z) < w then
+				return true
+			end
+		end
+		return false
+	end
+	local function bambooZone(x: number, z: number): boolean
+		local a = math.deg(math.atan2(z - center.Z, x - center.X))
+		return a > -62
+			and a < -8
+			and (Vector3.new(x - center.X, 0, (z - center.Z) * spot.water.rx / spot.water.rz)).Magnitude
+				> spot.water.rx * 1.3
+	end
+	local function cedarZone(x: number, z: number): boolean
+		local a = math.deg(math.atan2(z - center.Z, x - center.X))
+		return a > -150 and a <= -62
+	end
+
 	-- 桟橋や施設の周りは木を置かない
 	local function clear(x: number, z: number): boolean
 		if nearVip(x, z) then
+			return false
+		end
+		if (Vector3.new(x, 0, z) - Vector3.new(sacredPos.X, 0, sacredPos.Z)).Magnitude < 15 then
+			return false
+		end
+		if distToLine(creekPts, x, z) < 9 or nearPath(x, z, 4.5) then
 			return false
 		end
 		if math.abs(x - o.X) < 12 and z > center.Z + 10 then
@@ -80,7 +168,7 @@ function M.build()
 	-- 桟橋(水面へ突き出す)
 	local pier = Build.folder("Pier", root)
 	local shoreZ = center.Z + spot.water.rz
-	local pierStart, pierEnd = spawnPos.Z - 4, shoreZ - 12
+	local pierStart, pierEnd = spawnPos.Z - 4, shoreZ - 22
 	local deckY = center.Y + 1.4
 	local z = pierStart
 	local i = 0
@@ -96,10 +184,11 @@ function M.build()
 		})
 		if i % 3 == 0 then
 			for _, x in { -3.3, 3.3 } do
+				-- 水の中の杭と、手すりの柱を1本で(上に少し出す)
 				Build.part({
 					name = "Post",
-					size = Vector3.new(0.7, 6, 0.7),
-					cframe = CFrame.new(o.X + x, deckY - 2.2, z),
+					size = Vector3.new(0.7, 8.6, 0.7),
+					cframe = CFrame.new(o.X + x, deckY - 0.9, z),
 					color = Color3.fromRGB(70, 52, 38),
 					material = Enum.Material.Wood,
 					parent = pier,
@@ -121,26 +210,87 @@ function M.build()
 		material = Enum.Material.WoodPlanks,
 		parent = pier,
 	})
-	Build.lantern(pier, Vector3.new(o.X - 3.2, deckY, pierEnd + 1))
-	Build.lantern(pier, Vector3.new(o.X + 3.2, deckY, pierEnd + 1))
+	-- 手すりの綱(杭の上をつなぐ)
+	for _, x in { -3.3, 3.3 } do
+		Scenery.rod(
+			pier,
+			Vector3.new(o.X + x, deckY + 3.2, pierStart),
+			Vector3.new(o.X + x, deckY + 3.2, pierEnd + 2),
+			0.22,
+			Color3.fromRGB(214, 190, 140),
+			Enum.Material.Fabric,
+			"Rope"
+		)
+	end
+	-- 先の広い釣り台(何人かで並んで釣れる)
+	Build.part({
+		name = "Platform",
+		size = Vector3.new(16, 0.4, 8),
+		cframe = CFrame.new(o.X, deckY, pierEnd - 3),
+		color = Color3.fromRGB(116, 84, 58),
+		material = Enum.Material.WoodPlanks,
+		parent = pier,
+	})
+	for _, x in { -7.6, 7.6 } do
+		for _, dz in { -6.6, 0.6 } do
+			Build.part({
+				name = "Post",
+				size = Vector3.new(0.7, 7, 0.7),
+				cframe = CFrame.new(o.X + x, deckY - 2.6, pierEnd + dz),
+				color = Color3.fromRGB(70, 52, 38),
+				material = Enum.Material.Wood,
+				parent = pier,
+			})
+		end
+	end
+	Build.lantern(pier, Vector3.new(o.X - 7, deckY, pierEnd - 6.2))
+	Build.lantern(pier, Vector3.new(o.X + 7, deckY, pierEnd - 6.2))
+	-- つないである小舟
+	Scenery.boat(
+		deco,
+		CFrame.new(o.X + 6.4, center.Y + 0.15, pierStart - 14) * CFrame.Angles(0, math.rad(8), 0)
+	)
 
-	-- 木
+	-- 木: 北は杉の森、東は竹林(下で作る)、そのほかは広葉樹ともみじ
 	local placed = 0
 	local tries = 0
-	while placed < 48 and tries < 600 do
+	while placed < 58 and tries < 900 do
 		tries += 1
 		local a = rng:NextNumber(0, math.pi * 2)
-		local r = rng:NextNumber(1.3, 2.05)
+		local r = rng:NextNumber(1.3, 2.15)
 		local x = center.X + math.cos(a) * spot.water.rx * r
 		local zz = center.Z + math.sin(a) * spot.water.rz * r
-		if clear(x, zz) and math.abs(x) < 84 and math.abs(zz - center.Z) < 84 then
-			local kind = if rng:NextNumber() < 0.15
-				then "maple"
-				elseif rng:NextNumber() < 0.3 then "pine"
-				else nil
-			Build.tree(deco, Vector3.new(x, ground(x, zz) - 0.5, zz), rng, kind)
+		if
+			clear(x, zz)
+			and not bambooZone(x, zz)
+			and Vector3.new(x - center.X, 0, zz - center.Z).Magnitude < 98
+		then
+			local y = ground(x, zz) - 0.5
+			if cedarZone(x, zz) then
+				Scenery.cedar(deco, Vector3.new(x, y, zz), rng)
+			else
+				local kind = if rng:NextNumber() < 0.22
+					then "maple"
+					elseif rng:NextNumber() < 0.2 then "pine"
+					else nil
+				Build.tree(deco, Vector3.new(x, y, zz), rng, kind)
+			end
 			placed += 1
 		end
+	end
+	-- 竹林(北東の岸の向こう)
+	for k, deg in { -56, -46, -36, -26, -17 } do
+		local p = onShore(deg, 1.5 + (k % 2) * 0.28)
+		if clear(p.X, p.Z) then
+			Scenery.bamboo(deco, Vector3.new(p.X, ground(p.X, p.Z), p.Z), rng)
+		end
+	end
+	-- 神木(西の岸)
+	Scenery.sacredTree(deco, Vector3.new(sacredPos.X, ground(sacredPos.X, sacredPos.Z) - 0.4, sacredPos.Z))
+	-- 水から突き出た枯れ木
+	for _, deg in { 148, 206, 312 } do
+		local p = onShore(deg, 0.86)
+		Scenery.snag(deco, Vector3.new(p.X, center.Y, p.Z), rng)
 	end
 
 	-- 葦(岸辺)
@@ -365,6 +515,68 @@ function M.build()
 		"sign_torii_village",
 		Color3.fromRGB(28, 22, 22)
 	)
+
+	-- 北東の山から段になって池へ落ちる沢(水面の高さは、道すじの地面に合わせて下流ほど低く)
+	local levels = {}
+	for seg = #creekPts - 1, 1, -1 do
+		local a, b = creekPts[seg], creekPts[seg + 1]
+		local m = math.huge
+		for k = 0, 6 do
+			local p = a:Lerp(b, k / 6)
+			m = math.min(m, ground(p.X, p.Z))
+		end
+		local level = if seg == #creekPts - 1
+			then center.Y
+			else math.max(math.floor(m - 1.5), levels[seg + 1] + 3)
+		levels[seg] = level
+	end
+	local falls = Terrain.creek(basin, creekPts, levels, 6)
+	for _, f in falls do
+		Scenery.spray(deco, f, 6)
+		for _ = 1, 3 do
+			local s = rng:NextNumber(1.6, 3)
+			Build.part({
+				name = "Rock",
+				size = Vector3.new(s * 1.2, s, s),
+				cframe = CFrame.new(f + Vector3.new(rng:NextNumber(-5, 5), 0.4, rng:NextNumber(-3, 3))),
+				color = Color3.fromRGB(96, 100, 96),
+				material = Enum.Material.Slate,
+				shape = Enum.PartType.Ball,
+				parent = deco,
+			})
+		end
+	end
+
+	-- お地蔵さま(鳥居への道ばた)
+	for k = 1, 3 do
+		local t = 0.3 + k * 0.14
+		local a, b = spawnPos + Vector3.new(2, 0, 2), toriiPos2
+		local p = a:Lerp(b, t) + Vector3.new(-1.6, 0, 3.6)
+		Scenery.jizo(
+			deco,
+			CFrame.lookAt(
+				Vector3.new(p.X, ground(p.X, p.Z), p.Z),
+				Vector3.new(a.X, ground(p.X, p.Z), a.Z + 6)
+			)
+		)
+	end
+
+	-- 道(店・鳥居・VIP の釣り座・神木へ)と、出現地点の石畳
+	for _, pts in paths do
+		Terrain.paintPath(basin, pts, 6, Enum.Material.Ground)
+	end
+	Terrain.paintPath(
+		basin,
+		{ spawnPos + Vector3.new(-5, 0, 0), spawnPos + Vector3.new(5, 0, 0) },
+		10,
+		Enum.Material.Cobblestone
+	)
+
+	-- 谷を囲む山の杉林と、山の手前の見えない壁
+	Scenery.mountainForest(deco, basin, 48, rng, function(x: number, z: number): boolean
+		return distToLine(creekPts, x, z) < 10
+	end)
+	Scenery.boundary(root, Vector3.new(center.X, center.Y, center.Z), basin.ring :: number + 8, 160)
 
 	return root
 end

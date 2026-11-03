@@ -102,6 +102,56 @@ H.test("看板・ボタン・魚屋のタグが付いている", function()
 		H.assert(actions[a], "missing prompt action " .. a)
 	end
 end)
+H.test(
+	"山の手前に見えない壁があり、遊ぶ場所(出現地点・店・鳥居・看板)はすべて壁の内側",
+	function()
+		for _, area in { workspace.World.Swamp, workspace.World.Village } do
+			local walls = area:FindFirstChild("Boundary")
+			H.assert(walls ~= nil, "no boundary in " .. area.Name)
+			local list = walls:GetChildren()
+			H.assertEq(#list, 36, "wall segments")
+			local c = roblox.Vector3.new(0, 0, 0)
+			for _, w in list do
+				H.assertEq(w.Transparency, 1, "visible wall")
+				H.assert(w.CanCollide and not w.CanQuery, "wall collision/query")
+				c += w.CFrame.Position
+			end
+			c /= #list
+			local radius = 0
+			for _, w in list do
+				local p = w.CFrame.Position
+				radius += roblox.Vector3.new(p.X - c.X, 0, p.Z - c.Z).Magnitude
+			end
+			radius /= #list
+			-- 遊ぶ物(ボタンの付いた物・出現地点)が壁から十分内側にある
+			for _, d in area:GetDescendants() do
+				local pos = nil
+				if d:IsA("ProximityPrompt") and d.Parent and d.Parent:IsA("BasePart") then
+					pos = d.Parent.CFrame.Position
+				elseif d:IsA("SpawnLocation") then
+					pos = d.CFrame.Position
+				end
+				if pos then
+					local r = roblox.Vector3.new(pos.X - c.X, 0, pos.Z - c.Z).Magnitude
+					H.assert(
+						r < radius - 10,
+						("%s in %s is at r=%.0f, walls at %.0f"):format(d:GetFullName(), area.Name, r, radius)
+					)
+				end
+			end
+		end
+	end
+)
+H.test("景色の目印がある(神木・竹林・小舟・五重塔・見物台・提灯の列)", function()
+	local swamp, village = workspace.World.Swamp, workspace.World.Village
+	H.assert(swamp:FindFirstChild("Shinboku", true) ~= nil, "sacred tree")
+	H.assert(swamp:FindFirstChild("Boat", true) ~= nil, "boat")
+	H.assert(swamp:FindFirstChild("Bamboo", true) ~= nil, "bamboo")
+	H.assert(swamp:FindFirstChild("Spray", true) ~= nil, "waterfall spray")
+	H.assert(village:FindFirstChild("Pagoda", true) ~= nil, "pagoda")
+	H.assert(village:FindFirstChild("Deck", true) ~= nil, "deck")
+	H.assert(village:FindFirstChild("LanternRope", true) ~= nil, "lantern line")
+end)
 H.test("地形の生成が呼ばれている", function()
 	H.assert(fills > 3000, "fills " .. fills)
 end)
