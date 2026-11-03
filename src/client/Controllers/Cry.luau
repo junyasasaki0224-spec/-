@@ -18,6 +18,8 @@ local C = Theme.Colors
 
 local Cry = {}
 
+local LOAD_TIMEOUT = 2 -- 音の読み込みをこれ以上待つなら、その回は鳴かせない(遅れて鳴ると変なので)
+
 export type Options = {
 	volume: number?,
 	pitch: number?, -- 1 より小さいと低く・ゆっくり(バトルで倒れた時など)
@@ -46,15 +48,36 @@ function Cry.play(fishId: string, opts: Options?): string?
 	s.PlaybackRegionsEnabled = true
 	s.PlaybackRegion = NumberRange.new(a, b)
 	s.Parent = o.parent or SoundService
-	s.TimePosition = a
-	s:Play()
-	-- 区間の終わりで止まるが、念のため時間でも止めて片付ける
-	task.delay((b - a) / pitch + 0.2, function()
-		s:Stop()
-		s:Destroy()
+	task.spawn(function()
+		-- 読み込み前に Play すると、鳴り始めが遅れて片付けの時間までに鳴り終わらない。読み込みを待つ
+		local waited = 0
+		while not s.IsLoaded and waited < LOAD_TIMEOUT and s.Parent do
+			waited += task.wait(0.05)
+		end
+		if not s.IsLoaded or not s.Parent then
+			s:Destroy()
+			return
+		end
+		s.TimePosition = a
+		s:Play()
+		-- 区間の終わりで止まるが、念のため時間でも止めて片付ける
+		task.delay((b - a) / pitch + 0.2, function()
+			s:Stop()
+			s:Destroy()
+		end)
 	end)
 	return text
 end
+
+-- 吹き出しの幅(文字数に合わせる。英数字は細く、かなと漢字は太く数える)
+local function bubbleWidth(text: string): number
+	local w = 34
+	for _, cp in utf8.codes(text) do
+		w += if cp < 128 then 10 else 19
+	end
+	return math.clamp(w, 110, 360)
+end
+Cry.bubbleWidth = bubbleWidth
 
 -- 吹き出し(「ぴゅるる〜」)をぽんと出して、少ししたら消す
 function Cry.bubble(parent: GuiObject, text: string?, position: UDim2?, zIndex: number?): TextLabel?
@@ -66,7 +89,7 @@ function Cry.bubble(parent: GuiObject, text: string?, position: UDim2?, zIndex: 
 	local z = zIndex or 30
 	local b = Kit.label({
 		Name = "CryBubble",
-		Size = UDim2.fromOffset(230, 40),
+		Size = UDim2.fromOffset(bubbleWidth(quoted), 40),
 		Position = position or UDim2.new(1, -12, 0, 12),
 		AnchorPoint = Vector2.new(1, 0),
 		BackgroundTransparency = 0.05,
@@ -81,13 +104,14 @@ function Cry.bubble(parent: GuiObject, text: string?, position: UDim2?, zIndex: 
 	b.AutomaticSize = Enum.AutomaticSize.None
 	Kit.corner(b, UDim.new(0, 14))
 	Kit.padding(b, 6)
-	Kit.stroke(b, C.gold, 2, 0.1)
+	local stroke = Kit.stroke(b, C.gold, 2, 0.1)
 	local scale = Kit.new("UIScale", { Scale = 0.2, Parent = b })
 	TweenService:Create(scale, TweenInfo.new(0.25, Enum.EasingStyle.Back), { Scale = 1 }):Play()
 	task.delay(2.2, function()
 		if b.Parent then
 			local fade = TweenInfo.new(0.35)
 			TweenService:Create(b, fade, { BackgroundTransparency = 1, TextTransparency = 1 }):Play()
+			TweenService:Create(stroke, fade, { Transparency = 1 }):Play()
 			task.delay(0.4, function()
 				b:Destroy()
 			end)

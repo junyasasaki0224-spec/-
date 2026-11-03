@@ -639,5 +639,179 @@ H.test(
 	end
 )
 
+H.test(
+	"鳴き声の再生(クライアント): 区間・速さ・ミュート・読み込み待ち・吹き出し",
+	function()
+		local client = H.root("src/client")
+		local made, delays, tweens = {}, {}, 0
+		local waits = 0
+		local loadAt = 0 -- 何回待ったら読み込み終わるか(math.huge なら読み込めない)
+		local soundService = { Name = "SoundService" }
+		local function newSound()
+			local s: any =
+				{ IsLoaded = loadAt == 0, __loadAt = loadAt, played = 0, stopped = false, Parent = nil }
+			function s:Play()
+				self.played += 1
+			end
+			function s:Stop()
+				self.stopped = true
+			end
+			function s:Destroy()
+				self.Parent = nil
+				self.destroyed = true
+			end
+			table.insert(made, s)
+			return s
+		end
+		local fakeTask = {
+			spawn = function(fn, ...)
+				fn(...)
+			end,
+			delay = function(t, fn)
+				table.insert(delays, { t = t, fn = fn })
+			end,
+			wait = function(t)
+				waits += 1
+				for _, s in made do
+					if not s.IsLoaded and waits >= s.__loadAt then
+						s.IsLoaded = true
+					end
+				end
+				return t or 0.03
+			end,
+		}
+		local lastLabel: any = nil
+		local function ui(props: any?): any
+			local o: any = props or {}
+			return o
+		end
+		local fakeKit = {
+			label = function(props)
+				lastLabel = ui(table.clone(props))
+				return lastLabel
+			end,
+			corner = ui,
+			padding = ui,
+			stroke = function()
+				return ui()
+			end,
+			new = function(_, props)
+				return ui(props)
+			end,
+		}
+		local muted = false
+		H.override(client.Controllers.Sound, {
+			isMuted = function()
+				return muted
+			end,
+		})
+		H.override(client.UI.Kit, fakeKit)
+		H.globals = {
+			game = {
+				GetService = function(_, name)
+					if name == "ReplicatedStorage" then
+						return {
+							WaitForChild = function()
+								return shared
+							end,
+						}
+					elseif name == "SoundService" then
+						return soundService
+					elseif name == "TweenService" then
+						return {
+							Create = function()
+								return {
+									Play = function()
+										tweens += 1
+									end,
+								}
+							end,
+						}
+					end
+					return { PreloadAsync = function() end }
+				end,
+			},
+			task = fakeTask,
+			TweenInfo = {
+				new = function()
+					return {}
+				end,
+			},
+			Instance = {
+				new = function(cls)
+					assert(cls == "Sound", "unexpected " .. cls)
+					return newSound()
+				end,
+			},
+		}
+		local Cry = H.fresh(client.Controllers.Cry)
+		H.globals = nil
+		local c = Config.Cries.cries.hasu_koi
+		local saved = Config.Cries.soundId
+		Locale.set("ja")
+
+		-- アップロード前: 文字だけ返して鳴らさない
+		Config.Cries.soundId = "rbxassetid://0"
+		H.assertEq(Cry.play("hasu_koi"), c.ja)
+		H.assertEq(#made, 0, "no sound before upload")
+
+		-- アップロード後: 魚の区間だけ、指定の速さ・大きさで鳴らし、時間が来たら片付ける
+		Config.Cries.soundId = "rbxassetid://42"
+		H.assertEq(Cry.play("hasu_koi", { pitch = 0.78, volume = 0.6 }), c.ja)
+		local s = made[1]
+		H.assertEq(s.SoundId, "rbxassetid://42")
+		H.assert(s.PlaybackRegionsEnabled == true, "region enabled")
+		H.assertNear(s.PlaybackRegion.Min, c.start, 1e-6, "region start")
+		H.assertNear(s.PlaybackRegion.Max, c.start + c.length, 1e-6, "region end")
+		H.assertNear(s.TimePosition, c.start, 1e-6, "starts at its region")
+		H.assertNear(s.PlaybackSpeed, 0.78, 1e-6, "pitch")
+		H.assertNear(s.Volume, 0.6, 1e-6, "volume")
+		H.assert(s.Parent == soundService, "plays in SoundService")
+		H.assertEq(s.played, 1, "played once")
+		H.assertNear(delays[#delays].t, c.length / 0.78 + 0.2, 1e-6, "cleanup after the slowed cry")
+		delays[#delays].fn()
+		H.assert(s.stopped and s.destroyed, "cleaned up")
+
+		-- 速さは 0.5〜2 に収める / 知らない魚・ミュート中は鳴らさない
+		Cry.play("ryujin", { pitch = 5 })
+		H.assertNear(made[#made].PlaybackSpeed, 2, 1e-6, "pitch clamp")
+		local n = #made
+		H.assert(Cry.play("no_such_fish") == nil and #made == n, "unknown fish")
+		muted = true
+		H.assertEq(Cry.play("hasu_koi"), c.ja, "text even when muted")
+		H.assertEq(#made, n, "muted: no sound")
+		muted = false
+
+		-- 読み込みを待ってから鳴らす / 読み込めなければ鳴らさずに片付ける
+		loadAt = waits + 3
+		Cry.play("kappa_koi")
+		H.assertEq(made[#made].played, 1, "played after loading")
+		H.assertNear(
+			made[#made].TimePosition,
+			Config.Cries.cries.kappa_koi.start,
+			1e-6,
+			"region after loading"
+		)
+		loadAt = math.huge
+		Cry.play("kappa_koi")
+		H.assertEq(made[#made].played, 0, "never loaded: not played")
+		H.assert(made[#made].destroyed, "never loaded: cleaned up")
+		loadAt = 0
+
+		-- 英語の文字 / 吹き出し(かぎかっこ・文字数に合った幅)
+		Locale.set("en")
+		H.assertEq(Cry.play("hasu_koi"), c.en)
+		Locale.set("ja")
+		Cry.bubble({} :: any, "ぴゅるる〜")
+		H.assertEq(lastLabel.Text, "「ぴゅるる〜」")
+		local short = Cry.bubbleWidth("「ぴぃ」")
+		local long = Cry.bubbleWidth("「" .. Config.Cries.cries.yamata_chochin.ja .. "」")
+		H.assert(short >= 110 and long > short and long <= 360, ("bubble widths %d %d"):format(short, long))
+		H.assert(Cry.bubble({} :: any, nil) == nil, "no bubble without text")
+		H.assert(tweens > 0, "bubble pops in")
+		Config.Cries.soundId = saved
+	end
+)
+
 local ok = H.summary()
 process.exit(if ok then 0 else 1)

@@ -34,6 +34,8 @@ import numpy as np
 
 SR = 44100
 TAU = 2 * math.pi
+# 鳴き声の頭に入れる短い無音(秒)。区間の頭で少し遅れて鳴り始めても、最初の「からん」が欠けないように
+LEAD = 0.03
 
 # ---------------------------------------------------------------------------
 # 小さな道具
@@ -868,7 +870,8 @@ def make(d):
         ja, en = "…!", "...!"
         print(f"  {d['id']}: レシピが無いので形から自動で作りました({name})", file=sys.stderr)
         auto_recipe(c, d)
-    return c.render(), ja, en
+    x = np.concatenate([np.zeros(int(LEAD * SR)), c.render()])
+    return x, ja, en
 
 
 def write_wav(path, x):
@@ -938,6 +941,9 @@ def main():
     if isinstance(defs, dict):
         defs = defs["fish"]
     ids = [x for x in a.ids.split(",") if x]
+    if ids and (a.sprite or a.luau):
+        # 一部の魚だけの音で、全魚の音と表を上書きしてしまわないように
+        ap.error("--ids は確認用(mp3 だけ作る)です。--sprite / --luau と一緒には使えません")
     os.makedirs(a.out, exist_ok=True)
     gap = np.zeros(int(a.gap * SR))
     parts = [gap]
