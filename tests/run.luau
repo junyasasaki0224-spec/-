@@ -887,5 +887,43 @@ H.test(
 	end
 )
 
+H.test(
+	"技選びの手伝い(★おすすめ・おまかせ): 相性の良い技・弱った時は回復・技が無ければ選ばない",
+	function()
+		local Advice = H.require(shared.Lib.BattleAdvice)
+		local Config = H.require(shared.Config)
+		local function mv(id: string): any
+			return Config.MoveById[id]
+		end
+		local me = { element = "water", hp = 100, maxHp = 100, stages = { atk = 0, def = 0 } }
+		local fireFoe = { element = "fire", hp = 100, maxHp = 100 }
+		local earthFoe = { element = "earth", hp = 100, maxHp = 100 }
+		-- 火の相手には水の技(2倍)が、ふつうの強い技より上
+		H.assert(
+			Advice.score(mv("water_jet"), me, fireFoe) > Advice.score(mv("tail_strike"), me, fireFoe),
+			"water should beat fire"
+		)
+		-- 効きにくい相手には下がる
+		H.assert(Advice.score(mv("foxfire"), me, fireFoe) < Advice.score(mv("foxfire"), me, earthFoe))
+		-- 回復は体力が減った時だけ
+		H.assertEq(Advice.score(mv("rest"), me, fireFoe), 0)
+		local hurt = table.clone(me)
+		hurt.hp = 20
+		H.assert(
+			Advice.score(mv("rest"), hurt, fireFoe) > Advice.score(mv("water_jet"), hurt, fireFoe),
+			"heal when low"
+		)
+		-- 状態から番号を選ぶ
+		local state = {
+			player = { team = { me }, active = 1, moves = { "tail_strike", "water_jet", "rest" } },
+			enemy = { team = { fireFoe }, active = 1 },
+		}
+		H.assertEq(Advice.suggest(state), 2)
+		state.player.moves = {}
+		H.assertEq(Advice.suggest(state), nil)
+		H.assertEq(Advice.suggest(nil :: any), nil)
+	end
+)
+
 local ok = H.summary()
 process.exit(if ok then 0 else 1)

@@ -242,6 +242,19 @@ function BattleService.handleRequest(player: Player, action: string, payload: an
 	if action == "startBattle" then
 		start(player, payload)
 		return true
+	elseif action == "setBattlePrefs" then
+		-- 見た目の好みだけ(勝ち負けには関係しない)。決まった値だけ受け付ける
+		local data = S.Data.get(player)
+		if data and type(payload) == "table" then
+			if payload.speed == 1 or payload.speed == 2 then
+				data.settings.battleSpeed = payload.speed
+			end
+			if type(payload.shake) == "boolean" then
+				data.settings.battleShake = payload.shake
+			end
+			S.Data.changed(player)
+		end
+		return true
 	end
 	return false
 end

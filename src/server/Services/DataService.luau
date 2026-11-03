@@ -72,7 +72,8 @@ local function template(): any
 		titles = {},
 		activeTitle = "",
 		boosts = { luckUntil = 0, adLuckUntil = 0 },
-		settings = { autoSell = 0, lang = "", challenges = "all" }, -- challenges: 対戦の申し込みを受け取る相手(all / friends / off)
+		-- challenges: 対戦の申し込みを受け取る相手(all / friends / off)。battleSpeed: バトルの演出の速さ(1 / 2)。battleShake: 画面の揺れ
+		settings = { autoSell = 0, lang = "", challenges = "all", battleSpeed = 1, battleShake = true },
 		tutorial = 0,
 		firstCatch = false,
 		uidCounter = 0,

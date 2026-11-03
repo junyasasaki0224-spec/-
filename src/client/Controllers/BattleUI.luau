@@ -25,6 +25,7 @@ local Sound = require(script.Parent.Sound)
 local Cry = require(script.Parent.Cry)
 local Online = require(script.Parent.Online)
 local BattleScene = require(script.Parent.BattleScene)
+local BattleAdvice = require(Shared.Lib.BattleAdvice)
 local C = Theme.Colors
 
 local B = Config.Battle
@@ -154,6 +155,16 @@ local function renderTeamBar(p: any)
 		Parent = teamBar,
 	}, function()
 		Root.open("partners")
+	end)
+	Kit.button({
+		Text = Locale.t("battle_chart"),
+		Size = UDim2.new(0.14, 0, 1, -6),
+		Color = C.indigo,
+		MaxTextSize = 16,
+		LayoutOrder = 10,
+		Parent = teamBar,
+	}, function()
+		BattleUI.showChart(listPanel.root)
 	end)
 end
 
@@ -767,6 +778,27 @@ local function updatePlate(card: any, side: any)
 	end
 end
 
+-- バトルの速さ(×1 / ×2)と画面の揺れ(設定に保存)
+local function battleSpeed(): number
+	local p = State.profile
+	local v = p and p.settings and p.settings.battleSpeed
+	return if v == 2 then 2 else 1
+end
+
+local function shakeOn(): boolean
+	local p = State.profile
+	return not (p and p.settings and p.settings.battleShake == false)
+end
+
+-- 演出の待ち時間(2倍速なら半分)
+local function pause(t: number)
+	task.wait(t / battleSpeed())
+end
+
+local autoOn = false -- おまかせ(このバトルの間だけ)
+local autoToken = 0
+local useCard: (i: number) -> () -- 下で決める(お札を使う)
+
 local function setMessage(text: string)
 	if view then
 		view.message.Text = text
@@ -845,7 +877,30 @@ local function refreshCommands()
 			card.eff.Visible = false
 		end
 	end
-	setCommandsEnabled(not busy and not current.over and not chosen)
+	local canAct = not busy and not current.over and not chosen
+	setCommandsEnabled(canAct)
+	-- ★ おすすめ(おまかせの時は、それを自動で使う)
+	local suggested = if canAct then BattleAdvice.suggest(current) else nil
+	for i, card in view.cards do
+		card.star.Visible = suggested == i and not autoOn
+	end
+	if autoOn and canAct and suggested then
+		autoToken += 1
+		local token = autoToken
+		task.delay(0.7 / battleSpeed(), function()
+			if
+				autoOn
+				and token == autoToken
+				and view
+				and not busy
+				and not chosen
+				and current
+				and not current.over
+			then
+				useCard(suggested)
+			end
+		end)
+	end
 end
 
 local function applyState(st: any, noFish: boolean?)
@@ -865,7 +920,28 @@ local function applyState(st: any, noFish: boolean?)
 	refreshCommands()
 end
 
+-- バトルの間は、ふだんの画面(小判・メニュー・スタンプなど)を隠す。お知らせと申し込みのカードは残す
+local KEEP_DURING_BATTLE = { Toasts = true, OnlineCards = true, Battle = true }
+local hiddenForBattle: { GuiObject } = {}
+
+local function hideWorldUi()
+	for _, c in gui:GetChildren() do
+		if c:IsA("GuiObject") and c.Visible ~= false and not KEEP_DURING_BATTLE[c.Name] then
+			c.Visible = false
+			table.insert(hiddenForBattle, c)
+		end
+	end
+end
+
+local function showWorldUi()
+	for _, c in hiddenForBattle do
+		c.Visible = true
+	end
+	table.clear(hiddenForBattle)
+end
+
 local function closeScreen()
+	showWorldUi()
 	if scene then
 		scene:destroy()
 		scene = nil
@@ -880,6 +956,7 @@ local function closeScreen()
 	chosen = false
 	deadline = nil
 	resultShown = false
+	autoOn = false
 	Input.setEnabled(true)
 end
 
@@ -898,7 +975,7 @@ local function choose(action: any)
 	send(action)
 end
 
-local function useCard(i: number)
+useCard = function(i: number)
 	if not view or busy or chosen or not current or current.over then
 		return
 	end
@@ -1175,7 +1252,24 @@ local function makeTalisman(parent: Instance, i: number)
 		Parent = b,
 	})
 	Kit.corner(eff, UDim.new(1, 0))
+	-- ★ おすすめ(お札の上に小さな札)
+	local star = Kit.label({
+		Size = UDim2.fromOffset(112, 22),
+		Position = UDim2.new(0.5, 0, 0, -34),
+		AnchorPoint = Vector2.new(0.5, 0),
+		BackgroundTransparency = 0,
+		BackgroundColor3 = C.goldLight,
+		TextColor3 = INK,
+		Text = Locale.t("card_suggest"),
+		Font = Theme.Fonts.title,
+		MaxTextSize = 14,
+		Visible = false,
+		ZIndex = 4,
+		Parent = b,
+	})
+	Kit.corner(star, UDim.new(1, 0))
 	return {
+		star = star,
 		button = b,
 		stroke = stroke,
 		band = band,
@@ -1186,24 +1280,200 @@ local function makeTalisman(parent: Instance, i: number)
 	}
 end
 
+-- 相性表(どの属性が、どの属性に強いか)
+local ELEMENTS = { "water", "fire", "earth", "thunder", "spirit" }
+local function showChart(parent: Instance)
+	local overlay = Kit.new("TextButton", {
+		Name = "Chart",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = Color3.new(0, 0, 0),
+		BackgroundTransparency = 0.45,
+		Text = "",
+		ZIndex = 60,
+		Parent = parent,
+	})
+	local box = Kit.new("Frame", {
+		Size = UDim2.fromOffset(560, 470),
+		Position = UDim2.fromScale(0.5, 0.5),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		BackgroundColor3 = C.panel,
+		ZIndex = 61,
+		Parent = overlay,
+	})
+	Kit.corner(box)
+	Kit.stroke(box, C.gold, 3)
+	Kit.label({
+		Size = UDim2.new(1, -24, 0, 30),
+		Position = UDim2.fromOffset(12, 10),
+		Text = Locale.t("chart_title"),
+		Font = Theme.Fonts.title,
+		MaxTextSize = 22,
+		ZIndex = 62,
+		Parent = box,
+	})
+	local grid = Kit.new("Frame", {
+		Size = UDim2.fromOffset(6 * 72, 6 * 50),
+		Position = UDim2.new(0.5, 0, 0, 50),
+		AnchorPoint = Vector2.new(0.5, 0),
+		BackgroundTransparency = 1,
+		ZIndex = 62,
+		Parent = box,
+	})
+	Kit.new("UIGridLayout", {
+		CellSize = UDim2.fromOffset(68, 46),
+		CellPadding = UDim2.fromOffset(4, 4),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = grid,
+	})
+	local order = 0
+	local function cell(text: string, color: Color3, bg: Color3?, size: number?)
+		order += 1
+		local l = Kit.label({
+			Text = text,
+			TextColor3 = color,
+			BackgroundTransparency = if bg then 0 else 1,
+			BackgroundColor3 = bg or C.panel,
+			Font = Theme.Fonts.title,
+			MaxTextSize = size or 22,
+			LayoutOrder = order,
+			ZIndex = 63,
+			Parent = grid,
+		})
+		if bg then
+			Kit.corner(l, Theme.CornerSmall)
+		end
+	end
+	-- 1行目: 守る側の属性 / 1列目: 技の属性
+	cell(Locale.t("chart_corner"), C.textDim, nil, 13)
+	for _, d in ELEMENTS do
+		cell(elementOf(d).icon, C.text)
+	end
+	for _, a in ELEMENTS do
+		cell(elementOf(a).icon .. " " .. Locale.t("element_" .. a), C.text, nil, 16)
+		for _, d in ELEMENTS do
+			local m = BattleLib.effectiveness(a, d)
+			if m > 1 then
+				cell("◎", C.text, C.jade)
+			elseif m < 1 then
+				cell("△", C.textDim, C.disabled)
+			else
+				cell("", C.text, C.panelLight)
+			end
+		end
+	end
+	Kit.label({
+		Size = UDim2.new(1, -40, 0, 24),
+		Position = UDim2.new(0, 20, 1, -70),
+		Text = Locale.t("chart_legend"),
+		TextColor3 = C.goldLight,
+		MaxTextSize = 16,
+		ZIndex = 62,
+		Parent = box,
+	})
+	Kit.label({
+		Size = UDim2.new(1, -40, 0, 22),
+		Position = UDim2.new(0, 20, 1, -40),
+		Text = Locale.t("chart_cycle"),
+		TextColor3 = C.textDim,
+		MaxTextSize = 15,
+		ZIndex = 62,
+		Parent = box,
+	})
+	overlay.Activated:Connect(function()
+		overlay:Destroy()
+	end)
+	return overlay
+end
+BattleUI.showChart = showChart
+
+-- 体力の札の下の小さなボタン: 速さ・おまかせ・相性表
+local function makeToolbar(parent: Instance): any
+	local row = Kit.new("Frame", {
+		Size = UDim2.fromOffset(380, 34),
+		Position = UDim2.fromOffset(24, 110),
+		BackgroundTransparency = 1,
+		ZIndex = 2,
+		Parent = parent,
+	})
+	Kit.new("UIListLayout", {
+		FillDirection = Enum.FillDirection.Horizontal,
+		Padding = UDim.new(0, 8),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = row,
+	})
+	local tools: any = {}
+	local function paint()
+		tools.speed.Text = Locale.t("battle_speed", { n = battleSpeed() })
+		tools.speed.BackgroundColor3 = if battleSpeed() == 2 then C.jade else C.panelDark
+		tools.auto.BackgroundColor3 = if autoOn then C.jade else C.panelDark
+	end
+	tools.speed = Kit.button({
+		Size = UDim2.fromOffset(104, 34),
+		Color = C.panelDark,
+		MaxTextSize = 15,
+		LayoutOrder = 1,
+		Parent = row,
+	}, function()
+		local nextSpeed = if battleSpeed() == 2 then 1 else 2
+		if State.profile then
+			State.profile.settings.battleSpeed = nextSpeed -- すぐ反映(本当の値はサーバーに保存)
+		end
+		State.request("setBattlePrefs", { speed = nextSpeed })
+		if scene then
+			scene:setSpeed(nextSpeed)
+		end
+		paint()
+	end)
+	tools.auto = Kit.button({
+		Text = Locale.t("battle_auto"),
+		Size = UDim2.fromOffset(132, 34),
+		Color = C.panelDark,
+		MaxTextSize = 15,
+		LayoutOrder = 2,
+		Parent = row,
+	}, function()
+		autoOn = not autoOn
+		paint()
+		refreshCommands()
+	end)
+	tools.chart = Kit.button({
+		Text = Locale.t("battle_chart"),
+		Size = UDim2.fromOffset(104, 34),
+		Color = C.panelDark,
+		MaxTextSize = 15,
+		LayoutOrder = 3,
+		Parent = row,
+	}, function()
+		if screen then
+			showChart(screen)
+		end
+	end)
+	paint()
+	return tools
+end
+
 local function openScreen()
 	closeScreen()
 	Root.close()
 	Input.setEnabled(false)
+	hideWorldUi()
 	local s = Kit.new("Frame", {
 		Name = "Battle",
 		Active = true, -- 下の HUD のボタンを押せないようにする
 		Size = UDim2.fromScale(1, 1),
-		BackgroundColor3 = Color3.fromRGB(6, 24, 48),
+		BackgroundTransparency = 1, -- 後ろは3Dの水の中(カメラごと移る)
 		ZIndex = 30,
 		Parent = gui,
 	})
 	screen = s
 	scene = BattleScene.new(s, { boss = mode == "raid" })
+	scene:setSpeed(battleSpeed())
+	scene:setShake(shakeOn())
 
 	local v: any = {}
 	v.playerPlate = makePlate(s, "player")
 	v.enemyPlate = makePlate(s, "enemy")
+	v.tools = makeToolbar(s)
 
 	-- 真ん中の丸(手番 / 対戦の残り秒 / ボス戦の残り時間)
 	local medal = Kit.new("Frame", {
@@ -1457,17 +1727,17 @@ local function playEvents(events: { any })
 				-- 相手へ泳いでぶつかる
 				scene:attack(side)
 				Sound.play("splash", 0.35, 1.5)
-				task.wait(0.3)
+				pause(0.3)
 			else
 				scene:cast(side, Color3.fromHex(elementOf(lastElement).color))
 				Sound.play("click", 0.4, 0.8)
-				task.wait(0.55)
+				pause(0.55)
 			end
 		elseif e.kind == "miss" then
 			-- e.side は技を出した方。かわしたのは相手
 			scene:dodge(otherSide(side))
 			setMessage(Locale.t("battle_miss"))
-			task.wait(0.7)
+			pause(0.7)
 		elseif e.kind == "damage" then
 			Sound.play("splash", 0.5, if e.eff > 1 then 0.8 else 1.2)
 			scene:hit(side, lastElement, e.eff, e.crit == true)
@@ -1485,10 +1755,10 @@ local function playEvents(events: { any })
 			elseif e.eff < 1 then
 				table.insert(extra, Locale.t("battle_weak"))
 			end
-			task.wait(0.55)
+			pause(0.55)
 			if #extra > 0 then
 				setMessage(table.concat(extra, "  "))
-				task.wait(0.7)
+				pause(0.7)
 			end
 		elseif e.kind == "heal" then
 			scene:heal(side)
@@ -1498,20 +1768,20 @@ local function playEvents(events: { any })
 				st[side].team[st[side].active].hp = e.hp
 				updatePlate(plate, st[side])
 			end
-			task.wait(0.7)
+			pause(0.7)
 		elseif e.kind == "stat" then
 			local key = if e.delta > 0 then "battle_stat_up" else "battle_stat_down"
 			setMessage(Locale.t(key, { name = sideName(side, fishId), stat = Locale.t("stat_" .. e.stat) }))
 			scene:cast(side, if e.delta > 0 then C.goldLight else C.indigo)
-			task.wait(0.7)
+			pause(0.7)
 		elseif e.kind == "stun" then
 			setMessage(Locale.t("battle_stun", { name = sideName(side, fishId) }))
 			scene:stun(side)
-			task.wait(0.7)
+			pause(0.7)
 		elseif e.kind == "stunned" then
 			setMessage(Locale.t("battle_stunned", { name = sideName(side, fishId) }))
 			scene:stun(side)
-			task.wait(0.7)
+			pause(0.7)
 		elseif e.kind == "faint" then
 			setMessage(Locale.t("battle_faint", { name = sideName(side, e.fishId) }))
 			scene:faint(side)
@@ -1521,12 +1791,12 @@ local function playEvents(events: { any })
 				st[side].team[st[side].active].hp = 0
 				updatePlate(plate, st[side])
 			end
-			task.wait(1.2)
+			pause(1.2)
 		elseif e.kind == "switch" then
 			-- 前の子が泳ぎ去り、次の子が横から泳いでくる
 			if scene:hasFish(side) then
 				scene:leave(side)
-				task.wait(0.5)
+				pause(0.5)
 			end
 			if st then
 				st[side].active = e.slot
@@ -1541,7 +1811,7 @@ local function playEvents(events: { any })
 					else Locale.t("battle_foe_sends", { name = n })
 			)
 			cry(side, e.fishId)
-			task.wait(0.9)
+			pause(0.9)
 		elseif e.kind == "run" then
 			scene:leave(side)
 			if side == "enemy" then
@@ -1551,7 +1821,7 @@ local function playEvents(events: { any })
 			else
 				setMessage(Locale.t("battle_ran"))
 			end
-			task.wait(0.8)
+			pause(0.8)
 		end
 	end
 end
@@ -1567,6 +1837,13 @@ local function showResult(r: any)
 		return
 	end
 	resultShown = true
+	-- 勝った子のまわりをカメラが回る
+	if scene and not r.retreated then
+		local winner = if r.win then "player" else "enemy"
+		if scene:hasFish(winner) then
+			scene:celebrate(winner)
+		end
+	end
 	setCommandsEnabled(false)
 	local overlay = Kit.new("Frame", {
 		Size = UDim2.fromScale(1, 1),
@@ -1729,25 +2006,28 @@ local function intro(msg: any)
 		scene:setFish("enemy", ef.fishId, ef.mutation, "enter")
 	end
 	if mode == "raid" then
-		task.wait(0.8)
+		if scene then
+			scene:shotTo("boss", nil, 2.4, 1.5)
+		end
+		pause(0.8)
 		cry("enemy", ef.fishId)
 		if scene then
 			scene:flash(C.vermilion, 0.35)
 			scene:shake(10)
 		end
-		task.wait(1.2)
+		pause(1.2)
 	else
-		task.wait(1.2)
+		pause(1.2)
 		setMessage(Locale.t("battle_foe_sends", { name = name(Config.FishById[ef.fishId]) }))
 		cry("enemy", ef.fishId)
-		task.wait(1.0)
+		pause(1.0)
 	end
 	if scene then
 		scene:setFish("player", pf.fishId, pf.mutation, "enter")
 	end
 	setMessage(Locale.t("battle_go", { name = name(Config.FishById[pf.fishId]) }))
 	cry("player", pf.fishId)
-	task.wait(1.0)
+	pause(1.0)
 end
 
 local queue: { any } = {}
@@ -1917,9 +2197,16 @@ function BattleUI.init(g: ScreenGui)
 			return
 		end
 		local keys = { Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three, Enum.KeyCode.Four }
-		local i = table.find(keys, input.KeyCode)
+		-- ゲームパッド: 十字キーの 左・上・右・下 = お札 1〜4、Y = 交代、B = 逃げる
+		local pad =
+			{ Enum.KeyCode.DPadLeft, Enum.KeyCode.DPadUp, Enum.KeyCode.DPadRight, Enum.KeyCode.DPadDown }
+		local i = table.find(keys, input.KeyCode) or table.find(pad, input.KeyCode)
 		if i then
 			useCard(i)
+		elseif input.KeyCode == Enum.KeyCode.ButtonY then
+			showSwitchPicker()
+		elseif input.KeyCode == Enum.KeyCode.ButtonB then
+			onRun()
 		end
 	end)
 

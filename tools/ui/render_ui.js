@@ -8,6 +8,15 @@ const path = require("path");
 const { chromium } = require("playwright");
 
 const [inDir, outDir] = process.argv.slice(2);
+// --bg 場面名=画像,... : その場面の後ろに絵を敷く(バトルは Blender で描いた3Dの舞台を敷くと、実際の画面に近くなる)
+const backgrounds = {};
+const bgIndex = process.argv.indexOf("--bg");
+if (bgIndex > 0 && process.argv[bgIndex + 1]) {
+	for (const pair of process.argv[bgIndex + 1].split(",")) {
+		const [name, file] = pair.split("=");
+		backgrounds[name] = "data:image/png;base64," + fs.readFileSync(file).toString("base64");
+	}
+}
 if (!inDir || !outDir) {
 	console.error("usage: node tools/ui/render_ui.js <snapshots dir> <out dir>");
 	process.exit(1);
@@ -215,10 +224,10 @@ build(DATA, document.getElementById("root"), null);
 fit();
 `;
 
-const PAGE = (data) => `<!doctype html><html><head><meta charset="utf-8"><style>
+const PAGE = (data, bg) => `<!doctype html><html><head><meta charset="utf-8"><style>
 html,body{margin:0;width:1280px;height:720px;overflow:hidden;font-family:"IPAGothic","Noto Color Emoji",sans-serif}
 #world{position:absolute;inset:0;background:linear-gradient(180deg,#86b9cf 0%,#b9d9c9 52%,#4f7f69 53%,#2f5747 100%)}
-#world:after{content:"(ゲームの景色)";position:absolute;left:50%;top:60%;translate:-50% 0;color:rgba(255,255,255,.35);font-size:28px}
+#world:not([style]):after{content:"(ゲームの景色)";position:absolute;left:50%;top:60%;translate:-50% 0;color:rgba(255,255,255,.35);font-size:28px}
 #root{position:absolute;inset:0}
 .n{position:absolute;box-sizing:border-box}
 .c{position:absolute}
@@ -229,7 +238,7 @@ html,body{margin:0;width:1280px;height:720px;overflow:hidden;font-family:"IPAGot
 .fish span{font-size:64px;line-height:1}.fish small{font-size:12px;margin-top:4px}
 .fish3d{position:absolute;translate:-50% -50%;display:flex;flex-direction:column;align-items:center;line-height:1;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35))}
 .fish3d small{font-size:12px;color:rgba(255,255,255,.7);margin-top:2px}
-</style></head><body><div id="world"></div><div id="root"></div><script>(() => {const DATA=${data};${RENDER}})();</script></body></html>`;
+</style></head><body><div id="world"${bg ? ` style="background:url(${bg}) center/cover"` : ""}></div><div id="root"></div><script>(() => {const DATA=${data};${RENDER}})();</script></body></html>`;
 
 (async () => {
 	fs.mkdirSync(outDir, { recursive: true });
@@ -239,7 +248,8 @@ html,body{margin:0;width:1280px;height:720px;overflow:hidden;font-family:"IPAGot
 	const files = fs.readdirSync(inDir).filter((f) => f.endsWith(".json")).sort();
 	for (const f of files) {
 		const data = fs.readFileSync(path.join(inDir, f), "utf8");
-		await page.setContent(PAGE(data), { waitUntil: "load" });
+		const bg = backgrounds[f.replace(/\.json$/, "")];
+		await page.setContent(PAGE(data, bg), { waitUntil: "load" });
 		const out = path.join(outDir, f.replace(/\.json$/, ".png"));
 		await page.screenshot({ path: out });
 		console.log(out);

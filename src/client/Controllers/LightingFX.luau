@@ -66,6 +66,15 @@ local WEATHER_DARK = { sunny = 1, rain = 0.75, fog = 0.85, thunder = 0.6 }
 
 local rainPart: Part
 local rainEmitter: ParticleEmitter
+
+-- バトル(水の中)の間は、時間帯と天気の見た目を止める(雨も降らせない)。終われば次の更新で元に戻る
+local held = false
+function LightingFX.hold(on: boolean)
+	held = on
+	if on and rainEmitter then
+		rainEmitter.Rate = 0
+	end
+end
 local lastWeather = ""
 local lastPhase = ""
 local nextThunder = 0
@@ -119,6 +128,9 @@ function LightingFX.init()
 	local grade = Lighting:WaitForChild("Grade", 10) :: ColorCorrectionEffect?
 	local acc = 0
 	RunService.RenderStepped:Connect(function(dt)
+		if held then
+			return
+		end
 		local now = workspace:GetServerTimeNow()
 		local clock = WorldClock.clockTime(now, W)
 		Lighting.ClockTime = clock

@@ -1252,5 +1252,22 @@ H.test(
 	end
 )
 
+H.test("バトルの好み(速さ・画面の揺れ): 決まった値だけ保存する", function()
+	local data = DataService.get(pA)
+	H.assertEq(data.settings.battleSpeed, 1, "default speed")
+	H.assertEq(data.settings.battleShake, true, "default shake")
+	request(pA, "setBattlePrefs", { speed = 2, shake = false })
+	H.assertEq(data.settings.battleSpeed, 2)
+	H.assertEq(data.settings.battleShake, false)
+	-- おかしな値は無視
+	request(pA, "setBattlePrefs", { speed = 99, shake = "yes" })
+	request(pA, "setBattlePrefs", { speed = 0 / 0 })
+	request(pA, "setBattlePrefs", "fast")
+	H.assertEq(data.settings.battleSpeed, 2)
+	H.assertEq(data.settings.battleShake, false)
+	request(pA, "setBattlePrefs", { speed = 1, shake = true })
+	H.assertEq(data.settings.battleSpeed, 1)
+end)
+
 local okAll = H.summary()
 process.exit(if okAll then 0 else 1)

@@ -93,7 +93,16 @@ function Settings.render()
 			Settings.render()
 		end
 	)
-	row(5, Locale.t("help_title"), "?", true, function()
+	-- バトル: 演出の速さと画面の揺れ
+	local speed = if p.settings.battleSpeed == 2 then 2 else 1
+	row(5, Locale.t("settings_battle_speed", { n = speed }), "▶", true, function()
+		State.request("setBattlePrefs", { speed = if speed == 2 then 1 else 2 })
+	end)
+	local shake = p.settings.battleShake ~= false
+	row(6, Locale.t(if shake then "settings_shake_on" else "settings_shake_off"), "▶", true, function()
+		State.request("setBattlePrefs", { shake = not shake })
+	end)
+	row(7, Locale.t("help_title"), "?", true, function()
 		Root.open("help")
 	end)
 end

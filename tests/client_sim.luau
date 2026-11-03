@@ -49,7 +49,13 @@ end
 
 local function advance(dt: number)
 	local target = now + dt
+	local steps = 0
 	while true do
+		-- 同じ時刻に自分を入れ直し続ける処理があると止まらなくなるので、テストの失敗にする
+		steps += 1
+		if steps > 200000 then
+			error("scheduler runaway: something keeps waking at the same time", 2)
+		end
 		local bestI, best = nil, nil
 		for i, s in sleeping do
 			if s.at <= target and (best == nil or s.at < best.at) then
@@ -257,6 +263,11 @@ function methods:GetScale()
 end
 function methods:ScaleTo(x)
 	rawget(self, "__props").Scale = x
+end
+function methods:BulkMoveTo(parts, cfs)
+	for i, p in parts do
+		p.CFrame = cfs[i]
+	end
 end
 function methods:GetBoundingBox()
 	return roblox.CFrame.new(), roblox.Vector3.new(4, 2, 1)
@@ -540,6 +551,20 @@ local services: { [string]: any } = {
 }
 local camera = fakeNew("Camera")
 camera.ViewportSize = roblox.Vector2.new(1280, 720)
+camera.CameraType = roblox.Enum.CameraType.Custom
+camera.FieldOfView = 70
+-- 光の設定(バトルの間だけ水の中のものに変わり、終われば戻る)
+local lighting = fakeNew("Lighting")
+lighting.FogEnd = 100000
+lighting.ClockTime = 14
+local atmosphere = fakeNew("Atmosphere")
+atmosphere.Name = "Atmosphere"
+atmosphere.Parent = lighting
+local grade = fakeNew("ColorCorrectionEffect")
+grade.Name = "Grade"
+grade.Parent = lighting
+services.Lighting = lighting
+local lightingHeld = false
 local workspace: any = fakeNew("Workspace")
 workspace.CurrentCamera = camera
 workspace.GetServerTimeNow = function()
@@ -552,6 +577,11 @@ H.override(client.Controllers.Sound, { play = noop })
 H.override(client.Controllers.Cry, { say = noop, bubble = noop, play = noop })
 H.override(client.Controllers.Input, { setEnabled = noop })
 H.override(client.Controllers.Notify, { key = noop, show = noop })
+H.override(client.Controllers.LightingFX, {
+	hold = function(on)
+		lightingHeld = on
+	end,
+})
 H.override(shared.Lib.Remotes, { event = remote })
 H.override(shared.Lib.FishBuilder, {
 	build = function(def)
@@ -1036,23 +1066,48 @@ H.test(
 )
 
 H.test(
-	"水の中: 2匹とも泳ぎ回る・技は相手へ泳いでぶつかる・倒れると水面へ浮かぶ・1〜4キーでお札",
+	"3Dの水の中: カメラが舞台へ・光が水の中に・2匹が泳ぐ・技で相手へ泳ぐ・倒れると水面へ・終われば元どおり",
 	function()
-		-- 3D → 画面の計算(真ん中は真ん中、右の魚は右に)
+		-- カメラの計算(注目点のまわりを回る): 回転なしなら真後ろ(+Z)から奥を見る
 		local Scene = H.require(client.Controllers.BattleScene)
-		local cam = roblox.CFrame.new(0, 0.5, 34)
-		local cx, cy = Scene.project(cam, 38, 16 / 9, roblox.Vector3.new(0, 0.5, 0))
-		H.assertNear(cx, 0.5, 1e-6)
-		H.assertNear(cy, 0.5, 1e-6)
-		local rx = Scene.project(cam, 38, 16 / 9, roblox.Vector3.new(7, 0.5, 0))
-		H.assertNear(rx, 0.5 + 7 / (34 * math.tan(math.rad(19)) * 16 / 9) / 2, 1e-6)
+		local focus = roblox.Vector3.new(1, 2, 3)
+		local cf = Scene.orbit(focus, 0, 0, 30)
+		H.assert((cf.Position - (focus + roblox.Vector3.new(0, 0, 30))).Magnitude < 1e-4, "orbit position")
+		H.assert((cf.LookVector - roblox.Vector3.new(0, 0, -1)).Magnitude < 1e-4, "orbit look")
+		-- どのカメラも水面より下(水面の板の中や上から写さない)
+		local Arena = H.require(client.Controllers.BattleArena)
+		local I = Arena.INTRO_SHOT
+		local introCam = Arena.orbit(roblox.Vector3.new(0, Arena.FISH_Y + I.up, 0), I.yaw, I.pitch, I.dist)
+		H.assert(introCam.Position.Y < Arena.SURFACE_Y - 4, "intro camera breaks the surface")
+		local B = Arena.BASE_SHOT
+		H.assert(
+			Arena.orbit(roblox.Vector3.new(0, Arena.FISH_Y, 0), 0, B.pitch + 0.03, B.bossDist + 1.5).Position.Y
+				< Arena.SURFACE_Y - 4,
+			"base camera breaks the surface"
+		)
+		local high = Scene.orbit(focus, 0.4, 0.3, 30)
+		H.assert(high.Position.Y > focus.Y + 5, "pitch should raise the camera")
+		H.assertNear((high.Position - focus).Magnitude, 30, 1e-3)
 
 		local state = BattleLib.new(fighters({ { fishA.id, 20 } }), fighters({ { fishB.id, 12 } }))
 		serverSays({ kind = "start", trainerId = Config.Trainers[1].id, state = BattleLib.publicState(state) })
+		-- カメラは舞台へ、光は水の中へ
+		H.assert(camera.CameraType == roblox.Enum.CameraType.Scriptable, "camera not taken")
+		H.assert(lightingHeld, "day/weather look not paused")
+		H.assert(lighting.FogEnd < 1000, "no underwater fog")
+		H.assert(atmosphere.Parent == nil, "atmosphere still blocks the fog")
+		H.assert(lighting:FindFirstChild("BattleDepth") ~= nil, "no depth of field")
+		-- ふだんの画面(小判・メニュー・スタンプ)はバトルの後ろに見えない。お知らせのカードは残す
+		H.assert(gui:FindFirstChild("HUD").Visible == false, "world HUD shows through the battle")
+		H.assert(gui:FindFirstChild("StampButton").Visible == false, "stamp button shows through the battle")
+		H.assert(gui:FindFirstChild("OnlineCards").Visible ~= false, "notice cards hidden in battle")
 		advance(4)
-		local water = gui:FindFirstChild("Battle"):FindFirstChild("Underwater"):FindFirstChild("Water")
+		local arena = workspace:FindFirstChild("BattleArena")
+		H.assert(arena, "arena not built")
+		local origin = Scene.orbit(roblox.Vector3.new(0, 2000, 0), 0, 0, 0).Position
+		local battle = arena:FindFirstChild("Battle")
 		local function fishModel(id: string): any
-			for _, c in water:GetChildren() do
+			for _, c in battle:GetChildren() do
 				if c.ClassName == "Model" and c.Name == id then
 					return c
 				end
@@ -1062,15 +1117,28 @@ H.test(
 		local mine, foe = fishModel(fishA.id), fishModel(fishB.id)
 		H.assert(mine and foe, "fish not in the water")
 		local function x(m: any): number
-			return m.Pivot.Position.X
+			return m.Pivot.Position.X - origin.X
 		end
 		local step = services.RunService.RenderStepped
 		step:Fire()
 		H.assert(x(mine) < 0 and x(foe) > 0, "fish on the wrong sides")
+		H.assert(math.abs(camera.CFrame.Position.Y - origin.Y) < 60, "camera not at the arena")
 		local p1 = mine.Pivot.Position
 		advance(0.5)
 		step:Fire()
 		H.assert((mine.Pivot.Position - p1).Magnitude > 0.01, "fish not swimming")
+		-- 舞台の海藻も揺れている
+		local kelpPart = nil
+		for _, d in arena:FindFirstChild("Moving"):GetChildren() do
+			if d.Name == "Block" then
+				kelpPart = d
+				break
+			end
+		end
+		local k1 = kelpPart.CFrame
+		advance(0.7)
+		step:Fire()
+		H.assert(kelpPart.CFrame ~= k1, "kelp not swaying")
 		snapshot("underwater")
 
 		-- キーボードの 1 で1枚目のお札
@@ -1104,6 +1172,8 @@ H.test(
 		advance(0.25)
 		step:Fire()
 		H.assert(x(mine) > home + 4, "attacker did not swim at the foe")
+		-- 当たった所に3Dの演出(光る粒など)が出ている
+		H.assert(#arena:FindFirstChild("Effects"):GetChildren() > 0, "no 3D effects on hit")
 		snapshot("underwater_hit")
 		advance(4)
 		step:Fire()
@@ -1112,6 +1182,76 @@ H.test(
 		serverSays({ kind = "result", win = true, coins = 0, gains = {} })
 		advance(2)
 		click(button(gui, t("close")))
+		-- 元どおり
+		H.assert(camera.CameraType == roblox.Enum.CameraType.Custom, "camera not returned")
+		H.assertEq(camera.FieldOfView, 70)
+		H.assertEq(lighting.FogEnd, 100000)
+		H.assert(atmosphere.Parent == lighting, "atmosphere not restored")
+		H.assert(lighting:FindFirstChild("BattleDepth") == nil, "depth of field left behind")
+		H.assert(not lightingHeld, "day/weather look still paused")
+		H.assert(arena.Parent == nil, "arena still in the world")
+		H.assert(gui:FindFirstChild("HUD").Visible ~= false, "world HUD not restored")
+	end
+)
+
+H.test(
+	"バトルの便利機能: ★おすすめ・おまかせ・2倍速(保存)・相性表・ゲームパッド",
+	function()
+		-- 水の技は火の相手によく効く → おすすめは水の技
+		local waterFish, fireFish = nil, nil
+		for _, f in Config.Fish do
+			if f.element == "water" and not waterFish then
+				waterFish = f
+			elseif f.element == "fire" and not fireFish then
+				fireFish = f
+			end
+		end
+		local state = BattleLib.new(fighters({ { waterFish.id, 30 } }), fighters({ { fireFish.id, 30 } }))
+		local moves = state.sides.player.team[1].moves
+		local Advice = H.require(shared.Lib.BattleAdvice)
+		local best = Advice.suggest(BattleLib.publicState(state))
+		H.assert(best ~= nil, "no suggestion")
+		serverSays({ kind = "start", trainerId = Config.Trainers[1].id, state = BattleLib.publicState(state) })
+		advance(5)
+		H.assert(hasText(gui, t("card_suggest")), "suggested card not marked")
+		snapshot("battle_tools")
+
+		-- 2倍速: サーバーに保存を頼み、すぐ反映
+		click(button(gui, t("battle_speed", { n = 1 })))
+		local r = lastRequest("setBattlePrefs")
+		H.assert(r and r.payload.speed == 2, "speed pref not sent")
+		H.assertEq(profile.settings.battleSpeed, 2)
+		H.assert(button(gui, t("battle_speed", { n = 2 })) ~= nil, "speed button not updated")
+
+		-- 相性表
+		click(button(gui, t("battle_chart")))
+		H.assert(hasText(gui, t("chart_title")) and hasText(gui, "◎"), "chart missing")
+		snapshot("type_chart")
+		click(gui:FindFirstChild("Battle"):FindFirstChild("Chart"))
+
+		-- ゲームパッド: 十字キーの上 = 2枚目
+		local sent = rawget(remote("BattleAction"), "sent")
+		local before = #sent
+		services.UserInputService.InputBegan:Fire({ KeyCode = roblox.Enum.KeyCode.DPadUp }, false)
+		H.assertEq(#sent, before + 1, "dpad did not use a talisman")
+		H.assertEq(sent[#sent][1].index, 2)
+		-- 次の手番: おまかせにすると、おすすめを自動で使う
+		serverSays({ kind = "turn", events = {}, state = BattleLib.publicState(state) })
+		advance(0.2)
+		click(button(gui, t("battle_auto")))
+		before = #sent
+		advance(1)
+		H.assertEq(#sent, before + 1, "auto did not act")
+		H.assertEq(sent[#sent][1].index, best, "auto picked something else")
+		H.assert(moves[best] ~= nil)
+		-- 逃げて終わる(おまかせは次のバトルには持ち越さない)
+		serverSays({ kind = "turn", events = {}, state = BattleLib.publicState(state) })
+		advance(0.2)
+		click(button(gui, t("battle_run")))
+		serverSays({ kind = "result", win = false, gains = {} })
+		advance(2)
+		click(button(gui, t("close")))
+		profile.settings.battleSpeed = 1
 	end
 )
 
@@ -1135,7 +1275,7 @@ H.test(
 		H.assertEq(sent[#sent][1].slot, 2)
 		local events = BattleLib.turn(state, { kind = "switch", slot = 2 }, rng, { kind = "move", index = 1 })
 		serverSays({ kind = "turn", events = events, state = BattleLib.publicState(state) })
-		local water = gui:FindFirstChild("Battle"):FindFirstChild("Underwater"):FindFirstChild("Water")
+		local water = workspace:FindFirstChild("BattleArena"):FindFirstChild("Battle")
 		advance(0.3)
 		services.RunService.RenderStepped:Fire()
 		advance(6)
