@@ -1143,6 +1143,17 @@ H.test(
 		Players.PlayerRemoving:Fire(pL)
 		H.assert(not Pvp.busy(pB), "match kept after leaving")
 		H.assert(lastBattle(pB, "result").win, "remaining player should win")
+		-- 抜けた人の負けも保存されている(抜ければ負けが付かない、という抜け道を作らない)
+		local saved = stores[Config.Tuning.Data.storeName]["u_7006"]
+		H.assert(saved and saved.pvp.losses == 1, "leaver's loss not saved")
+		-- 降参は相手を待たずにすぐ決まる
+		local pF = onlinePlayer(7007, 20)
+		request(pF, "pvpChallenge", 7001)
+		request(pA, "pvpRespond", { from = 7007, accept = true })
+		H.assert(Pvp.busy(pA), "third match not started")
+		clientSend(pF, "BattleAction", { kind = "run" })
+		H.assert(not Pvp.busy(pA) and not Pvp.busy(pF), "forfeit did not end the match at once")
+		H.assert(lastBattle(pA, "result").win and not lastBattle(pF, "result").win, "forfeit winner wrong")
 	end
 )
 

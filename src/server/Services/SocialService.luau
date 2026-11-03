@@ -1,7 +1,8 @@
 --!strict
 -- なかま(同じサーバーの人・友達とのやりとり)。
 -- ・スタンプ: 決まった定型文だけ(自由な文字は送れない。文言は見る人の言語で表示される)。頭の上に少し出る
--- ・公開する情報: 対戦の点数・勝ち数・図鑑の数・称号だけを Player の属性に載せる(名前は Roblox の表示名を使う)
+-- ・公開する情報: 対戦の点数・勝ち数・図鑑の数・称号・対戦中か・申し込みを受けるか だけを Player の属性に載せる
+--   (名前は Roblox の表示名を使う)
 -- ・水槽を見に行く: 相手の釣り小屋の前へ移動する
 -- チャットは Roblox の標準チャット(Roblox が文字を検閲する)をそのまま使う。このゲーム独自の文字のやりとりは作らない。
 local Players = game:GetService("Players")
@@ -37,7 +38,12 @@ local function publish(player: Player)
 	setAttr(player, "Codex", codex)
 	setAttr(player, "TitleId", data.activeTitle)
 	setAttr(player, "RodTier", data.rodTier)
+	-- 一覧で「対戦中」「申し込みを受け付けていない」を先に見せる(押してから断られないように)
+	setAttr(player, "InBattle", S.Battle.inBattle(player) or S.Raid.inRoom(player))
+	setAttr(player, "ChallengePref", data.settings.challenges or "all")
 end
+
+SocialService.publish = publish
 
 local handlers: { [string]: (Player, any, any) -> () } = {}
 

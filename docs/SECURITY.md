@@ -31,6 +31,12 @@
 - 小屋の看板・サーバー大漁のお知らせには Roblox の表示名(Roblox 側でフィルタ済みの公開情報)だけを使います。
 - プレイヤーが自由に文字を入力して他の人に見せる機能はありません(フィルタ漏れの心配がない)。将来追加する場合は必ず `TextService:FilterStringAsync` を通すこと。
 - 外部への通信(HttpService)は使っていません。分析は Roblox 標準の AnalyticsService だけです。
+- **オンライン機能**([ONLINE.md](ONLINE.md)):
+  - プレイヤー同士のやりとりは **決まったスタンプだけ**(IDをサーバーが表と照らし合わせてから配る)。自由な文字のやりとりは作らず、会話は Roblox 標準のチャット(Roblox が検閲)。
+  - ランダム対戦のために、ほかのサーバーと **チームの写し**(魚の種類・重さ・変異・レベル・点数・称号)を MemoryStore で共有します。鍵は UserId、名前は入れず、2日で自動的に消えます。相手の画面には名前ではなく「ほかのサーバーの釣り人のチーム」と出ます。読み込んだ写しは値を一つずつ確かめてから使います(壊れた値・ありえない値は捨てる)。
+  - ほかの人に見える情報は Player の属性の 点数・勝ち数・図鑑の数・称号・竿の段階・対戦中か・申し込みを受けるか だけ。
+  - 対戦の申し込みは「全員 / 友達だけ / 受け取らない」を本人が選べます(友達かどうかはサーバーが `IsFriendsWith` で確かめる)。
+  - 対戦の途中で抜けても負けは記録されます(`DataService.onRelease` で保存の前に決着)。
 
 ### データ削除の依頼(Right to Erasure)が来たら
 
@@ -40,7 +46,7 @@ Roblox からメッセージで削除依頼(UserId つき)が届いたら、Stud
 require(game.ServerScriptService.Server.Services.DataService).eraseUser(依頼のUserId)
 ```
 
-プレイヤーデータとランキングの記録が削除されます。保存時に UpdateAsync へ UserId を渡しているので、Roblox 側の DataStore でも対象のデータとして紐付いています。
+プレイヤーデータ・ランキングの記録・対戦用のチームの写し(MemoryStore)が削除されます。保存時に UpdateAsync へ UserId を渡しているので、Roblox 側の DataStore でも対象のデータとして紐付いています。
 
 ## 4. 秘密情報
 

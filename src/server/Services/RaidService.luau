@@ -321,10 +321,7 @@ end
 function RaidService.act(player: Player, action: any)
 	local raid = raidOf[player]
 	local f = raid and raid.fights[player]
-	if not raid or not f or f.out or raid.over then
-		return
-	end
-	if not BattleLib.validAction(f.state, action) then
+	if not raid or not f or raid.over then
 		return
 	end
 	if action.kind == "run" then
@@ -342,6 +339,10 @@ function RaidService.act(player: Player, action: any)
 		})
 		broadcastRaid(raid)
 		checkAllOut(raid)
+		return
+	end
+	-- 相棒が全員倒れた人は、抜ける以外できない
+	if f.out or not BattleLib.validAction(f.state, action) then
 		return
 	end
 	local foe = f.state.sides.enemy.team[1]

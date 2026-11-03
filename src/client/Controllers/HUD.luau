@@ -14,6 +14,7 @@ local Kit = require(script.Parent.Parent.UI.Kit)
 local Theme = require(script.Parent.Parent.UI.Theme)
 local Root = require(script.Parent.Parent.UI.Root)
 local State = require(script.Parent.Parent.ClientState)
+local Online = require(script.Parent.Online)
 local C = Theme.Colors
 
 local player = Players.LocalPlayer
@@ -26,6 +27,7 @@ local clockLabel: TextLabel
 local nushiLabel: TextLabel
 local luckLabel: TextLabel
 local questDot: Frame
+local inviteDot: TextLabel
 local autoButton: TextButton
 local buttons: { [string]: TextButton } = {}
 local lastCoins = -1
@@ -242,8 +244,26 @@ function HUD.init(gui: ScreenGui)
 	menuButton(menu, 5, "⚔", "hud_battle", C.vermilionDark, function()
 		Root.toggle("battle")
 	end)
-	menuButton(menu, 6, "🧺", "hud_bag", C.panelLight, function()
-		Root.toggle("shop", "sell")
+	-- なかま(魚籠は左上の 🐟 を押すと売る画面が開く)
+	local sb = menuButton(menu, 6, "👥", "hud_social", C.indigo, function()
+		Root.toggle("social")
+	end)
+	inviteDot = Kit.label({
+		Size = UDim2.fromOffset(22, 22),
+		Position = UDim2.new(1, -2, 0, 2),
+		AnchorPoint = Vector2.new(1, 0),
+		BackgroundTransparency = 0,
+		BackgroundColor3 = C.danger,
+		MaxTextSize = 14,
+		Visible = false,
+		ZIndex = 5,
+		Parent = sb,
+	})
+	Kit.corner(inviteDot, UDim.new(1, 0))
+	Online.Changed:Connect(function()
+		local n = Online.pendingInvites()
+		inviteDot.Visible = n > 0
+		inviteDot.Text = tostring(n)
 	end)
 	autoButton = menuButton(menu, 7, "⚙", "hud_auto_off", C.panelLight, function()
 		State.request("setAuto", player:GetAttribute("AutoFishing") ~= true)

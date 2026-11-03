@@ -35,6 +35,12 @@ local profiles: { [Player]: Profile } = {}
 local loadedSignal = Instance.new("BindableEvent")
 DataService.Loaded = loadedSignal.Event -- (player)
 
+-- 抜ける人のデータを保存する直前に呼ぶ(対戦の途中で抜けた時の負けなど)。その場で順に呼ぶ
+local releaseHooks: { (Player) -> () } = {}
+function DataService.onRelease(fn: (Player) -> ())
+	table.insert(releaseHooks, fn)
+end
+
 local store: DataStore? = nil
 do
 	local ok, result = pcall(function()
@@ -312,6 +318,12 @@ local function onPlayerRemoving(player: Player)
 	local p = profiles[player]
 	if not p then
 		return
+	end
+	for _, fn in releaseHooks do
+		local ok, err = pcall(fn, player)
+		if not ok then
+			warn("[DataService] release hook: " .. tostring(err))
+		end
 	end
 	save(player, true)
 	profiles[player] = nil

@@ -366,9 +366,26 @@ local function resolve(m: Match)
 	end
 end
 
+-- 降参・抜けた人は負け(相手を待たずにすぐ決まる。抜けた人の点数もちゃんと動かす)
+local function forfeit(player: Player)
+	local m = matches[player]
+	if not m or m.state.over then
+		return
+	end
+	local side = sideOf(m, player)
+	m.state.over = true
+	m.state.winner = otherSide(side)
+	sendTurn(m, { { kind = "run", side = side }, { kind = "end", winner = m.state.winner } })
+	finish(m)
+end
+
 function PvpService.act(player: Player, action: any)
 	local m = matches[player]
 	if not m or m.state.over then
+		return
+	end
+	if type(action) == "table" and action.kind == "run" then
+		forfeit(player)
 		return
 	end
 	local side = sideOf(m, player)
@@ -386,21 +403,6 @@ function PvpService.act(player: Player, action: any)
 		stateRemote:FireClient(player, { kind = "waiting" })
 		stateRemote:FireClient(other.player, { kind = "foeReady" })
 	end
-end
-
--- 抜けた人は負け
-local function forfeit(player: Player)
-	local m = matches[player]
-	if not m or m.state.over then
-		return
-	end
-	local side = sideOf(m, player)
-	seatOf(m, side).player = nil -- もう送らない
-	matches[player] = nil
-	m.state.over = true
-	m.state.winner = otherSide(side)
-	sendTurn(m, { { kind = "run", side = side }, { kind = "end", winner = m.state.winner } })
-	finish(m)
 end
 
 -- ランダム対戦の組み合わせ(待った時間が長い人から、強さの近い人と)
@@ -612,6 +614,7 @@ handlers.setChallengePref = function(player, data, payload)
 	if payload == "all" or payload == "friends" or payload == "off" then
 		data.settings.challenges = payload
 		S.Data.changed(player)
+		S.Social.publish(player)
 	end
 end
 
@@ -634,6 +637,8 @@ end
 function PvpService.start()
 	arena = Remotes.event("Arena")
 	stateRemote = Remotes.event("BattleState")
+	-- データを保存する前に負けを付ける(先に保存されると、抜ければ点数が減らない抜け道になる)
+	S.Data.onRelease(forfeit)
 	Players.PlayerRemoving:Connect(function(player)
 		forfeit(player)
 		queue[player] = nil
