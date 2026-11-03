@@ -8,6 +8,7 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Config = require(Shared.Config)
 local Remotes = require(Shared.Lib.Remotes)
 local BattleLib = require(Shared.Lib.Battle)
+local WorldClock = require(Shared.Lib.WorldClock)
 local RemoteGuard = require(script.Parent.RemoteGuard)
 
 local B = Config.Battle
@@ -98,9 +99,17 @@ local function finish(player: Player, sess: Session)
 		firstClear = not data.battle.cleared[trainer.id]
 		data.battle.cleared[trainer.id] = true
 		data.battle.wins += 1
-		coins = if firstClear
-			then trainer.reward.coins
-			else math.floor(trainer.reward.coins * B.RematchCoinRate)
+		-- 2回目以降の小判は、相手ごとに1日1回だけ(経験値は何度でも)。
+		-- 何度でも払うと、強い相手の再戦が釣りの十倍以上の稼ぎになり、釣りをする理由が無くなるため
+		local today = WorldClock.dayIndex(os.time(), Config.Tuning.Quests.dayOffsetSeconds)
+		if firstClear then
+			coins = trainer.reward.coins
+		elseif data.battle.rematchPaid[trainer.id] ~= today then
+			coins = math.floor(trainer.reward.coins * B.RematchCoinRate)
+			data.battle.rematchPaid[trainer.id] = today
+		else
+			coins = 0
+		end
 		S.Shop.addCoins(player, coins, if firstClear then "BattleFirstWin" else "BattleWin", trainer.id)
 		if firstClear and trainer.reward.bait then
 			local b = trainer.reward.bait
@@ -122,6 +131,7 @@ local function finish(player: Player, sess: Session)
 		trainerId = trainer.id,
 		coins = coins,
 		firstClear = firstClear,
+		rematchPaidToday = win and not firstClear and coins == 0, -- 今日はこの相手の小判をもうもらった
 		bait = if win and firstClear then trainer.reward.bait else nil,
 		title = title,
 		gains = gains,

@@ -38,10 +38,12 @@ local Spots: { Spot } = {
 	},
 	{
 		id = "nushi_lake",
-		order = 0, -- 村の中央。解放不要
+		order = 0, -- 村の中央。行くのは自由(店・依頼・水槽・道場は村にある)
 		available = true,
 		unlockCoins = 0,
-		unlockRodTier = 1,
+		-- 湖で釣れるのは3段目の竿から。売値が沼の1.5倍なので、最初から釣れると沼に戻る理由が無くなる
+		-- (3段目は沼で約10分)。ぬし釣りの参加は竿に関係なく誰でもできる
+		unlockRodTier = 3,
 		priceMultiplier = 1.5,
 		mutations = { "onibi" },
 		origin = { x = 0, y = 0, z = 600 },

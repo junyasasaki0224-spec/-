@@ -310,6 +310,15 @@ local function startCast(player: Player, power: number, isAuto: boolean, aim: Ve
 		return false
 	end
 	if not data.spots[spot.id] then
+		if not isAuto then
+			S.notify(player, "fish_spot_locked")
+		end
+		return false
+	end
+	if data.rodTier < spot.unlockRodTier then
+		if not isAuto then
+			S.notify(player, "fish_need_rod", { tier = spot.unlockRodTier })
+		end
 		return false
 	end
 	if

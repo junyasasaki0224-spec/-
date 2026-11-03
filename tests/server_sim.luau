@@ -515,6 +515,30 @@ H.test("水辺から遠いと投げられない", function()
 	place(root, old)
 end)
 
+H.test("ぬしの湖は3段目の竿から釣れる(1段目では断られ、理由が出る)", function()
+	local root = alice.Character.HumanoidRootPart
+	local old = root.CFrame
+	local d = data(alice)
+	local lake = Config.SpotById.nushi_lake
+	H.assertEq(lake.unlockRodTier, 3)
+	local oldTier = d.rodTier
+	d.rodTier = 1
+	place(root, roblox.CFrame.new(lake.origin.x, 3, lake.origin.z + lake.water.rz + 4))
+	local before = countSent(alice, "FishingState")
+	clientSend(alice, "Cast", 0.5, 0, -1)
+	H.assertEq(countSent(alice, "FishingState"), before, "cast at the lake with rod 1")
+	local n = lastSent(alice, "Notify")
+	H.assertEq(n[1], "fish_need_rod")
+	H.assertEq(n[2].tier, 3)
+	d.rodTier = 3
+	clientSend(alice, "Cast", 0.5, 0, -1)
+	H.assertEq(countSent(alice, "FishingState"), before + 1, "rod 3 could not cast at the lake")
+	clientSend(alice, "CancelFishing")
+	task.wait(1.5) -- 投げる回数の制限(2回/秒・最大3回)を戻してから次のテストへ
+	d.rodTier = oldTier
+	place(root, old)
+end)
+
 H.test("魚屋から離れていると売れない / 近づくと売れて小判が増える", function()
 	local uid = data(alice).creel[1].uid
 	Shop.handleRequest(alice, "sell", uid)
@@ -728,6 +752,33 @@ H.test(
 		end
 		local expected = math.floor(Config.TrainerById.kappa_kid.reward.coins * Config.Battle.RematchCoinRate)
 		H.assertEq(d.coins, coinsBefore + expected, "rematch coins")
+		-- 同じ日の3回目: 小判は無し(経験値はもらえる)
+		local xpBefore = d.partners[1].xp + d.partners[1].level * 1e6
+		Battle.handleRequest(alice, "startBattle", "kappa_kid")
+		task.wait(1)
+		guard = 0
+		while Battle.inBattle(alice) and guard < 40 do
+			guard += 1
+			clientSend(alice, "BattleAction", { kind = "move", index = 1 })
+			task.wait(0.3)
+		end
+		local r3 = lastSent(alice, "BattleState")[1]
+		H.assert(r3.win, "third battle lost")
+		H.assertEq(r3.coins, 0, "rematch coins paid twice in a day")
+		H.assert(r3.rematchPaidToday, "no note about today's coins")
+		H.assertEq(d.coins, coinsBefore + expected, "coins changed on the 3rd battle")
+		H.assert(d.partners[1].xp + d.partners[1].level * 1e6 > xpBefore, "no xp on the 3rd battle")
+		-- 次の日はまた小判がもらえる
+		d.battle.rematchPaid.kappa_kid -= 1
+		Battle.handleRequest(alice, "startBattle", "kappa_kid")
+		task.wait(1)
+		guard = 0
+		while Battle.inBattle(alice) and guard < 40 do
+			guard += 1
+			clientSend(alice, "BattleAction", { kind = "move", index = 1 })
+			task.wait(0.3)
+		end
+		H.assertEq(d.coins, coinsBefore + expected * 2, "next day's rematch coins")
 		Battle.handleRequest(alice, "startBattle", "tanuki")
 		H.assert(Battle.inBattle(alice), "next trainer not unlocked")
 		task.wait(0.6)

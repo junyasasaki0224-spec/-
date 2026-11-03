@@ -749,7 +749,8 @@ local function showResult(r: any)
 		line(
 			"¥ "
 				.. Format.coins(r.coins, Locale.get())
-				.. (if r.firstClear then "  " .. Locale.t("battle_first_clear") else ""),
+				.. (if r.firstClear then "  " .. Locale.t("battle_first_clear") else "")
+				.. (if r.rematchPaidToday then "  " .. Locale.t("battle_rematch_paid") else ""),
 			C.goldLight,
 			22,
 			2

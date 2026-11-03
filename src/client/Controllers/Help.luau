@@ -10,8 +10,16 @@ local C = Theme.Colors
 
 local Help = {}
 
-local KEYS =
-	{ "help_fish", "help_sell", "help_codex", "help_partner", "help_battle", "help_nushi", "help_time" }
+local KEYS = {
+	"help_fish",
+	"help_sell",
+	"help_spots",
+	"help_codex",
+	"help_partner",
+	"help_battle",
+	"help_nushi",
+	"help_time",
+}
 
 function Help.init(gui: ScreenGui)
 	local panel = Kit.panel(gui, "Help", UDim2.fromScale(0.66, 0.74))

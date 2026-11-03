@@ -73,7 +73,7 @@ local function template(): any
 		purchases = {},
 		partners = {}, -- 相棒(魚 + level, xp)
 		team = {}, -- 戦いに出す相棒の uid(順番どおり)
-		battle = { cleared = {}, wins = 0 },
+		battle = { cleared = {}, wins = 0, rematchPaid = {} }, -- rematchPaid: 相手ごとに再戦の小判をもらった日
 	}
 end
 
