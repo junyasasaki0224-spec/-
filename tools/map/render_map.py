@@ -386,8 +386,8 @@ def views(spots, ground_at):
         return rb((x, ground_at(x, z) + up, z))
 
     return {
-        "swamp_top": dict(eye=rb((swc[0], 300, swc[1] + 0.01)), target=rb((swc[0], 0, swc[1])), ortho=210),
-        "village_top": dict(eye=rb((vic[0], 300, vic[1] + 0.01)), target=rb((vic[0], 0, vic[1])), ortho=210),
+        "swamp_top": dict(eye=rb((swc[0], 300, swc[1] + 0.01)), target=rb((swc[0], 0, swc[1])), ortho=250),
+        "village_top": dict(eye=rb((vic[0], 300, vic[1] + 0.01)), target=rb((vic[0], 0, vic[1])), ortho=250),
         # 出現した時の画面(Roblox の標準カメラ: 頭の少し上・後ろ)
         "swamp_spawn": dict(eye=eye(sws, 10, (0, 12)), target=rb((swc[0], 2, swc[1] - 14)), lens=22),
         "village_spawn": dict(eye=eye(vis, 10, (0, 12)), target=rb((vic[0], 4, vic[1] - 10)), lens=22),
