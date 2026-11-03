@@ -1,10 +1,11 @@
 --!strict
--- 対戦: 相手を選ぶ画面(妖怪退治 / ボス戦 / オンライン対戦 のタブ)と、ポケモンのようなバトル画面。
+-- 対戦: 相手を選ぶ画面(妖怪退治 / ボス戦 / オンライン対戦 のタブ)と、水の中のバトル画面。
 -- 画面はサーバーから届いたイベントを順番に再生するだけ(ダメージや勝敗はサーバーが決める)。
 -- バトル画面は3種類で共通: 妖怪退治(コンピューター)・対戦(人 / ほかのサーバーのチームの写し)・ボス戦(協力)
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Config = require(Shared.Config)
@@ -12,6 +13,7 @@ local Locale = require(Shared.Locale)
 local Format = require(Shared.Lib.Format)
 local Remotes = require(Shared.Lib.Remotes)
 local FishBuilder = require(Shared.Lib.FishBuilder)
+local BattleLib = require(Shared.Lib.Battle)
 local WorldClock = require(Shared.Lib.WorldClock)
 
 local Kit = require(script.Parent.Parent.UI.Kit)
@@ -22,6 +24,7 @@ local Input = require(script.Parent.Input)
 local Sound = require(script.Parent.Sound)
 local Cry = require(script.Parent.Cry)
 local Online = require(script.Parent.Online)
+local BattleScene = require(script.Parent.BattleScene)
 local C = Theme.Colors
 
 local B = Config.Battle
@@ -641,105 +644,102 @@ local function selectTab(id: string)
 	render()
 end
 
--- バトル画面の部品 ------------------------------------------------------------
+-- バトル画面 ---------------------------------------------------------------------
+-- 水の中の舞台(BattleScene)の上に、上の左右に体力の札・真ん中に手番/残り時間の丸・下に技のお札を並べる
+local PAPER = Color3.fromRGB(246, 238, 220)
+local INK = Color3.fromRGB(44, 32, 26)
+local PAPER_DIM = Color3.fromRGB(176, 168, 152)
+local scene: any = nil
+
 local function hpColor(r: number): Color3
 	return if r > 0.5 then C.success elseif r > 0.2 then C.goldLight else C.danger
 end
 
-local function makeCard(parent: Instance, pos: UDim2, anchor: Vector2)
-	local card = Kit.new("Frame", {
-		Size = UDim2.fromOffset(330, 92),
-		Position = pos,
+local function elementOf(id: string?): any
+	return (id and Config.ElementById[id]) or Config.ElementById.none
+end
+
+local function otherSide(side: string): string
+	return if side == "player" then "enemy" else "player"
+end
+
+-- 体力の札(左 = 自分、右 = 相手。左右対称)
+local function makePlate(parent: Instance, side: string)
+	local right = side == "enemy"
+	local function at(x: number, y: number): UDim2
+		return if right then UDim2.new(1, -x, 0, y) else UDim2.fromOffset(x, y)
+	end
+	local anchor = Vector2.new(if right then 1 else 0, 0)
+	local anchorOther = Vector2.new(if right then 0 else 1, 0)
+	local near = if right then Enum.TextXAlignment.Right else Enum.TextXAlignment.Left
+	local far = if right then Enum.TextXAlignment.Left else Enum.TextXAlignment.Right
+	local plate = Kit.new("Frame", {
+		Name = side .. "Plate",
+		Size = UDim2.fromOffset(440, 86),
+		Position = at(24, 16),
 		AnchorPoint = anchor,
-		BackgroundColor3 = C.panel,
-		BackgroundTransparency = 0.05,
+		BackgroundColor3 = C.panelDark,
+		BackgroundTransparency = 0.25,
+		ZIndex = 2,
 		Parent = parent,
 	})
-	Kit.corner(card)
-	Kit.stroke(card, C.gold, 2)
+	Kit.corner(plate, UDim.new(0, 16))
+	Kit.stroke(plate, C.gold, 2, 0.35)
 	local title = Kit.label({
-		Size = UDim2.new(1, -110, 0, 30),
-		Position = UDim2.fromOffset(14, 6),
-		TextXAlignment = Enum.TextXAlignment.Left,
+		Size = UDim2.new(1, -130, 0, 30),
+		Position = at(16, 8),
+		AnchorPoint = anchor,
+		TextXAlignment = near,
 		Font = Theme.Fonts.title,
 		MaxTextSize = 22,
-		Parent = card,
+		Parent = plate,
 	})
 	local level = Kit.label({
-		Size = UDim2.fromOffset(80, 26),
-		Position = UDim2.new(1, -12, 0, 8),
-		AnchorPoint = Vector2.new(1, 0),
-		TextXAlignment = Enum.TextXAlignment.Right,
+		Size = UDim2.fromOffset(90, 26),
+		Position = if right then UDim2.fromOffset(16, 10) else UDim2.new(1, -16, 0, 10),
+		AnchorPoint = anchorOther,
+		TextXAlignment = far,
 		TextColor3 = C.goldLight,
 		MaxTextSize = 20,
-		Parent = card,
+		Parent = plate,
 	})
-	local bg, fill = Kit.bar(card, C.success)
-	bg.Size = UDim2.new(1, -28, 0, 14)
-	bg.Position = UDim2.fromOffset(14, 44)
+	local bg, fill = Kit.bar(plate, C.success)
+	bg.Size = UDim2.new(1, -32, 0, 14)
+	bg.Position = UDim2.fromOffset(16, 44)
+	if right then -- 相手の体力は右から減る
+		fill.AnchorPoint = Vector2.new(1, 0)
+		fill.Position = UDim2.fromScale(1, 0)
+	end
 	local hpText = Kit.label({
-		Size = UDim2.new(1, -28, 0, 20),
-		Position = UDim2.fromOffset(14, 62),
-		TextXAlignment = Enum.TextXAlignment.Right,
+		Size = UDim2.fromOffset(180, 20),
+		Position = if right then UDim2.fromOffset(16, 62) else UDim2.new(1, -16, 0, 62),
+		AnchorPoint = anchorOther,
+		TextXAlignment = far,
 		TextColor3 = C.textDim,
 		MaxTextSize = 16,
-		Parent = card,
+		Parent = plate,
 	})
-	local dots = Kit.new("Frame", {
-		Size = UDim2.fromOffset(120, 16),
-		Position = UDim2.fromOffset(14, 64),
-		BackgroundTransparency = 1,
-		Parent = card,
-	})
-	Kit.new(
-		"UIListLayout",
-		{ FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), Parent = dots }
-	)
-	return { card = card, title = title, level = level, fill = fill, hpText = hpText, dots = dots }
-end
-
-local function makeStage(parent: Instance, pos: UDim2, anchor: Vector2, size: Vector2)
-	local holder = Kit.new("Frame", {
-		Size = UDim2.fromOffset(size.X, size.Y),
-		Position = pos,
+	local beads = Kit.new("Frame", {
+		Size = UDim2.fromOffset(160, 16),
+		Position = at(16, 64),
 		AnchorPoint = anchor,
 		BackgroundTransparency = 1,
-		Parent = parent,
+		Parent = plate,
 	})
-	-- 足元の波紋
-	local ring = Kit.new("Frame", {
-		Size = UDim2.new(0.8, 0, 0, 34),
-		Position = UDim2.new(0.5, 0, 1, -24),
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		BackgroundColor3 = Color3.fromRGB(150, 220, 255),
-		BackgroundTransparency = 0.65,
-		Parent = holder,
+	Kit.new("UIListLayout", {
+		FillDirection = Enum.FillDirection.Horizontal,
+		HorizontalAlignment = if right then Enum.HorizontalAlignment.Right else Enum.HorizontalAlignment.Left,
+		Padding = UDim.new(0, 6),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = beads,
 	})
-	Kit.corner(ring, UDim.new(1, 0))
-	local vpf = Kit.viewport(holder, nil)
-	return { holder = holder, vpf = vpf, model = nil :: Model?, fishId = "", base = pos }
+	return { frame = plate, title = title, level = level, fill = fill, hpText = hpText, beads = beads }
 end
 
-local function setStageFish(stage: any, fishId: string, mutation: string?, faceLeft: boolean)
-	if stage.fishId == fishId and stage.model then
-		return
-	end
-	stage.fishId = fishId
-	local def = Config.FishById[fishId]
-	if not def then
-		return
-	end
-	local model = FishBuilder.build(def, { mutation = mutation })
-	Kit.setViewportModel(stage.vpf, model)
-	stage.model = model
-	stage.faceLeft = faceLeft
-	stage.vpf.ImageTransparency = 0
-end
-
-local function updateCard(card: any, side: any)
+local function updatePlate(card: any, side: any)
 	local f = side.team[side.active]
 	local def = Config.FishById[f.fishId]
-	card.title.Text = Config.ElementById[f.element].icon .. " " .. name(def)
+	card.title.Text = elementOf(f.element).icon .. " " .. name(def)
 	card.level.Text = "Lv " .. f.level
 	local r = f.hp / math.max(1, f.maxHp)
 	TweenService:Create(
@@ -751,14 +751,19 @@ local function updateCard(card: any, side: any)
 		Format.coins(f.hp, Locale.get()),
 		Format.coins(f.maxHp, Locale.get())
 	)
-	Kit.clear(card.dots)
-	for _, m in side.team do
+	-- チームの玉(属性の色。倒れた子は灰色、今出ている子は金の縁)
+	Kit.clear(card.beads)
+	for i, m in side.team do
 		local d = Kit.new("Frame", {
 			Size = UDim2.fromOffset(14, 14),
-			BackgroundColor3 = if m.hp > 0 then C.goldLight else C.disabled,
-			Parent = card.dots,
+			BackgroundColor3 = if m.hp > 0 then Color3.fromHex(elementOf(m.element).color) else C.disabled,
+			LayoutOrder = i,
+			Parent = card.beads,
 		})
 		Kit.corner(d, UDim.new(1, 0))
+		if i == side.active then
+			Kit.stroke(d, C.goldLight, 2)
+		end
 	end
 end
 
@@ -769,54 +774,12 @@ local function setMessage(text: string)
 end
 
 -- 魚が鳴く(場に出た時。倒れた時は低く・ゆっくり)
-local function cry(stage: any, fishId: string, fainted: boolean?)
-	local opts = if fainted then { pitch = 0.78, volume = 0.6 } else { volume = 0.75 }
-	Cry.say(fishId, stage.holder, UDim2.new(1, 0, 0, -8), opts)
-end
-
-local function shake(stage: any)
-	local base = stage.base
-	for i = 1, 6 do
-		stage.holder.Position = base + UDim2.fromOffset(if i % 2 == 0 then 10 else -10, 0)
-		task.wait(0.04)
+local function cry(side: string, fishId: string, fainted: boolean?)
+	if not scene then
+		return
 	end
-	stage.holder.Position = base
-end
-
-local function flash(stage: any, color: Color3)
-	local f = Kit.new("Frame", {
-		Size = UDim2.fromScale(1, 1),
-		BackgroundColor3 = color,
-		BackgroundTransparency = 0.4,
-		ZIndex = 5,
-		Parent = stage.holder,
-	})
-	Kit.corner(f, UDim.new(0, 30))
-	TweenService:Create(f, TweenInfo.new(0.4), { BackgroundTransparency = 1 }):Play()
-	task.delay(0.42, function()
-		f:Destroy()
-	end)
-end
-
-local function floatText(stage: any, text: string, color: Color3)
-	local l = Kit.label({
-		Size = UDim2.fromOffset(200, 50),
-		Position = UDim2.fromScale(0.5, 0.3),
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Text = text,
-		TextColor3 = color,
-		Font = Theme.Fonts.title,
-		MaxTextSize = 40,
-		ZIndex = 6,
-		Parent = stage.holder,
-	})
-	Kit.new("UIStroke", { Color = Color3.new(0, 0, 0), Thickness = 2, Parent = l })
-	TweenService
-		:Create(l, TweenInfo.new(0.8), { Position = UDim2.fromScale(0.5, 0.05), TextTransparency = 1 })
-		:Play()
-	task.delay(0.85, function()
-		l:Destroy()
-	end)
+	local opts = if fainted then { pitch = 0.78, volume = 0.6 } else { volume = 0.75 }
+	Cry.say(fishId, scene:tag(side), UDim2.new(1, 30, 0, -20), opts)
 end
 
 local function runLabel(): string
@@ -830,8 +793,12 @@ local function setCommandsEnabled(on: boolean)
 	if not view then
 		return
 	end
-	for _, b in view.moveButtons do
-		Kit.setEnabled(b, on and b:GetAttribute("HasMove") == true, b:GetAttribute("Color") :: any)
+	for _, card in view.cards do
+		-- 押せない間は、灰色ではなく「古びた紙」に(演出のたびに暗くならないように)
+		local ok = on and card.button:GetAttribute("HasMove") == true
+		card.button:SetAttribute("Disabled", not ok)
+		card.button.BackgroundColor3 = if ok then PAPER else PAPER_DIM
+		card.name.TextTransparency = if ok then 0 else 0.35
 	end
 	Kit.setEnabled(view.switchButton, on, C.indigo)
 	local runOn = on or (mode == "raid" and not busy and current ~= nil and not resultShown)
@@ -841,48 +808,68 @@ local function setCommandsEnabled(on: boolean)
 	end
 end
 
+-- お札(技)の中身: 属性の帯・技の名前・威力・相手への効き目
 local function refreshCommands()
 	if not view or not current then
 		return
 	end
 	local me = current.player
 	local f = me.team[me.active]
-	for i, b in view.moveButtons do
+	local foe = current.enemy.team[current.enemy.active]
+	for i, card in view.cards do
 		local id = me.moves and me.moves[i]
 		local mv = id and Config.MoveById[id]
+		card.button:SetAttribute("HasMove", mv ~= nil)
+		card.button:SetAttribute("Chosen", nil)
 		if mv then
-			local el = Config.ElementById[if mv.element == "self" then f.element else mv.element]
-			local color = Color3.fromHex(el.color):Lerp(C.panel, 0.25)
-			b.Text = ("%s %s%s"):format(
-				el.icon,
-				if Locale.get() == "ja" then mv.ja else mv.en,
-				if mv.power > 0 then "  " .. mv.power else ""
-			)
-			b:SetAttribute("HasMove", true)
-			b:SetAttribute("Color", color)
+			local elId = BattleLib.moveElement(mv, f)
+			local el = elementOf(elId)
+			local color = Color3.fromHex(el.color)
+			card.band.BackgroundColor3 = color
+			card.bandLabel.Text = el.icon .. " " .. Locale.t("element_" .. el.id)
+			card.name.Text = if Locale.get() == "ja" then mv.ja else mv.en
+			card.footer.Text = if mv.power > 0
+				then Locale.t("card_power", { n = mv.power })
+				else Locale.t("card_support")
+			card.stroke.Color = color
+			card.stroke.Thickness = 3
+			local eff = if mv.power > 0 and foe then BattleLib.effectiveness(elId, foe.element) else 1
+			card.eff.Visible = eff ~= 1
+			card.eff.Text = Locale.t(if eff > 1 then "card_good" else "card_bad")
+			card.eff.BackgroundColor3 = if eff > 1 then C.jade else C.disabled
 		else
-			b.Text = "—"
-			b:SetAttribute("HasMove", false)
+			card.band.BackgroundColor3 = C.disabled
+			card.bandLabel.Text = ""
+			card.name.Text = "—"
+			card.footer.Text = ""
+			card.eff.Visible = false
 		end
 	end
 	setCommandsEnabled(not busy and not current.over and not chosen)
 end
 
-local function applyState(st: any)
+local function applyState(st: any, noFish: boolean?)
 	current = st
 	if not view then
 		return
 	end
-	local pf = st.player.team[st.player.active]
-	local ef = st.enemy.team[st.enemy.active]
-	setStageFish(view.playerStage, pf.fishId, pf.mutation, false)
-	setStageFish(view.enemyStage, ef.fishId, ef.mutation, true)
-	updateCard(view.playerCard, st.player)
-	updateCard(view.enemyCard, st.enemy)
+	for _, side in { "player", "enemy" } do
+		local f = st[side].team[st[side].active]
+		-- 演出で出し入れしているはずの魚が、何かの都合でいなければここで出す
+		if not noFish and scene and f.hp > 0 and not scene:hasFish(side, f.fishId) then
+			scene:setFish(side, f.fishId, f.mutation)
+		end
+	end
+	updatePlate(view.playerPlate, st.player)
+	updatePlate(view.enemyPlate, st.enemy)
 	refreshCommands()
 end
 
 local function closeScreen()
+	if scene then
+		scene:destroy()
+		scene = nil
+	end
 	if screen then
 		screen:Destroy()
 		screen = nil
@@ -911,6 +898,21 @@ local function choose(action: any)
 	send(action)
 end
 
+local function useCard(i: number)
+	if not view or busy or chosen or not current or current.over then
+		return
+	end
+	local card = view.cards[i]
+	if not card or card.button:GetAttribute("HasMove") ~= true then
+		return
+	end
+	choose({ kind = "move", index = i })
+	card.button:SetAttribute("Chosen", true)
+	card.stroke.Color = C.goldLight
+	card.stroke.Thickness = 4
+end
+
+-- 交代: 下に相棒の札を並べて選ぶ
 local function showSwitchPicker()
 	if not view or not current or busy or chosen then
 		return
@@ -918,46 +920,69 @@ local function showSwitchPicker()
 	local overlay = Kit.new("TextButton", {
 		Size = UDim2.fromScale(1, 1),
 		BackgroundColor3 = Color3.new(0, 0, 0),
-		BackgroundTransparency = 0.5,
+		BackgroundTransparency = 0.45,
 		Text = "",
 		ZIndex = 40,
 		Parent = screen,
 	})
 	local box = Kit.new("Frame", {
-		Size = UDim2.fromOffset(420, 260),
-		Position = UDim2.fromScale(0.5, 0.5),
-		AnchorPoint = Vector2.new(0.5, 0.5),
+		Size = UDim2.fromOffset(700, 190),
+		Position = UDim2.new(0.5, 0, 1, -24),
+		AnchorPoint = Vector2.new(0.5, 1),
 		BackgroundColor3 = C.panel,
 		ZIndex = 41,
 		Parent = overlay,
 	})
 	Kit.corner(box)
 	Kit.stroke(box, C.gold, 3)
-	Kit.padding(box, 14)
-	Kit.new("UIListLayout", { Padding = UDim.new(0, 8), Parent = box })
+	Kit.label({
+		Size = UDim2.new(1, -24, 0, 30),
+		Position = UDim2.fromOffset(12, 10),
+		Text = Locale.t("battle_switch_title"),
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Font = Theme.Fonts.title,
+		MaxTextSize = 20,
+		ZIndex = 42,
+		Parent = box,
+	})
+	local row = Kit.new("Frame", {
+		Size = UDim2.new(1, -24, 0, 120),
+		Position = UDim2.fromOffset(12, 52),
+		BackgroundTransparency = 1,
+		ZIndex = 42,
+		Parent = box,
+	})
+	Kit.new("UIListLayout", {
+		FillDirection = Enum.FillDirection.Horizontal,
+		HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		Padding = UDim.new(0, 12),
+		Parent = row,
+	})
 	for i, f in current.player.team do
 		local def = Config.FishById[f.fishId]
 		local ok = f.hp > 0 and i ~= current.player.active
+		local color = Color3.fromHex(elementOf(f.element).color)
 		local b = Kit.button({
-			Text = ("%s %s Lv%d   %d/%d"):format(
-				Config.ElementById[f.element].icon,
+			Text = ("%s %s\nLv%d   %d/%d"):format(
+				elementOf(f.element).icon,
 				name(def),
 				f.level,
 				f.hp,
 				f.maxHp
 			),
-			Size = UDim2.new(1, 0, 0, 52),
-			Color = C.indigo,
+			Size = UDim2.fromOffset(210, 112),
+			Color = color:Lerp(C.panel, 0.55),
+			StrokeColor = color,
 			MaxTextSize = 18,
-			Parent = box,
+			Parent = row,
 		}, function()
 			overlay:Destroy()
 			if view and current and not busy and not chosen then
 				choose({ kind = "switch", slot = i })
 			end
 		end)
-		b.ZIndex = 42
-		Kit.setEnabled(b, ok, C.indigo)
+		b.ZIndex = 43
+		Kit.setEnabled(b, ok, color:Lerp(C.panel, 0.55))
 	end
 	overlay.Activated:Connect(function()
 		overlay:Destroy()
@@ -982,22 +1007,26 @@ local function onRun()
 		return
 	end
 	confirmUntil = 0
+	if scene and mode ~= "raid" then
+		scene:leave("player")
+	end
 	send({ kind = "run" })
 end
 
--- ボス戦の上の札(残り時間・怒り・仲間)
+-- ボス戦の仲間の札(与えたダメージ・倒れた人)
 local function renderRaid()
 	if not view or not view.raid or not raidInfo then
 		return
 	end
 	local r = view.raid
 	r.rage.Visible = raidInfo.enraged == true
+	view.medallionStroke.Color = if raidInfo.enraged then C.danger else C.gold
 	Kit.clear(r.party)
 	for i, m in raidInfo.members or {} do
 		local chip = Kit.new("Frame", {
 			Size = UDim2.fromOffset(116, 42),
 			BackgroundColor3 = if m.alive then C.panelLight else C.panelDark,
-			BackgroundTransparency = 0.1,
+			BackgroundTransparency = 0.15,
 			LayoutOrder = i,
 			Parent = r.party,
 		})
@@ -1040,7 +1069,7 @@ local function syncBossHp()
 	local b = current.enemy.team[1]
 	if raidInfo.hp < b.hp then
 		b.hp = raidInfo.hp
-		updateCard(view.enemyCard, current.enemy)
+		updatePlate(view.enemyPlate, current.enemy)
 	end
 end
 
@@ -1057,13 +1086,104 @@ local function onRaidInfo(info: any)
 		syncBossHp()
 	end
 	if info.enraged and not wasEnraged then
-		flash(view.enemyStage, C.danger)
-		task.spawn(shake, view.enemyStage)
+		if scene then
+			scene:setEnraged(true)
+		end
 		Sound.play("fail", 0.6, 0.6)
 		if not busy then
 			setMessage(Locale.t("raid_enraged", { boss = Online.bossName(info.bossId) }))
 		end
 	end
+end
+
+-- 技のお札(1枚)
+local function makeTalisman(parent: Instance, i: number)
+	local b = Kit.button({
+		Name = "Talisman" .. i,
+		Text = "",
+		Size = UDim2.fromOffset(168, 128),
+		Color = PAPER,
+		LayoutOrder = i,
+		Corner = UDim.new(0, 10),
+		Parent = parent,
+	}, function()
+		useCard(i)
+	end)
+	local stroke = b:FindFirstChildOfClass("UIStroke") :: UIStroke
+	stroke.Thickness = 3
+	stroke.Transparency = 0
+	-- 上の帯(属性)。Kit.button の内側の余白(6)の外まで広げる
+	local band = Kit.new("Frame", {
+		Size = UDim2.new(1, 12, 0, 32),
+		Position = UDim2.fromOffset(-6, -6),
+		BackgroundColor3 = C.disabled,
+		BorderSizePixel = 0,
+		Parent = b,
+	})
+	Kit.corner(band, UDim.new(0, 10))
+	local bandLabel = Kit.label({
+		Size = UDim2.new(1, -16, 1, -8),
+		Position = UDim2.fromOffset(8, 4),
+		TextXAlignment = Enum.TextXAlignment.Left,
+		MaxTextSize = 16,
+		Parent = band,
+	})
+	Kit.new(
+		"UIStroke",
+		{ Color = Color3.fromRGB(30, 20, 20), Thickness = 1.5, Transparency = 0.4, Parent = bandLabel }
+	)
+	local nameLabel = Kit.label({
+		Size = UDim2.new(1, 0, 0, 50),
+		Position = UDim2.fromOffset(0, 32),
+		TextColor3 = INK,
+		Font = Theme.Fonts.title,
+		TextWrapped = true,
+		MaxTextSize = 22,
+		Parent = b,
+	})
+	local footer = Kit.label({
+		Size = UDim2.new(1, -30, 0, 18),
+		Position = UDim2.new(0, 2, 1, -18),
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Color3.fromRGB(110, 92, 80),
+		MaxTextSize = 14,
+		Parent = b,
+	})
+	-- 判子(キーボードの 1〜4)
+	local hanko = Kit.label({
+		Size = UDim2.fromOffset(24, 24),
+		Position = UDim2.new(1, 2, 1, 2),
+		AnchorPoint = Vector2.new(1, 1),
+		BackgroundTransparency = 0,
+		BackgroundColor3 = C.vermilion,
+		Text = tostring(i),
+		Font = Theme.Fonts.title,
+		MaxTextSize = 14,
+		Parent = b,
+	})
+	Kit.corner(hanko, UDim.new(1, 0))
+	-- 相手への効き目(帯の右端)
+	local eff = Kit.label({
+		Size = UDim2.fromOffset(84, 20),
+		Position = UDim2.new(1, 2, 0, -1),
+		AnchorPoint = Vector2.new(1, 0),
+		BackgroundTransparency = 0,
+		BackgroundColor3 = C.jade,
+		MaxTextSize = 13,
+		Visible = false,
+		ZIndex = 3,
+		Parent = b,
+	})
+	Kit.corner(eff, UDim.new(1, 0))
+	return {
+		button = b,
+		stroke = stroke,
+		band = band,
+		bandLabel = bandLabel,
+		name = nameLabel,
+		footer = footer,
+		eff = eff,
+	}
 end
 
 local function openScreen()
@@ -1074,33 +1194,43 @@ local function openScreen()
 		Name = "Battle",
 		Active = true, -- 下の HUD のボタンを押せないようにする
 		Size = UDim2.fromScale(1, 1),
-		BackgroundColor3 = Color3.new(1, 1, 1),
+		BackgroundColor3 = Color3.fromRGB(6, 24, 48),
 		ZIndex = 30,
 		Parent = gui,
 	})
-	if mode == "raid" then
-		Kit.gradient(s, Color3.fromRGB(70, 24, 40), Color3.fromRGB(20, 30, 60))
-	else
-		Kit.gradient(s, Color3.fromRGB(40, 34, 78), Color3.fromRGB(24, 64, 70))
-	end
 	screen = s
-	-- 水面の帯
-	local water = Kit.new("Frame", {
-		Size = UDim2.new(1, 0, 0.42, 0),
-		Position = UDim2.fromScale(0, 0.58),
-		BackgroundColor3 = C.water,
-		BackgroundTransparency = 0.25,
-		Parent = s,
-	})
-	Kit.gradient(water, Color3.fromRGB(70, 150, 180), C.waterDeep)
+	scene = BattleScene.new(s, { boss = mode == "raid" })
 
 	local v: any = {}
-	local enemySize = if mode == "raid" then Vector2.new(380, 270) else Vector2.new(300, 220)
-	v.enemyStage = makeStage(s, UDim2.new(0.72, 0, 0.3, 0), Vector2.new(0.5, 0.5), enemySize)
-	v.playerStage = makeStage(s, UDim2.new(0.28, 0, 0.58, 0), Vector2.new(0.5, 0.5), Vector2.new(340, 240))
-	v.enemyCard = makeCard(s, UDim2.new(0.05, 0, 0, 80), Vector2.new(0, 0))
-	-- 自分の札は相手の足元の波紋と重ならない高さに
-	v.playerCard = makeCard(s, UDim2.new(0.95, 0, 0.56, 0), Vector2.new(1, 0.5))
+	v.playerPlate = makePlate(s, "player")
+	v.enemyPlate = makePlate(s, "enemy")
+
+	-- 真ん中の丸(手番 / 対戦の残り秒 / ボス戦の残り時間)
+	local medal = Kit.new("Frame", {
+		Size = UDim2.fromOffset(96, 96),
+		Position = UDim2.new(0.5, 0, 0, 10),
+		AnchorPoint = Vector2.new(0.5, 0),
+		BackgroundColor3 = C.panel,
+		BackgroundTransparency = 0.1,
+		ZIndex = 2,
+		Parent = s,
+	})
+	Kit.corner(medal, UDim.new(1, 0))
+	v.medallionStroke = Kit.stroke(medal, C.gold, 3, 0.1)
+	v.medalCaption = Kit.label({
+		Size = UDim2.new(1, -20, 0, 18),
+		Position = UDim2.fromOffset(10, 14),
+		TextColor3 = C.textDim,
+		MaxTextSize = 14,
+		Parent = medal,
+	})
+	v.medalValue = Kit.label({
+		Size = UDim2.new(1, -14, 0, 44),
+		Position = UDim2.fromOffset(7, 34),
+		Font = Theme.Fonts.title,
+		MaxTextSize = 36,
+		Parent = medal,
+	})
 
 	-- 相手の名前(妖怪退治の相手 / 対戦の相手 / ボス)
 	local header = ""
@@ -1115,172 +1245,153 @@ local function openScreen()
 	elseif trainer then
 		header = if Locale.get() == "ja" then trainer.ja else trainer.en
 	end
-	Kit.label({
-		Size = UDim2.fromOffset(420, 26),
-		Position = UDim2.new(0.05, 0, 0, 176),
+	local headerLabel = Kit.label({
+		Size = UDim2.fromOffset(440, 26),
+		Position = UDim2.new(1, -28, 0, 108),
+		AnchorPoint = Vector2.new(1, 0),
 		Text = header,
 		TextColor3 = C.goldLight,
-		TextXAlignment = Enum.TextXAlignment.Left,
+		TextXAlignment = Enum.TextXAlignment.Right,
 		MaxTextSize = 20,
+		ZIndex = 2,
 		Parent = s,
 	})
+	Kit.new(
+		"UIStroke",
+		{ Color = Color3.fromRGB(4, 16, 30), Thickness = 2, Transparency = 0.2, Parent = headerLabel }
+	)
 	-- 「相手は選び終わった!」
 	v.foeReady = Kit.label({
 		Size = UDim2.fromOffset(240, 30),
-		Position = UDim2.new(0.05, 0, 0, 206),
+		Position = UDim2.new(1, -24, 0, 138),
+		AnchorPoint = Vector2.new(1, 0),
 		BackgroundTransparency = 0,
 		BackgroundColor3 = C.jadeDark,
 		Text = "✓ " .. Locale.t("pvp_foe_ready"),
 		MaxTextSize = 16,
 		Visible = false,
+		ZIndex = 2,
 		Parent = s,
 	})
 	Kit.corner(v.foeReady, UDim.new(1, 0))
 
 	if mode == "raid" then
-		local panel = Kit.new("Frame", {
-			Size = UDim2.fromOffset(500, 90),
-			Position = UDim2.new(0.5, 0, 0, 12),
-			AnchorPoint = Vector2.new(0.5, 0),
-			BackgroundColor3 = C.panel,
-			BackgroundTransparency = 0.1,
+		local party = Kit.new("Frame", {
+			Size = UDim2.fromOffset(500, 44),
+			Position = UDim2.new(1, -24, 0, 138),
+			AnchorPoint = Vector2.new(1, 0),
+			BackgroundTransparency = 1,
+			ZIndex = 2,
 			Parent = s,
 		})
-		Kit.corner(panel)
-		Kit.stroke(panel, C.vermilion, 2)
-		local time = Kit.label({
-			Size = UDim2.fromOffset(120, 28),
-			Position = UDim2.fromOffset(12, 4),
-			TextXAlignment = Enum.TextXAlignment.Left,
-			Font = Theme.Fonts.title,
-			MaxTextSize = 20,
-			Parent = panel,
-		})
-		Kit.label({
-			Size = UDim2.fromOffset(120, 28),
-			Position = UDim2.fromOffset(140, 4),
-			Text = Locale.t("raid_party"),
-			TextXAlignment = Enum.TextXAlignment.Left,
-			TextColor3 = C.textDim,
-			MaxTextSize = 15,
-			Parent = panel,
+		Kit.new("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			HorizontalAlignment = Enum.HorizontalAlignment.Right,
+			Padding = UDim.new(0, 6),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Parent = party,
 		})
 		local rage = Kit.label({
-			Size = UDim2.fromOffset(110, 26),
-			Position = UDim2.new(1, -10, 0, 5),
-			AnchorPoint = Vector2.new(1, 0),
+			Size = UDim2.fromOffset(120, 26),
+			Position = UDim2.new(0.5, 0, 0, 112),
+			AnchorPoint = Vector2.new(0.5, 0),
 			BackgroundTransparency = 0,
 			BackgroundColor3 = C.vermilionDark,
 			Text = Locale.t("raid_rage"),
 			MaxTextSize = 15,
 			Visible = false,
-			Parent = panel,
+			ZIndex = 2,
+			Parent = s,
 		})
 		Kit.corner(rage, UDim.new(1, 0))
-		local party = Kit.new("Frame", {
-			Size = UDim2.new(1, -20, 0, 42),
-			Position = UDim2.fromOffset(10, 38),
-			BackgroundTransparency = 1,
-			Parent = panel,
-		})
-		Kit.new("UIListLayout", {
-			FillDirection = Enum.FillDirection.Horizontal,
-			Padding = UDim.new(0, 6),
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			Parent = party,
-		})
-		v.raid = { time = time, rage = rage, party = party }
+		v.raid = { rage = rage, party = party }
 	end
 
-	local bottom = Kit.new("Frame", {
-		Size = UDim2.new(1, -40, 0, 170),
-		Position = UDim2.new(0.5, 0, 1, -20),
+	-- 字幕(何が起きたか)
+	local banner = Kit.new("Frame", {
+		Size = UDim2.fromOffset(780, 48),
+		Position = UDim2.new(0.5, 0, 1, -166),
 		AnchorPoint = Vector2.new(0.5, 1),
-		BackgroundColor3 = C.panel,
-		BackgroundTransparency = 0.05,
+		BackgroundColor3 = Color3.fromRGB(4, 14, 28),
+		BackgroundTransparency = 0.3,
+		ZIndex = 2,
 		Parent = s,
 	})
-	Kit.corner(bottom)
-	Kit.stroke(bottom, C.gold, 3)
-	-- 対戦の残り時間(下の枠の上の帯)
-	local tbg, tfill = Kit.bar(bottom, C.goldLight)
-	tbg.Size = UDim2.new(1, -28, 0, 6)
-	tbg.Position = UDim2.fromOffset(14, -12)
-	tbg.Visible = mode == "pvp"
-	v.timerBar = tbg
-	v.timerFill = tfill
-	v.timerText = Kit.label({
-		Size = UDim2.fromOffset(60, 26),
-		Position = UDim2.new(1, -14, 0, -42),
-		AnchorPoint = Vector2.new(1, 0),
-		TextXAlignment = Enum.TextXAlignment.Right,
-		Font = Theme.Fonts.title,
-		MaxTextSize = 22,
-		Visible = false,
-		Parent = bottom,
-	})
-	Kit.new("UIStroke", { Color = Color3.new(0, 0, 0), Thickness = 1.5, Parent = v.timerText })
+	Kit.corner(banner, UDim.new(1, 0))
 	v.message = Kit.label({
-		Size = UDim2.new(0.42, -20, 1, -24),
-		Position = UDim2.fromOffset(16, 12),
-		TextXAlignment = Enum.TextXAlignment.Left,
-		TextYAlignment = Enum.TextYAlignment.Top,
-		TextWrapped = true,
+		Size = UDim2.new(1, -40, 1, -10),
+		Position = UDim2.fromOffset(20, 5),
 		MaxTextSize = 24,
-		Parent = bottom,
+		Parent = banner,
 	})
-	local grid = Kit.new("Frame", {
-		Size = UDim2.new(0.58, -16, 1, -66),
-		Position = UDim2.new(0.42, 0, 0, 10),
+
+	-- 下: 技のお札と、交代・逃げる
+	local dock = Kit.new("Frame", {
+		Size = UDim2.new(1, 0, 0, 158),
+		Position = UDim2.fromScale(0, 1),
+		AnchorPoint = Vector2.new(0, 1),
+		BackgroundColor3 = Color3.fromRGB(4, 14, 28),
+		BorderSizePixel = 0,
+		ZIndex = 2,
+		Parent = s,
+	})
+	Kit.new("UIGradient", {
+		Rotation = 90,
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(0.35, 0.55),
+			NumberSequenceKeypoint.new(1, 0.25),
+		}),
+		Parent = dock,
+	})
+	local cards = Kit.new("Frame", {
+		Size = UDim2.fromOffset(4 * 168 + 3 * 12, 128),
+		Position = UDim2.new(0.5, 0, 1, -14),
+		AnchorPoint = Vector2.new(0.5, 1),
 		BackgroundTransparency = 1,
-		Parent = bottom,
+		Parent = dock,
 	})
-	Kit.new("UIGridLayout", {
-		CellSize = UDim2.new(0.5, -6, 0.5, -6),
-		CellPadding = UDim2.fromOffset(6, 6),
+	Kit.new("UIListLayout", {
+		FillDirection = Enum.FillDirection.Horizontal,
+		HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		Padding = UDim.new(0, 12),
 		SortOrder = Enum.SortOrder.LayoutOrder,
-		Parent = grid,
+		Parent = cards,
 	})
-	v.moveButtons = {}
+	v.cards = {}
 	for i = 1, 4 do
-		local b = Kit.button(
-			{ Text = "", Color = C.panelLight, MaxTextSize = 18, LayoutOrder = i, Parent = grid },
-			function()
-				if busy or chosen or not current or current.over then
-					return
-				end
-				choose({ kind = "move", index = i })
-			end
-		)
-		table.insert(v.moveButtons, b)
+		table.insert(v.cards, makeTalisman(cards, i))
 	end
-	local row = Kit.new("Frame", {
-		Size = UDim2.new(0.58, -16, 0, 46),
-		Position = UDim2.new(0.42, 0, 1, -54),
+	local side = Kit.new("Frame", {
+		Size = UDim2.fromOffset(150, 128),
+		Position = UDim2.new(1, -24, 1, -14),
+		AnchorPoint = Vector2.new(1, 1),
 		BackgroundTransparency = 1,
-		Parent = bottom,
+		Parent = dock,
 	})
 	Kit.new(
 		"UIListLayout",
-		{ FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), Parent = row }
+		{ Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder, Parent = side }
 	)
 	v.switchButton = Kit.button({
 		Text = Locale.t("battle_switch"),
-		Size = UDim2.new(0.5, -3, 1, 0),
+		Size = UDim2.fromOffset(150, 58),
 		Color = C.indigo,
-		MaxTextSize = 18,
-		Parent = row,
+		MaxTextSize = 20,
+		LayoutOrder = 1,
+		Parent = side,
 	}, showSwitchPicker)
 	v.runButton = Kit.button({
 		Text = runLabel(),
-		Size = UDim2.new(0.5, -3, 1, 0),
+		Size = UDim2.fromOffset(150, 58),
 		Color = C.panelDark,
-		MaxTextSize = 18,
-		Parent = row,
+		MaxTextSize = 20,
+		LayoutOrder = 2,
+		Parent = side,
 	}, onRun)
 	view = v
 
-	-- 魚をゆらゆら動かす・残り時間を進める
+	-- 真ん中の丸と、対戦の残り時間
 	local lastTick = -1
 	local conn
 	conn = RunService.RenderStepped:Connect(function()
@@ -1289,23 +1400,12 @@ local function openScreen()
 			return
 		end
 		local t = os.clock()
-		for _, st in { view.playerStage, view.enemyStage } do
-			if st.model and st.model.Parent then
-				local yaw = if st.faceLeft then math.pi else 0
-				st.model:PivotTo(
-					CFrame.new(0, math.sin(t * 2 + (if st.faceLeft then 1 else 0)) * 0.15, 0)
-						* CFrame.Angles(0, yaw + math.sin(t * 1.3) * 0.15, 0)
-				)
-			end
-		end
 		if mode == "pvp" and deadline and current and not current.over then
-			local total = math.max(1, O.TurnSeconds)
 			local left = math.max(0, deadline - t)
-			view.timerFill.Size = UDim2.fromScale(math.clamp(left / total, 0, 1), 1)
-			view.timerFill.BackgroundColor3 = if left <= 5 then C.danger else C.goldLight
-			view.timerText.Visible = not chosen and not busy
-			view.timerText.Text = tostring(math.ceil(left))
-			view.timerText.TextColor3 = if left <= 5 then C.danger else C.text
+			view.medalCaption.Text = Locale.t("battle_time_caption")
+			view.medalValue.Text = if chosen then "⏳" else tostring(math.ceil(left))
+			view.medalValue.TextColor3 = if left <= 5 and not chosen then C.danger else C.text
+			view.medallionStroke.Color = if left <= 5 and not chosen then C.danger else C.gold
 			local whole = math.ceil(left)
 			if whole ~= lastTick and whole <= 5 and whole > 0 and not chosen and not busy then
 				Sound.play("click", 0.25, 1.6)
@@ -1317,51 +1417,64 @@ local function openScreen()
 				setMessage(Locale.t("pvp_timeout"))
 				setCommandsEnabled(false)
 			end
-		else
-			view.timerText.Visible = false
-		end
-		if mode == "raid" and view.raid and raidInfo then
+		elseif mode == "raid" and raidInfo then
 			local left = math.max(0, raidInfo.seconds - (t - raidInfoAt))
-			view.raid.time.Text = Locale.t("raid_time", { t = Format.time(left) })
-			view.raid.time.TextColor3 = if left <= 30 then C.danger else C.text
+			view.medalCaption.Text = Locale.t("battle_time_caption")
+			view.medalValue.Text = Format.time(left)
+			view.medalValue.TextColor3 = if left <= 30 then C.danger else C.text
+		elseif current then
+			view.medalCaption.Text = Locale.t("battle_turn_caption")
+			view.medalValue.Text = tostring((current.turn or 0) + (if current.over then 0 else 1))
+			view.medalValue.TextColor3 = C.text
 		end
 	end)
-	local s2 = Kit.new("UIScale", { Scale = 1.1, Parent = s })
+	local s2 = Kit.new("UIScale", { Scale = 1.06, Parent = s })
 	TweenService:Create(s2, TweenInfo.new(0.3), { Scale = 1 }):Play()
 end
 
 -- イベントの再生 -----------------------------------------------------------
 local function playEvents(events: { any })
+	local lastElement = "none"
 	for _, e in events do
-		if not view then
+		if not view or not scene then
 			return
 		end
 		local side = e.side
-		local stage = if side == "enemy" then view.enemyStage else view.playerStage
 		local st = current
-		local fishId = if side and st then st[side].team[st[side].active].fishId else ""
+		local fishId = if side and st and st[side] then st[side].team[st[side].active].fishId else ""
+		local plate = if side == "enemy" then view.enemyPlate else view.playerPlate
 		if e.kind == "move" then
 			local mv = Config.MoveById[e.move]
+			local actor = st and st[side].team[st[side].active]
+			lastElement = if mv.element == "self" and actor then actor.element else mv.element
 			setMessage(
 				Locale.t(
 					"battle_used",
 					{ name = sideName(side, fishId), move = if Locale.get() == "ja" then mv.ja else mv.en }
 				)
 			)
-			Sound.play("click", 0.4, 0.8)
-			task.wait(0.55)
+			if mv.power > 0 then
+				-- 相手へ泳いでぶつかる
+				scene:attack(side)
+				Sound.play("splash", 0.35, 1.5)
+				task.wait(0.3)
+			else
+				scene:cast(side, Color3.fromHex(elementOf(lastElement).color))
+				Sound.play("click", 0.4, 0.8)
+				task.wait(0.55)
+			end
 		elseif e.kind == "miss" then
+			-- e.side は技を出した方。かわしたのは相手
+			scene:dodge(otherSide(side))
 			setMessage(Locale.t("battle_miss"))
-			task.wait(0.6)
+			task.wait(0.7)
 		elseif e.kind == "damage" then
 			Sound.play("splash", 0.5, if e.eff > 1 then 0.8 else 1.2)
-			flash(stage, Color3.fromRGB(255, 80, 80))
-			floatText(stage, "-" .. e.amount, if e.eff > 1 then C.goldLight else C.text)
-			task.spawn(shake, stage)
+			scene:hit(side, lastElement, e.eff, e.crit == true)
+			scene:float(side, "-" .. e.amount, if e.eff > 1 then C.goldLight else C.text)
 			if st then
-				local target = st[side].team[st[side].active]
-				target.hp = e.hp
-				updateCard(if side == "enemy" then view.enemyCard else view.playerCard, st[side])
+				st[side].team[st[side].active].hp = e.hp
+				updatePlate(plate, st[side])
 			end
 			local extra = {}
 			if e.crit then
@@ -1372,48 +1485,54 @@ local function playEvents(events: { any })
 			elseif e.eff < 1 then
 				table.insert(extra, Locale.t("battle_weak"))
 			end
-			task.wait(0.5)
+			task.wait(0.55)
 			if #extra > 0 then
-				setMessage(table.concat(extra, "\n"))
+				setMessage(table.concat(extra, "  "))
 				task.wait(0.7)
 			end
 		elseif e.kind == "heal" then
-			flash(stage, C.success)
-			floatText(stage, "+" .. e.amount, C.success)
+			scene:heal(side)
+			scene:float(side, "+" .. e.amount, C.success)
 			setMessage(Locale.t("battle_heal", { name = sideName(side, fishId) }))
 			if st then
 				st[side].team[st[side].active].hp = e.hp
-				updateCard(if side == "enemy" then view.enemyCard else view.playerCard, st[side])
+				updatePlate(plate, st[side])
 			end
 			task.wait(0.7)
 		elseif e.kind == "stat" then
 			local key = if e.delta > 0 then "battle_stat_up" else "battle_stat_down"
 			setMessage(Locale.t(key, { name = sideName(side, fishId), stat = Locale.t("stat_" .. e.stat) }))
-			flash(stage, if e.delta > 0 then C.goldLight else C.indigo)
+			scene:cast(side, if e.delta > 0 then C.goldLight else C.indigo)
 			task.wait(0.7)
 		elseif e.kind == "stun" then
 			setMessage(Locale.t("battle_stun", { name = sideName(side, fishId) }))
-			flash(stage, C.goldLight)
+			scene:stun(side)
 			task.wait(0.7)
 		elseif e.kind == "stunned" then
 			setMessage(Locale.t("battle_stunned", { name = sideName(side, fishId) }))
+			scene:stun(side)
 			task.wait(0.7)
 		elseif e.kind == "faint" then
 			setMessage(Locale.t("battle_faint", { name = sideName(side, e.fishId) }))
-			TweenService:Create(stage.vpf, TweenInfo.new(0.5), { ImageTransparency = 1 }):Play()
+			scene:faint(side)
 			Sound.play("fail", 0.5, 0.7)
-			cry(stage, e.fishId, true)
+			cry(side, e.fishId, true)
 			if st then
 				st[side].team[st[side].active].hp = 0
-				updateCard(if side == "enemy" then view.enemyCard else view.playerCard, st[side])
+				updatePlate(plate, st[side])
 			end
-			task.wait(0.9)
+			task.wait(1.2)
 		elseif e.kind == "switch" then
+			-- 前の子が泳ぎ去り、次の子が横から泳いでくる
+			if scene:hasFish(side) then
+				scene:leave(side)
+				task.wait(0.5)
+			end
 			if st then
 				st[side].active = e.slot
 				local f = st[side].team[e.slot]
-				setStageFish(stage, f.fishId, f.mutation, side == "enemy")
-				updateCard(if side == "enemy" then view.enemyCard else view.playerCard, st[side])
+				scene:setFish(side, f.fishId, f.mutation, "enter")
+				updatePlate(plate, st[side])
 			end
 			local n = name(Config.FishById[e.fishId])
 			setMessage(
@@ -1421,9 +1540,10 @@ local function playEvents(events: { any })
 					then Locale.t("battle_go", { name = n })
 					else Locale.t("battle_foe_sends", { name = n })
 			)
-			cry(stage, e.fishId)
+			cry(side, e.fishId)
 			task.wait(0.9)
 		elseif e.kind == "run" then
+			scene:leave(side)
 			if side == "enemy" then
 				setMessage(Locale.t("battle_foe_ran"))
 			elseif mode == "pvp" then
@@ -1431,7 +1551,7 @@ local function playEvents(events: { any })
 			else
 				setMessage(Locale.t("battle_ran"))
 			end
-			task.wait(0.7)
+			task.wait(0.8)
 		end
 	end
 end
@@ -1588,7 +1708,7 @@ local function showResult(r: any)
 	TweenService:Create(s, TweenInfo.new(0.35, Enum.EasingStyle.Back), { Scale = 1 }):Play()
 end
 
--- 戦いの始まり(名乗り → お互いに魚を出す)
+-- 戦いの始まり(名乗り → 相手が泳いでくる → 自分の子が泳ぎ出す)
 local function intro(msg: any)
 	local st = msg.state
 	local line = ""
@@ -1603,27 +1723,31 @@ local function intro(msg: any)
 		line = if Locale.get() == "ja" then trainer.jaLine else trainer.enLine
 	end
 	setMessage(line)
-	if mode == "raid" and view then
-		local ef = st.enemy.team[st.enemy.active]
-		cry(view.enemyStage, ef.fishId)
-		flash(view.enemyStage, C.vermilion)
-		task.spawn(shake, view.enemyStage)
-		task.wait(1.6)
-	else
-		task.wait(1.4)
-		local ef = st.enemy.team[st.enemy.active]
-		setMessage(Locale.t("battle_foe_sends", { name = name(Config.FishById[ef.fishId]) }))
-		if view then
-			cry(view.enemyStage, ef.fishId)
-		end
-		task.wait(1.1)
-	end
+	local ef = st.enemy.team[st.enemy.active]
 	local pf = st.player.team[st.player.active]
-	setMessage(Locale.t("battle_go", { name = name(Config.FishById[pf.fishId]) }))
-	if view then
-		cry(view.playerStage, pf.fishId)
+	if scene then
+		scene:setFish("enemy", ef.fishId, ef.mutation, "enter")
 	end
-	task.wait(0.9)
+	if mode == "raid" then
+		task.wait(0.8)
+		cry("enemy", ef.fishId)
+		if scene then
+			scene:flash(C.vermilion, 0.35)
+			scene:shake(10)
+		end
+		task.wait(1.2)
+	else
+		task.wait(1.2)
+		setMessage(Locale.t("battle_foe_sends", { name = name(Config.FishById[ef.fishId]) }))
+		cry("enemy", ef.fishId)
+		task.wait(1.0)
+	end
+	if scene then
+		scene:setFish("player", pf.fishId, pf.mutation, "enter")
+	end
+	setMessage(Locale.t("battle_go", { name = name(Config.FishById[pf.fishId]) }))
+	cry("player", pf.fishId)
+	task.wait(1.0)
 end
 
 local queue: { any } = {}
@@ -1639,7 +1763,7 @@ local function handle(msg: any)
 		raidInfoAt = msg.at
 		openScreen()
 		deadline = if mode == "pvp" then msg.at + (tonumber(msg.seconds) or O.FirstTurnSeconds) - 0.5 else nil
-		applyState(msg.state)
+		applyState(msg.state, true) -- 魚は名乗りの後で泳いでくる
 		renderRaid()
 		busy = true
 		setCommandsEnabled(false)
@@ -1784,6 +1908,18 @@ function BattleUI.init(g: ScreenGui)
 			if listPanel.root.Visible and tab ~= "trainers" then
 				render()
 			end
+		end
+	end)
+
+	-- キーボードの 1〜4 でお札を使う
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if processed or not view then
+			return
+		end
+		local keys = { Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three, Enum.KeyCode.Four }
+		local i = table.find(keys, input.KeyCode)
+		if i then
+			useCard(i)
 		end
 	end)
 

@@ -59,6 +59,7 @@ function build(node, parent, mode) {
 	if (p.LayoutOrder !== undefined) el.style.order = Math.max(-1e6, Math.min(1e6, Math.round(p.LayoutOrder)));
 	el.style.zIndex = p.ZIndex ?? 1;
 	if (scale && scale.p.Scale !== undefined && scale.p.Scale !== 1) el.style.scale = scale.p.Scale;
+	if (p.Rotation) el.style.rotate = p.Rotation + "deg";
 	if (sc && sc.p.MaxSize) { el.style.maxWidth = sc.p.MaxSize.x + "px"; el.style.maxHeight = sc.p.MaxSize.y + "px"; }
 	if (cls === "ScrollingFrame" || p.ClipsDescendants) el.style.overflow = "hidden";
 
@@ -66,9 +67,24 @@ function build(node, parent, mode) {
 	const bt = p.BackgroundTransparency ?? 0;
 	if (bt < 1) {
 		const bg = p.BackgroundColor3 || DEF_BG;
-		if (grad && grad.p.Color) {
-			const a = 1 - bt, rot = (grad.p.Rotation ?? 0) + 90;
-			el.style.background = "linear-gradient(" + rot + "deg," + rgba(mul(bg, grad.p.Color.c0), a) + "," + rgba(mul(bg, grad.p.Color.c1), a) + ")";
+		if (grad && (grad.p.Color || grad.p.Transparency)) {
+			// 色(かけ算)と透明度(UIGradient.Transparency)の両方を、背景のグラデーションに焼き込む
+			const white = { r: 1, g: 1, b: 1 };
+			const c0 = grad.p.Color ? grad.p.Color.c0 : white, c1 = grad.p.Color ? grad.p.Color.c1 : white;
+			const ks = grad.p.Transparency ? grad.p.Transparency.ks : [[0, 0], [1, 0]];
+			const trAt = (t) => {
+				for (let i = 1; i < ks.length; i++) if (t <= ks[i][0]) {
+					const [t0, v0] = ks[i - 1], [t1, v1] = ks[i];
+					return v0 + (v1 - v0) * ((t - t0) / Math.max(1e-6, t1 - t0));
+				}
+				return ks[ks.length - 1][1];
+			};
+			const ts = [...new Set([0, 1, ...ks.map((k) => k[0])])].sort((a, b) => a - b);
+			const stops = ts.map((t) => {
+				const c = { r: c0.r + (c1.r - c0.r) * t, g: c0.g + (c1.g - c0.g) * t, b: c0.b + (c1.b - c0.b) * t };
+				return rgba(mul(bg, c), (1 - bt) * (1 - trAt(t))) + " " + (t * 100) + "%";
+			});
+			el.style.background = "linear-gradient(" + ((grad.p.Rotation ?? 0) + 90) + "deg," + stops.join(",") + ")";
 		} else el.style.background = rgba(bg, 1 - bt);
 	}
 	if (corner) {
@@ -94,11 +110,33 @@ function build(node, parent, mode) {
 		el.appendChild(ph);
 	}
 	if (cls === "ViewportFrame") {
-		const model = kids.find((k) => k.c === "Model");
-		if (model && (p.ImageTransparency ?? 0) < 1) {
-			const ph = document.createElement("div");
-			ph.className = "fish"; ph.innerHTML = "<span>🐟</span><small>" + model.p.Name + "</small>";
-			el.appendChild(ph);
+		const models = kids.filter((k) => k.c === "Model");
+		const cam = kids.find((k) => k.c === "Camera");
+		if (cam && cam.p.CFrame && models.some((m) => m.p.Pivot)) {
+			// 1つの水槽に何匹もいる(バトル): カメラから見た位置に置く(カメラは回転なしの前提)
+			const fov = cam.p.FieldOfView || 70, t = Math.tan((fov / 2) * Math.PI / 180);
+			for (const m of models) {
+				const pv = m.p.Pivot; if (!pv) continue;
+				const dz = cam.p.CFrame.z - pv.z, aspect = 1280 / 720;
+				const sx = 0.5 + (pv.x - cam.p.CFrame.x) / (dz * t * aspect) / 2;
+				const sy = 0.5 - (pv.y - cam.p.CFrame.y) / (dz * t) / 2;
+				const len = (m.p.Scale || 1) > 2 ? 9.5 : 6; // ボスは大きい(テストの仮の魚は長さ4 → 普通1.5倍・ボス2.4倍)
+				const px = (len / (2 * dz * t * aspect)) * 1280;
+				const ph = document.createElement("div");
+				ph.className = "fish3d";
+				ph.style.left = (sx * 100) + "%"; ph.style.top = (sy * 100) + "%";
+				ph.style.fontSize = Math.round(px * 0.8) + "px";
+				// 絵文字の魚は左向き。頭が右(LookVector.X > 0)なら左右を反転
+				ph.innerHTML = "<span style='display:inline-block;transform:scaleX(" + (pv.lx > 0 ? -1 : 1) + ")'>🐟</span><small>" + m.p.Name + "</small>";
+				el.appendChild(ph);
+			}
+		} else {
+			const model = models[0];
+			if (model && (p.ImageTransparency ?? 0) < 1) {
+				const ph = document.createElement("div");
+				ph.className = "fish"; ph.innerHTML = "<span>🐟</span><small>" + model.p.Name + "</small>";
+				el.appendChild(ph);
+			}
 		}
 	}
 
@@ -189,6 +227,8 @@ html,body{margin:0;width:1280px;height:720px;overflow:hidden;font-family:"IPAGot
 .ph{position:absolute;inset:0;border-radius:9999px;background:radial-gradient(circle at 50% 35%,#c9c3e6,#6d6890);display:flex;align-items:center;justify-content:center;font-size:60%;overflow:hidden}
 .fish{position:absolute;inset:8%;border-radius:40%;background:radial-gradient(circle,rgba(255,255,255,.22),rgba(255,255,255,0) 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,.75)}
 .fish span{font-size:64px;line-height:1}.fish small{font-size:12px;margin-top:4px}
+.fish3d{position:absolute;translate:-50% -50%;display:flex;flex-direction:column;align-items:center;line-height:1;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35))}
+.fish3d small{font-size:12px;color:rgba(255,255,255,.7);margin-top:2px}
 </style></head><body><div id="world"></div><div id="root"></div><script>(() => {const DATA=${data};${RENDER}})();</script></body></html>`;
 
 (async () => {

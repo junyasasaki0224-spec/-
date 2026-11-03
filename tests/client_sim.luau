@@ -252,6 +252,12 @@ end
 function methods:PivotTo(cf)
 	rawget(self, "__props").Pivot = cf
 end
+function methods:GetScale()
+	return rawget(self, "__props").Scale or 1
+end
+function methods:ScaleTo(x)
+	rawget(self, "__props").Scale = x
+end
 function methods:GetBoundingBox()
 	return roblox.CFrame.new(), roblox.Vector3.new(4, 2, 1)
 end
@@ -291,6 +297,33 @@ local function button(root: any, text: string): any
 		end)
 	do
 		return b
+	end
+	return nil
+end
+
+-- 中の文字にその言葉を含むボタン(技のお札など、文字を子のラベルに書くボタン)
+local function cardFor(root: any, text: string): any
+	local buttons = walkFind(root, function(d)
+		return d.ClassName == "TextButton" and visible(d)
+	end)
+	for _, b in buttons do
+		if type(b.Text) == "string" and b.Text:find(text, 1, true) then
+			return b
+		end
+	end
+	for _, b in buttons do
+		for _, d in b:GetDescendants() do
+			if d.ClassName == "TextLabel" and type(d.Text) == "string" and d.Text:find(text, 1, true) then
+				-- いちばん近いボタンがこのボタンのものだけ(外側の大きなボタンを拾わない)
+				local n = d.Parent
+				while n and n.ClassName ~= "TextButton" do
+					n = n.Parent
+				end
+				if n == b then
+					return b
+				end
+			end
+		end
 	end
 	return nil
 end
@@ -349,6 +382,14 @@ local function ser(v: any): any
 		return { r = v.R, g = v.G, b = v.B }
 	elseif ty == "EnumItem" then
 		return { name = v.Name }
+	elseif ty == "NumberSequence" then
+		local ks = {}
+		for _, k in v.Keypoints do
+			table.insert(ks, { k.Time, k.Value })
+		end
+		return { ks = ks }
+	elseif ty == "CFrame" then
+		return { x = v.Position.X, y = v.Position.Y, z = v.Position.Z, lx = v.LookVector.X }
 	elseif ty == "ColorSequence" then
 		local k = v.Keypoints
 		return { c0 = ser(k[1].Value), c1 = ser(k[#k].Value) }
@@ -377,6 +418,11 @@ local snapshotGui: any = nil
 local function snapshot(name: string)
 	if not snapshotDir or not snapshotGui then
 		return
+	end
+	-- ゲームでは毎フレーム動いているので、写す前に1フレーム進める
+	local before = rawget(_G, "__beforeSnapshot")
+	if before then
+		before()
 	end
 	if not fs.isDir(snapshotDir) then
 		fs.writeDir(snapshotDir)
@@ -454,6 +500,7 @@ local services: { [string]: any } = {
 		end,
 	},
 	RunService = { Heartbeat = Signal(), RenderStepped = Signal() },
+	UserInputService = { InputBegan = Signal() },
 	TweenService = {
 		-- 短い動きは一瞬で終わらせる(画面の写しで、動き終わった形を見るため)。長い動き(残り時間の帯)は始めのまま
 		Create = function(_, inst, info, goal)
@@ -586,6 +633,9 @@ local Social = H.require(client.Controllers.Social)
 local HUD = H.require(client.Controllers.HUD)
 local gui = Root.init()
 rawset(_G, "__gui", gui)
+rawset(_G, "__beforeSnapshot", function()
+	services.RunService.RenderStepped:Fire()
+end)
 snapshotGui = gui
 Online.init(gui)
 HUD.init(gui)
@@ -759,16 +809,8 @@ H.test(
 		advance(4) -- 名乗りの演出
 		H.assert(hasText(gui, t("battle_choose")), "not asking to choose")
 		local moveName = Config.MoveById[state.sides.player.team[1].moves[1]].ja
-		local moveButton = nil
-		for _, b in
-			walkFind(gui, function(d)
-				return d.ClassName == "TextButton"
-					and type(d.Text) == "string"
-					and d.Text:find(moveName, 1, true) ~= nil
-			end)
-		do
-			moveButton = b
-		end
+		-- 技のお札: 名前はお札の中の文字
+		local moveButton = cardFor(gui, moveName)
 		H.assert(enabled(moveButton), "move button disabled")
 		click(moveButton)
 		local sent = rawget(remote("BattleAction"), "sent")
@@ -922,7 +964,7 @@ H.test(
 		H.assert(hasText(gui, Format.coins(1234, "ja")), "party damage missing")
 		H.assert(hasText(gui, t("raid_enraged", { boss = bs.ja })), "enraged message missing")
 		services.RunService.RenderStepped:Fire()
-		H.assert(hasText(gui, t("raid_time", { t = "3:55" })), "raid timer missing")
+		H.assert(hasText(gui, "3:55"), "raid timer missing")
 		snapshot("raid")
 		-- 自分の相棒が全員倒れた
 		state.sides.player.team[1].hp = 0
@@ -990,6 +1032,141 @@ H.test(
 		H.assert(hasText(gui, t("battle_ran")), "ran message missing")
 		click(button(gui, t("close")))
 		H.assert(Root.isOpen("battle"), "hub not reopened")
+	end
+)
+
+H.test(
+	"水の中: 2匹とも泳ぎ回る・技は相手へ泳いでぶつかる・倒れると水面へ浮かぶ・1〜4キーでお札",
+	function()
+		-- 3D → 画面の計算(真ん中は真ん中、右の魚は右に)
+		local Scene = H.require(client.Controllers.BattleScene)
+		local cam = roblox.CFrame.new(0, 0.5, 34)
+		local cx, cy = Scene.project(cam, 38, 16 / 9, roblox.Vector3.new(0, 0.5, 0))
+		H.assertNear(cx, 0.5, 1e-6)
+		H.assertNear(cy, 0.5, 1e-6)
+		local rx = Scene.project(cam, 38, 16 / 9, roblox.Vector3.new(7, 0.5, 0))
+		H.assertNear(rx, 0.5 + 7 / (34 * math.tan(math.rad(19)) * 16 / 9) / 2, 1e-6)
+
+		local state = BattleLib.new(fighters({ { fishA.id, 20 } }), fighters({ { fishB.id, 12 } }))
+		serverSays({ kind = "start", trainerId = Config.Trainers[1].id, state = BattleLib.publicState(state) })
+		advance(4)
+		local water = gui:FindFirstChild("Battle"):FindFirstChild("Underwater"):FindFirstChild("Water")
+		local function fishModel(id: string): any
+			for _, c in water:GetChildren() do
+				if c.ClassName == "Model" and c.Name == id then
+					return c
+				end
+			end
+			return nil
+		end
+		local mine, foe = fishModel(fishA.id), fishModel(fishB.id)
+		H.assert(mine and foe, "fish not in the water")
+		local function x(m: any): number
+			return m.Pivot.Position.X
+		end
+		local step = services.RunService.RenderStepped
+		step:Fire()
+		H.assert(x(mine) < 0 and x(foe) > 0, "fish on the wrong sides")
+		local p1 = mine.Pivot.Position
+		advance(0.5)
+		step:Fire()
+		H.assert((mine.Pivot.Position - p1).Magnitude > 0.01, "fish not swimming")
+		snapshot("underwater")
+
+		-- キーボードの 1 で1枚目のお札
+		local sent = rawget(remote("BattleAction"), "sent")
+		local before = #sent
+		services.UserInputService.InputBegan:Fire({ KeyCode = roblox.Enum.KeyCode.One }, false)
+		H.assertEq(#sent, before + 1, "key 1 did not use a talisman")
+		H.assertEq(sent[#sent][1].index, 1)
+
+		-- 攻撃: 自分の魚が相手の方へ泳いでいき、当たった相手は倒れて水面へ
+		local power = nil
+		for _, id in state.sides.player.team[1].moves do
+			if Config.MoveById[id].power > 0 then
+				power = id
+			end
+		end
+		local home = x(mine)
+		state.sides.enemy.team[1].hp = 0
+		state.over = true
+		state.winner = "player"
+		serverSays({
+			kind = "turn",
+			events = {
+				{ kind = "move", side = "player", move = power },
+				{ kind = "damage", side = "enemy", amount = 99, eff = 2, crit = true, hp = 0 },
+				{ kind = "faint", side = "enemy", fishId = fishB.id },
+				{ kind = "end", winner = "player" },
+			},
+			state = BattleLib.publicState(state),
+		})
+		advance(0.25)
+		step:Fire()
+		H.assert(x(mine) > home + 4, "attacker did not swim at the foe")
+		snapshot("underwater_hit")
+		advance(4)
+		step:Fire()
+		H.assert(foe.Parent == nil, "fainted fish still in the water")
+		H.assert(mine.Parent ~= nil, "winner left the water")
+		serverSays({ kind = "result", win = true, coins = 0, gains = {} })
+		advance(2)
+		click(button(gui, t("close")))
+	end
+)
+
+H.test(
+	"交代: 「交代」→ 相棒の札を選ぶ → 前の子は泳ぎ去り、次の子が横から泳いでくる",
+	function()
+		local state =
+			BattleLib.new(fighters({ { fishA.id, 20 }, { fishB.id, 12 } }), fighters({ { fishB.id, 9 } }))
+		serverSays({ kind = "start", trainerId = Config.Trainers[1].id, state = BattleLib.publicState(state) })
+		advance(4)
+		click(button(gui, t("battle_switch")))
+		H.assert(hasText(gui, t("battle_switch_title")), "switch picker missing")
+		snapshot("switch_picker")
+		local pick = cardFor(gui, Locale.fishName(fishB) .. "\nLv12")
+		H.assert(pick and enabled(pick), "second partner not selectable")
+		-- 今出ている子は選べない
+		H.assert(not enabled(cardFor(gui, Locale.fishName(fishA) .. "\nLv20")), "active partner selectable")
+		click(pick)
+		local sent = rawget(remote("BattleAction"), "sent")
+		H.assertEq(sent[#sent][1].kind, "switch")
+		H.assertEq(sent[#sent][1].slot, 2)
+		local events = BattleLib.turn(state, { kind = "switch", slot = 2 }, rng, { kind = "move", index = 1 })
+		serverSays({ kind = "turn", events = events, state = BattleLib.publicState(state) })
+		local water = gui:FindFirstChild("Battle"):FindFirstChild("Underwater"):FindFirstChild("Water")
+		advance(0.3)
+		services.RunService.RenderStepped:Fire()
+		advance(6)
+		services.RunService.RenderStepped:Fire()
+		local names = {}
+		for _, c in water:GetChildren() do
+			if c.ClassName == "Model" then
+				table.insert(names, c.Name)
+			end
+		end
+		-- 自分は泥鮒→2匹目、相手は1匹: 水の中は2匹だけ
+		H.assertEq(#names, 2, "fish count after switch: " .. table.concat(names, ","))
+		H.assert(
+			hasText(gui, t("battle_go", { name = Locale.fishName(fishB) }))
+				or hasText(gui, t("battle_choose")),
+			"no go line"
+		)
+		-- 交代で使ったお札の縁は元に戻る
+		for _, c in
+			walkFind(gui, function(d)
+				return d.ClassName == "TextButton"
+					and type(d.Name) == "string"
+					and d.Name:find("Talisman", 1, true) == 1
+			end)
+		do
+			H.assert(c:GetAttribute("Chosen") ~= true, "talisman stays chosen")
+		end
+		click(button(gui, t("battle_run")))
+		serverSays({ kind = "result", win = false, gains = {} })
+		advance(2)
+		click(button(gui, t("close")))
 	end
 )
 
