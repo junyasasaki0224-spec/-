@@ -397,8 +397,12 @@ function Config.Validate(): { string }
 			bad("Music.areaTrack: 知らない曲 " .. name)
 		end
 	end
-	if not Music.tracks[Music.battleTrack] or not Music.tracks.village then
-		bad("Music: battle と village の曲が必要")
+	if
+		not Music.tracks[Music.battleTrack]
+		or not Music.tracks[Music.bossTrack]
+		or not Music.tracks.village
+	then
+		bad("Music: battle・boss・village の曲が必要")
 	end
 	if type(Cries.soundId) ~= "string" or not Cries.soundId:match("^rbxassetid://%d+$") then
 		bad("Cries: soundId は rbxassetid://<数字> の形にしてください")

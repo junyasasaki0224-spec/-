@@ -18,7 +18,7 @@ Creator Dashboard → 体験 → 収益化 で作成し、`src/shared/Config/Pro
 
 ## 見た目と音を入れる
 - [ ] `assets/fish/YokaiFishMeshes.glb` を読み込んで ReplicatedStorage.FishMeshes に置く([ANIME_MESHES.md](ANIME_MESHES.md))
-- [ ] BGM 5曲 `assets/sounds/bgm/{village,swamp,river,sea,battle}.ogg` をアップロードし、ID を `Config/Music.luau` の各曲の `soundId` に入れる([MUSIC.md](MUSIC.md))
+- [ ] BGM 6曲 `assets/sounds/bgm/{village,swamp,river,sea,battle,boss}.ogg` をアップロードし、ID を `Config/Music.luau` の各曲の `soundId` に入れる([MUSIC.md](MUSIC.md))
 - [ ] `assets/sounds/YokaiCries.ogg` をアップロードし、ID を `Config/Cries.luau` の `soundId` に入れる([CRIES.md](CRIES.md))
 
 ## 遊んで確認(Studio の Play / 2人以上は「テスト → サーバーとクライアント」)

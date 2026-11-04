@@ -1511,7 +1511,7 @@ local function openScreen()
 	})
 	screen = s
 	scene = BattleScene.new(s, { boss = mode == "raid" })
-	Music.battle(true)
+	Music.battle(true, mode == "raid" or (trainer ~= nil and trainer.boss == true))
 	scene:setSpeed(battleSpeed())
 	scene:setShake(shakeOn())
 

@@ -6,6 +6,7 @@
   river   : 川。陽音階、流れるような三味線 + 小太鼓
   sea     : 海。琉球音階、明るい三線ふう + 波の音
   battle  : バトル。陰音階、速い。太鼓 + 三味線のリフ + 尺八
+  boss    : ボス戦。和の音は使わない。短調・168BPM。ドラム + 歪んだギター + 金管 + 弦 + 合唱
 継ぎ目なくループする(最後の残響は曲の頭に重ねる)。
 
 使い方:
@@ -385,12 +386,208 @@ def song_battle(rng):
     return tr.render(rng, rt=1.4, wet=0.2)
 
 
+
+# ボス戦(和の音は使わない): 短調・速い。キック/スネア/タム、歪んだパワーコード、金管、弦の刻み、合唱、ティンパニ
+def saw_add(f, dur, bright_env=None, nharm=28):
+    """倍音を足したのこぎり波(折り返しなし)。bright_env(t) で高い倍音の強さを時間で変える"""
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    out = np.zeros(n)
+    for k in range(1, nharm + 1):
+        if f * k > SR * 0.45:
+            break
+        a = 1.0 / k
+        if bright_env is not None:
+            a = a * bright_env(t) ** (0.15 * (k - 1))
+        out += a * np.sin(2 * math.pi * f * k * t)
+    return out
+
+
+def adsr(n, a=0.005, d=0.08, s=0.7, r=0.08):
+    t = np.arange(n) / SR
+    dur = n / SR
+    env = np.where(t < a, t / max(a, 1e-4), s + (1 - s) * np.exp(-(t - a) / max(d, 1e-4)))
+    rel = np.clip((dur - t) / max(r, 1e-4), 0, 1)
+    return env * rel
+
+
+def kick(rng):
+    n = int(0.45 * SR)
+    t = np.arange(n) / SR
+    f = 45 + 110 * np.exp(-t / 0.035)
+    ph = 2 * math.pi * np.cumsum(f) / SR
+    click = rng.standard_normal(n) * np.exp(-t / 0.003) * 0.3
+    return (np.sin(ph) * np.exp(-t / 0.18) + click) * 1.0
+
+
+def snare(rng):
+    n = int(0.3 * SR)
+    t = np.arange(n) / SR
+    noise = rng.standard_normal(n)
+    noise = noise - lowpass(noise, 0.08)  # 低い所を抜く
+    tone = np.sin(2 * math.pi * 190 * t) * np.exp(-t / 0.05)
+    return (noise * np.exp(-t / 0.09) * 0.55 + tone * 0.6) * 0.8
+
+
+def tom(f0, rng):
+    n = int(0.5 * SR)
+    t = np.arange(n) / SR
+    f = f0 * (1 + 0.5 * np.exp(-t / 0.04))
+    ph = 2 * math.pi * np.cumsum(f) / SR
+    return (np.sin(ph) * np.exp(-t / 0.22) + lowpass(rng.standard_normal(n), 0.2) * np.exp(-t / 0.02) * 0.3) * 0.8
+
+
+def crash(rng, dur=2.2):
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    noise = rng.standard_normal(n)
+    noise = noise - lowpass(noise, 0.35)
+    return noise * np.exp(-t / 0.7) * 0.28
+
+
+def timpani(f, rng):
+    n = int(1.4 * SR)
+    t = np.arange(n) / SR
+    out = np.zeros(n)
+    for r, a, d in ((1, 1, 0.6), (1.5, 0.5, 0.4), (1.99, 0.3, 0.3), (2.44, 0.2, 0.2)):
+        out += a * np.sin(2 * math.pi * f * r * t) * np.exp(-t / d)
+    out += lowpass(rng.standard_normal(n), 0.1) * np.exp(-t / 0.03) * 0.6
+    return out * 0.6
+
+
+def power_chord(f, dur, rng, mute=True):
+    """歪んだギターのパワーコード(根音・5度・オクターブ)"""
+    n = int(dur * SR)
+    x = np.zeros(n)
+    for ratio in (1, 1.4983, 2):
+        for det in (-0.004, 0.004):
+            x += saw_add(f * ratio * (1 + det), dur, nharm=18)
+    x = np.tanh(x * 2.2)
+    x = lowpass(x, 0.18 if mute else 0.32)
+    env = adsr(n, 0.004, 0.06 if mute else 0.3, 0.35 if mute else 0.8, 0.03)
+    return x * env * 0.32
+
+
+def brass(f, dur):
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    bright = lambda tt: np.clip(0.35 + 0.65 * np.minimum(1, tt / 0.12), 0, 1)
+    x = saw_add(f, dur, bright, nharm=22) + saw_add(f * 1.003, dur, bright, nharm=22)
+    return x * adsr(n, 0.03, 0.2, 0.75, 0.08) * 0.16
+
+
+def strings(f, dur):
+    n = int(dur * SR)
+    x = saw_add(f, dur, nharm=14) + saw_add(f * 1.004, dur, nharm=14) + saw_add(f * 0.996, dur, nharm=14)
+    return lowpass(x, 0.3) * adsr(n, 0.01, 0.05, 0.6, 0.04) * 0.1
+
+
+def choir(freqs, dur):
+    """「アー」の合唱(倍音を母音の形で強める + ゆれ)"""
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    out = np.zeros(n)
+    for f in freqs:
+        for v in range(3):
+            vib = 1 + 0.006 * np.sin(2 * math.pi * (4.6 + v * 0.4) * t + v)
+            ph = 2 * math.pi * np.cumsum(f * (1 + (v - 1) * 0.003) * vib) / SR
+            for k in range(1, 16):
+                fk = f * k
+                w = sum(a * math.exp(-((fk - fm) / bw) ** 2) for fm, bw, a in ((700, 130, 1.0), (1150, 150, 0.6), (2600, 300, 0.25)))
+                out += (w + 0.02) / k**0.3 * np.sin(k * ph)
+    env = np.minimum(1, t / 0.4) * np.clip((dur - t) / 0.4, 0, 1)
+    return out * env * 0.03 / max(1, len(freqs))
+
+
+def song_boss(rng):
+    bpm = 168
+    tr = Track(bpm=bpm, bars=24, tail=3.0)
+    root = 50  # D (短調)
+    minor = [0, 2, 3, 5, 7, 8, 10]
+    def nm(d, base=root):
+        o, i = divmod(d, 7)
+        return base + 12 * o + minor[i]
+    # 和音の根音(音階の段): i - VI - VII - i / i - iv - V(和声的短音階で緊張) - V
+    prog_a = [0, 0, 5, 5, 6, 6, 0, 0]
+    prog_b = [0, 3, 5, 4, 0, 3, 4, 4]
+    for bar in range(24):
+        b0 = bar * 4
+        section = "intro" if bar < 4 else ("A" if bar < 12 else ("B" if bar < 20 else "bridge"))
+        if section == "intro":
+            ch = [0, 0, 5, 6][bar]
+        elif section == "A":
+            ch = prog_a[bar - 4]
+        elif section == "B":
+            ch = prog_b[bar - 12]
+        else:
+            ch = [0, 5, 6, 4][bar - 20]
+        root_m = nm(ch, root - 12)
+        if ch == 4:
+            root_m = root - 12 + 9  # A(属和音)
+        f_root = midi_hz(root_m)
+        # ドラム
+        if section == "intro":
+            for p in (0, 1.5, 3):
+                tr.add(b0 + p, timpani(f_root, rng), 0.9)
+            if bar == 3:
+                for k in range(8):
+                    tr.add(b0 + 2 + k * 0.25, tom(140 - k * 10, rng), 0.5, pan=(k - 4) / 6)
+        else:
+            for k in range(8):
+                if k % 4 == 0 or k in (3, 6) or (section == "B" and k == 7):
+                    tr.add(b0 + k * 0.5, kick(rng), 0.9)
+            for k in (1, 3):
+                tr.add(b0 + k, snare(rng), 0.75)
+            for k in range(8):
+                tr.add(b0 + k * 0.5 + 0.25 * 0, crash(rng, 0.12) * 0.6, 0.25, pan=0.4)  # ハイハットふう
+            if bar % 4 == 0:
+                tr.add(b0, crash(rng), 0.8, pan=-0.2)
+            if bar % 4 == 3:
+                for k in range(4):
+                    tr.add(b0 + 2 + k * 0.5, tom(160 - k * 22, rng), 0.55, pan=0.5 - k * 0.3)
+        # 歪んだギター(8分の刻み、小節の頭はのばす)
+        if section != "intro":
+            for k in range(8):
+                mute = k not in (0, 6)
+                tr.add(b0 + k * 0.5, power_chord(f_root, 0.5 * tr.beat * (0.95 if mute else 1.9), rng, mute), 0.8, pan=-0.45 if k % 2 else 0.45)
+        else:
+            tr.add(b0, power_chord(f_root, 4 * tr.beat, rng, mute=False), 0.6)
+        # 弦の刻み(16分)
+        if section in ("A", "B", "bridge"):
+            pattern = [0, 2, 4, 2, 7, 4, 2, 4] if section != "B" else [0, 4, 7, 9, 7, 4, 2, 4]
+            for k in range(16):
+                d = ch + pattern[k % 8] // 1
+                tr.add(b0 + k * 0.25, strings(midi_hz(nm(d, root + 12)), 0.25 * tr.beat), 0.55, pan=0.3)
+        # 金管(A は合いの手、B は旋律)
+        if section == "A" and bar % 2 == 1:
+            for p, d in ((2, 0), (2.5, 2), (3, 4)):
+                tr.add(b0 + p, brass(midi_hz(nm(ch + d, root)), 0.45 * tr.beat), 0.8, pan=-0.2)
+        if section == "B":
+            mel = [(0, 1.5, 4), (1.5, 0.5, 3), (2, 2, 2)] if bar % 2 == 0 else [(0, 1, 4), (1, 1, 5), (2, 2, 7)]
+            for p, du, d in mel:
+                f = midi_hz(nm(ch + d, root + 12))
+                tr.add(b0 + p, brass(f, du * tr.beat), 0.85)
+                tr.add(b0 + p, brass(f / 2, du * tr.beat), 0.5)
+        # 合唱(B と終わり)
+        if section in ("B", "bridge", "intro") and bar % 2 == 0:
+            fs = [midi_hz(nm(ch, root + 12)), midi_hz(nm(ch + 2, root + 12)), midi_hz(nm(ch + 4, root + 12))]
+            tr.add(b0, choir(fs, 8 * tr.beat + 0.3), 1.0)
+        # ベース
+        if section != "intro":
+            for k in range(8):
+                tr.add(b0 + k * 0.5, pluck(midi_hz(root_m - 12), 0.4, bright=0.7, decay=2.5, rng=rng), 0.9)
+    x = tr.render(rng, rt=1.6, wet=0.18)
+    # 迫力を出すため軽く圧縮して音圧を上げる(太鼓の山だけが目立たないように)
+    x = np.tanh(x * 2.4)
+    return x * (0.82 / (np.max(np.abs(x)) + 1e-9))
+
 SONGS = {
     "village": (song_village, 11),
     "swamp": (song_swamp, 23),
     "river": (song_river, 37),
     "sea": (song_sea, 41),
     "battle": (song_battle, 53),
+    "boss": (song_boss, 67),
 }
 
 # 場所 → 曲
@@ -453,6 +650,7 @@ def write_luau(path, rows):
         lines.append(f"\t\t{k} = {lua_str(v)},")
     lines.append("\t} :: { [string]: string },")
     lines.append("\tbattleTrack = \"battle\",")
+    lines.append("\tbossTrack = \"boss\", -- ボス戦(協力のボス・各地のぬし)")
     lines.append("\tvolume = 0.35, -- 曲の音量(効果音より小さく)")
     lines.append("\tfade = 1.5, -- 曲を切り替える時のフェード(秒)")
     lines.append("}")

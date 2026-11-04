@@ -1077,6 +1077,10 @@ H.test(
 		H.assertEq(Music.current(), "battle")
 		H.assert(bgm("sea") == nil, "sea still playing")
 		H.assertNear(bgm("battle").Volume, M.volume, 1e-6)
+		-- ボス戦は迫力のある曲
+		Music.battle(true, true)
+		Music.step(0.1)
+		H.assertEq(Music.current(), M.bossTrack)
 		Music.battle(false)
 		Music.step(0.1)
 		H.assertEq(Music.current(), "sea")

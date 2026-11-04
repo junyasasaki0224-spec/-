@@ -14,6 +14,7 @@ export type Trainer = {
 	team: { { fish: string, level: number, mutation: string? } },
 	reward: { coins: number, bait: { id: string, amount: number }? },
 	title: string?,
+	boss: boolean?, -- 各地のぬし(ボス戦の曲になる)
 }
 
 local Trainers: { Trainer } = {
@@ -116,6 +117,7 @@ local Trainers: { Trainer } = {
 	},
 	{
 		id = "swamp_lord",
+		boss = true,
 		ja = "沼のぬし",
 		en = "Lord of the Swamp",
 		jaLine = "……よくぞここまで来た。沼の底の力、見せてやろう",
@@ -144,6 +146,7 @@ local Trainers: { Trainer } = {
 	},
 	{
 		id = "river_lord",
+		boss = true,
 		ja = "川のぬし",
 		en = "Lord of the River",
 		jaLine = "……牛をも呑んだこの口で、お前の相棒も呑んでやろう",
@@ -170,6 +173,7 @@ local Trainers: { Trainer } = {
 	},
 	{
 		id = "sea_lord",
+		boss = true,
 		ja = "海のぬし",
 		en = "Lord of the Sea",
 		jaLine = "骨になっても、この海はわしのものだ",

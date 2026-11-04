@@ -9,6 +9,7 @@ return {
 		river = { soundId = "rbxassetid://0", audioHash = "610108874d42", length = 35.556 },
 		sea = { soundId = "rbxassetid://0", audioHash = "13fb58d6fdb4", length = 40.000 },
 		battle = { soundId = "rbxassetid://0", audioHash = "5209d5d124bf", length = 25.263 },
+		boss = { soundId = "rbxassetid://0", audioHash = "1c4666bb28d4", length = 34.286 },
 	} :: { [string]: { soundId: string, audioHash: string, length: number } },
 	-- 釣り場 → 曲(ここにない場所は village)
 	areaTrack = {
@@ -18,6 +19,7 @@ return {
 		sea = "sea",
 	} :: { [string]: string },
 	battleTrack = "battle",
+	bossTrack = "boss", -- ボス戦(協力のボス・各地のぬし)
 	volume = 0.35, -- 曲の音量(効果音より小さく)
 	fade = 1.5, -- 曲を切り替える時のフェード(秒)
 }

@@ -8,7 +8,8 @@
 | swamp | 沼 | 陰音階(都節) | 66 | 低い持続音・まばらな琴・息の多い尺八・風鈴。少しあやしい |
 | river | 川 | 陽音階 | 108 | 流れる三味線・締太鼓。軽快 |
 | sea | 海 | 琉球音階 | 96 | 三線ふうの伴奏・波の音・指笛 |
-| battle | バトル(対戦・ボス戦も) | 陰音階 | 152 | 大太鼓・締太鼓・三味線のリフ・尺八 |
+| battle | ふつうのバトル・対戦 | 陰音階 | 152 | 大太鼓・締太鼓・三味線のリフ・尺八 |
+| boss | ボス戦(協力のボス・各地のぬし) | 短調(和の音なし) | 168 | ドラム・歪んだギター・金管・弦の刻み・合唱。軽く圧縮して音圧を上げてある |
 
 どの曲も継ぎ目なくループする(最後の残響を曲の頭に重ねてある)。
 
@@ -21,7 +22,7 @@ python tools/music/yokai_bgm.py --only battle         # 1曲だけ
 曲の中身を変えると `audioHash` が変わり、その曲の `soundId` は 0 に戻る(アップロードし直す)。
 
 ## Roblox に入れる
-1. Creator Hub → 開発アイテム → 音声 で `assets/sounds/bgm/<曲>.ogg` をアップロード(5本)
+1. Creator Hub → 開発アイテム → 音声 で `assets/sounds/bgm/<曲>.ogg` をアップロード(6本)
 2. 出た ID を `src/shared/Config/Music.luau` の各曲の `soundId = "rbxassetid://<番号>"` に書く
 3. `lune run tools/launch_check.luau` で ✓ になるのを確かめる
 

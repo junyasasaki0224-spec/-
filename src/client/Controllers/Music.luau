@@ -99,8 +99,9 @@ function Music.setOverride(name: string?)
 	override = name
 end
 
-function Music.battle(on: boolean)
-	Music.setOverride(if on then M.battleTrack else nil)
+-- バトルの曲。boss = 協力のボス戦・各地のぬし(迫力のある曲)
+function Music.battle(on: boolean, boss: boolean?)
+	Music.setOverride(if not on then nil elseif boss then M.bossTrack else M.battleTrack)
 end
 
 function Music.setEnabled(on: boolean)
