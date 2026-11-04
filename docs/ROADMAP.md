@@ -40,7 +40,7 @@
 
 ## 次の更新の候補(優先順)
 1. **Studio で通しプレイ** → 画面の調整(上のリスト)
-2. **効果音・BGM**: 今は Roblox 内蔵の仮の音だけ。Creator Store の利用可能な音に差し替え(`Controllers/Sound.luau` の `IDS`)
+2. **効果音**: 今は Roblox 内蔵の仮の音だけ。Creator Store の利用可能な音に差し替え(`Controllers/Sound.luau` の `IDS`)。BGM は自作の5曲あり([MUSIC.md](MUSIC.md))
 3. **竿を振るアニメーション**(アニメーションアセットが必要)
 4. ~~川~~ と **海** は公開済み(2026年11月)。次は **滝つぼ**: 魚の表 + `World/Waterfall.luau`(手順は [ADDING_CONTENT.md](ADDING_CONTENT.md)、お手本は `River.luau`)
 5. ランキングを「今日の大物」以外の全魚種にも広げる(DataStore の書き込み予算に注意)

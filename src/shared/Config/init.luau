@@ -16,6 +16,7 @@ local Tuning = require(script.Tuning)
 local Battle = require(script.Battle)
 local Trainers = require(script.Trainers)
 local Cries = require(script.Cries)
+local Music = require(script.Music)
 local Online = require(script.Online)
 local Bosses = require(script.Bosses)
 local Fish: { Types.FishDef } = require(script.Fish) :: any
@@ -41,6 +42,7 @@ local Config = {
 	Battle = Battle,
 	Trainers = Trainers,
 	Cries = Cries,
+	Music = Music,
 	Online = Online,
 	Bosses = Bosses,
 
@@ -378,6 +380,26 @@ function Config.Validate(): { string }
 	end
 
 	-- 鳴き声(無い魚は鳴かないだけ。あるものは区間と文字を確かめる)
+	-- BGM: 場所の曲・バトルの曲が表にあり、soundId は rbxassetid://<数字>
+	for name, t in Music.tracks do
+		if type(t.soundId) ~= "string" or not t.soundId:match("^rbxassetid://%d+$") then
+			bad("Music: " .. name .. " の soundId は rbxassetid://<数字> の形にしてください")
+		end
+		if type(t.length) ~= "number" or t.length < 10 then
+			bad("Music: " .. name .. " の長さが短すぎる")
+		end
+	end
+	for spotId, name in Music.areaTrack do
+		if not Config.SpotById[spotId] then
+			bad("Music.areaTrack: 知らない釣り場 " .. spotId)
+		end
+		if not Music.tracks[name] then
+			bad("Music.areaTrack: 知らない曲 " .. name)
+		end
+	end
+	if not Music.tracks[Music.battleTrack] or not Music.tracks.village then
+		bad("Music: battle と village の曲が必要")
+	end
 	if type(Cries.soundId) ~= "string" or not Cries.soundId:match("^rbxassetid://%d+$") then
 		bad("Cries: soundId は rbxassetid://<数字> の形にしてください")
 	end

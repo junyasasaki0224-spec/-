@@ -134,6 +134,8 @@ local services: { [string]: any } = {
 		end,
 		TeleportInitFailed = Signal(),
 	},
+	-- 音の置き場(BGM が鳴っているかを調べる)
+	SoundService = fakeNew("Folder"),
 }
 local camera = fakeNew("Camera")
 camera.ViewportSize = roblox.Vector2.new(1280, 720)
@@ -162,7 +164,12 @@ end
 
 -- 画面以外の部品は偽物に
 local function noop() end
-H.override(client.Controllers.Sound, { play = noop })
+H.override(client.Controllers.Sound, {
+	play = noop,
+	isMuted = function()
+		return false
+	end,
+})
 H.override(client.Controllers.Cry, { say = noop, bubble = noop, play = noop })
 H.override(client.Controllers.Input, { setEnabled = noop })
 H.override(client.Controllers.Notify, { key = noop, show = noop })
@@ -1029,6 +1036,73 @@ H.test("言語を切り替えても壊れない(英語で全部の画面を開�
 	H.assert(hasText(gui, Locale.t("social_title")), "social title")
 	Locale.set("ja")
 end)
+
+H.test(
+	"BGM: 場所で曲が変わり、バトル中はバトルの曲。切ると止まる(フェードで切り替え)",
+	function()
+		local Music = H.require(client.Controllers.Music)
+		local M = Config.Music
+		local saved = {}
+		for name, tr in M.tracks do
+			saved[name] = tr.soundId
+			tr.soundId = "rbxassetid://1"
+		end
+		local root = fakeNew("Part")
+		root.Name = "HumanoidRootPart"
+		local char = fakeNew("Model")
+		root.Parent = char
+		me.Character = char
+		local function at(spotId: string)
+			local o = Config.SpotById[spotId].origin
+			root.Position = roblox.Vector3.new(o.x + 30, 5, o.z - 20)
+		end
+		local function bgm(name: string): any
+			return services.SoundService:FindFirstChild("BGM_" .. name)
+		end
+		for _, spotId in { "nushi_lake", "swamp", "river", "sea" } do
+			at(spotId)
+			Music.step(0.1)
+			H.assertEq(Music.current(), M.areaTrack[spotId])
+		end
+		-- 海の曲がフェードで大きくなる
+		for _ = 1, 30 do
+			Music.step(0.1)
+		end
+		H.assertNear(bgm("sea").Volume, M.volume, 1e-6)
+		-- バトルが始まるとバトルの曲、前の曲は小さくなって消える
+		Music.battle(true)
+		for _ = 1, 30 do
+			Music.step(0.1)
+		end
+		H.assertEq(Music.current(), "battle")
+		H.assert(bgm("sea") == nil, "sea still playing")
+		H.assertNear(bgm("battle").Volume, M.volume, 1e-6)
+		Music.battle(false)
+		Music.step(0.1)
+		H.assertEq(Music.current(), "sea")
+		-- 遠く(どの釣り場からも離れた所)は村の曲
+		root.Position = roblox.Vector3.new(-5000, 0, -5000)
+		Music.step(0.1)
+		H.assertEq(Music.current(), "village")
+		-- 切ると全部止まる
+		Music.setEnabled(false)
+		for _ = 1, 30 do
+			Music.step(0.1)
+		end
+		H.assertEq(Music.current(), nil)
+		for name in M.tracks do
+			H.assert(bgm(name) == nil, name .. " still playing")
+		end
+		Music.setEnabled(true)
+		-- soundId が 0(まだアップロードしていない)なら鳴らさない
+		for name, id in saved do
+			M.tracks[name].soundId = id
+		end
+		at("river")
+		Music.step(0.1)
+		H.assertEq(Music.current(), if saved.river == "rbxassetid://0" then nil else "river")
+	end
+)
 
 H.test(
 	"Roblox の定義: 画面のコードが使うプロパティの名前と型がすべて正しい",

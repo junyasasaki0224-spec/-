@@ -9,6 +9,7 @@ local Theme = require(script.Parent.Parent.UI.Theme)
 local Root = require(script.Parent.Parent.UI.Root)
 local State = require(script.Parent.Parent.ClientState)
 local Sound = require(script.Parent.Sound)
+local Music = require(script.Parent.Music)
 local C = Theme.Colors
 
 local Settings = {}
@@ -95,14 +96,24 @@ function Settings.render()
 	)
 	-- バトル: 演出の速さと画面の揺れ
 	local speed = if p.settings.battleSpeed == 2 then 2 else 1
-	row(5, Locale.t("settings_battle_speed", { n = speed }), "▶", true, function()
+	row(
+		5,
+		"🎵 " .. Locale.t(if Music.isEnabled() then "settings_bgm_on" else "settings_bgm_off"),
+		if Music.isEnabled() then "OFF" else "ON",
+		true,
+		function()
+			Music.setEnabled(not Music.isEnabled())
+			Settings.render()
+		end
+	)
+	row(6, Locale.t("settings_battle_speed", { n = speed }), "▶", true, function()
 		State.request("setBattlePrefs", { speed = if speed == 2 then 1 else 2 })
 	end)
 	local shake = p.settings.battleShake ~= false
-	row(6, Locale.t(if shake then "settings_shake_on" else "settings_shake_off"), "▶", true, function()
+	row(7, Locale.t(if shake then "settings_shake_on" else "settings_shake_off"), "▶", true, function()
 		State.request("setBattlePrefs", { shake = not shake })
 	end)
-	row(7, Locale.t("help_title"), "?", true, function()
+	row(8, Locale.t("help_title"), "?", true, function()
 		Root.open("help")
 	end)
 end

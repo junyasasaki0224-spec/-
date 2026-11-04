@@ -258,6 +258,8 @@ return {
 	sort_new = "新しい順",
 	sort_name = "名前",
 	sort_level = "レベル",
+	settings_bgm_on = "BGM: あり",
+	settings_bgm_off = "BGM: なし",
 	shop_need_merchant = "魚屋の近くで売れる",
 	robux_none = "準備中",
 	sign_vip_seat = "VIP 釣り座",

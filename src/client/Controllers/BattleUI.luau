@@ -24,6 +24,7 @@ local State = require(script.Parent.Parent.ClientState)
 local Input = require(script.Parent.Input)
 local Sound = require(script.Parent.Sound)
 local Cry = require(script.Parent.Cry)
+local Music = require(script.Parent.Music)
 local Online = require(script.Parent.Online)
 local BattleScene = require(script.Parent.BattleScene)
 local BattleAdvice = require(Shared.Lib.BattleAdvice)
@@ -988,6 +989,7 @@ local function closeScreen()
 		scene:destroy()
 		scene = nil
 	end
+	Music.battle(false)
 	if screen then
 		screen:Destroy()
 		screen = nil
@@ -1509,6 +1511,7 @@ local function openScreen()
 	})
 	screen = s
 	scene = BattleScene.new(s, { boss = mode == "raid" })
+	Music.battle(true)
 	scene:setSpeed(battleSpeed())
 	scene:setShake(shakeOn())
 

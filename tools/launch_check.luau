@@ -64,6 +64,19 @@ if Products.RewardedAd.enabled and Products.RewardedAd.devProductId == 0 then
 end
 
 print("■ 音と見た目")
+local Music = H.require(shared.Config.Music)
+for name, tr in Music.tracks do
+	if tr.soundId == "rbxassetid://0" or tr.soundId == "" then
+		bad(
+			("BGM「%s」(assets/sounds/bgm/%s.ogg)を Roblox にアップロードして、Config/Music.luau の soundId に書く"):format(
+				name,
+				name
+			)
+		)
+	else
+		ok(("BGM「%s」: %s"):format(name, tr.soundId))
+	end
+end
 if Cries.soundId == "rbxassetid://0" or Cries.soundId == "" then
 	bad(
 		"鳴き声の音(assets/sounds/YokaiCries.ogg)を Roblox にアップロードして、Config/Cries.luau の soundId に書く"

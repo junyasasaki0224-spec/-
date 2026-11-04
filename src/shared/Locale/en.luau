@@ -243,6 +243,8 @@ return {
 	sort_new = "Newest",
 	sort_name = "Name",
 	sort_level = "Level",
+	settings_bgm_on = "Music: on",
+	settings_bgm_off = "Music: off",
 	shop_need_merchant = "Sell near a fish shop",
 	robux_none = "Coming soon",
 	sign_vip_seat = "VIP Seat",

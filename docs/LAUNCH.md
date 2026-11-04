@@ -18,6 +18,7 @@ Creator Dashboard → 体験 → 収益化 で作成し、`src/shared/Config/Pro
 
 ## 見た目と音を入れる
 - [ ] `assets/fish/YokaiFishMeshes.glb` を読み込んで ReplicatedStorage.FishMeshes に置く([ANIME_MESHES.md](ANIME_MESHES.md))
+- [ ] BGM 5曲 `assets/sounds/bgm/{village,swamp,river,sea,battle}.ogg` をアップロードし、ID を `Config/Music.luau` の各曲の `soundId` に入れる([MUSIC.md](MUSIC.md))
 - [ ] `assets/sounds/YokaiCries.ogg` をアップロードし、ID を `Config/Cries.luau` の `soundId` に入れる([CRIES.md](CRIES.md))
 
 ## 遊んで確認(Studio の Play / 2人以上は「テスト → サーバーとクライアント」)
@@ -30,6 +31,7 @@ Creator Dashboard → 体験 → 収益化 で作成し、`src/shared/Config/Pro
 - [ ] 昼夜(20分)・天気(10分)で見た目と釣れる魚が変わる
 - [ ] ぬし(毎時30分〜35分、サーバー時刻)に2人以上で参加して成功・失敗の両方
 - [ ] 日本語/英語の切替で看板・ボタン・画面がすべて切り替わる
+- [ ] 村・沼・川・海で BGM が変わり、バトルでバトルの曲になる(設定の「🎵 BGM」で止まる)
 - [ ] 魚を釣った時・図鑑の「🔊 鳴き声」・バトルで魚が鳴き、吹き出しが出る(音をオフにすると鳴かない)
 - [ ] スマホ表示(Studio のデバイスエミュレーター)で右下ボタンだけで最後まで遊べる
 - [ ] 退出 → 再参加でデータが残っている / 2つのサーバーを素早く移動してもデータが巻き戻らない

@@ -29,6 +29,7 @@ local Partners = require(Controllers.Partners)
 local BattleUI = require(Controllers.BattleUI)
 local Help = require(Controllers.Help)
 local Cry = require(Controllers.Cry)
+local Music = require(Controllers.Music)
 local Online = require(Controllers.Online)
 local Social = require(Controllers.Social)
 
@@ -60,6 +61,7 @@ BattleUI.init(gui)
 Social.init(gui)
 Help.init(gui)
 Cry.init()
+Music.init()
 
 -- パネルを開いている間は釣りの入力を止める
 Root.OpenChanged:Connect(function(name)

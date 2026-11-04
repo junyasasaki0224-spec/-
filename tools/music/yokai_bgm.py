@@ -1,0 +1,502 @@
+"""あやかし釣りの BGM を numpy だけで作る(和の音階・琴/三味線/尺八/太鼓ふうの音)。
+
+場所ごとに1曲(ループ):
+  village : 釣り村とぬしの湖。陽音階、のんびり。琴のアルペジオ + 尺八 + 木魚
+  swamp   : 沼。陰音階(都節)、ゆっくり・少しあやしい。低い持続音 + まばらな琴 + 風鈴
+  river   : 川。陽音階、流れるような三味線 + 小太鼓
+  sea     : 海。琉球音階、明るい三線ふう + 波の音
+  battle  : バトル。陰音階、速い。太鼓 + 三味線のリフ + 尺八
+継ぎ目なくループする(最後の残響は曲の頭に重ねる)。
+
+使い方:
+  python tools/music/yokai_bgm.py                       # assets/sounds/bgm/*.ogg と Config/Music.luau を作る
+  python tools/music/yokai_bgm.py --preview build/bgm   # 試し聞き用の mp3 も書き出す
+  python tools/music/yokai_bgm.py --only battle
+
+Roblox に .ogg をアップロードしたら Config/Music.luau の各曲の soundId を書き換える。
+音を作り直すと audioHash が変わり、その曲の soundId は 0 に戻る(古い音のままにならないように)。
+"""
+
+import argparse
+import hashlib
+import math
+import os
+import re
+import shutil
+import subprocess
+import sys
+import wave
+
+import numpy as np
+
+SR = 44100
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# 音階(半音、主音からの距離)
+SCALES = {
+    "yo": [0, 2, 5, 7, 9],  # 陽音階
+    "in": [0, 1, 5, 7, 8],  # 陰音階(都節)
+    "ryukyu": [0, 4, 5, 7, 11],  # 琉球音階
+}
+
+
+def midi_hz(m):
+    return 440.0 * 2 ** ((m - 69) / 12)
+
+
+def degree(scale, root, d):
+    """音階の d 番目の音(d は負でもよい)の MIDI 番号"""
+    s = SCALES[scale]
+    o, i = divmod(d, len(s))
+    return root + 12 * o + s[i]
+
+
+# 楽器 ---------------------------------------------------------------------
+
+
+def pluck(f, dur, bright=1.0, decay=1.0, buzz=0.0, rng=None):
+    """琴・三味線ふうのはじく音(倍音ごとに減衰の速さが違う)"""
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    out = np.zeros(n)
+    for k in range(1, 14):
+        fk = f * k * (1 + 0.0007 * k * k)  # 弦の少しのずれ
+        if fk > SR * 0.45:
+            break
+        amp = (1.0 / k ** (1.25 - 0.35 * bright)) * (1 + buzz * (k > 4) * 0.8)
+        d = (1.6 + 0.9 * k) / decay
+        out += amp * np.exp(-t * d) * np.sin(2 * math.pi * fk * t + k * 0.7)
+    # はじいた瞬間の雑音
+    if rng is not None:
+        m = min(n, int(0.012 * SR))
+        out[:m] += rng.standard_normal(m) * np.linspace(0.35, 0, m) * bright
+    att = np.minimum(1, t / 0.003)
+    return out * att * 0.35
+
+
+def flute(f, dur, rng, vib=1.0, breath=0.35, bend=True):
+    """尺八ふう: やわらかい音 + 息の音 + 遅れてかかるビブラート、下からすくい上げ"""
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    vdepth = 0.012 * vib * np.clip((t - 0.25) / 0.5, 0, 1)
+    pitch = f * (1 + vdepth * np.sin(2 * math.pi * 5.2 * t))
+    if bend:
+        pitch *= 1 - 0.035 * np.exp(-t / 0.07)
+    ph = 2 * math.pi * np.cumsum(pitch) / SR
+    tone = np.sin(ph) + 0.25 * np.sin(2 * ph) + 0.08 * np.sin(3 * ph)
+    noise = lowpass(rng.standard_normal(n), 0.25) * breath
+    env = np.minimum(1, t / 0.09) * np.minimum(1, (dur - t) / 0.18).clip(0, 1)
+    swell = 0.8 + 0.2 * np.sin(math.pi * np.clip(t / max(dur, 0.01), 0, 1))
+    return (tone + noise * (0.6 + 0.4 * np.exp(-t / 0.15))) * env * swell * 0.22
+
+
+def pad(freqs, dur):
+    """持続音(ゆっくりうなる)"""
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    out = np.zeros(n)
+    for f in freqs:
+        for det in (-0.6, 0.6):
+            ff = f + det
+            out += np.sin(2 * math.pi * ff * t) + 0.3 * np.sin(4 * math.pi * ff * t)
+    env = np.minimum(1, t / 1.2) * np.minimum(1, (dur - t) / 1.2).clip(0, 1)
+    return out * env * 0.05 / max(1, len(freqs))
+
+
+def taiko(dur=0.9, f0=70, rng=None, hard=1.0):
+    """大太鼓: 下がっていく低い音 + 皮をたたく音"""
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    f = f0 * (1 + 0.6 * np.exp(-t / 0.03))
+    ph = 2 * math.pi * np.cumsum(f) / SR
+    body = np.sin(ph) * np.exp(-t / (0.28 * hard))
+    hit = lowpass(rng.standard_normal(n), 0.15) * np.exp(-t / 0.02) * 0.5
+    return (body + hit) * 0.9
+
+
+def shime(rng, dur=0.18):
+    """締太鼓: 高く短い音"""
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    body = np.sin(2 * math.pi * 330 * t) * np.exp(-t / 0.04)
+    hit = rng.standard_normal(n) * np.exp(-t / 0.012) * 0.6
+    return (body + lowpass(hit, 0.5)) * 0.35
+
+
+def woodblock(f=900, dur=0.12):
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    return (np.sin(2 * math.pi * f * t) + 0.4 * np.sin(2 * math.pi * f * 2.7 * t)) * np.exp(-t / 0.025) * 0.25
+
+
+def bell(f, dur=3.0):
+    """風鈴・鐘(倍音がずれた金属の音)"""
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    out = np.zeros(n)
+    for r, a, d in ((1, 1, 1.2), (2.76, 0.5, 0.7), (5.4, 0.25, 0.4), (8.9, 0.12, 0.25)):
+        out += a * np.sin(2 * math.pi * f * r * t) * np.exp(-t / d)
+    return out * np.minimum(1, t / 0.002) * 0.12
+
+
+def waves(n, rng, rate=0.09):
+    """波の音(ゆっくり寄せては返す雑音)"""
+    t = np.arange(n) / SR
+    noise = lowpass(rng.standard_normal(n), 0.06)
+    swell = 0.5 + 0.5 * np.sin(2 * math.pi * rate * t) ** 2
+    return noise * swell * 0.25
+
+
+# 道具 -----------------------------------------------------------------------
+
+
+def lowpass(x, a):
+    """1次のローパス(a: 0〜1、小さいほどこもる)。FFT でまとめて計算する"""
+    n = len(x)
+    X = np.fft.rfft(x)
+    freqs = np.fft.rfftfreq(n, 1 / SR)
+    fc = -SR * math.log(1 - a) / (2 * math.pi) if a < 1 else SR
+    H = 1 / np.sqrt(1 + (freqs / max(fc, 1)) ** 2)
+    return np.fft.irfft(X * H, n)
+
+
+def reverb(x, rt, rng, wet=0.3):
+    """やわらかい残響(雑音を減衰させた IR を畳み込む)"""
+    m = int(rt * SR)
+    t = np.arange(m) / SR
+    ir = rng.standard_normal(m) * np.exp(-t * 6.9 / rt)
+    ir = lowpass(ir, 0.35)
+    ir /= np.sqrt(np.sum(ir**2)) + 1e-9
+    n = len(x) + m
+    size = 1 << (n - 1).bit_length()
+    y = np.fft.irfft(np.fft.rfft(x, size) * np.fft.rfft(ir, size), size)[:n]
+    out = np.zeros(n)
+    out[: len(x)] += x * (1 - wet)
+    out += y * wet
+    return out
+
+
+class Track:
+    """左右の音を置いていく台。最後に残響を足してループの頭に重ねる"""
+
+    def __init__(self, bpm, bars, beats=4, tail=4.0):
+        self.bpm = bpm
+        self.beat = 60.0 / bpm
+        self.length = bars * beats * self.beat
+        self.n = int(round(self.length * SR))
+        self.buf = np.zeros((2, self.n + int(tail * SR) + SR))
+
+    def add(self, at_beat, sig, gain=1.0, pan=0.0):
+        i = int(round(at_beat * self.beat * SR))
+        if i >= self.buf.shape[1] or i < 0:
+            return
+        j = min(self.buf.shape[1], i + len(sig))
+        l = math.cos((pan + 1) * math.pi / 4)
+        r = math.sin((pan + 1) * math.pi / 4)
+        self.buf[0, i:j] += sig[: j - i] * gain * l
+        self.buf[1, i:j] += sig[: j - i] * gain * r
+
+    def render(self, rng, rt=2.2, wet=0.28):
+        out = []
+        for ch in range(2):
+            y = reverb(self.buf[ch], rt, rng, wet)
+            loop = y[: self.n].copy()
+            rest = y[self.n :]
+            # 継ぎ目: はみ出した残響を頭に重ねる
+            k = min(len(rest), self.n)
+            loop[:k] += rest[:k]
+            out.append(loop)
+        x = np.stack(out)
+        peak = np.max(np.abs(x)) + 1e-9
+        return x * (0.8 / peak)
+
+
+# 旋律づくり(決まった種から毎回同じ曲になる) ----------------------------------
+
+
+def motif(rng, steps, span=4, rest=0.15):
+    """1小節ぶんの音の動き: [(拍, 長さ, 音階の段)]"""
+    out = []
+    pos, d = 0.0, int(rng.integers(0, 3))
+    for dur in steps:
+        if rng.random() > rest:
+            out.append((pos, dur, d))
+        pos += dur
+        d = int(np.clip(d + rng.choice([-2, -1, -1, 1, 1, 2]), -1, span))
+    return out
+
+
+def melody_bars(rng, bars, rhythms, span=4):
+    """AABA' の形の旋律(各要素が1小節)"""
+    a = motif(rng, rhythms[0], span)
+    b = motif(rng, rhythms[1 % len(rhythms)], span)
+    a2 = [(p, du, d + (1 if i == len(a) - 1 else 0)) for i, (p, du, d) in enumerate(a)]
+    c = motif(rng, rhythms[0], span)
+    form = [a, a2, b, c]
+    return [form[i % 4] for i in range(bars)]
+
+
+# 曲 --------------------------------------------------------------------------
+
+
+def song_village(rng):
+    tr = Track(bpm=84, bars=16)
+    sc, root = "yo", 62  # D
+    prog = [0, 0, 3, 2, 0, 3, 4, 0] * 2
+    mel = melody_bars(rng, 16, [[1, 0.5, 0.5, 1, 1], [1.5, 0.5, 1, 1]])
+    for bar in range(16):
+        b0 = bar * 4
+        ch = prog[bar]
+        # 琴のアルペジオ(8分)
+        for i in range(8):
+            d = ch + [0, 2, 4, 2, 5, 4, 2, 4][i]
+            f = midi_hz(degree(sc, root - 12, d))
+            tr.add(b0 + i * 0.5, pluck(f, 1.6, bright=0.8, rng=rng), 0.55, pan=-0.35)
+        # 低音
+        tr.add(b0, pluck(midi_hz(degree(sc, root - 24, ch)), 2.5, bright=0.4, decay=0.6, rng=rng), 0.7, 0.1)
+        # 尺八の旋律(後半8小節から、前半は琴の高音で)
+        for p, du, d in mel[bar]:
+            m = degree(sc, root, d + ch % 2)
+            if bar >= 8:
+                tr.add(b0 + p, flute(midi_hz(m), du * tr.beat * 1.05, rng), 0.9, pan=0.25)
+            else:
+                tr.add(b0 + p, pluck(midi_hz(m + 12), 1.4, bright=1.0, rng=rng), 0.45, pan=0.3)
+        # 木魚(2・4拍)
+        for k in (1, 3):
+            tr.add(b0 + k, woodblock(820), 0.35, pan=0.5)
+        tr.add(b0, pad([midi_hz(degree(sc, root - 12, ch)), midi_hz(degree(sc, root - 12, ch + 2))], 4 * tr.beat + 1), 1.0)
+    return tr.render(rng, rt=2.4, wet=0.3)
+
+
+def song_swamp(rng):
+    tr = Track(bpm=66, bars=16)
+    sc, root = "in", 57  # A
+    mel = melody_bars(rng, 16, [[2, 1, 1], [1, 1, 2]], span=3)
+    for bar in range(16):
+        b0 = bar * 4
+        # 低い持続音(主音と5度)
+        if bar % 4 == 0:
+            tr.add(b0, pad([midi_hz(root - 24), midi_hz(root - 17)], 16 * tr.beat + 1.5), 1.6)
+        # まばらな琴
+        for i in range(4):
+            if rng.random() < 0.6:
+                d = int(rng.integers(0, 6))
+                tr.add(b0 + i + rng.choice([0, 0.5]), pluck(midi_hz(degree(sc, root - 12, d)), 2.4, bright=0.6, rng=rng), 0.5, pan=float(rng.uniform(-0.6, 0.6)))
+        # 尺八(息多め)
+        if bar % 2 == 1 or bar >= 8:
+            for p, du, d in mel[bar]:
+                tr.add(b0 + p, flute(midi_hz(degree(sc, root, d)), du * tr.beat * 1.1, rng, vib=1.4, breath=0.55), 0.8, pan=0.2)
+        # 風鈴
+        if bar % 2 == 0:
+            tr.add(b0 + 2.5, bell(midi_hz(degree(sc, root + 12, int(rng.integers(0, 5))))), 0.6, pan=-0.5)
+        # 遠くで鳴る小さな太鼓
+        if bar % 4 == 3:
+            tr.add(b0 + 3, taiko(1.2, 60, rng, hard=1.4), 0.35)
+    return tr.render(rng, rt=3.2, wet=0.42)
+
+
+def song_river(rng):
+    tr = Track(bpm=108, bars=16)
+    sc, root = "yo", 64  # E
+    prog = [0, 3, 2, 0, 0, 3, 4, 4] * 2
+    mel = melody_bars(rng, 16, [[0.5, 0.5, 1, 0.5, 0.5, 1], [1, 0.5, 0.5, 2]])
+    for bar in range(16):
+        b0 = bar * 4
+        ch = prog[bar]
+        # 流れるような三味線(16分の動き)
+        for i in range(16):
+            if i % 4 == 3 and rng.random() < 0.5:
+                continue
+            d = ch + [0, 2, 4, 5, 4, 2, 1, 2][i % 8] + (2 if i >= 8 else 0)
+            tr.add(b0 + i * 0.25, pluck(midi_hz(degree(sc, root - 12, d)), 0.7, bright=1.2, decay=1.6, buzz=0.6, rng=rng), 0.38, pan=-0.3)
+        tr.add(b0, pluck(midi_hz(degree(sc, root - 24, ch)), 1.8, bright=0.5, decay=0.8, rng=rng), 0.7)
+        tr.add(b0 + 2, pluck(midi_hz(degree(sc, root - 24, ch + 2)), 1.6, bright=0.5, decay=0.8, rng=rng), 0.55)
+        for p, du, d in mel[bar]:
+            m = degree(sc, root, d + ch)
+            if bar >= 4:
+                tr.add(b0 + p, flute(midi_hz(m), du * tr.beat * 1.05, rng, vib=0.8), 0.75, pan=0.3)
+        # 小太鼓
+        for k in range(8):
+            if k % 2 == 1 or rng.random() < 0.25:
+                tr.add(b0 + k * 0.5, shime(rng), 0.45 if k % 2 else 0.3, pan=0.4)
+        tr.add(b0, taiko(0.8, 80, rng), 0.45)
+        tr.add(b0 + 2.5, taiko(0.6, 85, rng, hard=0.7), 0.25)
+    return tr.render(rng, rt=1.8, wet=0.24)
+
+
+def song_sea(rng):
+    tr = Track(bpm=96, bars=16)
+    sc, root = "ryukyu", 60  # C
+    prog = [0, 3, 1, 3, 0, 3, 4, 0] * 2
+    mel = melody_bars(rng, 16, [[1, 0.5, 0.5, 1, 1], [0.5, 0.5, 1, 2]])
+    total_n = tr.buf.shape[1]
+    w = waves(total_n, rng)
+    tr.buf[0] += w * 0.55
+    tr.buf[1] += np.roll(w, SR // 3) * 0.55
+    for bar in range(16):
+        b0 = bar * 4
+        ch = prog[bar]
+        # 三線ふうのはずむ伴奏(裏拍)
+        for k in range(4):
+            tr.add(b0 + k, pluck(midi_hz(degree(sc, root - 24, ch)), 1.0, bright=0.6, decay=1.1, rng=rng), 0.55)
+            for dd in (2, 4):
+                tr.add(b0 + k + 0.5, pluck(midi_hz(degree(sc, root - 12, ch + dd)), 0.6, bright=1.1, decay=1.8, buzz=0.3, rng=rng), 0.28, pan=-0.35)
+        for p, du, d in mel[bar]:
+            m = degree(sc, root, d + ch % 3)
+            tr.add(b0 + p, pluck(midi_hz(m), 1.2, bright=1.1, decay=1.0, buzz=0.4, rng=rng), 0.6, pan=0.3)
+            if bar >= 8 and du >= 1:
+                tr.add(b0 + p, flute(midi_hz(m + 12), du * tr.beat, rng, vib=0.9, breath=0.25), 0.35, pan=0.15)
+        # 指笛ふうの合いの手
+        if bar % 4 == 3:
+            tr.add(b0 + 3, flute(midi_hz(root + 31), 0.35, rng, vib=0, breath=0.1), 0.25, pan=0.6)
+        for k in (1, 3):
+            tr.add(b0 + k, woodblock(1100), 0.25, pan=0.5)
+    return tr.render(rng, rt=2.0, wet=0.26)
+
+
+def song_battle(rng):
+    tr = Track(bpm=152, bars=16)
+    sc, root = "in", 62  # D
+    prog = [0, 0, -1, 0, 0, 0, 1, 2] * 2
+    riff = [0, 0, 2, 0, 3, 2, 0, 1]
+    mel = melody_bars(rng, 16, [[1, 0.5, 0.5, 1, 1], [0.5, 0.5, 0.5, 0.5, 2]])
+    for bar in range(16):
+        b0 = bar * 4
+        ch = prog[bar]
+        # 太鼓: どん・どどん
+        for p, g in ((0, 1.0), (1.5, 0.7), (2, 0.9), (3, 0.6), (3.5, 0.6)):
+            tr.add(b0 + p, taiko(0.7, 66, rng), g * 0.7)
+        for k in range(8):
+            tr.add(b0 + k * 0.5, shime(rng), 0.5 if k % 2 else 0.32, pan=0.35)
+        if bar % 4 == 3:
+            for k in range(4):
+                tr.add(b0 + 2 + k * 0.5, taiko(0.4, 90, rng, hard=0.6), 0.45, pan=-0.2)
+        # 三味線のリフ(8分、強く)
+        for i, d in enumerate(riff):
+            tr.add(b0 + i * 0.5, pluck(midi_hz(degree(sc, root - 12, d + ch)), 0.6, bright=1.4, decay=2.0, buzz=0.9, rng=rng), 0.42, pan=-0.35)
+        tr.add(b0, pluck(midi_hz(degree(sc, root - 24, ch)), 1.0, bright=0.6, decay=1.2, rng=rng), 0.8)
+        # 尺八の旋律(5小節目から)
+        if bar >= 4:
+            for p, du, d in mel[bar]:
+                tr.add(b0 + p, flute(midi_hz(degree(sc, root + 12, d)), du * tr.beat * 1.02, rng, vib=0.7, breath=0.3), 0.6, pan=0.25)
+        # 鐘(区切り)
+        if bar % 8 == 0:
+            tr.add(b0, bell(midi_hz(root + 12), 2.5), 0.7, pan=0.0)
+    return tr.render(rng, rt=1.4, wet=0.2)
+
+
+SONGS = {
+    "village": (song_village, 11),
+    "swamp": (song_swamp, 23),
+    "river": (song_river, 37),
+    "sea": (song_sea, 41),
+    "battle": (song_battle, 53),
+}
+
+# 場所 → 曲
+AREA_TRACK = {"nushi_lake": "village", "swamp": "swamp", "river": "river", "sea": "sea"}
+
+
+# 書き出し -------------------------------------------------------------------
+
+
+def write_wav(path, x):
+    pcm = (np.clip(x.T, -1, 1) * 32767).astype("<i2")
+    with wave.open(path, "wb") as w:
+        w.setnchannels(2)
+        w.setsampwidth(2)
+        w.setframerate(SR)
+        w.writeframes(pcm.tobytes())
+    return pcm
+
+
+def ffmpeg(args):
+    subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", *args], check=True)
+
+
+def lua_str(s):
+    return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def old_ids(path):
+    """今の Config/Music.luau から 曲 → (soundId, audioHash)"""
+    out = {}
+    if not os.path.exists(path):
+        return out
+    src = open(path, encoding="utf-8").read()
+    for m in re.finditer(r'(\w+) = \{\s*soundId = "([^"]*)",\s*audioHash = "([^"]*)"', src):
+        out[m.group(1)] = (m.group(2), m.group(3))
+    return out
+
+
+def write_luau(path, rows):
+    prev = old_ids(path)
+    lines = [
+        "--!strict",
+        "-- BGM(tools/music/yokai_bgm.py が作る表。手で書き換えるのは各曲の soundId だけ)",
+        "-- assets/sounds/bgm/<曲>.ogg を Roblox にアップロードして soundId を \"rbxassetid://<番号>\" にする(0 なら鳴らない)。",
+        "-- audioHash は音の中身の印。曲を作り直すと変わり、その曲の soundId は 0 に戻る",
+        "return {",
+        "\ttracks = {",
+    ]
+    for name, length, digest in rows:
+        sid, h = prev.get(name, ("rbxassetid://0", ""))
+        if h != digest:
+            if sid != "rbxassetid://0":
+                print(f"  {name} の音が変わりました。アップロードし直して soundId を入れ直してください", file=sys.stderr)
+            sid = "rbxassetid://0"
+        lines.append(f"\t\t{name} = {{ soundId = {lua_str(sid)}, audioHash = {lua_str(digest)}, length = {length:.3f} }},")
+    lines.append("\t} :: { [string]: { soundId: string, audioHash: string, length: number } },")
+    lines.append("\t-- 釣り場 → 曲(ここにない場所は village)")
+    lines.append("\tareaTrack = {")
+    for k, v in AREA_TRACK.items():
+        lines.append(f"\t\t{k} = {lua_str(v)},")
+    lines.append("\t} :: { [string]: string },")
+    lines.append("\tbattleTrack = \"battle\",")
+    lines.append("\tvolume = 0.35, -- 曲の音量(効果音より小さく)")
+    lines.append("\tfade = 1.5, -- 曲を切り替える時のフェード(秒)")
+    lines.append("}")
+    open(path, "w", encoding="utf-8").write("\n".join(lines) + "\n")
+    if shutil.which("stylua"):
+        subprocess.run(["stylua", path], check=True)
+    print("wrote", path)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--out", default=os.path.join(ROOT, "assets", "sounds", "bgm"))
+    ap.add_argument("--luau", default=os.path.join(ROOT, "src", "shared", "Config", "Music.luau"))
+    ap.add_argument("--preview", default="", help="試し聞き用 mp3 の書き出し先")
+    ap.add_argument("--only", default="")
+    a = ap.parse_args()
+    os.makedirs(a.out, exist_ok=True)
+    tmp = os.path.join(a.out, "_tmp.wav")
+    rows = []
+    prev = old_ids(a.luau)
+    for name, (fn, seed) in SONGS.items():
+        if a.only and name != a.only:
+            # 作らない曲は今の印のまま残す
+            sid, h = prev.get(name, ("rbxassetid://0", ""))
+            if h:
+                ogg = os.path.join(a.out, name + ".ogg")
+                length = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", ogg], capture_output=True, text=True).stdout or 0)
+                rows.append((name, length, h))
+            continue
+        rng = np.random.default_rng(seed)
+        x = fn(rng)
+        pcm = write_wav(tmp, x)
+        digest = hashlib.sha1(pcm.tobytes()).hexdigest()[:12]
+        ogg = os.path.join(a.out, name + ".ogg")
+        ffmpeg(["-i", tmp, "-c:a", "libvorbis", "-q:a", "4", ogg])
+        if a.preview:
+            os.makedirs(a.preview, exist_ok=True)
+            ffmpeg(["-i", tmp, "-c:a", "libmp3lame", "-b:a", "128k", os.path.join(a.preview, name + ".mp3")])
+        length = x.shape[1] / SR
+        rows.append((name, length, digest))
+        print(f"{name}: {length:.1f}s  {os.path.getsize(ogg) // 1024} KB")
+    os.remove(tmp)
+    write_luau(a.luau, rows)
+
+
+if __name__ == "__main__":
+    main()

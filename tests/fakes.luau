@@ -393,6 +393,7 @@ function methods:Emit() end
 -- Sound
 function methods:Play() end
 function methods:Stop() end
+function methods:Stop() end
 function methods:Pause() end
 function methods:Resume() end
 function methods:Clone()
