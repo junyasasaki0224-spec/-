@@ -489,20 +489,33 @@ H.test("レア度が上がるほど大きく、派手になる(大きさ・部�
 		"secret vs common size"
 	)
 end)
-H.test("95種そろっていて、遊べる釣り場ごとに全レア度がいる", function()
-	H.assertEq(#Config.Fish, 95)
-	for _, spot in { "swamp", "nushi_lake", "river", "sea" } do
-		for _, r in Config.Rarities do
-			local found = false
-			for _, f in Config.Fish do
-				if f.spot == spot and f.rarity == r.id then
-					found = true
-				end
+H.test(
+	"釣れる95種 + 祠の限定8種がそろっていて、遊べる釣り場ごとに全レア度がいる",
+	function()
+		local catchable, limited = 0, 0
+		for _, f in Config.Fish do
+			if f.limited then
+				limited += 1
+				H.assertEq(f.spot, "shrine")
+			else
+				catchable += 1
 			end
-			H.assert(found, spot .. " has no " .. r.id)
+		end
+		H.assertEq(catchable, 95)
+		H.assertEq(limited, 8)
+		for _, spot in { "swamp", "nushi_lake", "river", "sea" } do
+			for _, r in Config.Rarities do
+				local found = false
+				for _, f in Config.Fish do
+					if f.spot == spot and f.rarity == r.id then
+						found = true
+					end
+				end
+				H.assert(found, spot .. " has no " .. r.id)
+			end
 		end
 	end
-end)
+)
 
 H.test(
 	"魚は実際に住む場所の釣り場にいて、どの釣り場にも強い魚(伝説・神話・秘伝)がいる",
@@ -513,7 +526,9 @@ H.test(
 		-- 魚ではない妖怪が丸い体に河豚の形を借りているもの(雨蛙・河童)
 		local notFish = { ame_gaeru = true, kappa_oyabun = true }
 		for _, f in Config.Fish do
-			if f.spot == "sea" then
+			if f.limited then
+				continue -- 祠の限定の魚は釣り場にいない(神さまの使い)
+			elseif f.spot == "sea" then
 				H.assert(not freshOnly[f.shape], f.id .. " is a freshwater fish in the sea")
 			elseif not notFish[f.id] then
 				H.assert(not seaOnly[f.shape], f.id .. " (" .. f.shape .. ") is a sea fish in " .. f.spot)
@@ -1007,6 +1022,74 @@ H.test("魚の並び替え: 値段・レア度・重さ・新しい順・名前�
 		H.assert(Locale.t("sort_" .. m) ~= "sort_" .. m, m)
 	end
 end)
+
+print("Gacha (百鬼の祠)")
+H.test(
+	"祠: 確率の合計は100% / 天井(10回で★4以上・90回で★5)は必ず守られる / 札から先に払う",
+	function()
+		local Lib = H.require(shared.Lib.Gacha)
+		local G = Config.Gacha
+		local sum = 0
+		for _, r in Lib.rates(G) do
+			sum += r.percent
+		end
+		H.assertNear(sum, 100, 1e-6)
+		-- たくさん祈って、天井と出る割合を確かめる(乱数の種は固定)
+		-- 決まった種の乱数(線形合同法)
+		local seed = 20261105
+		local function r01()
+			seed = (seed * 1103515245 + 12345) % 2147483648
+			return seed / 2147483648
+		end
+		local state = { pity4 = 0, pity5 = 0 }
+		local since4, since5, max4, max5 = 0, 0, 0, 0
+		local count = { 0, 0, 0, 0, 0 }
+		local N = 20000
+		for _ = 1, N do
+			local res
+			res, state = Lib.pull(r01, G, state, 3, Config.FishById)
+			count[res.star] += 1
+			since4 = if res.star >= 4 then 0 else since4 + 1
+			since5 = if res.star >= 5 then 0 else since5 + 1
+			max4 = math.max(max4, since4)
+			max5 = math.max(max5, since5)
+			if res.kind == "fish" then
+				local def = Config.FishById[res.fishId]
+				H.assert(def and def.limited, "gacha gave a non-limited fish")
+				H.assert(
+					res.grams >= def.kg[1] * 1000 - 1 and res.grams <= def.kg[2] * 1000 + 1,
+					"weight out of range"
+				)
+			else
+				H.assert(res.star <= 2, "item from a fish star")
+			end
+		end
+		H.assert(max4 <= G.Pity.star4 - 1, "4-star pity broken: " .. max4)
+		H.assert(max5 <= G.Pity.star5 - 1, "5-star pity broken: " .. max5)
+		-- 天井込みの★5は 0.6% より少し多い(およそ 1〜2%)
+		local p5 = count[5] / N
+		H.assert(p5 > 0.006 and p5 < 0.025, ("5-star rate %.4f"):format(p5))
+		H.assert(count[1] > count[2] and count[2] > count[3], "low stars should be most common")
+		-- 支払い: 札を先に使い、足りない分を勾玉で
+		local t, m = Lib.cost(10, 3, 1050, G.Cost)
+		H.assertEq(t, 3)
+		H.assertEq(m, 7 * G.Cost)
+		H.assertEq(Lib.cost(10, 3, 1049, G.Cost), nil)
+		H.assertEq(Lib.cost(1, 0, G.Cost, G.Cost), 0)
+		-- 小判は竿が良いほど多い
+		H.assert(G.coinsFor(400, 6) > G.coinsFor(400, 1))
+		-- 限定の魚は必殺技を覚えていて、強さは釣れる魚の技と同じくらい
+		for star, ids in G.Fish do
+			for _, id in ids do
+				local def = Config.FishById[id]
+				local moves = BattleLib.movesFor(def, 1)
+				H.assert(table.find(moves, def.signature), id .. " lacks its signature move")
+				H.assert(Config.MoveById[def.signature].power <= 75, id .. " signature is too strong")
+			end
+			local _ = star
+		end
+	end
+)
 
 print("Glyphs (文字化け)")
 H.test("画面の文字に Roblox のフォントで□になる記号を使わない", function()

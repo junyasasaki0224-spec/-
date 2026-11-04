@@ -1139,6 +1139,75 @@ def _(c):
     c.bubbles(0.3, 0.6, 5, (150, 500), 0.3)
 
 
+# ---- 百鬼の祠の限定の魚(どれも鈴や鐘の「神さまの気配」が混ざる) ----
+@cry("gin_kitsune", "こぉん…しゃらん♪", "Ko-on... shalan!")
+def _(c):
+    c.voice(0.0, 0.5, [(0, 820), (0.3, 1050), (1, 760)], "oo", tilt=1.4, vib=(5, 0.02), release=0.2)
+    for i, f in enumerate((2400, 2900, 3500)):
+        c.bell(0.45 + i * 0.07, f, 0.9, 0.22, decay=0.4)
+    c.echo = 0.22
+
+
+@cry("yozakura_ei", "ふわぁ…はらはら", "Fwaah... hara-hara")
+def _(c):
+    c.voice(0.0, 0.9, [(0, 300), (0.5, 340), (1, 260)], "ua", tilt=1.6, breath=0.5, attack=0.2, release=0.4, swell=True)
+    for i in range(6):
+        c.chime(0.5 + i * 0.12, 1800 + (i % 3) * 300, 0.12)
+    c.echo = 0.25
+
+
+@cry("raijin_fugu", "ゴロゴロ…ドン!", "Goro-goro... DON!")
+def _(c):
+    c.rumble(0.0, 0.7, 0.4, 60)
+    c.voice(0.1, 0.4, (300, 260), "o", tilt=1.2, rough=0.4, release=0.1)
+    c.thump(0.75, (120, 45), 0.6, 1.0, 0.4)
+    c.zap(0.72, 0.2, 0.35)
+
+
+@cry("hi_no_tori", "キュオォォン!", "Kyuoooon!")
+def _(c):
+    c.voice(0.0, 0.9, [(0, 900), (0.2, 1400), (0.7, 1250), (1, 980)], "iuo", tilt=1.2, vib=(6, 0.03), drive=0.2, release=0.3)
+    c.crackle(0.0, 1.2, 30, 0.25)
+    c.bell(0.6, 1760, 1.4, 0.3, decay=0.6)
+    c.echo = 0.25
+
+
+@cry("koku_ryu", "グルォォォ…", "Gruoooh...")
+def _(c):
+    c.voice(0.0, 1.3, [(0, 110), (0.4, 150), (1, 90)], "uoo", tilt=1.0, rough=0.5, drive=0.4, vib=(3, 0.03), release=0.4)
+    c.rumble(0.2, 1.1, 0.35, 45)
+    c.zap(0.9, 0.25, 0.3)
+    c.echo = 0.28
+
+
+@cry("yuki_hime", "しんしん…ふぅ…", "Shin-shin... fuu...")
+def _(c):
+    c.voice(0.0, 1.1, [(0, 1250), (0.5, 1100), (1, 900)], "ii", tilt=1.6, breath=0.7, attack=0.25, release=0.5, swell=True)
+    c.hiss(0.6, 0.8, 4500, 0.15)
+    for i in range(4):
+        c.chime(0.3 + i * 0.25, 3000 + i * 250, 0.1)
+    c.echo = 0.3
+
+
+@cry("amaterasu_kujira", "オォォ…ン(光の音)", "Ooooh... (light)")
+def _(c):
+    c.voice(0.0, 2.0, [(0, 110), (0.4, 165), (0.8, 220), (1, 196)], "oooa", tilt=1.3, vib=(2.5, 0.02), attack=0.4, release=0.6, swell=True)
+    c.voice(0.3, 1.7, [(0, 330), (1, 392)], "a", tilt=1.5, breath=0.2, gain=0.4, attack=0.5, release=0.6)
+    c.bell(1.0, 523, 2.4, 0.45, decay=1.2)
+    c.bell(1.3, 784, 2.0, 0.3, decay=1.0)
+    c.echo = 0.34
+
+
+@cry("yamata_shachi", "ガアアァァ!!(八つの声)", "GAAAAH!! (eight voices)")
+def _(c):
+    for i in range(4):
+        c.voice(i * 0.08, 1.2 - i * 0.1, [(0, 140 + i * 30), (0.4, 190 + i * 35), (1, 110 + i * 20)], "aao", tilt=1.0, rough=0.45, drive=0.45, gain=0.55, release=0.4)
+    c.thump(0.0, (90, 40), 0.8, 0.8, 0.3)
+    c.rumble(0.3, 1.2, 0.4, 40)
+    c.bell(1.2, 98, 2.4, 0.5, decay=1.4)
+    c.echo = 0.32
+
+
 def auto_recipe(c, d):
     """レシピの無い魚(新しく足した魚)の鳴き声。体の形・目・レア度から作る"""
     base = {"koi": 700, "catfish": 220, "puffer": 450, "eel": 380, "angler": 300, "ray": 260, "shark": 200, "orca": 330, "salmon": 260, "salamander": 120, "whale": 110, "sturgeon": 160}.get(d["shape"], 400)

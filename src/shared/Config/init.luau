@@ -17,6 +17,7 @@ local Battle = require(script.Battle)
 local Trainers = require(script.Trainers)
 local Cries = require(script.Cries)
 local Music = require(script.Music)
+local Gacha = require(script.Gacha)
 local Online = require(script.Online)
 local Bosses = require(script.Bosses)
 local Fish: { Types.FishDef } = require(script.Fish) :: any
@@ -43,6 +44,7 @@ local Config = {
 	Trainers = Trainers,
 	Cries = Cries,
 	Music = Music,
+	Gacha = Gacha,
 	Online = Online,
 	Bosses = Bosses,
 
@@ -187,8 +189,23 @@ function Config.Validate(): { string }
 		if not Config.RarityById[f.rarity] then
 			bad(where .. ": 不明なレア度 " .. tostring(f.rarity))
 		end
-		if not Config.SpotById[f.spot] then
+		if not Config.SpotById[f.spot] and f.spot ~= "shrine" then
 			bad(where .. ": 不明な釣り場 " .. tostring(f.spot))
+		end
+		-- 限定の魚(百鬼の祠)は、その魚だけの必殺技を持ち、祠のどこかの星に入っている
+		if f.limited then
+			if not f.signature or not Config.MoveById[f.signature] then
+				bad(where .. ": 限定の魚には signature(必殺技)が必要")
+			end
+			local inPool = false
+			for _, ids in Gacha.Fish do
+				inPool = inPool or table.find(ids, f.id) ~= nil
+			end
+			if not inPool then
+				bad(where .. ": 限定の魚が Config/Gacha.luau の Fish に入っていない")
+			end
+		elseif f.signature then
+			bad(where .. ": signature は限定の魚だけ")
 		end
 		if not TIMES[f.time] then
 			bad(where .. ": 不明な時間 " .. tostring(f.time))
@@ -380,6 +397,40 @@ function Config.Validate(): { string }
 	end
 
 	-- 鳴き声(無い魚は鳴かないだけ。あるものは区間と文字を確かめる)
+	-- 百鬼の祠(ガチャ): 重みの合計は 10000、祠の魚はすべて限定の魚、道具のエサは本物
+	local total = 0
+	for _, st in Gacha.Stars do
+		total += st.weight
+		if st.star >= 3 and (not Gacha.Fish[st.star] or #Gacha.Fish[st.star] == 0) then
+			bad("Gacha: ★" .. st.star .. " の魚がいない")
+		end
+		if st.star <= 2 and (not Gacha.Items[st.star] or #Gacha.Items[st.star] == 0) then
+			bad("Gacha: ★" .. st.star .. " の道具がない")
+		end
+	end
+	if total ~= 10000 then
+		bad("Gacha: 星の重みの合計が 10000 ではない(" .. total .. ")")
+	end
+	for star, ids in Gacha.Fish do
+		for _, id in ids do
+			local f = Config.FishById[id]
+			if not f or not f.limited then
+				bad("Gacha: ★" .. star .. " の " .. id .. " が限定の魚ではない")
+			end
+		end
+	end
+	for _, items in Gacha.Items do
+		for _, it in items do
+			if it.kind == "bait" and not Config.BaitById[it.id or ""] then
+				bad("Gacha: 知らないエサ " .. tostring(it.id))
+			elseif it.kind ~= "bait" and it.kind ~= "coins" and it.kind ~= "luck" then
+				bad("Gacha: 知らない道具 " .. tostring(it.kind))
+			end
+		end
+	end
+	if Gacha.Pity.star4 < 2 or Gacha.Pity.star5 <= Gacha.Pity.star4 then
+		bad("Gacha: 天井の数がおかしい")
+	end
 	-- BGM: 場所の曲・バトルの曲が表にあり、soundId は rbxassetid://<数字>
 	for name, t in Music.tracks do
 		if type(t.soundId) ~= "string" or not t.soundId:match("^rbxassetid://%d+$") then

@@ -26,6 +26,8 @@ export type FishDef = {
 	pattern: string,
 	deco: { string },
 	size: number,
+	limited: boolean?, -- 百鬼の祠(ガチャ)だけで授かる限定の魚(釣りでは出ない)
+	signature: string?, -- 限定の魚だけの必殺技(体の形の技の代わりに覚える)
 	jaDesc: string,
 	enDesc: string,
 }

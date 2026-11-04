@@ -27,6 +27,7 @@ Remotes.Events = {
 	"BattleState", -- (msg: table) 相棒バトル・対戦・ボス戦の状態・イベント・結果
 	"Arena", -- (msg: table) 対戦の申し込み・ランダム対戦の待ち状態・ボス戦の部屋の一覧
 	"StampShown", -- (userId: number, stampId: string) だれかがスタンプを出した
+	"GachaResult", -- (msg: { results, pity4, pity5 }) 百鬼の祠で授かった物
 }
 
 Remotes.Functions = {

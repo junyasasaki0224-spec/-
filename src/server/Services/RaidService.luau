@@ -201,8 +201,13 @@ local function finishRaid(raid: Raid, win: boolean)
 			local paidToday = false
 			if win then
 				data.raid.clears[boss.id] = (data.raid.clears[boss.id] or 0) + 1
+				local E = Config.Gacha.Earn
+				if data.raid.clears[boss.id] == 1 then
+					S.Gacha.give(player, E.raidFirst, E.raidFirstTickets, "RaidFirst")
+				end
 				if data.raid.paid[boss.id] ~= today() then
 					data.raid.paid[boss.id] = today()
+					S.Gacha.give(player, E.raidDaily, 0, "RaidDaily")
 					coins = boss.reward.coins
 					S.Shop.addCoins(player, coins, "RaidWin", boss.id)
 					if boss.reward.bait then

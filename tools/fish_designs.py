@@ -315,6 +315,34 @@ SEA = [
          jaDesc="船の横を通り過ぎるのに何日もかかるほど長い、海の大妖怪。あやかし釣りの名の由来。", enDesc="A sea yokai so long it takes days to pass a ship. The legend this game is named after."),
 ]
 
+# 百鬼の祠(ガチャ)だけで授かる限定の魚。釣りでは出ない。signature = その魚だけの必殺技(Config/Battle.luau)
+SHRINE = [
+    dict(id="gin_kitsune", ja="ギンコ", en="Ginko", kindJa="銀狐鯉", kindEn="Silver Fox Koi", element="spirit", rarity="epic", time="any", weather="any", kg=[3, 12], shape="koi",
+         c1="#EEF2F8", c2="#9ED8FF", c3="#5A8CFF", pattern="gradient", eyes="cat", mouth="smile", body=[0.95, 1, 1.05], tails=3, deco=["ears", "glow"], signature="silver_dance",
+         jaDesc="稲荷の祠に仕える銀の狐が、鯉に化けたまま戻らなくなった。尾が三つに分かれている。", enDesc="A silver fox serving an Inari shrine that turned into a koi and never changed back. Its tail splits in three."),
+    dict(id="yozakura_ei", ja="ヨザクラ", en="Yozakura", kindJa="夜桜鱏", kindEn="Night Sakura Ray", element="earth", rarity="epic", time="any", weather="any", kg=[8, 30], shape="ray",
+         c1="#1E2244", c2="#FFB7D5", c3="#FFE6F2", pattern="spots", eyes="sleepy", mouth="none", deco=["kanzashi", "glow"], signature="petal_storm",
+         jaDesc="千年の夜桜の花びらが集まって泳ぎ出した。通ったあとに花が散る。", enDesc="Petals from a thousand-year-old night sakura gathered and swam away. Blossoms scatter in its wake."),
+    dict(id="raijin_fugu", ja="ゴロピカ", en="Goropika", kindJa="雷神河豚", kindEn="Raijin Puffer", element="thunder", rarity="epic", time="any", weather="any", kg=[2, 8], shape="puffer",
+         c1="#FFD84A", c2="#3A2A6A", c3="#7CE8FF", pattern="stripes", eyes="angry", mouth="grin", deco=["drums", "horns"], signature="thunder_drum",
+         jaDesc="雷さまの太鼓を背負った河豚。ふくらむたびに、ごろごろと鳴る。", enDesc="A puffer carrying the thunder god's drums. It rumbles every time it puffs up."),
+    dict(id="hi_no_tori", ja="ヒノトリ", en="Hinotori", kindJa="鳳凰鯉", kindEn="Phoenix Koi", element="fire", rarity="legendary", time="any", weather="any", kg=[20, 60], shape="koi",
+         c1="#D7263D", c2="#FFD34D", c3="#FF8A3D", pattern="gradient", eyes="angry", mouth="beak", body=[1, 1.05, 1.1], tails=5, size=1.1, deco=["plumes", "crest", "flame"], signature="phoenix_wing",
+         jaDesc="燃えつきても灰の中から生まれ変わる、不死の鯉。羽のような尾は五つ。", enDesc="An undying koi reborn from its own ashes. Its feathered tail fans into five."),
+    dict(id="koku_ryu", ja="コクリュウ", en="Kokuryu", kindJa="黒龍鰻", kindEn="Black Dragon Eel", element="thunder", rarity="legendary", time="any", weather="any", kg=[40, 150], shape="eel",
+         c1="#14141E", c2="#E8B84A", c3="#8C6CFF", pattern="stripes", eyes="glow", mouth="fangs", body=[1.1, 1.1, 1.25], size=1.15, deco=["horns", "whiskers", "mane", "orb"], signature="black_lightning",
+         jaDesc="嵐の夜だけ空へ昇る黒い龍。玉を手放すと、海が三日荒れる。", enDesc="A black dragon that climbs to the sky only on stormy nights. If it drops its orb, the sea rages for three days."),
+    dict(id="yuki_hime", ja="ユキヒメ", en="Yukihime", kindJa="雪女鮭", kindEn="Snow Maiden Salmon", element="water", rarity="legendary", time="any", weather="any", kg=[10, 40], shape="salmon",
+         c1="#EAF6FF", c2="#9CD8FF", c3="#5AA0E8", pattern="gradient", eyes="sleepy", mouth="small", size=1.05, deco=["hair", "kanzashi", "glow"], signature="blizzard_breath",
+         jaDesc="雪の夜に川をさかのぼる白い鮭。触れると指先から凍っていく。", enDesc="A white salmon that swims upstream on snowy nights. Touch it and your fingertips start to freeze."),
+    dict(id="amaterasu_kujira", ja="テンショウ", en="Tensho", kindJa="天照鯨", kindEn="Amaterasu Whale", element="fire", rarity="mythic", time="any", weather="any", kg=[800, 3000], shape="whale",
+         c1="#FFF4D6", c2="#FFB000", c3="#FF5A3D", pattern="gradient", eyes="glow", mouth="smile", size=1.15, deco=["sun_disc", "crown", "glow"], signature="heavenly_dawn",
+         jaDesc="岩戸から出てきた日の光が、鯨の形になった。泳ぐ海は夜でも明るい。", enDesc="The sunlight that left the heavenly cave, taking the form of a whale. The sea it swims in stays bright even at night."),
+    dict(id="yamata_shachi", ja="ヤマタ", en="Yamata", kindJa="八岐大鯱", kindEn="Yamata Orca", element="spirit", rarity="secret", time="any", weather="any", kg=[1000, 5000], shape="orca",
+         c1="#2A0F1E", c2="#E8D8B8", c3="#FF3A5A", pattern="orca", eyes="glow", mouth="jaws", tails=8, size=1.2, deco=["horns", "mane", "shimenawa"], signature="eight_fangs",
+         jaDesc="八つの尾を持つ大鯱。八つの谷と八つの峰をまたぐほど大きいと言われる。祠の奥にしかいない。", enDesc="A great orca with eight tails, said to be large enough to span eight valleys and eight peaks. It dwells only deep within the shrine."),
+]
+
 LOOK_KEYS = ["shape", "c1", "c2", "c3", "pattern", "eyes", "mouth", "body", "tails", "deco", "size"]
 
 def lua_val(v):
@@ -328,7 +356,7 @@ def lua_val(v):
         return "{ " + ", ".join(lua_val(x) for x in v) + " }" if v else "{}"
     raise TypeError(v)
 
-ORDER = ["id", "ja", "en", "kindJa", "kindEn", "element", "rarity", "time", "weather", "kg", "shape", "c1", "c2", "c3", "pattern", "eyes", "mouth", "body", "tails", "deco", "size", "jaDesc", "enDesc"]
+ORDER = ["id", "ja", "en", "kindJa", "kindEn", "element", "rarity", "time", "weather", "kg", "shape", "c1", "c2", "c3", "pattern", "eyes", "mouth", "body", "tails", "deco", "size", "signature", "jaDesc", "enDesc"]
 
 def row(f):
     parts = []
@@ -354,6 +382,7 @@ HEADER = """--!strict
 --   mouth   : small / wide / o / smile / frown / open / tongue / fangs / grin / geta / beak / jaws(鮫の歯) / none
 --   body    : 体つき {{ 幅, 高さ, 長さ }} の倍率 / tails : 尾の本数 / size : 大きさの微調整(レア度の大きさに掛け算)
 --   deco    : 飾り(一覧は Config/init.luau の DECOS)
+--   signature : 限定の魚だけ。その魚だけの必殺技(Config/Battle.luau の技の id)
 --   jaDesc / enDesc : 図鑑の説明
 -- レア度の格(大きさ・ツヤ・縁取り・金・後光)は FishBuilder が自動で付ける。
 
@@ -365,10 +394,10 @@ return F
 """
 
 def main():
-    for var, title, name in ((SWAMP, "沼", "Swamp"), (LAKE, "ぬしの湖", "NushiLake"), (RIVER, "川", "River"), (SEA, "海", "Sea")):
+    for var, title, name in ((SWAMP, "沼", "Swamp"), (LAKE, "ぬしの湖", "NushiLake"), (RIVER, "川", "River"), (SEA, "海", "Sea"), (SHRINE, "百鬼の祠(ガチャ)だけの限定", "Shrine")):
         open(os.path.join(ROOT, f"src/shared/Config/Fish/{name}.luau"), "w").write(
             HEADER.format(title=f"{title}の妖怪魚({len(var)}種)", rows="\n".join(row(f) for f in var)))
-    print("wrote", len(SWAMP), "+", len(LAKE), "+", len(RIVER), "+", len(SEA))
+    print("wrote", len(SWAMP), "+", len(LAKE), "+", len(RIVER), "+", len(SEA), "+ shrine", len(SHRINE))
 
 
 if __name__ == "__main__":

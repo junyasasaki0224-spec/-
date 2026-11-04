@@ -4,7 +4,7 @@
 -- ※ID は公開情報なのでコードに書いてよい。APIキーなどの秘密情報は絶対に書かないこと。
 
 export type GamePass = { key: string, id: number, robux: number }
-export type DevProduct = { key: string, id: number, robux: number }
+export type DevProduct = { key: string, id: number, robux: number, magatama: number? }
 
 local Products = {}
 
@@ -22,6 +22,11 @@ Products.DevProducts = {
 	{ key = "serverLuck", id = 0, robux = 199 }, -- 15分間 サーバー全員の運2倍
 	{ key = "premiumBait10", id = 0, robux = 49 }, -- 高級エサ10個
 	{ key = "questReroll", id = 0, robux = 29 }, -- 依頼を1つ入れ替え
+	-- 勾玉(百鬼の祠で祈る石)。有料のランダムな品になるので、確率をいつも画面に出し、
+	-- 買えない地域(PolicyService の ArePaidRandomItemsRestricted)では買うボタンを出さない
+	{ key = "magatamaS", id = 0, robux = 49, magatama = 330 },
+	{ key = "magatamaM", id = 0, robux = 199, magatama = 1500 },
+	{ key = "magatamaL", id = 0, robux = 449, magatama = 3600 },
 } :: { DevProduct }
 
 -- 報酬型動画広告(Roblox の Rewarded Video Ads)。使えない地域・端末では自動で非表示。

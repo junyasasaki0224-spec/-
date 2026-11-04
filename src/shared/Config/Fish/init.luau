@@ -8,6 +8,8 @@ local SOURCES: { { spot: string, list: { any } } } = {
 	{ spot = "nushi_lake", list = require(script.NushiLake) :: any },
 	{ spot = "river", list = require(script.River) :: any },
 	{ spot = "sea", list = require(script.Sea) :: any },
+	-- 百鬼の祠(ガチャ)だけの限定の魚。釣り場ではないので釣りでは出ない(Roll は spot で選ぶ)
+	{ spot = "shrine", list = require(script.Shrine) :: any },
 }
 
 local all: { Types.FishDef } = {}
@@ -19,6 +21,7 @@ for _, src in SOURCES do
 		def.deco = def.deco or {}
 		def.size = def.size or 1
 		def.element = def.element or "water"
+		def.limited = src.spot == "shrine"
 		table.insert(all, def :: any)
 	end
 end

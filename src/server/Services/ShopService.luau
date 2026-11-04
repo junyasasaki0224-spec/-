@@ -127,6 +127,12 @@ function ShopService.checkCodexCompletion(player: Player, poolSpot: string)
 	end
 	S.Data.changed(player)
 	S.notify(player, "notify_codex_complete", { spotKey = "spot_" .. poolSpot, coins = reward })
+	S.Gacha.give(
+		player,
+		Config.Gacha.Earn.codexComplete,
+		Config.Gacha.Earn.codexCompleteTickets,
+		"CodexComplete"
+	)
 end
 
 local function teleportTo(player: Player, spot: any)

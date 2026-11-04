@@ -208,6 +208,7 @@ local function fishRows(list: Instance, entries: { any }, mode: string)
 		if def then
 			local rarity = Config.RarityById[def.rarity]
 			local title = (if f.locked then "🔒" else "")
+				.. (if def.limited then "◆" .. Locale.t("gacha_limited") .. " " else "")
 				.. Locale.fishName(def)
 				.. (if f.level then (" Lv%d"):format(f.level) else "")
 				.. (if f.mutation then " ◆" .. Locale.t("mutation_" .. f.mutation) else "")
@@ -509,7 +510,8 @@ renderers.robux = function(body)
 		end
 	end
 	for _, dp in Config.Products.DevProducts do
-		if dp.id ~= 0 and dp.key ~= "questReroll" then
+		-- 勾玉は百鬼の祠の画面で売る(買えない地域の判定もそちら)
+		if dp.id ~= 0 and dp.key ~= "questReroll" and not dp.magatama then
 			any = true
 			order += 1
 			local _, right = itemRow(

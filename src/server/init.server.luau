@@ -46,6 +46,7 @@ local S = {
 	Pvp = require(Services.PvpService),
 	Raid = require(Services.RaidService),
 	Social = require(Services.SocialService),
+	Gacha = require(Services.GachaService),
 	notify = nil :: any,
 	announce = nil :: any,
 }
@@ -80,6 +81,7 @@ local ORDER = {
 	"Pvp",
 	"Raid",
 	"Social",
+	"Gacha",
 }
 for _, name in ORDER do
 	(S :: any)[name].init(S)
@@ -90,7 +92,7 @@ end
 
 -- 店・設定などの操作はひとつの通信にまとめ、操作名で振り分ける
 local REQUEST_HANDLERS: { any } =
-	{ S.Shop, S.Quest, S.Monetization, S.Partner, S.Battle, S.Pvp, S.Raid, S.Social }
+	{ S.Shop, S.Quest, S.Monetization, S.Partner, S.Battle, S.Pvp, S.Raid, S.Social, S.Gacha }
 RemoteGuard.connect(Remotes.event("Request"), 6, 12, function(player, action, payload)
 	if not RemoteGuard.isId(action, 24) then
 		return

@@ -529,8 +529,9 @@ function FishingService.grantCatch(
 		S.Analytics.custom(player, "Catch_" .. fish.rarity)
 	end
 
-	-- 図鑑の完成報酬
+	-- 図鑑の完成報酬(新しい魚は勾玉も)
 	if isNew then
+		S.Gacha.give(player, Config.Gacha.Earn.newFish, 0, "NewFish")
 		S.Shop.checkCodexCompletion(player, fish.spot)
 	end
 end

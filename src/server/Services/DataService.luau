@@ -83,6 +83,14 @@ local function template(): any
 		battle = { cleared = {}, wins = 0, rematchPaid = {} }, -- rematchPaid: 相手ごとに再戦の小判をもらった日
 		pvp = { rating = 1000, wins = 0, losses = 0, dailyWinDay = -1 }, -- オンライン対戦
 		raid = { paid = {}, clears = {} }, -- ボス戦(paid: ボスごとに小判をもらった日)
+		-- 百鬼の祠(ガチャ): 勾玉・祈願札・天井の数(pity4/pity5: 前の★4以上・★5から何回祈ったか)・祈った回数
+		gacha = {
+			magatama = 0,
+			tickets = Config.Gacha.Earn.welcomeTickets,
+			pity4 = 0,
+			pity5 = 0,
+			pulls = 0,
+		},
 	}
 end
 

@@ -15,6 +15,14 @@
   "outlineTris": 7378,
   "sourceTris": 127880
  },
+ "amaterasu_kujira": {
+  "length": 3.3,
+  "width": 2.4871,
+  "height": 1.9655,
+  "tris": 14780,
+  "outlineTris": 7390,
+  "sourceTris": 192156
+ },
  "ame_gaeru": {
   "length": 2.1231,
   "width": 1.6189,
@@ -135,6 +143,14 @@
   "outlineTris": 7372,
   "sourceTris": 165608
  },
+ "gin_kitsune": {
+  "length": 2.878,
+  "width": 1.1638,
+  "height": 1.254,
+  "tris": 14712,
+  "outlineTris": 7356,
+  "sourceTris": 124288
+ },
  "hako_fugu": {
   "length": 2.2745,
   "width": 1.6189,
@@ -158,6 +174,14 @@
   "tris": 14714,
   "outlineTris": 7356,
   "sourceTris": 133132
+ },
+ "hi_no_tori": {
+  "length": 3.6329,
+  "width": 1.2074,
+  "height": 1.3248,
+  "tris": 14736,
+  "outlineTris": 7368,
+  "sourceTris": 157704
  },
  "hitotsume_namazu": {
   "length": 2.8767,
@@ -407,6 +431,14 @@
   "outlineTris": 7378,
   "sourceTris": 111512
  },
+ "koku_ryu": {
+  "length": 4.987,
+  "width": 1.7587,
+  "height": 1.1852,
+  "tris": 14742,
+  "outlineTris": 7370,
+  "sourceTris": 111024
+ },
  "komainu_koi": {
   "length": 2.61,
   "width": 1.2246,
@@ -518,6 +550,14 @@
   "tris": 14716,
   "outlineTris": 7358,
   "sourceTris": 110080
+ },
+ "raijin_fugu": {
+  "length": 2.3104,
+  "width": 1.7106,
+  "height": 2.056,
+  "tris": 14746,
+  "outlineTris": 7372,
+  "sourceTris": 191764
  },
  "raijin_namazu": {
   "length": 2.8377,
@@ -711,6 +751,14 @@
   "outlineTris": 7370,
   "sourceTris": 120356
  },
+ "yamata_shachi": {
+  "length": 3.533,
+  "width": 2.1257,
+  "height": 1.6973,
+  "tris": 14748,
+  "outlineTris": 7374,
+  "sourceTris": 202312
+ },
  "yatagarasu_ei": {
   "length": 3.3303,
   "width": 1.291,
@@ -734,6 +782,22 @@
   "tris": 14774,
   "outlineTris": 7386,
   "sourceTris": 142672
+ },
+ "yozakura_ei": {
+  "length": 2.793,
+  "width": 2.8057,
+  "height": 1.0052,
+  "tris": 14702,
+  "outlineTris": 7350,
+  "sourceTris": 129384
+ },
+ "yuki_hime": {
+  "length": 3.4009,
+  "width": 1.0718,
+  "height": 1.442,
+  "tris": 14788,
+  "outlineTris": 7394,
+  "sourceTris": 164776
  },
  "yukimi_wakasagi": {
   "length": 2.9635,

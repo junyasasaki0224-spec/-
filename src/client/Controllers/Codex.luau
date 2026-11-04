@@ -73,8 +73,9 @@ local function renderDetail()
 	Kit.label({
 		Size = UDim2.new(1, 0, 0, 24),
 		Position = UDim2.fromScale(0, 0.47),
-		Text = Locale.t("rarity_" .. def.rarity),
-		TextColor3 = Color3.fromHex(rarity.color),
+		Text = (if def.limited then "◆" .. Locale.t("gacha_limited") .. "  " else "")
+			.. Locale.t("rarity_" .. def.rarity),
+		TextColor3 = if def.limited then Color3.fromRGB(255, 200, 230) else Color3.fromHex(rarity.color),
 		MaxTextSize = 20,
 		Parent = detail,
 	})
@@ -91,9 +92,11 @@ local function renderDetail()
 	table.insert(
 		lines,
 		(if entry then Locale.fishKind(def) .. "  ·  " else "")
-			.. Locale.t("spot_" .. def.spot)
-			.. "  ·  "
-			.. hint(def)
+			.. (
+				if def.limited
+					then Locale.t("codex_shrine_only")
+					else Locale.t("spot_" .. def.spot) .. "  ·  " .. hint(def)
+			)
 	)
 	if entry then
 		table.insert(

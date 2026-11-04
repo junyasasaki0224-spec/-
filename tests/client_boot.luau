@@ -231,6 +231,12 @@ local services: { [string]: any } = {
 		SetCore = function() end,
 	}),
 	SoundService = soundService,
+	-- 有料のランダムな品(勾玉)を買える地域かどうか
+	PolicyService = service("PolicyService", {
+		GetPolicyInfoForPlayerAsync = function()
+			return { ArePaidRandomItemsRestricted = false }
+		end,
+	}),
 	MarketplaceService = service("MarketplaceService", {
 		PromptGamePassPurchase = function() end,
 		PromptProductPurchase = function() end,
@@ -488,6 +494,7 @@ H.test("すべての画面を開いて、見えているボタンを全部押す
 			{ "battle", "boss" },
 			{ "battle", "online" },
 			{ "social" },
+			{ "shrine" },
 		}
 	do
 		total += monkey(p[1], p[2])
@@ -498,6 +505,78 @@ H.test("すべての画面を開いて、見えているボタンを全部押す
 	closeBattle() -- ボタンでバトルが始まっていたら片付ける
 	H.assert(total > 50, "too few buttons pressed")
 end)
+
+-- 名前で子孫を1つさがす(見つからなければ nil)
+local function named(root: any, name: string): any
+	if not root then
+		return nil
+	end
+	local found = walkFind(root, function(d)
+		return d.Name == name
+	end)
+	return found[1]
+end
+
+H.test(
+	"百鬼の祠: 10回祈る → 札が順にめくれる → ★5は大きく見せて「限定」の朱印と名前 → 受け取る",
+	function()
+		local State = H.require(client.ClientState)
+		local G = Config.Gacha
+		Root.close()
+		advance(0.3)
+		State.profile.gacha = { magatama = 1500, tickets = 3, pity4 = 2, pity5 = 40, pulls = 0 }
+		Root.open("shrine")
+		advance(0.3)
+		local shrine = gui:FindFirstChild("Shrine")
+		H.assert(shrine and shrine.Visible, "shrine panel not open")
+		-- 確率がいつも見えている
+		H.assert(named(shrine, "Rate5"), "odds table missing")
+		local before = #fired
+		click(named(shrine, "Pull10"))
+		advance(0.1)
+		local sentPull = false
+		for i = before + 1, #fired do
+			if fired[i].name == "Request" and fired[i].args[1] == "gachaPull" then
+				sentPull = fired[i].args[2] == 10
+			end
+		end
+		H.assert(sentPull, "no gachaPull 10 request")
+		-- サーバーの返事(★5の限定の魚・★4・道具)
+		local results = {}
+		for i = 1, 10 do
+			results[i] = { star = 1, kind = "coins", amount = 400 }
+		end
+		results[3] = { star = 4, kind = "fish", fishId = G.Fish[4][1], grams = 30000, uid = "g1" }
+		results[7] = { star = 5, kind = "fish", fishId = G.Fish[5][1], grams = 900000, uid = "g2" }
+		results[9] = { star = 2, kind = "bait", id = "premium", amount = 3 }
+		serverSays("GachaResult", { { results = results, pity4 = 0, pity5 = 0 } })
+		advance(0.2)
+		local reveal = gui:FindFirstChild("GachaReveal")
+		H.assert(reveal, "no reveal screen")
+		F.snapshot("boot_gacha_flash")
+		-- 札がめくれて、★4以上の魚は1匹ずつ大きく見せる
+		advance(6)
+		local spot = named(reveal, "Spotlight")
+		H.assert(spot, "no spotlight for the 4-star fish")
+		H.assert(named(spot, "Seal"), "no limited seal")
+		F.snapshot("boot_gacha_spotlight")
+		click(named(spot, "Next"))
+		advance(1)
+		spot = named(reveal, "Spotlight")
+		H.assert(spot, "no spotlight for the 5-star fish")
+		H.assertEq(named(spot, "FishName").Text, Locale.fishName(Config.FishById[G.Fish[5][1]]))
+		click(named(spot, "Next"))
+		advance(0.5)
+		F.snapshot("boot_gacha_summary")
+		local card = named(reveal, "Card9")
+		H.assert(card and named(card, "Face").Visible, "card not flipped")
+		click(named(reveal, "Collect"))
+		advance(0.3)
+		H.assert(gui:FindFirstChild("GachaReveal") == nil, "reveal not closed")
+		Root.close()
+		advance(0.3)
+	end
+)
 
 H.test(
 	"視点: 左クリックしたまま動かすと回り、溜めていた竿は振らない。動かさずに離せば投げる",

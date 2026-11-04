@@ -23,6 +23,8 @@ local HUD = {}
 local coinLabel: TextLabel
 local creelLabel: TextLabel
 local baitLabel: TextLabel
+local magatamaLabel: TextLabel
+local shrineBtn: TextButton
 local clockLabel: TextLabel
 local nushiLabel: TextLabel
 local luckLabel: TextLabel
@@ -119,6 +121,14 @@ function HUD.refresh()
 		lastCoins = p.coins
 	end
 	coinLabel.Text = Format.coins(p.coins, lang)
+	shrineBtn.Text = "⛩ " .. Locale.t("hud_shrine")
+	local g = p.gacha
+	magatamaLabel.Text = if g
+		then ("%s%s"):format(
+			Format.coins(g.magatama or 0, lang),
+			if (g.tickets or 0) > 0 then ("  札%d"):format(g.tickets) else ""
+		)
+		else "0"
 	creelLabel.Text = ("%d/%d"):format(#p.creel, State.creelCapacity())
 	creelLabel.TextColor3 = if #p.creel >= State.creelCapacity() then C.danger else C.text
 	if p.equippedBait ~= "" then
@@ -152,7 +162,7 @@ function HUD.init(gui: ScreenGui)
 	-- 左の列(お金・魚籠・エサ・運)。PC ではチャット窓の下に置く(Root.leftTop)
 	local left = Kit.new(
 		"Frame",
-		{ Name = "LeftColumn", Size = UDim2.fromOffset(380, 140), BackgroundTransparency = 1, Parent = gui }
+		{ Name = "LeftColumn", Size = UDim2.fromOffset(380, 150), BackgroundTransparency = 1, Parent = gui }
 	)
 	Root.onLayout(function()
 		left.Position = UDim2.fromOffset(0, Root.leftTop())
@@ -160,6 +170,32 @@ function HUD.init(gui: ScreenGui)
 	coinLabel = pill(left, UDim2.fromOffset(20, 0), 200, "¥", C.gold)
 	creelLabel = pill(left, UDim2.fromOffset(20, 50), 150, "🐟", C.indigo)
 	baitLabel = pill(left, UDim2.fromOffset(178, 50), 200, "🍡", C.jadeDark)
+	-- 勾玉(百鬼の祠で祈る石)と、祠のボタン
+	magatamaLabel = pill(left, UDim2.fromOffset(228, 0), 150, "◆", Color3.fromRGB(150, 70, 200))
+	local magBtn = Kit.new(
+		"TextButton",
+		{ Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", Parent = magatamaLabel.Parent }
+	)
+	magBtn.Activated:Connect(function()
+		Root.open("shrine")
+	end)
+	shrineBtn = Kit.button({
+		Name = "ShrineButton",
+		Text = "⛩ " .. Locale.t("hud_shrine"),
+		Size = UDim2.fromOffset(120, 48),
+		Position = UDim2.fromOffset(76, 100),
+		Color = Color3.fromRGB(150, 40, 60),
+		StrokeColor = C.goldLight,
+		MaxTextSize = 20,
+		Parent = left,
+	}, function()
+		Root.toggle("shrine")
+	end)
+	Kit.new("UIGradient", {
+		Color = ColorSequence.new(Color3.fromRGB(255, 220, 230), Color3.fromRGB(255, 190, 120)),
+		Rotation = 90,
+		Parent = shrineBtn,
+	})
 	local baitBtn = Kit.new(
 		"TextButton",
 		{ Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", Parent = baitLabel.Parent }
@@ -206,7 +242,7 @@ function HUD.init(gui: ScreenGui)
 	)
 	luckLabel = Kit.label({
 		Size = UDim2.fromOffset(140, 26),
-		Position = UDim2.fromOffset(228, 9),
+		Position = UDim2.fromOffset(206, 111),
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextColor3 = C.success,
 		MaxTextSize = 20,

@@ -18,6 +18,7 @@ Creator Dashboard → 体験 → 収益化 で作成し、`src/shared/Config/Pro
 
 ## 見た目と音を入れる
 - [ ] `assets/fish/YokaiFishMeshes.glb` を読み込んで ReplicatedStorage.FishMeshes に置く([ANIME_MESHES.md](ANIME_MESHES.md))
+- [ ] 勾玉の商品3つ(`magatamaS/M/L`)を作り、ID を `Config/Products.luau` に入れる。祠の確率の表が見えること・買えない地域で買うボタンが出ないことを確かめる([GACHA.md](GACHA.md))
 - [ ] BGM 6曲 `assets/sounds/bgm/{village,swamp,river,sea,battle,boss}.ogg` をアップロードし、ID を `Config/Music.luau` の各曲の `soundId` に入れる([MUSIC.md](MUSIC.md))
 - [ ] `assets/sounds/YokaiCries.ogg` をアップロードし、ID を `Config/Cries.luau` の `soundId` に入れる([CRIES.md](CRIES.md))
 

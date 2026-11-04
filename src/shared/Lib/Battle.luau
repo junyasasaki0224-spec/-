@@ -69,7 +69,8 @@ function BattleLib.movesFor(def: Types.FishDef, level: number): ({ string }, { {
 	local learned: { { id: string, at: number } } = {}
 	local em = B.ElementMoves[def.element] or B.ElementMoves.water
 	table.insert(learned, { id = em[1], at = L.elementBasic })
-	table.insert(learned, { id = B.ShapeMove[def.shape] or "leap", at = L.shape })
+	-- 限定の魚は、体の形の技の代わりにその魚だけの必殺技を覚える
+	table.insert(learned, { id = def.signature or B.ShapeMove[def.shape] or "leap", at = L.shape })
 	table.insert(learned, { id = "rest", at = L.rest })
 	table.insert(learned, { id = em[2], at = L.elementStrong })
 	local rarity = Config.RarityById[def.rarity]

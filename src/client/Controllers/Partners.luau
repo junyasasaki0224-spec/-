@@ -109,7 +109,9 @@ local function renderList()
 		Kit.label({
 			Size = UDim2.new(1, -120, 0, 28),
 			Position = UDim2.fromOffset(74, 6),
-			Text = Locale.fishName(def) .. (if f.locked then " 🔒" else ""),
+			Text = (if def.limited then "◆" .. Locale.t("gacha_limited") .. " " else "")
+				.. Locale.fishName(def)
+				.. (if f.locked then " 🔒" else ""),
 			TextXAlignment = Enum.TextXAlignment.Left,
 			Font = Theme.Fonts.title,
 			MaxTextSize = 20,

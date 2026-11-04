@@ -15,6 +15,7 @@
 --   mouth   : small / wide / o / smile / frown / open / tongue / fangs / grin / geta / beak / jaws(鮫の歯) / none
 --   body    : 体つき { 幅, 高さ, 長さ } の倍率 / tails : 尾の本数 / size : 大きさの微調整(レア度の大きさに掛け算)
 --   deco    : 飾り(一覧は Config/init.luau の DECOS)
+--   signature : 限定の魚だけ。その魚だけの必殺技(Config/Battle.luau の技の id)
 --   jaDesc / enDesc : 図鑑の説明
 -- レア度の格(大きさ・ツヤ・縁取り・金・後光)は FishBuilder が自動で付ける。
 

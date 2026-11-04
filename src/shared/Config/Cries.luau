@@ -5,8 +5,8 @@
 -- audioHash は音の中身の印。音を作り直すと変わり、そのときは soundId が 0 に戻る(古い音と区間がずれないように)
 return {
 	soundId = "rbxassetid://0",
-	audioHash = "05722927a428",
-	length = 253.269, -- 音のファイル全体の長さ(秒)
+	audioHash = "3a8cebd8f87e",
+	length = 285.363, -- 音のファイル全体の長さ(秒)
 	cries = {
 		doro_funa = { start = 0.500, length = 1.380, ja = "ぼこぉ…", en = "Bohko..." },
 		ashi_medaka = { start = 2.380, length = 0.866, ja = "ぴぃぴぃ♪", en = "Pee-pee!" },
@@ -258,5 +258,43 @@ return {
 		umibozu_ei = { start = 238.852, length = 2.883, ja = "ぼおぉぉぉ…", en = "Boooooh..." },
 		bake_kujira = { start = 242.235, length = 3.574, ja = "ボオォォォ……", en = "Booooooh..." },
 		ayakashi = { start = 246.309, length = 6.460, ja = "あやかしぃぃ……", en = "Ayakashiii..." },
+		gin_kitsune = {
+			start = 253.269,
+			length = 2.099,
+			ja = "こぉん…しゃらん♪",
+			en = "Ko-on... shalan!",
+		},
+		yozakura_ei = {
+			start = 255.868,
+			length = 3.890,
+			ja = "ふわぁ…はらはら",
+			en = "Fwaah... hara-hara",
+		},
+		raijin_fugu = {
+			start = 260.258,
+			length = 2.740,
+			ja = "ゴロゴロ…ドン!",
+			en = "Goro-goro... DON!",
+		},
+		hi_no_tori = { start = 263.498, length = 2.686, ja = "キュオォォン!", en = "Kyuoooon!" },
+		koku_ryu = { start = 266.684, length = 3.067, ja = "グルォォォ…", en = "Gruoooh..." },
+		yuki_hime = {
+			start = 270.251,
+			length = 3.008,
+			ja = "しんしん…ふぅ…",
+			en = "Shin-shin... fuu...",
+		},
+		amaterasu_kujira = {
+			start = 273.760,
+			length = 4.443,
+			ja = "オォォ…ン(光の音)",
+			en = "Ooooh... (light)",
+		},
+		yamata_shachi = {
+			start = 278.703,
+			length = 6.160,
+			ja = "ガアアァァ!!(八つの声)",
+			en = "GAAAAH!! (eight voices)",
+		},
 	} :: { [string]: { start: number, length: number, ja: string, en: string } },
 }

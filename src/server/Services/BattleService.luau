@@ -132,6 +132,14 @@ local function finish(player: Player, sess: Session)
 			local b = trainer.reward.bait
 			data.bait[b.id] = (data.bait[b.id] or 0) + b.amount
 		end
+		if firstClear then
+			local E = Config.Gacha.Earn
+			if trainer.boss then
+				S.Gacha.give(player, E.lordFirst, E.lordFirstTickets, "LordFirst")
+			else
+				S.Gacha.give(player, E.trainerFirst, 0, "TrainerFirst")
+			end
+		end
 		if firstClear and trainer.title and not table.find(data.titles, trainer.title) then
 			table.insert(data.titles, trainer.title)
 			title = trainer.title

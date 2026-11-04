@@ -196,6 +196,17 @@ local function claimQuest(player: Player, index: any)
 	end
 	entry.claimed = true
 	grantReward(player, data, q.reward, "Quest")
+	-- 勾玉: 1つごと + その日の依頼を全部受け取ったらおまけ
+	local all = true
+	for _, e in data.quests.list do
+		all = all and e.claimed
+	end
+	S.Gacha.give(
+		player,
+		Config.Gacha.Earn.quest + (if all then Config.Gacha.Earn.questAll else 0),
+		0,
+		"Quest"
+	)
 	S.Analytics.custom(player, "QuestClaim")
 end
 
@@ -227,6 +238,14 @@ local function claimDaily(player: Player)
 	data.daily.lastDay = today()
 	grantReward(player, data, reward, "Daily")
 	S.notify(player, "daily_got", { coins = reward.coins })
+	-- 勾玉は毎日。7日続けた日は祈願札も
+	local week = data.daily.streak > 0 and data.daily.streak % 7 == 0
+	S.Gacha.give(
+		player,
+		Config.Gacha.Earn.daily,
+		if week then Config.Gacha.Earn.dailyWeekTickets else 0,
+		"Daily"
+	)
 end
 
 function QuestService.handleRequest(player: Player, action: string, payload: any): boolean

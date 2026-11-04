@@ -493,6 +493,11 @@ Config.Tuning.Nushi.baseRequired = 2
 Config.Tuning.Nushi.perPlayerRequired = 1
 Config.Tuning.Nushi.minContribution = 0.5
 Config.Products.DevProducts[1].id = 111 -- 運のお札
+for _, dp in Config.Products.DevProducts do
+	if dp.key == "magatamaS" then
+		dp.id = 333 -- 勾玉(小)
+	end
+end
 Config.Products.DevProducts[3].id = 333 -- 高級エサ10個
 Config.Products.GamePasses[2].id = 222 -- 自動釣り
 
@@ -1055,6 +1060,106 @@ H.test(
 		H.assertEq(r.kind, "result")
 		H.assert(not r.win, "run counted as win")
 		H.assert(not d.battle.cleared.tanuki, "cleared by running")
+	end
+)
+
+local function gachaRequest(p, action, payload)
+	clientSend(p, "Request", action, payload)
+end
+
+H.test(
+	"百鬼の祠: 札→勾玉の順に払う / 足りなければ何も起きない / 10回で★4以上 / 限定の魚はお気に入りで魚籠へ / 90回目で★5とお知らせ",
+	function()
+		local d = data(alice)
+		local G = Config.Gacha
+		H.assertEq(d.gacha.pity4, 0)
+		-- 新しいプレイヤーは祈願札をもらっている
+		d.gacha.tickets, d.gacha.magatama = 5, 0
+		gachaRequest(alice, "gachaPull", 10)
+		H.assertEq(d.gacha.tickets, 5, "paid without enough")
+		H.assertEq(lastSent(alice, "Notify")[1], "gacha_not_enough")
+		-- 札5枚 + 勾玉5回ぶんで10回
+		d.gacha.magatama = 5 * G.Cost + 7
+		local creelBefore = #d.creel
+		local sentBefore = countSent(alice, "GachaResult")
+		gachaRequest(alice, "gachaPull", 10)
+		H.assertEq(d.gacha.tickets, 0)
+		H.assertEq(d.gacha.magatama, 7)
+		H.assertEq(countSent(alice, "GachaResult"), sentBefore + 1)
+		local msg = lastSent(alice, "GachaResult")[1]
+		H.assertEq(#msg.results, 10)
+		local best, fishCount = 0, 0
+		for _, r in msg.results do
+			best = math.max(best, r.star)
+			if r.kind == "fish" then
+				fishCount += 1
+				local def = Config.FishById[r.fishId]
+				H.assert(def and def.limited, "not a limited fish")
+				H.assert(r.uid, "fish without uid")
+			end
+		end
+		H.assert(best >= 4, "10 pulls without a 4-star")
+		H.assertEq(#d.creel, creelBefore + fishCount)
+		for i = creelBefore + 1, #d.creel do
+			H.assertEq(d.creel[i].locked, true)
+			H.assertEq(d.creel[i].spot, "shrine")
+			H.assert(d.codex[d.creel[i].fishId], "codex not updated")
+		end
+		H.assertEq(d.gacha.pulls, 10)
+		-- 送り返すデータに勾玉と天井の数が入っている
+		local snap = lastSent(alice, "Profile")
+		H.assert(snap == nil or snap[1].gacha ~= nil, "gacha missing from profile")
+		-- 不正な回数は無視
+		d.gacha.magatama = 100000
+		for _, bad in { 0, 5, 11, "10", 1.5, 0 / 0, math.huge, -1 } do
+			gachaRequest(alice, "gachaPull", bad)
+		end
+		H.assertEq(d.gacha.magatama, 100000, "bad payload was accepted")
+		-- 天井: 89回★5が出ていなければ、次は必ず★5。サーバー全員に知らせる
+		d.gacha.pity5 = G.Pity.star5 - 1
+		local annBefore = #announced
+		gachaRequest(alice, "gachaPull", 1)
+		local r = lastSent(alice, "GachaResult")[1].results[1]
+		H.assertEq(r.star, 5)
+		H.assert(table.find(G.Fish[5], r.fishId), "5-star is not from the 5-star pool")
+		H.assertEq(d.gacha.pity5, 0)
+		local ann = announced[#announced]
+		H.assert(#announced > annBefore and ann.args[1] == "gacha_announce", "no announcement")
+		H.assertEq(ann.args[2].fishId, r.fishId)
+	end
+)
+
+H.test(
+	"勾玉のもらい方: 新しい魚・依頼・毎日・Robux(購入IDは二重に付与しない)",
+	function()
+		local d = data(alice)
+		local E = Config.Gacha.Earn
+		d.gacha.magatama = 0
+		-- 依頼を受け取ると勾玉(残りの依頼を全部受け取るとおまけ)
+		local Quest = H.require(server.Services.QuestService)
+		for i, e in d.quests.list do
+			e.done = true
+			if not e.claimed then
+				local before = d.gacha.magatama
+				Quest.handleRequest(alice, "claimQuest", i)
+				H.assert(d.gacha.magatama >= before + E.quest, "quest gave no magatama")
+			end
+		end
+		H.assertEq(d.gacha.magatama % E.quest, E.questAll % E.quest)
+		-- Robux の勾玉
+		d.gacha.magatama = 0
+		local receipt = { PlayerId = 1001, ProductId = 333, PurchaseId = "m-1", CurrencySpent = 49 }
+		local Enum = roblox.Enum
+		H.assertEq(MarketplaceService.ProcessReceipt(receipt), Enum.ProductPurchaseDecision.PurchaseGranted)
+		local pack = 0
+		for _, dp in Config.Products.DevProducts do
+			if dp.key == "magatamaS" then
+				pack = dp.magatama
+			end
+		end
+		H.assertEq(d.gacha.magatama, pack)
+		MarketplaceService.ProcessReceipt(receipt)
+		H.assertEq(d.gacha.magatama, pack, "granted twice")
 	end
 )
 

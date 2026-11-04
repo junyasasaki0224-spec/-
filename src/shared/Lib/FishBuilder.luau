@@ -351,6 +351,40 @@ local function addEffects(
 		pe.SpreadAngle = Vector2.new(180, 180)
 		pe.Parent = body
 	end
+	-- 百鬼の祠の限定の魚: 虹色の光の粒と金のきらめきをいつもまとう(釣れる魚には無い特別な見た目)
+	if def.limited then
+		local pe = Instance.new("ParticleEmitter")
+		pe.Name = "LimitedAura"
+		pe.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 110, 140)),
+			ColorSequenceKeypoint.new(0.25, Color3.fromRGB(255, 220, 110)),
+			ColorSequenceKeypoint.new(0.5, Color3.fromRGB(130, 255, 170)),
+			ColorSequenceKeypoint.new(0.75, Color3.fromRGB(120, 190, 255)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(220, 140, 255)),
+		})
+		pe.LightEmission = 1
+		pe.Size = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0),
+			NumberSequenceKeypoint.new(0.3, 0.32 * scale),
+			NumberSequenceKeypoint.new(1, 0),
+		})
+		pe.Lifetime = NumberRange.new(1, 1.8)
+		pe.Rate = 18
+		pe.Speed = NumberRange.new(0.4, 1.2)
+		pe.SpreadAngle = Vector2.new(180, 180)
+		pe.Parent = body
+		local sp = Instance.new("Sparkles")
+		sp.Name = "LimitedSparkles"
+		sp.SparkleColor = Color3.fromRGB(255, 232, 150)
+		sp.Parent = body
+		local light = Instance.new("PointLight")
+		light.Name = "LimitedLight"
+		light.Color = Color3.fromRGB(255, 236, 190)
+		light.Range = 12 * scale
+		light.Brightness = 1.2
+		light.Parent = body
+		model:SetAttribute("Limited", true)
+	end
 	if table.find(def.deco, "flame") then
 		local fire = Instance.new("Fire")
 		fire.Color = accent

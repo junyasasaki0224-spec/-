@@ -134,6 +134,14 @@ local function loadPasses(player: Player)
 end
 
 -- 開発者アイテムの効果。true を返したら付与済み
+-- 勾玉の商品(key → 勾玉の数)
+local magatamaByKey: { [string]: number } = {}
+for _, dp in Products.DevProducts do
+	if dp.magatama then
+		magatamaByKey[dp.key] = dp.magatama
+	end
+end
+
 local function applyProduct(player: Player, key: string): boolean
 	local data = S.Data.get(player)
 	if not data then
@@ -152,6 +160,8 @@ local function applyProduct(player: Player, key: string): boolean
 		data.bait.premium = (data.bait.premium or 0) + B.premiumBaitPerPurchase
 	elseif key == "questReroll" then
 		S.Quest.rerollPending(player)
+	elseif magatamaByKey[key] then
+		S.Gacha.give(player, magatamaByKey[key], 0, "Purchase")
 	elseif key == Products.RewardedAd.devProductKey then
 		data.boosts.adLuckUntil = math.max(now, data.boosts.adLuckUntil)
 			+ Products.RewardedAd.luckMinutes * 60
