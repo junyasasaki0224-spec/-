@@ -2,6 +2,7 @@
 -- 画面の土台。画面サイズに合わせた拡大縮小と、パネルの開閉(同時に1つだけ)を管理する。
 local Players = game:GetService("Players")
 local GuiService = game:GetService("GuiService")
+local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 
 local Kit = require(script.Parent.Kit)
@@ -14,6 +15,7 @@ local panels: { [string]: { root: GuiObject, onOpen: ((any) -> ())? } } = {}
 local openName: string? = nil
 local openChanged = Instance.new("BindableEvent")
 Root.OpenChanged = openChanged.Event
+local relayout: () -> () -- 下で決める(画面の大きさが変わった時)
 
 function Root.init(): ScreenGui
 	gui = Kit.new("ScreenGui", {
@@ -31,6 +33,7 @@ function Root.init(): ScreenGui
 		end
 		local v = cam.ViewportSize
 		scale.Scale = math.clamp(math.min(v.X / 1280, v.Y / 720), 0.55, 1.25)
+		relayout()
 	end
 	rescale()
 	workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(rescale)
@@ -53,6 +56,40 @@ function Root.topInset(): number
 	end)
 	local y = if ok and typeof(topLeft) == "Vector2" then topLeft.Y else 36
 	return y / math.max(0.1, s)
+end
+
+-- Roblox のチャット窓(左上)の大きさ(画面のピクセル)。PC では最初から開いている
+Root.CHAT_SIZE = Vector2.new(400, 280)
+
+-- スマホ(タッチだけ)では、チャットは上のバーのボタンを押した時だけ開く
+function Root.chatOpenByDefault(): boolean
+	return not (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
+end
+
+-- 左の列(お金・魚籠・エサ・スタンプ・対戦の札)の上端。PC ではチャット窓の下から始める
+function Root.leftTop(): number
+	local scale = gui and gui:FindFirstChildOfClass("UIScale")
+	local s = math.max(0.1, if scale then scale.Scale else 1)
+	if Root.chatOpenByDefault() then
+		local ok, inset = pcall(function()
+			return GuiService:GetGuiInset()
+		end)
+		local y = if ok and typeof(inset) == "Vector2" then inset.Y else 58
+		return (y + Root.CHAT_SIZE.Y) / s + 12
+	end
+	return math.max(70, Root.topInset() + 8)
+end
+
+-- 画面の大きさが変わった時(と今すぐ)に呼ぶ。置き場所を計算し直す物に使う
+local layoutCallbacks: { () -> () } = {}
+function Root.onLayout(fn: () -> ())
+	table.insert(layoutCallbacks, fn)
+	fn()
+end
+function relayout()
+	for _, fn in layoutCallbacks do
+		fn()
+	end
 end
 
 -- 上端が top の物を、上のバーに重ならないように下げる量

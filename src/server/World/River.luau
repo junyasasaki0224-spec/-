@@ -242,7 +242,12 @@ function M.build()
 		local foam = Build.part({
 			name = "Foam",
 			size = Vector3.new(0.2, s * 2.2, s * 1.6),
-			cframe = CFrame.new(px, center.Y + 0.08, pz + s * 0.5) * CFrame.Angles(0, 0, math.rad(90)),
+			-- 川は段ごとに水面の高さが違うので、本当の水面を測って泡を乗せる
+			cframe = CFrame.new(
+				px,
+				(Build.waterY(px, pz + s * 0.5, center.Y) or center.Y) - 0.03,
+				pz + s * 0.5
+			) * CFrame.Angles(0, 0, math.rad(90)),
 			color = Color3.fromRGB(240, 248, 255),
 			material = Enum.Material.SmoothPlastic,
 			transparency = 0.45,

@@ -149,9 +149,17 @@ function HUD.init(gui: ScreenGui)
 	)
 	-- いちばん上の物(時計)が Roblox の上のバーに重ならないように、全体を下げる
 	top.Position = UDim2.fromOffset(0, Root.topShift(64))
-	coinLabel = pill(top, UDim2.fromOffset(20, 70), 200, "¥", C.gold)
-	creelLabel = pill(top, UDim2.fromOffset(20, 120), 150, "🐟", C.indigo)
-	baitLabel = pill(top, UDim2.fromOffset(20, 170), 200, "🍡", C.jadeDark)
+	-- 左の列(お金・魚籠・エサ・運)。PC ではチャット窓の下に置く(Root.leftTop)
+	local left = Kit.new(
+		"Frame",
+		{ Name = "LeftColumn", Size = UDim2.fromOffset(380, 140), BackgroundTransparency = 1, Parent = gui }
+	)
+	Root.onLayout(function()
+		left.Position = UDim2.fromOffset(0, Root.leftTop())
+	end)
+	coinLabel = pill(left, UDim2.fromOffset(20, 0), 200, "¥", C.gold)
+	creelLabel = pill(left, UDim2.fromOffset(20, 50), 150, "🐟", C.indigo)
+	baitLabel = pill(left, UDim2.fromOffset(178, 50), 200, "🍡", C.jadeDark)
 	local baitBtn = Kit.new(
 		"TextButton",
 		{ Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", Parent = baitLabel.Parent }
@@ -198,11 +206,11 @@ function HUD.init(gui: ScreenGui)
 	)
 	luckLabel = Kit.label({
 		Size = UDim2.fromOffset(140, 26),
-		Position = UDim2.fromOffset(20, 218),
+		Position = UDim2.fromOffset(228, 9),
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextColor3 = C.success,
 		MaxTextSize = 20,
-		Parent = top,
+		Parent = left,
 	})
 	Kit.new(
 		"UIStroke",

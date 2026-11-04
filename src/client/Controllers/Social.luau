@@ -417,7 +417,6 @@ local function buildStamps(gui: ScreenGui)
 		Name = "StampButton",
 		Text = "💬",
 		Size = UDim2.fromOffset(48, 48),
-		Position = UDim2.fromOffset(20, 248),
 		Color = C.panel,
 		Corner = UDim.new(1, 0),
 		MaxTextSize = 26,
@@ -429,13 +428,18 @@ local function buildStamps(gui: ScreenGui)
 		Name = "StampPicker",
 		Size = UDim2.fromOffset(372, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
-		Position = UDim2.fromOffset(76, 248),
 		BackgroundColor3 = C.panel,
 		BackgroundTransparency = 0.04,
 		Visible = false,
 		ZIndex = 25,
 		Parent = gui,
 	})
+	-- 左の列(お金・魚籠の下)。PC ではチャット窓の下
+	Root.onLayout(function()
+		local y = Root.leftTop() + 100
+		stampButton.Position = UDim2.fromOffset(20, y)
+		stampPicker.Position = UDim2.fromOffset(76, y)
+	end)
 	Kit.corner(stampPicker)
 	Kit.stroke(stampPicker, C.gold, 2)
 	Kit.padding(stampPicker, 8)

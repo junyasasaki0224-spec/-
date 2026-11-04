@@ -170,6 +170,10 @@ local services: { [string]: any } = {
 		Heartbeat = Signal(),
 		RenderStepped = Signal(),
 		Stepped = Signal(),
+		-- 名前つきの毎フレーム処理(視点の左ドラッグなど)。RenderStepped と一緒に呼ぶ
+		BindToRenderStep = function(self, _name, _priority, fn)
+			self.RenderStepped:Connect(fn)
+		end,
 		IsClient = function()
 			return true
 		end,
@@ -496,6 +500,58 @@ H.test("すべての画面を開いて、見えているボタンを全部押す
 end)
 
 H.test(
+	"視点: 左クリックしたまま動かすと回り、溜めていた竿は振らない。動かさずに離せば投げる",
+	function()
+		local Fishing = H.require(client.Controllers.Fishing)
+		local UIS = services.UserInputService
+		local Enum_ = roblox.Enum
+		Root.close()
+		advance(0.5)
+		camera.CFrame = roblox.CFrame.lookAt(roblox.Vector3.new(0, 10, 20), roblox.Vector3.new(0, 4, 0))
+		camera.Focus = roblox.CFrame.new(0, 4, 0)
+		local before = #fired
+		local function mouse(kind: string, dx: number?, dy: number?): any
+			return {
+				UserInputType = Enum_.UserInputType[kind],
+				KeyCode = Enum_.KeyCode.Unknown,
+				Delta = roblox.Vector3.new(dx or 0, dy or 0, 0),
+			}
+		end
+		UIS.InputBegan:Fire(mouse("MouseButton1"), false)
+		advance(0.1)
+		H.assertEq(Fishing.state(), "charging")
+		local look0 = camera.CFrame.LookVector
+		for _ = 1, 6 do
+			UIS.InputChanged:Fire(mouse("MouseMovement", 20, 0), false)
+			advance(1 / 30)
+		end
+		H.assertEq(Fishing.state(), "idle")
+		local look1 = camera.CFrame.LookVector
+		H.assert(look0:Dot(look1) < 0.9, "camera did not turn")
+		H.assert(look1.X > 0, "dragging right should look right")
+		UIS.InputEnded:Fire(mouse("MouseButton1"), false)
+		advance(0.3)
+		for i = before + 1, #fired do
+			H.assert(fired[i].name ~= "Cast", "cast after camera drag")
+		end
+		-- 動かさずに押して離すと、今まで通り投げる
+		UIS.InputBegan:Fire(mouse("MouseButton1"), false)
+		advance(0.5)
+		UIS.InputChanged:Fire(mouse("MouseMovement", 2, 1), false)
+		UIS.InputEnded:Fire(mouse("MouseButton1"), false)
+		advance(0.3)
+		local cast = false
+		for i = before + 1, #fired do
+			cast = cast or fired[i].name == "Cast"
+		end
+		H.assert(cast, "click without drag should cast")
+		-- 次のテストのために投げる前へ戻す
+		serverSays("FishingState", { "idle", {} })
+		advance(0.3)
+	end
+)
+
+H.test(
 	"釣り: 投げる → 待つ → アタリ → 合わせる → 引く → 釣果(本物の操作の流れ)",
 	function()
 		local Input = H.require(client.Controllers.Input)
@@ -636,6 +692,31 @@ H.test(
 			end
 		end
 		checkTops(gui:FindFirstChild("HUD"), "HUD")
+		-- PC: 左上の Roblox のチャット窓に、ふだんの画面(お金・魚籠・スタンプ・対戦の札・時計など)が重ならない
+		if not PHONE then
+			local s = scaleOf()
+			local chat = { 0, 58 / s, 400 / s, (58 + 280) / s }
+			local function checkChat(container: any, label: string)
+				for _, c in container:GetChildren() do
+					if c.Visible ~= false and c.Size and c.Position and c.Size.Y.Scale < 1 then
+						local r = rect(c)
+						if r[3] - r[1] > 1 and r[4] - r[2] > 1 then
+							H.assert(
+								not overlaps(r, chat),
+								("%s %s covers the chat window %s"):format(label, c.Name, fmt(r))
+							)
+						end
+					end
+				end
+			end
+			checkChat(gui:FindFirstChild("HUD"), "HUD")
+			checkChat(gui:FindFirstChild("LeftColumn"), "left")
+			for _, name in { "LeftColumn", "StampButton", "OnlinePills" } do
+				local c = gui:FindFirstChild(name)
+				H.assert(c, name .. " missing")
+				H.assert(rect(c)[2] >= chat[4], name .. " starts inside the chat window")
+			end
+		end
 		-- バトルを1つ始めて、上の段を確かめる
 		local start = nil
 		for _, m in rec.fishing do

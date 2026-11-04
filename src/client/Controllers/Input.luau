@@ -9,8 +9,10 @@ local Input = {}
 
 local began = Instance.new("BindableEvent")
 local ended = Instance.new("BindableEvent")
+local cancelled = Instance.new("BindableEvent")
 Input.Began = began.Event
 Input.Ended = ended.Event
+Input.Cancelled = cancelled.Event -- 離したのではなく取り消し(視点を回し始めた時など)
 
 local holdingSources: { [any]: boolean } = {}
 local enabled = true
@@ -41,6 +43,17 @@ function Input.release(source: any)
 	holdingSources[source] = nil
 	if not anyHolding() then
 		ended:Fire()
+	end
+end
+
+-- 押していたのを「なかったこと」にする(Ended ではなく Cancelled を出す)
+function Input.cancel(source: any)
+	if not holdingSources[source] then
+		return
+	end
+	holdingSources[source] = nil
+	if not anyHolding() then
+		cancelled:Fire()
 	end
 end
 

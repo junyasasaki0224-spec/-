@@ -259,11 +259,36 @@ function Build.reeds(parent: Instance, pos: Vector3, rng: Random)
 	})
 end
 
+-- (x, z) の本当の水面の高さ。岸の近くは水が少なく水面が低いので、下へ光線を当てて測る。
+-- 水に当たらなければ nil(陸の上)。測れない時(テストなど)は guess を返す
+function Build.waterY(x: number, z: number, guess: number): number?
+	local ok, hit = pcall(function()
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Include
+		params.FilterDescendantsInstances = { workspace.Terrain }
+		params.IgnoreWater = false
+		return workspace:Raycast(Vector3.new(x, guess + 20, z), Vector3.new(0, -40, 0), params)
+	end)
+	if not ok then
+		return guess
+	end
+	if hit and hit.Material == Enum.Material.Water then
+		return hit.Position.Y
+	end
+	return nil
+end
+
+-- 蓮の葉。pos.Y は水面のつもりの高さ。本当の水面を測って、葉を水面に半分沈めて浮かべる(すき間を作らない)
 function Build.lotus(parent: Instance, pos: Vector3, rng: Random)
+	local surface = Build.waterY(pos.X, pos.Z, pos.Y)
+	if not surface then
+		return -- 岸の上には置かない
+	end
+	pos = Vector3.new(pos.X, surface - 0.03, pos.Z)
 	local r = rng:NextNumber(2.2, 4)
 	Build.part({
 		name = "LotusPad",
-		size = Vector3.new(0.15, r, r),
+		size = Vector3.new(0.2, r, r),
 		cframe = CFrame.new(pos) * CFrame.Angles(0, rng:NextNumber(0, 6.28), math.rad(90)),
 		color = Color3.fromRGB(62, 120, 64),
 		material = Enum.Material.Grass,
@@ -276,7 +301,7 @@ function Build.lotus(parent: Instance, pos: Vector3, rng: Random)
 			name = "LotusFlower",
 			size = Vector3.new(1, 0.8, 1),
 			cframe = CFrame.new(
-				pos + Vector3.new(rng:NextNumber(-0.5, 0.5), 0.45, rng:NextNumber(-0.5, 0.5))
+				pos + Vector3.new(rng:NextNumber(-0.5, 0.5), 0.42, rng:NextNumber(-0.5, 0.5))
 			),
 			color = Color3.fromRGB(255, 170, 200),
 			material = Enum.Material.SmoothPlastic,

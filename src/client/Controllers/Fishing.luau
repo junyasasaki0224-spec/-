@@ -297,6 +297,14 @@ function Fishing.init(gui: ScreenGui)
 
 	Input.Began:Connect(onPress)
 	Input.Ended:Connect(onRelease)
+	-- 左ドラッグで視点を回し始めたら、溜めていた竿は振らない
+	Input.Cancelled:Connect(function()
+		if state == "charging" then
+			powerBg.Visible = false
+			setState("idle")
+			refreshButton()
+		end
+	end)
 	Remotes.event("FishingState").OnClientEvent:Connect(onServerState)
 	player:GetAttributeChangedSignal("AutoFishing"):Connect(refreshButton)
 	player.CharacterAdded:Connect(function()

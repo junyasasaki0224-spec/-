@@ -532,10 +532,13 @@ function Online.init(g: ScreenGui)
 	pillStack = Kit.new("Frame", {
 		Name = "OnlinePills",
 		Size = UDim2.fromOffset(330, 150),
-		Position = UDim2.fromOffset(20, 300),
 		BackgroundTransparency = 1,
 		Parent = gui,
 	})
+	-- 左の列のいちばん下(お金・魚籠・スタンプの下)
+	Root.onLayout(function()
+		pillStack.Position = UDim2.fromOffset(20, Root.leftTop() + 156)
+	end)
 	Kit.new("UIListLayout", {
 		Padding = UDim.new(0, 6),
 		SortOrder = Enum.SortOrder.LayoutOrder,
