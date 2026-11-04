@@ -68,6 +68,41 @@ H.test("沼を生成できる(出現地点・桟橋・行商・鳥居)", functio
 	H.assert(swamp:FindFirstChild("Pier") ~= nil, "pier")
 	H.assert(#swamp.Pier:GetChildren() > 10, "pier planks")
 end)
+H.test("川を生成できる(橋・飛び石・釣り台・水車小屋・行商・鳥居・沢)", function()
+	H.require(server.World.River).build()
+	local river = workspace.World.River
+	H.assert(river:FindFirstChild("RiverSpawn") ~= nil, "spawn")
+	H.assert(#river.Bridge:GetChildren() > 20, "bridge planks")
+	H.assert(#river.SteppingStones:GetChildren() >= 10, "stepping stones")
+	H.assert(river:FindFirstChild("Deck") ~= nil, "fishing deck")
+	H.assert(river:FindFirstChild("WaterMill") ~= nil, "water mill")
+	H.assert(river:FindFirstChild("Spray", true) ~= nil, "waterfall spray")
+	H.assert(river:FindFirstChild("Bamboo", true) ~= nil, "bamboo")
+end)
+H.test("海を生成できる(桟橋・大鳥居・灯台・岩礁・松・行商・鳥居)", function()
+	H.require(server.World.Sea).build()
+	local sea = workspace.World.Sea
+	H.assert(sea:FindFirstChild("SeaSpawn") ~= nil, "spawn")
+	H.assert(#sea.Pier:GetChildren() > 20, "pier planks")
+	H.assert(sea:FindFirstChild("Lighthouse", true) ~= nil, "lighthouse")
+	H.assert(sea:FindFirstChild("SeaRock", true) ~= nil, "sea rocks")
+	local torii = 0
+	for _, d in sea:GetDescendants() do
+		if d.Name == "Torii" then
+			torii += 1
+		end
+	end
+	H.assertEq(torii, 2, "village torii + sea torii")
+end)
+H.test(
+	"新しい釣り場には最初に出現しない(最初は沼。鳥居・お店から移動)",
+	function()
+		for _, name in { "RiverSpawn", "SeaSpawn" } do
+			local sp = workspace.World:FindFirstChild(name, true)
+			H.assert(sp and sp.Enabled == false and sp.Neutral == false, name .. " must not be a start spawn")
+		end
+	end
+)
 H.test("釣り村を生成できる(小屋10軒・水槽・ランキング看板)", function()
 	H.require(server.World.Village).build()
 	local huts = workspace.World.Village.Huts:GetChildren()
@@ -81,7 +116,7 @@ end)
 H.test("看板・ボタン・魚屋のタグが付いている", function()
 	H.assert(#(tags.LocSign or {}) >= 15, "LocSign " .. #(tags.LocSign or {}))
 	H.assert(#(tags.YokaiPrompt or {}) >= 16, "YokaiPrompt " .. #(tags.YokaiPrompt or {}))
-	H.assertEq(#(tags.Merchant or {}), 2, "Merchant")
+	H.assertEq(#(tags.Merchant or {}), 4, "Merchant")
 	H.assertEq(#(tags.RankingBoard or {}), 1, "RankingBoard")
 	local actions = {}
 	for _, p in tags.YokaiPrompt do
@@ -97,6 +132,8 @@ H.test("看板・ボタン・魚屋のタグが付いている", function()
 			"open:battle",
 			"travel:swamp",
 			"travel:nushi_lake",
+			"travel:river",
+			"travel:sea",
 		}
 	do
 		H.assert(actions[a], "missing prompt action " .. a)
@@ -105,7 +142,9 @@ end)
 H.test(
 	"山の手前に見えない壁があり、遊ぶ場所(出現地点・店・鳥居・看板)はすべて壁の内側",
 	function()
-		for _, area in { workspace.World.Swamp, workspace.World.Village } do
+		for _, area in
+			{ workspace.World.Swamp, workspace.World.Village, workspace.World.River, workspace.World.Sea }
+		do
 			local walls = area:FindFirstChild("Boundary")
 			H.assert(walls ~= nil, "no boundary in " .. area.Name)
 			local list = walls:GetChildren()

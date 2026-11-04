@@ -6,7 +6,8 @@ local Types = require(script.Parent.Parent.Lib.Types)
 local SOURCES: { { spot: string, list: { any } } } = {
 	{ spot = "swamp", list = require(script.Swamp) :: any },
 	{ spot = "nushi_lake", list = require(script.NushiLake) :: any },
-	-- { spot = "river", list = require(script.River) :: any },
+	{ spot = "river", list = require(script.River) :: any },
+	{ spot = "sea", list = require(script.Sea) :: any },
 }
 
 local all: { Types.FishDef } = {}

@@ -460,7 +460,7 @@ def add_texture(c, d):
 
 
 # ---------------------------------------------------------------------------
-# 50匹の鳴き声のレシピ。文字はゲームの吹き出し・図鑑に出る(日本語・英語)
+# 全魚の鳴き声のレシピ。文字はゲームの吹き出し・図鑑に出る(日本語・英語)
 
 CRIES = {}
 
@@ -836,11 +836,286 @@ def _(c):
     c.echo = 0.2
 
 
+# ---- 川 ----
+@cry("azukiarai_haze", "しょきしょき…", "Shoki-shoki...")
+def _(c):
+    c.rattle(0.0, 0.32, 16, 0.4)
+    c.rattle(0.42, 0.32, 16, 0.4)
+    c.voice(0.82, 0.16, (900, 980), "i", tilt=1.5, release=0.06)
+
+
+@cry("seoto_ayu", "さらさら♪ ぴっ", "Sara-sara! Pip")
+def _(c):
+    c.whoosh(0.0, 0.5, (900, 2200), 1400, 0.2)
+    c.voice(0.5, 0.12, (1500, 1900), "i", tilt=1.5, release=0.05)
+
+
+@cry("koke_iwana", "もそ…もそ…", "Moso... moso...")
+def _(c):
+    c.voice(0.0, 0.24, (240, 210), "o", tilt=1.7, attack=0.04)
+    c.voice(0.38, 0.32, (230, 180), "ou", tilt=1.7, vib=(3, 0.03), release=0.2)
+
+
+@cry("sasabune_medaka", "ぷかぷか♪", "Puka-puka!")
+def _(c):
+    c.syllables(0.0, [(0.09, (1300, 1450), "u"), (0.09, (1500, 1350), "a"), (0.09, (1300, 1450), "u"), (0.12, (1500, 1300), "a")], gap=0.05, tilt=1.5)
+    c.bubbles(0.0, 0.6, 3, (900, 1600), 0.2)
+
+
+@cry("ishinage_kajika", "どぼんっ!", "Doboon!")
+def _(c):
+    c.thump(0.0, (120, 50), 0.45, 0.8, 0.5)
+    c.bubbles(0.08, 0.45, 6, (200, 600), 0.35)
+    c.voice(0.5, 0.18, (320, 260), "u", tilt=1.6)
+
+
+@cry("yamanba_yamame", "けけけっ…", "Kekeke...")
+def _(c):
+    c.syllables(0.0, [(0.09, (820, 760), "e"), (0.09, (800, 740), "e"), (0.14, (780, 640), "e")], gap=0.05, tilt=0.9, rough=0.45, drive=0.3)
+
+
+@cry("kawaakago_namazu", "おぎゃあ〜", "Waaah~")
+def _(c):
+    c.voice(0.0, 0.18, (420, 520), "o", tilt=1.2)
+    c.voice(0.2, 0.7, [(0, 560), (0.3, 640), (1, 470)], "aa", tilt=1.1, vib=(7, 0.04), release=0.2)
+
+
+@cry("kawauso_haze", "おらだよ〜", "It's me~")
+def _(c):
+    c.syllables(0.0, [(0.12, (520, 560), "o"), (0.1, (560, 600), "a"), (0.1, (600, 560), "a"), (0.28, (560, 470), "ou")], gap=0.03, tilt=1.4)
+
+
+@cry("hashihime_ayu", "うらめしや…", "Uramesiya...")
+def _(c):
+    c.voice(0.0, 1.0, [(0, 330), (0.5, 300), (1, 250)], "uaei", tilt=1.6, breath=0.35, vib=(4, 0.02), attack=0.1, release=0.3)
+    c.echo = 0.22
+
+
+@cry("shirohebi_unagi", "しゅるる… ちりん", "Shururu... ting")
+def _(c):
+    c.hiss(0.0, 0.55, 3500, 0.3)
+    c.chime(0.6, 2637, 0.35)
+    c.coin(0.75, 0.25)
+
+
+@cry("kawatengu_yamame", "ヒュオッ! かかか", "Hyuoh! Kakaka")
+def _(c):
+    c.whoosh(0.0, 0.35, (600, 2400), 1400, 0.35)
+    c.zap(0.05, 0.12, 0.25)
+    c.syllables(0.4, [(0.09, (700, 650), "a"), (0.09, (690, 640), "a"), (0.13, (680, 560), "a")], gap=0.04, tilt=1.0, rough=0.3)
+
+
+@cry("kawaguma_namazu", "グルル…ガウッ!", "Grrr... Gau!")
+def _(c):
+    c.voice(0.0, 0.55, (110, 100), "uo", tilt=1.0, rough=0.7, drive=0.4, attack=0.06)
+    c.voice(0.62, 0.22, (240, 170), "ao", tilt=0.9, rough=0.5, drive=0.5)
+
+
+@cry("ikada_ei", "ぎぃ…ぎぃ…", "Creak... creak...")
+def _(c):
+    for t0 in (0.0, 0.45):
+        c.voice(t0, 0.3, (260, 300, 240), "i", tilt=0.9, rough=0.8, drive=0.2, attack=0.03)
+        c.clack(t0 + 0.28, (300, 520), 0.05, 0.3, 0.6)
+
+
+@cry("kappa_oyabun", "おうっ! カッパッパァ!", "Oi! Kappappaa!")
+def _(c):
+    c.voice(0.0, 0.2, (300, 260), "o", tilt=1.0, rough=0.4, drive=0.3)
+    c.syllables(0.3, [(0.1, (420, 440), "a"), (0.1, (440, 460), "a"), (0.1, (460, 480), "a"), (0.3, (480, 380), "aa")], gap=0.03, tilt=1.0, rough=0.2)
+    c.bubbles(0.9, 0.3, 3, (300, 700), 0.3)
+
+
+@cry("kawahime_koi", "ふふ…こちらへ…", "Fufu... this way...")
+def _(c):
+    c.syllables(0.0, [(0.12, (620, 600), "u"), (0.16, (600, 560), "u")], gap=0.08, tilt=1.6, breath=0.4)
+    c.voice(0.5, 0.8, [(0, 560), (1, 470)], "oiae", tilt=1.6, breath=0.3, vib=(5, 0.015), release=0.3)
+    c.chime(1.2, 2093, 0.2)
+    c.echo = 0.2
+
+
+@cry("toryu_koi", "えいっ! ざっぱーん!", "Hup! Splaaash!")
+def _(c):
+    c.voice(0.0, 0.16, (700, 900), "ei", tilt=1.2)
+    c.whoosh(0.2, 0.6, (400, 1800, 600), 1200, 0.4)
+    c.bubbles(0.35, 0.5, 8, (300, 1200), 0.3)
+
+
+@cry("maboroshi_itou", "ゴボォッ…!", "Goboh...!")
+def _(c):
+    c.voice(0.0, 0.7, [(0, 120), (0.4, 140), (1, 90)], "oo", tilt=1.1, rough=0.4, drive=0.3, attack=0.05, release=0.2)
+    c.bubbles(0.1, 0.8, 10, (120, 500), 0.4)
+
+
+@cry("suiko", "ガアァァッ!", "Gaaah!")
+def _(c):
+    c.voice(0.0, 0.75, [(0, 260), (0.3, 300), (1, 200)], "aa", tilt=0.85, rough=0.8, drive=0.55, release=0.15)
+    c.zap(0.05, 0.16, 0.3)
+
+
+@cry("o_hanzaki", "オォ…ン…", "Ooo...n...")
+def _(c):
+    c.voice(0.0, 1.4, [(0, 70), (0.4, 82), (1, 58)], "ooun", tilt=1.2, rough=0.3, drive=0.2, attack=0.15, release=0.4)
+    c.rumble(0.0, 1.2, 0.35, 48)
+    c.bell(1.1, 220, 1.8, 0.35, decay=0.9)
+
+
+@cry("sake_no_osuke", "鮭の大助、今のぼる!", "Osuke the salmon, coming up!")
+def _(c):
+    c.thump(0.0, (90, 45), 0.5, 0.7, 0.4)
+    notes = [(0.12, 392, "a"), (0.12, 392, "e"), (0.12, 440, "o"), (0.18, 392, "oo"), (0.12, 349, "u"), (0.3, 330, "e")]
+    c.syllables(0.15, [(d, (f, f * 1.01), v) for d, f, v in notes], gap=0.04, tilt=1.0, rough=0.25, vib=(5, 0.02))
+    c.whoosh(1.2, 0.8, (300, 1600, 500), 1200, 0.35)
+    c.bubbles(1.3, 0.6, 6, (200, 800), 0.3)
+
+
+# ---- 海 ----
+@cry("ebisu_dai", "めでたい♪", "Medetai!")
+def _(c):
+    c.syllables(0.0, [(0.1, (660, 700), "e"), (0.1, (700, 740), "e"), (0.1, (740, 784), "a"), (0.22, (784, 880), "i")], gap=0.03, tilt=1.3)
+    c.coin(0.62, 0.4)
+
+
+@cry("iwashi_kozo", "ちぴちぴ♪", "Chipi-chipi!")
+def _(c):
+    for i in range(4):
+        c.voice(i * 0.1, 0.06, (2000 + (i % 2) * 300, 2400), "i", tilt=1.5, release=0.03)
+
+
+@cry("kaze_tobiuo", "ひゅーん!", "Hyuun!")
+def _(c):
+    c.whistle(0.0, 0.5, [(0, 1200), (1, 2600)], 0.35)
+    c.whoosh(0.0, 0.55, (600, 2400), 1600, 0.3)
+
+
+@cry("hako_fugu", "ぷっぷく!", "Puppuku!")
+def _(c):
+    c.syllables(0.0, [(0.08, (620, 600), "u"), (0.08, (600, 580), "u"), (0.14, (640, 520), "u")], gap=0.06, tilt=1.6)
+    c.clack(0.45, (700, 1100), 0.04, 0.35, 0.3)
+
+
+@cry("kage_tachiuo", "すぱっ…", "Swish...")
+def _(c):
+    c.hiss(0.0, 0.18, 4000, 0.45, attack=0.005)
+    c.chime(0.12, 3520, 0.25)
+    c.voice(0.4, 0.4, (500, 380), "u", tilt=1.7, breath=0.3, release=0.2)
+
+
+@cry("kaminari_katsuo", "ビリビリッ!", "Bzzt-bzzt!")
+def _(c):
+    c.zap(0.0, 0.15, 0.4)
+    c.zap(0.2, 0.15, 0.4)
+    c.voice(0.38, 0.18, (900, 1100), "i", tilt=1.1, rough=0.3)
+
+
+@cry("ningyo", "ら〜ら〜♪", "La~ la~")
+def _(c):
+    for t0, dur, f in ((0.0, 0.4, 784), (0.45, 0.4, 880), (0.9, 0.7, 659)):
+        c.voice(t0, dur, (f, f * 1.003), "a", tilt=1.5, vib=(5, 0.015), breath=0.2, attack=0.06, release=0.18)
+    c.bubbles(0.0, 1.5, 4, (800, 1500), 0.15)
+
+
+@cry("funayurei_ei", "ひしゃく…かせぇ…", "Ladle... lend it...")
+def _(c):
+    c.voice(0.0, 1.1, [(0, 300), (0.5, 270), (1, 220)], "iae", tilt=1.6, breath=0.5, vib=(3, 0.03), attack=0.12, release=0.35)
+    c.whoosh(0.0, 1.1, (300, 900), 600, 0.25)
+    c.echo = 0.25
+
+
+@cry("umi_osho", "なむ…なむ…", "Namu... namu...")
+def _(c):
+    for t0 in (0.0, 0.5):
+        c.clack(t0, (380, 600), 0.05, 0.4, 0.2)  # 木魚
+        c.voice(t0 + 0.05, 0.32, (150, 140), "au", tilt=1.5, attack=0.04)
+
+
+@cry("maguro_daimyo", "下に〜、下に〜", "Make way~ make way~")
+def _(c):
+    for t0 in (0.0, 0.7):
+        c.syllables(t0, [(0.14, (330, 330), "i"), (0.36, (370, 330), "ao")], gap=0.03, tilt=1.2, vib=(5, 0.02))
+
+
+@cry("kurage_anko", "ぽわわ〜ん", "Powawaan")
+def _(c):
+    c.voice(0.0, 0.6, [(0, 500), (0.5, 700), (1, 450)], "oaa", tilt=1.8, attack=0.08, swell=True, vib=(6, 0.03))
+    c.chime(0.3, 1760, 0.18)
+    c.bubbles(0.0, 0.7, 4, (600, 1300), 0.2)
+
+
+@cry("tomokazuki", "おいで…おいで…", "Come... come...")
+def _(c):
+    for t0, g in ((0.0, 1.0), (0.55, 0.6)):
+        c.voice(t0, 0.45, [(0, 420), (1, 360)], "oie", tilt=1.6, breath=0.35, gain=g, attack=0.06, release=0.2)
+    c.echo = 0.3
+
+
+@cry("shima_umihebi", "シャーッ!", "Hssss!")
+def _(c):
+    c.hiss(0.0, 0.6, 2800, 0.5)
+    c.voice(0.0, 0.12, (600, 500), "a", tilt=1.0, rough=0.5, gain=0.5)
+
+
+@cry("jinbe_zame", "のほほ〜ん", "Nohoho~n")
+def _(c):
+    c.syllables(0.0, [(0.12, (200, 210), "o"), (0.12, (210, 220), "o"), (0.5, (220, 170), "oon")], gap=0.04, tilt=1.6, vib=(3, 0.03))
+    c.bubbles(0.2, 0.8, 5, (150, 500), 0.3)
+
+
+@cry("shiranui_ei", "ぼうっ…ぼうっ…", "Fwoom... fwoom...")
+def _(c):
+    for t0 in (0.0, 0.5):
+        c.whoosh(t0, 0.35, (200, 800), 500, 0.35)
+        c.crackle(t0, 0.35, 24, 0.25)
+
+
+@cry("ryugu_tsukai", "お知らせ〜…", "A message~...")
+def _(c):
+    c.syllables(0.0, [(0.12, (520, 540), "o"), (0.1, (540, 560), "i"), (0.1, (560, 580), "a"), (0.4, (580, 470), "ee")], gap=0.03, tilt=1.4, vib=(5, 0.02))
+    c.chime(0.9, 2349, 0.25)
+    c.chime(1.05, 3136, 0.2)
+
+
+@cry("isonade", "ザザァッ! グオォッ", "Splash! Guooh!")
+def _(c):
+    c.whoosh(0.0, 0.6, (300, 1500, 400), 1200, 0.45)
+    c.voice(0.5, 0.6, [(0, 160), (0.4, 180), (1, 120)], "oo", tilt=0.95, rough=0.6, drive=0.45, release=0.15)
+
+
+@cry("kin_shachi", "ガオォッ! ざばぁ", "Gaoh! Splash")
+def _(c):
+    c.voice(0.0, 0.45, [(0, 320), (0.4, 380), (1, 260)], "ao", tilt=0.9, rough=0.5, drive=0.45)
+    c.whoosh(0.45, 0.6, (500, 2500), 1500, 0.4)
+    c.bubbles(0.5, 0.5, 8, (400, 1400), 0.3)
+    c.bell(0.6, 1318, 1.0, 0.25, decay=0.5)
+
+
+@cry("akaei", "ズゥゥン……", "Zuuuun...")
+def _(c):
+    c.thump(0.0, (70, 32), 0.9, 0.9, 0.2)
+    c.rumble(0.05, 1.4, 0.45, 40)
+    c.voice(0.2, 1.0, [(0, 66), (1, 52)], "oon", tilt=1.3, attack=0.2, release=0.4, gain=0.6)
+
+
+@cry("bake_kujira", "ボオォォォ……", "Booooooh...")
+def _(c):
+    c.voice(0.0, 1.8, [(0, 90), (0.3, 140), (0.6, 110), (1, 70)], "ooou", tilt=1.2, vib=(2, 0.04), attack=0.25, release=0.5)
+    c.rattle(0.9, 0.5, 12, 0.3)  # 骨の鳴る音
+    c.echo = 0.3
+
+
+@cry("ayakashi", "あやかしぃぃ……", "Ayakashiii...")
+def _(c):
+    c.syllables(0.0, [(0.18, (180, 190), "a"), (0.16, (190, 200), "ia"), (0.16, (200, 210), "a")], gap=0.04, tilt=1.1, rough=0.35, drive=0.3)
+    c.voice(0.6, 1.4, [(0, 210), (0.5, 240), (1, 150)], "ii", tilt=1.1, breath=0.3, vib=(4, 0.03), rough=0.3, release=0.5)
+    c.whoosh(0.0, 2.0, (150, 700, 200), 600, 0.35)
+    c.bell(1.5, 147, 2.4, 0.4, decay=1.2)
+    c.echo = 0.3
+
+
 def auto_recipe(c, d):
     """レシピの無い魚(新しく足した魚)の鳴き声。体の形・目・レア度から作る"""
-    base = {"koi": 700, "catfish": 220, "puffer": 450, "eel": 380, "angler": 300, "ray": 260}[d["shape"]]
+    base = {"koi": 700, "catfish": 220, "puffer": 450, "eel": 380, "angler": 300, "ray": 260, "shark": 200, "orca": 330, "salmon": 260, "salamander": 120, "whale": 110}.get(d["shape"], 400)
     base *= (1.0 / max(0.5, d.get("visualScale", 1))) ** 0.5
-    vowel = {"koi": "iu", "catfish": "uo", "puffer": "uu", "eel": "ion", "angler": "ea", "ray": "ou"}[d["shape"]]
+    vowel = {"koi": "iu", "catfish": "uo", "puffer": "uu", "eel": "ion", "angler": "ea", "ray": "ou", "shark": "ao", "orca": "ia", "salmon": "oa", "salamander": "ou", "whale": "oou"}.get(d["shape"], "a")
     eyes = d.get("eyes") or "normal"
     dur = 0.4 + 0.12 * RARITY_ORDER[d["rarity"]]
     if eyes == "angry":

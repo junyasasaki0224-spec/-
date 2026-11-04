@@ -169,6 +169,9 @@ return {
 	shape_ray = "鱏",
 	shape_shark = "鮫",
 	shape_orca = "鯱",
+	shape_salmon = "鮭",
+	shape_salamander = "山椒魚",
+	shape_whale = "鯨",
 
 	-- デイリー
 	daily_title = "毎日のごほうび",
@@ -214,6 +217,7 @@ return {
 	notify_purchase_thanks = "ご購入ありがとうございます!",
 	notify_weather = "天気が「{weather}」になった",
 	notify_travel_locked = "まだ行けない",
+	notify_travel_need = "{spot}は 竿{rod} と {coins}小判 で開く(お店の「釣り場」)",
 
 	-- 設定
 	settings_title = "設定",
@@ -229,6 +233,8 @@ return {
 	sign_ranking = "ランキング",
 	sign_torii_village = "釣り村へ",
 	sign_torii_swamp = "沼へ",
+	sign_torii_river = "川へ",
+	sign_torii_sea = "海へ",
 	sign_my_hut = "釣り小屋",
 	prompt_open = "開く",
 	prompt_travel = "移動する",
@@ -314,6 +320,8 @@ return {
 	help_nushi = "🐲 毎時30分、村の湖に「ぬし」が出る。みんなで巻いて釣り上げると褒美",
 	help_time = "🌙 20分で1日、10分ごとに天気が変わる。雨の夜にしか出ない秘伝の魚も…",
 	title_lake_master = "湖の名人",
+	title_river_master = "川の名人",
+	title_sea_master = "海の名人",
 	hud_social = "なかま",
 	title_raid_master = "ボス退治の名人",
 	pvp_target_closed = "相手は今、対戦の申し込みを受け付けていません",

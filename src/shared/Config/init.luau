@@ -66,6 +66,9 @@ local SHAPES = {
 	ray = true,
 	shark = true,
 	orca = true,
+	salmon = true,
+	salamander = true,
+	whale = true,
 }
 local PATTERNS = {
 	plain = true,

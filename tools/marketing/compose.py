@@ -16,7 +16,8 @@ FONT_DIR = os.path.join(HERE, "fonts")
 FALLBACK = "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf"
 
 TEXTS = {
-    "thumb_collection": "50種の妖怪魚を釣って、図鑑をうめよう",
+    "thumb_collection": "91種の妖怪魚を釣って、図鑑をうめよう",
+    "thumb_sea": "海には、鮫・鯱・鯨の大物がいる",
     "thumb_attack": "釣った妖怪で、水の中のバトル",
     "thumb_boss": "最大4人で、ボスの大鯰に挑め",
 }

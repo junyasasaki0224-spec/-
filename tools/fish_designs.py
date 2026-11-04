@@ -113,6 +113,156 @@ LAKE = [
          jaDesc="霧の夜、湖に映った月から生まれるという鯱。", enDesc="Said to be born from the moon's reflection on foggy nights."),
 ]
 
+
+# ---- 川(20種) ----
+# 山あいの清流。鮎・山女魚・岩魚・鰍・鮭など川の魚に、川の妖怪(小豆洗い・川赤子・川獺・橋姫・川熊・河童・水虎)を重ねる。
+# 川の強キャラは、鮫や鯱(海のもの)ではなく川の大物: 幻の伊富魚・大はんざき(大山椒魚)・鮭の大助
+RIVER = [
+    # 並
+    dict(id="azukiarai_haze", ja="小豆洗い鯊", en="Azuki-Washer Goby", element="earth", rarity="common", time="any", weather="any", kg=[0.1, 0.6], shape="catfish",
+         c1="#B89A74", c2="#7A2E2A", c3="#E8D8B8", pattern="spots", eyes="cute", mouth="smile", body=[0.95, 0.9, 0.95], size=0.75, deco=[],
+         jaDesc="川辺で「しょきしょき」と、小豆を洗うような音を立てる鯊。", enDesc="A goby that makes a sound like azuki beans being washed by the river."),
+    dict(id="seoto_ayu", ja="瀬音鮎", en="Rapids Ayu", element="water", rarity="common", time="day", weather="any", kg=[0.1, 0.5], shape="koi",
+         c1="#8FA66B", c2="#F0E6A0", c3="#F2C94C", pattern="gradient", eyes="normal", mouth="small", body=[0.82, 0.88, 1.15], size=0.8, deco=[],
+         jaDesc="瀬の音に合わせて泳ぐ。焼くと西瓜のような香りがする。", enDesc="Swims to the sound of the rapids. Smells like watermelon when grilled."),
+    dict(id="koke_iwana", ja="苔岩魚", en="Moss Char", element="earth", rarity="common", time="any", weather="any", kg=[0.3, 1.5], shape="koi",
+         c1="#4E5E3A", c2="#E8E0B0", c3="#E07A3A", pattern="spots", eyes="sleepy", mouth="frown", body=[0.95, 0.95, 1.1], deco=[],
+         jaDesc="岩陰でじっとしているうちに、背中に苔が生えた。", enDesc="Sat so still under a rock that moss grew on its back."),
+    dict(id="sasabune_medaka", ja="笹舟目高", en="Leaf-Boat Medaka", element="water", rarity="common", time="day", weather="sunny", kg=[0.05, 0.3], shape="koi",
+         c1="#F2E6C8", c2="#7DBE5A", c3="#4C8C3A", pattern="belly", eyes="cute", mouth="o", body=[0.85, 0.9, 1.0], size=0.65, deco=["leaf"],
+         jaDesc="子どもが流した笹舟に乗って、川を下ってきた。", enDesc="Rode down the river on a bamboo-leaf boat a child set afloat."),
+    dict(id="ishinage_kajika", ja="石投げ鰍", en="Stone-Toss Sculpin", element="earth", rarity="common", time="night", weather="any", kg=[0.1, 0.8], shape="catfish",
+         c1="#6E6A62", c2="#3E3A34", c3="#C9B48A", pattern="patches", eyes="angry", mouth="wide", body=[1.05, 0.8, 0.9], size=0.8, deco=[],
+         jaDesc="夜の川原で、どぼんと石を投げこむ音の正体。", enDesc="The source of that splash, as if someone tossed a stone into the night river."),
+    # 上
+    dict(id="yamanba_yamame", ja="山姥山女魚", en="Mountain-Hag Yamame", element="earth", rarity="uncommon", time="any", weather="any", kg=[0.3, 1.5], shape="koi",
+         c1="#A7A9B8", c2="#4A4E6A", c3="#F2EEE6", pattern="patches", eyes="angry", mouth="grin", body=[0.9, 0.95, 1.1], deco=["hair"],
+         jaDesc="山奥の渓流に住む。白い乱れ髪をなびかせ、近づく者をにらむ。", enDesc="Lives in remote mountain streams, glaring at intruders through wild white hair."),
+    dict(id="kawaakago_namazu", ja="川赤子鯰", en="River-Baby Catfish", element="spirit", rarity="uncommon", time="night", weather="any", kg=[0.5, 2.5], shape="catfish",
+         c1="#F2A7A0", c2="#FFE3DA", c3="#D96B6B", pattern="belly", eyes="cute", mouth="open", body=[0.95, 0.95, 0.9], deco=["blush", "whiskers"],
+         jaDesc="夜の川から赤ん坊の泣き声。近づくと、泣いていたのは鯰だった。", enDesc="A baby crying from the night river... it turned out to be a catfish."),
+    dict(id="kawauso_haze", ja="川獺鯊", en="River-Otter Goby", element="earth", rarity="uncommon", time="day", weather="any", kg=[0.3, 1.2], shape="catfish",
+         c1="#8A5A3A", c2="#E8D2B0", c3="#4A3020", pattern="belly", eyes="cute", mouth="smile", size=0.85, deco=["ears", "hat", "whiskers"],
+         jaDesc="笠をかぶって子どもに化けるのが得意。「誰だ」と聞くと「おら」と答える。", enDesc="Loves disguising itself as a child in a straw hat. Ask who it is and it says \"Me.\""),
+    dict(id="hashihime_ayu", ja="橋姫鮎", en="Bridge-Princess Ayu", element="spirit", rarity="uncommon", time="night", weather="any", kg=[0.2, 0.8], shape="koi",
+         c1="#E8D8E8", c2="#B07AB0", c3="#6A3A6A", pattern="gradient", eyes="sleepy", mouth="small", body=[0.85, 0.9, 1.1], deco=["kanzashi", "hair"],
+         jaDesc="古い橋の下に住む。橋の上でほかの川をほめると機嫌が悪くなる。", enDesc="Lives under an old bridge. Praise another river while standing on it and it sulks."),
+    # 特上
+    dict(id="shirohebi_unagi", ja="白蛇鰻", en="White Serpent Eel", element="water", rarity="rare", time="any", weather="any", kg=[1.0, 4.0], shape="eel",
+         c1="#F4F2EC", c2="#E8E0D0", c3="#E8485A", pattern="belly", eyes="normal", mouth="tongue", deco=["shimenawa"],
+         jaDesc="川の神の使い。見た者にはお金が貯まるという。", enDesc="Messenger of the river god. Whoever sees it will grow rich, they say."),
+    dict(id="kawatengu_yamame", ja="川天狗山女魚", en="River-Tengu Yamame", element="thunder", rarity="rare", time="any", weather="thunder", kg=[1.0, 4.0], shape="koi",
+         c1="#C0392B", c2="#F2D0A4", c3="#2B2222", pattern="patches", eyes="angry", mouth="frown", deco=["nose", "crest"],
+         jaDesc="雷が鳴ると川へ下りてくる天狗の山女魚。網を破るいたずら者。", enDesc="Comes down to the river when thunder rolls. A tengu prankster that tears nets."),
+    dict(id="kawaguma_namazu", ja="川熊鯰", en="River-Bear Catfish", element="earth", rarity="rare", time="night", weather="any", kg=[3.0, 10.0], shape="catfish",
+         c1="#4A3626", c2="#7A5A40", c3="#E8D2B0", pattern="belly", eyes="angry", mouth="fangs", body=[1.15, 1.05, 1.05], deco=["ears", "whiskers"],
+         jaDesc="毛むくじゃらの腕で、舟から刀を奪っていく川の熊の妖怪。", enDesc="A river-bear yokai that snatches swords from boats with a hairy arm."),
+    dict(id="ikada_ei", ja="筏鱏", en="Raft Ray", element="earth", rarity="rare", time="any", weather="rain", kg=[2.0, 8.0], shape="ray",
+         c1="#A07A4A", c2="#6A4A2A", c3="#E8C27A", pattern="stripes", eyes="dot", mouth="none", deco=["hat"],
+         jaDesc="雨で増えた川を、筏のふりをして下ってくる。上に乗ると怒る。", enDesc="Drifts down rain-swollen rivers pretending to be a raft. Gets angry if you stand on it."),
+    # 極
+    dict(id="kappa_oyabun", ja="河童の親分", en="Kappa Boss", element="water", rarity="epic", time="any", weather="any", kg=[5.0, 20.0], shape="puffer",
+         c1="#4F9A5A", c2="#E8D88A", c3="#2E5A34", pattern="belly", eyes="angry", mouth="beak", body=[1.15, 1.05, 1.05], deco=["crown", "smooth"],
+         jaDesc="川の河童をたばねる親分。頭の皿の水が減ると、急におとなしくなる。", enDesc="Boss of the river kappa. Goes quiet when the water in its head dish runs low."),
+    dict(id="kawahime_koi", ja="川姫鯉", en="River-Princess Koi", element="spirit", rarity="epic", time="night", weather="fog", kg=[2.0, 8.0], shape="koi",
+         c1="#F4F0FA", c2="#9FB8E8", c3="#E86A9A", pattern="gradient", eyes="sleepy", mouth="smile", tails=3, deco=["hair", "frills", "kanzashi"],
+         jaDesc="霧の夜の川辺に現れる美しい鯉。見とれていると、精を吸われるという。", enDesc="A beautiful koi of foggy riversides. Stare too long and it drains your spirit."),
+    dict(id="toryu_koi", ja="登竜鯉", en="Dragon-Climb Koi", element="thunder", rarity="epic", time="morning", weather="any", kg=[3.0, 12.0], shape="koi",
+         c1="#FFB547", c2="#E8483B", c3="#FFE9A3", pattern="patches", eyes="angry", mouth="small", body=[1.0, 1.05, 1.1], deco=["whiskers", "antlers"],
+         jaDesc="滝を登りきれば龍になれると信じて、毎朝跳び続ける鯉。", enDesc="Believes it will become a dragon if it climbs the falls, so it leaps every morning."),
+    # 伝説: 川の大物
+    dict(id="maboroshi_itou", ja="幻の伊富魚", en="Phantom Huchen", element="water", rarity="legendary", time="any", weather="any", kg=[20.0, 60.0], shape="salmon",
+         c1="#6A4A3A", c2="#C24A3A", c3="#E8D8B0", pattern="spots", eyes="angry", mouth="fangs", deco=[],
+         jaDesc="鹿をも飲みこむという、川の幻の大魚。見た者はほとんどいない。", enDesc="A phantom giant of the river said to swallow deer whole. Few have ever seen it."),
+    dict(id="suiko", ja="水虎", en="Suiko", element="thunder", rarity="legendary", time="night", weather="rain", kg=[10.0, 40.0], shape="catfish",
+         c1="#D98A2B", c2="#2A1A10", c3="#F2E6C8", pattern="stripes", eyes="angry", mouth="fangs", body=[1.2, 1.1, 1.15], deco=["crown", "horns"],
+         jaDesc="河童たちの長。虎のような縞と鱗を持ち、雨の夜に川を荒らす。", enDesc="Elder of all kappa. Tiger-striped and scaled, it ravages rivers on rainy nights."),
+    # 神話: 川の主
+    dict(id="o_hanzaki", ja="大はんざき", en="Great Hanzaki", element="earth", rarity="mythic", time="any", weather="any", kg=[50.0, 200.0], shape="salamander",
+         c1="#5A4A36", c2="#2E261C", c3="#C9B48A", pattern="spots", eyes="dot", mouth="wide", deco=["shimenawa"],
+         jaDesc="牛をも丸のみにしたという、川の主の大山椒魚。今は神として祀られている。", enDesc="The river lord, a giant salamander said to have swallowed a cow. Now worshipped as a god."),
+    # 秘伝
+    dict(id="sake_no_osuke", ja="鮭の大助", en="Osuke the Salmon King", element="water", rarity="secret", time="night", weather="any", kg=[60.0, 250.0], shape="salmon",
+         c1="#8A2A2A", c2="#E8C27A", c3="#FFE38A", pattern="gradient", eyes="angry", mouth="fangs", deco=["crest", "flame"],
+         jaDesc="年に一度の夜、「鮭の大助、今のぼる」と名乗りながら川を上る鮭の王。", enDesc="Once a year, on one night, the salmon king swims upriver announcing \"Osuke the salmon, coming up!\""),
+]
+
+# ---- 海(21種) ----
+# 岩の岬と砂浜、沖は外海。鯛・鰯・飛魚・鰹・鮪・太刀魚・河豚・鮟鱇に、海の妖怪(人魚・船幽霊・海和尚・共潜き・不知火)を重ねる。
+# 大きくてレアな魚は海の生きもの: 甚兵衛鮫・磯撫で(鮫)・金鯱(鯱)・赤えい(大鱏)・化け鯨(鯨)・あやかし(海の大蛇)
+SEA = [
+    # 並
+    dict(id="ebisu_dai", ja="恵比寿鯛", en="Ebisu Sea Bream", element="water", rarity="common", time="any", weather="any", kg=[0.5, 2.5], shape="koi",
+         c1="#E8485A", c2="#FFD0D6", c3="#FFD34D", pattern="belly", eyes="cute", mouth="smile", body=[1.15, 1.15, 0.9], deco=["blush"],
+         jaDesc="恵比寿さまが抱えていた鯛。釣れるとその日はいいことがある。", enDesc="The sea bream Ebisu holds. Catch one and your day goes well."),
+    dict(id="iwashi_kozo", ja="鰯小僧", en="Sardine Kid", element="water", rarity="common", time="any", weather="any", kg=[0.05, 0.3], shape="koi",
+         c1="#7FA8C8", c2="#E8F0F6", c3="#2E4A6A", pattern="belly", eyes="dot", mouth="o", body=[0.8, 0.85, 1.1], size=0.65, deco=["okappa"],
+         jaDesc="群れで泳ぐ小僧。一匹だけ釣れると、ちょっとさびしそう。", enDesc="A kid that swims in schools. Caught alone, it looks a little lonely."),
+    dict(id="kaze_tobiuo", ja="風切り飛魚", en="Wind-Cutter Flying Fish", element="thunder", rarity="common", time="day", weather="sunny", kg=[0.2, 0.8], shape="koi",
+         c1="#3A6AB8", c2="#E8F4FF", c3="#7CC6FF", pattern="belly", eyes="normal", mouth="small", body=[0.85, 0.85, 1.15], deco=["frills"],
+         jaDesc="晴れた日には、波の上を百歩も飛ぶ。", enDesc="On sunny days it glides a hundred paces over the waves."),
+    dict(id="hako_fugu", ja="箱河豚", en="Box Puffer", element="earth", rarity="common", time="day", weather="any", kg=[0.2, 1.0], shape="puffer",
+         c1="#F2C94C", c2="#2A2A2A", c3="#4A8AC8", pattern="spots", eyes="cute", mouth="o", body=[1.05, 1.0, 1.1], deco=["smooth"],
+         jaDesc="四角い体で、まじめに泳ぐ。箱の中身は誰も知らない。", enDesc="Swims earnestly in its boxy body. No one knows what's inside the box."),
+    dict(id="kage_tachiuo", ja="影太刀魚", en="Shadow Cutlassfish", element="spirit", rarity="common", time="night", weather="any", kg=[0.3, 1.5], shape="eel",
+         c1="#D8E0E8", c2="#A0B0C0", c3="#3A4A5A", pattern="gradient", eyes="normal", mouth="fangs", body=[0.85, 1.0, 1.1], deco=[],
+         jaDesc="月の夜、刀のように立って泳ぐ。影を斬られると眠くなる。", enDesc="Swims upright like a sword on moonlit nights. If it cuts your shadow, you get sleepy."),
+    # 上
+    dict(id="kaminari_katsuo", ja="雷鰹", en="Thunder Bonito", element="thunder", rarity="uncommon", time="any", weather="any", kg=[1.0, 4.0], shape="koi",
+         c1="#2E4A7A", c2="#E8EEF6", c3="#FFD84A", pattern="stripes", eyes="angry", mouth="small", body=[1.0, 1.0, 1.1], deco=[],
+         jaDesc="雷のような速さで泳ぎ、止まると息ができない。", enDesc="Swims as fast as lightning, and can't breathe if it stops."),
+    dict(id="ningyo", ja="人魚", en="Ningyo", element="spirit", rarity="uncommon", time="night", weather="any", kg=[1.0, 4.0], shape="koi",
+         c1="#F2D8C8", c2="#7AB8C8", c3="#E86A8A", pattern="gradient", eyes="cute", mouth="smile", deco=["hair", "blush"],
+         jaDesc="人の顔を持つ魚。その肉を食べると八百年生きるという。", enDesc="A fish with a human face. Eating its flesh is said to grant 800 years of life."),
+    dict(id="funayurei_ei", ja="船幽霊鱏", en="Ship-Ghost Ray", element="spirit", rarity="uncommon", time="any", weather="fog", kg=[1.0, 4.0], shape="ray",
+         c1="#DCE6EE", c2="#A8B8C8", c3="#5A6A8A", pattern="belly", eyes="glow", mouth="open", deco=["glow"],
+         jaDesc="霧の海で「柄杓を貸せ」とささやく。底の抜けた柄杓を渡すとよい。", enDesc="Whispers \"lend me a ladle\" in the sea fog. Hand it one with no bottom."),
+    dict(id="umi_osho", ja="海和尚", en="Sea Monk", element="water", rarity="uncommon", time="any", weather="rain", kg=[2.0, 6.0], shape="puffer",
+         c1="#6A7A5A", c2="#C8B890", c3="#3A4A2A", pattern="belly", eyes="sleepy", mouth="small", deco=["bighead", "beard", "smooth"],
+         jaDesc="坊主頭の海の妖怪。雨の日に網にかかり、涙を流して逃がしてもらう。", enDesc="A bald-headed sea yokai. Caught in nets on rainy days, it weeps until released."),
+    # 特上
+    dict(id="maguro_daimyo", ja="鮪大名", en="Tuna Daimyo", element="water", rarity="rare", time="any", weather="any", kg=[8.0, 30.0], shape="koi",
+         c1="#1E2A4A", c2="#C8D0E0", c3="#FFD34D", pattern="belly", eyes="angry", mouth="frown", body=[1.15, 1.15, 1.15], deco=["crest"],
+         jaDesc="大海原を大名行列で渡っていく、鮪の殿さま。", enDesc="A tuna lord making its grand procession across the ocean."),
+    dict(id="kurage_anko", ja="海月鮟鱇", en="Jellyfish Angler", element="fire", rarity="rare", time="night", weather="any", kg=[2.0, 8.0], shape="angler",
+         c1="#2A1E3A", c2="#8AE8FF", c3="#E8F8FF", pattern="spots", eyes="glow", mouth="grin", deco=["lantern", "glow"],
+         jaDesc="深い海で、海月のような灯りをゆらして獲物を誘う。", enDesc="In the deep sea it sways a jellyfish-like light to lure prey."),
+    dict(id="tomokazuki", ja="共潜き", en="Tomokazuki", element="spirit", rarity="rare", time="any", weather="fog", kg=[2.0, 6.0], shape="koi",
+         c1="#E8E0D0", c2="#3A3A4A", c3="#8AB8C8", pattern="patches", eyes="dot", mouth="smile", deco=["hair"],
+         jaDesc="霧の海に潜ると、もう一人の自分が手招きする。それがこの魚だ。", enDesc="Dive in a foggy sea and a second you beckons. That's this fish."),
+    dict(id="shima_umihebi", ja="縞海蛇", en="Banded Sea Snake", element="earth", rarity="rare", time="any", weather="rain", kg=[1.0, 5.0], shape="eel",
+         c1="#2A2A3A", c2="#D8E0F0", c3="#4A8AC8", pattern="stripes", eyes="angry", mouth="tongue", deco=[],
+         jaDesc="白と黒の縞の海蛇。雨の日に浜へ上がってくる。", enDesc="A black-and-white banded sea snake that comes ashore on rainy days."),
+    # 極
+    dict(id="jinbe_zame", ja="甚兵衛鮫", en="Jinbe Whale Shark", element="water", rarity="epic", time="any", weather="any", kg=[40.0, 150.0], shape="shark",
+         c1="#2E4A6A", c2="#E8F0F6", c3="#9FC6D6", pattern="spots", eyes="sleepy", mouth="smile", body=[1.15, 1.05, 1.15], size=1.1, deco=[],
+         jaDesc="海でいちばん大きな魚。のんびり屋で、人なつっこい。", enDesc="The biggest fish in the sea. Laid-back and friendly."),
+    dict(id="shiranui_ei", ja="不知火鱏", en="Shiranui Ray", element="fire", rarity="epic", time="night", weather="any", kg=[10.0, 40.0], shape="ray",
+         c1="#3A1A2A", c2="#FF7A2E", c3="#FFD34D", pattern="spots", eyes="glow", mouth="none", deco=["flame", "glow"],
+         jaDesc="夜の海に並んで灯る怪しい火。その正体は、光る鱏の群れだった。", enDesc="Mysterious fires lined up on the night sea... they were glowing rays."),
+    dict(id="ryugu_tsukai", ja="竜宮の使い", en="Oarfish", element="spirit", rarity="epic", time="any", weather="fog", kg=[10.0, 50.0], shape="eel",
+         c1="#E8ECF2", c2="#9FB0C8", c3="#E8485A", pattern="belly", eyes="normal", mouth="small", body=[0.9, 1.1, 1.3], deco=["mane"],
+         jaDesc="竜宮から地上へ知らせを運ぶ使い。赤いたてがみが目印。", enDesc="A messenger carrying news from the Dragon Palace. Known by its red mane."),
+    # 伝説: 海の大物
+    dict(id="isonade", ja="磯撫で", en="Isonade", element="water", rarity="legendary", time="any", weather="any", kg=[80.0, 300.0], shape="shark",
+         c1="#3A4A5A", c2="#C8D0D8", c3="#E8F0F6", pattern="belly", eyes="angry", mouth="jaws", size=1.1, deco=["frills"],
+         jaDesc="尾びれの針で、船の人をなでるように引きこむ北の海の大鮫。", enDesc="A great shark of the northern seas that snags sailors with the barbs on its tail."),
+    dict(id="kin_shachi", ja="金鯱", en="Golden Shachihoko", element="water", rarity="legendary", time="day", weather="sunny", kg=[50.0, 200.0], shape="orca",
+         c1="#E8A92A", c2="#FFF0C0", c3="#FFE38A", pattern="orca", eyes="angry", mouth="fangs", deco=["ears", "crest"],
+         jaDesc="城の屋根から海へ帰ってきた金の鯱。火を消す水を吹く。", enDesc="A golden shachihoko returned to the sea from a castle roof. It spouts water that douses fire."),
+    dict(id="akaei", ja="赤えい", en="Akaei", element="earth", rarity="legendary", time="any", weather="fog", kg=[100.0, 500.0], shape="ray",
+         c1="#A83A2A", c2="#E8A07A", c3="#F2D8B0", pattern="spots", eyes="sleepy", mouth="none", size=1.25, deco=["leaf"],
+         jaDesc="背中に砂がつもり、島とまちがえて船が着いたという巨大な鱏。", enDesc="A ray so huge that sand piled on its back and sailors landed on it, mistaking it for an island."),
+    # 神話: 海の主
+    dict(id="bake_kujira", ja="化け鯨", en="Bake-Kujira", element="spirit", rarity="mythic", time="any", weather="any", kg=[300.0, 1500.0], shape="whale",
+         c1="#DCE2E8", c2="#55657A", c3="#8AE8FF", pattern="ribs", eyes="glow", mouth="none", size=1.2, deco=["glow"],
+         jaDesc="骨だけになっても海を泳ぎ続ける白い鯨。怪しい鳥と魚を連れている。", enDesc="A white whale that keeps swimming even as bare bones, trailed by eerie birds and fish."),
+    # 秘伝
+    dict(id="ayakashi", ja="あやかし", en="Ayakashi", element="spirit", rarity="secret", time="night", weather="fog", kg=[500.0, 3000.0], shape="eel",
+         c1="#2A1E4A", c2="#6AE8C8", c3="#FFD34D", pattern="gradient", eyes="glow", mouth="fangs", body=[1.15, 1.15, 1.2], size=1.2, deco=["mane", "horns", "glow"],
+         jaDesc="船の横を通り過ぎるのに何日もかかるほど長い、海の大妖怪。あやかし釣りの名の由来。", enDesc="A sea yokai so long it takes days to pass a ship. The legend this game is named after."),
+]
+
 LOOK_KEYS = ["shape", "c1", "c2", "c3", "pattern", "eyes", "mouth", "body", "tails", "deco", "size"]
 
 def lua_val(v):
@@ -144,7 +294,7 @@ HEADER = """--!strict
 --   time    : any / day / night / morning(朝。昼にも含まれる)
 --   weather : any / sunny / rain / fog / thunder
 --   kg      : 重さの範囲 {{ 最小, 最大 }}
---   shape   : koi(鯉) / catfish(鯰) / puffer(河豚) / eel(鰻) / angler(提灯) / ray(鱏) / shark(鮫) / orca(鯱)
+--   shape   : koi(鯉) / catfish(鯰) / puffer(河豚) / eel(鰻) / angler(提灯) / ray(鱏) / shark(鮫) / orca(鯱) / salmon(鮭) / salamander(山椒魚) / whale(鯨)
 --   c1, c2, c3 : 色(体, 模様, 差し色)
 --   pattern : plain / stripes / spots / belly / patches / saddle / gradient / ribs / dango / orca(鯱の白黒)
 --   eyes    : normal / cute / angry / sleepy / big(一つ目) / cat / glow / dot / none
@@ -185,7 +335,11 @@ def main():
         HEADER.format(title="沼の妖怪魚(30種)", rows="\n".join(row(f) for f in swamp)))
     open(os.path.join(ROOT, "src/shared/Config/Fish/NushiLake.luau"), "w").write(
         HEADER.format(title="ぬしの湖の妖怪魚(20種)", rows="\n".join(row(f) for f in LAKE)))
-    print("wrote", len(swamp), "+", len(LAKE))
+    open(os.path.join(ROOT, "src/shared/Config/Fish/River.luau"), "w").write(
+        HEADER.format(title=f"川の妖怪魚({len(RIVER)}種)", rows="\n".join(row(f) for f in RIVER)))
+    open(os.path.join(ROOT, "src/shared/Config/Fish/Sea.luau"), "w").write(
+        HEADER.format(title=f"海の妖怪魚({len(SEA)}種)", rows="\n".join(row(f) for f in SEA)))
+    print("wrote", len(swamp), "+", len(LAKE), "+", len(RIVER), "+", len(SEA))
 
 if __name__ == "__main__":
     main()

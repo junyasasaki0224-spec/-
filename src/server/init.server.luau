@@ -25,6 +25,8 @@ Remotes.setupServer()
 -- 3) ワールド(地形・建物・光)
 require(script.World.Lighting).setup()
 require(script.World.Swamp).build()
+require(script.World.River).build()
+require(script.World.Sea).build()
 require(script.World.Village).build()
 
 -- 4) サービス

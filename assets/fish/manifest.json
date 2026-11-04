@@ -1,4 +1,12 @@
 {
+ "akaei": {
+  "length": 2.7972,
+  "width": 2.804,
+  "height": 1.0974,
+  "tris": 14682,
+  "outlineTris": 7340,
+  "sourceTris": 126528
+ },
  "akaname_namazu": {
   "length": 2.8767,
   "width": 1.9612,
@@ -23,6 +31,22 @@
   "outlineTris": 7368,
   "sourceTris": 97044
  },
+ "ayakashi": {
+  "length": 4.7218,
+  "width": 2.1346,
+  "height": 1.2834,
+  "tris": 14738,
+  "outlineTris": 7368,
+  "sourceTris": 120748
+ },
+ "azukiarai_haze": {
+  "length": 2.5724,
+  "width": 1.3213,
+  "height": 0.8316,
+  "tris": 14716,
+  "outlineTris": 7358,
+  "sourceTris": 120088
+ },
  "bake_fugu": {
   "length": 2.1505,
   "width": 1.5759,
@@ -30,6 +54,14 @@
   "tris": 14730,
   "outlineTris": 7364,
   "sourceTris": 147988
+ },
+ "bake_kujira": {
+  "length": 3.3,
+  "width": 2.4871,
+  "height": 1.9655,
+  "tris": 14730,
+  "outlineTris": 7364,
+  "sourceTris": 185816
  },
  "chochin_anko": {
   "length": 2.6211,
@@ -55,6 +87,14 @@
   "outlineTris": 7342,
   "sourceTris": 103292
  },
+ "ebisu_dai": {
+  "length": 2.4637,
+  "width": 1.2741,
+  "height": 1.3188,
+  "tris": 14736,
+  "outlineTris": 7368,
+  "sourceTris": 107988
+ },
  "fujin_ei": {
   "length": 2.8321,
   "width": 2.8061,
@@ -62,6 +102,14 @@
   "tris": 14706,
   "outlineTris": 7352,
   "sourceTris": 129264
+ },
+ "funayurei_ei": {
+  "length": 2.83,
+  "width": 2.8056,
+  "height": 0.6724,
+  "tris": 14640,
+  "outlineTris": 7320,
+  "sourceTris": 119332
  },
  "furin_kingyo": {
   "length": 2.2906,
@@ -86,6 +134,22 @@
   "tris": 14746,
   "outlineTris": 7372,
   "sourceTris": 165608
+ },
+ "hako_fugu": {
+  "length": 2.2745,
+  "width": 1.6189,
+  "height": 1.482,
+  "tris": 14712,
+  "outlineTris": 7356,
+  "sourceTris": 136252
+ },
+ "hashihime_ayu": {
+  "length": 2.887,
+  "width": 1.0597,
+  "height": 1.2569,
+  "tris": 14760,
+  "outlineTris": 7380,
+  "sourceTris": 114248
  },
  "hasu_koi": {
   "length": 2.6587,
@@ -119,6 +183,30 @@
   "outlineTris": 7380,
   "sourceTris": 185444
  },
+ "ikada_ei": {
+  "length": 3.012,
+  "width": 2.804,
+  "height": 1.1649,
+  "tris": 14606,
+  "outlineTris": 7302,
+  "sourceTris": 112156
+ },
+ "ishinage_kajika": {
+  "length": 2.4576,
+  "width": 1.4173,
+  "height": 0.7764,
+  "tris": 14720,
+  "outlineTris": 7360,
+  "sourceTris": 101072
+ },
+ "isonade": {
+  "length": 3.1313,
+  "width": 1.8723,
+  "height": 1.5539,
+  "tris": 14784,
+  "outlineTris": 7392,
+  "sourceTris": 163116
+ },
  "ittan_ei": {
   "length": 4.1331,
   "width": 2.8051,
@@ -126,6 +214,38 @@
   "tris": 14624,
   "outlineTris": 7312,
   "sourceTris": 115784
+ },
+ "iwashi_kozo": {
+  "length": 2.8615,
+  "width": 1.0109,
+  "height": 1.1131,
+  "tris": 14752,
+  "outlineTris": 7376,
+  "sourceTris": 95464
+ },
+ "jinbe_zame": {
+  "length": 3.5246,
+  "width": 1.6603,
+  "height": 1.5734,
+  "tris": 14754,
+  "outlineTris": 7376,
+  "sourceTris": 150520
+ },
+ "kage_tachiuo": {
+  "length": 4.2213,
+  "width": 0.9193,
+  "height": 0.6522,
+  "tris": 14748,
+  "outlineTris": 7374,
+  "sourceTris": 100200
+ },
+ "kaminari_katsuo": {
+  "length": 2.8973,
+  "width": 1.1759,
+  "height": 1.2175,
+  "tris": 14742,
+  "outlineTris": 7370,
+  "sourceTris": 113796
  },
  "kappa_haze": {
   "length": 2.3482,
@@ -143,6 +263,14 @@
   "outlineTris": 7370,
   "sourceTris": 124816
  },
+ "kappa_oyabun": {
+  "length": 2.5297,
+  "width": 1.778,
+  "height": 1.5861,
+  "tris": 14756,
+  "outlineTris": 7378,
+  "sourceTris": 138340
+ },
  "karakasa_fugu": {
   "length": 2.3785,
   "width": 1.9829,
@@ -159,6 +287,30 @@
   "outlineTris": 7378,
   "sourceTris": 143756
  },
+ "kawaakago_namazu": {
+  "length": 2.6032,
+  "width": 1.9389,
+  "height": 0.925,
+  "tris": 14750,
+  "outlineTris": 7374,
+  "sourceTris": 122628
+ },
+ "kawaguma_namazu": {
+  "length": 2.9441,
+  "width": 2.0258,
+  "height": 1.0098,
+  "tris": 14734,
+  "outlineTris": 7366,
+  "sourceTris": 122864
+ },
+ "kawahime_koi": {
+  "length": 2.7766,
+  "width": 1.6307,
+  "height": 1.3154,
+  "tris": 14784,
+  "outlineTris": 7392,
+  "sourceTris": 142084
+ },
  "kawara_ei": {
   "length": 2.7937,
   "width": 2.8056,
@@ -166,6 +318,38 @@
   "tris": 14588,
   "outlineTris": 7294,
   "sourceTris": 109724
+ },
+ "kawatengu_yamame": {
+  "length": 3.2407,
+  "width": 1.1905,
+  "height": 1.3022,
+  "tris": 14794,
+  "outlineTris": 7396,
+  "sourceTris": 131060
+ },
+ "kawauso_haze": {
+  "length": 2.9324,
+  "width": 1.959,
+  "height": 1.3533,
+  "tris": 14728,
+  "outlineTris": 7364,
+  "sourceTris": 133548
+ },
+ "kaze_tobiuo": {
+  "length": 2.9698,
+  "width": 1.4381,
+  "height": 1.1131,
+  "tris": 14726,
+  "outlineTris": 7362,
+  "sourceTris": 94352
+ },
+ "kin_shachi": {
+  "length": 2.9415,
+  "width": 1.4727,
+  "height": 1.9326,
+  "tris": 14742,
+  "outlineTris": 7370,
+  "sourceTris": 173392
  },
  "kingyo_hime": {
   "length": 2.4684,
@@ -215,6 +399,14 @@
   "outlineTris": 7358,
   "sourceTris": 99848
  },
+ "koke_iwana": {
+  "length": 2.878,
+  "width": 1.1237,
+  "height": 1.1531,
+  "tris": 14758,
+  "outlineTris": 7378,
+  "sourceTris": 111512
+ },
  "komainu_koi": {
   "length": 2.61,
   "width": 1.2246,
@@ -222,6 +414,14 @@
   "tris": 14732,
   "outlineTris": 7366,
   "sourceTris": 128396
+ },
+ "kurage_anko": {
+  "length": 2.6211,
+  "width": 1.5265,
+  "height": 1.5998,
+  "tris": 14774,
+  "outlineTris": 7386,
+  "sourceTris": 158476
  },
  "kyubi_koi": {
   "length": 3.5466,
@@ -231,6 +431,22 @@
   "outlineTris": 7378,
   "sourceTris": 186220
  },
+ "maboroshi_itou": {
+  "length": 3.4001,
+  "width": 1.0718,
+  "height": 1.442,
+  "tris": 14720,
+  "outlineTris": 7360,
+  "sourceTris": 154840
+ },
+ "maguro_daimyo": {
+  "length": 3.0384,
+  "width": 1.3033,
+  "height": 1.4235,
+  "tris": 14784,
+  "outlineTris": 7392,
+  "sourceTris": 129844
+ },
  "nekomata_koi": {
   "length": 2.5978,
   "width": 1.1905,
@@ -238,6 +454,14 @@
   "tris": 14782,
   "outlineTris": 7390,
   "sourceTris": 129004
+ },
+ "ningyo": {
+  "length": 2.6925,
+  "width": 1.1759,
+  "height": 1.2175,
+  "tris": 14784,
+  "outlineTris": 7392,
+  "sourceTris": 128192
  },
  "nopperabo": {
   "length": 2.7768,
@@ -279,6 +503,14 @@
   "outlineTris": 7374,
   "sourceTris": 123328
  },
+ "o_hanzaki": {
+  "length": 3.3245,
+  "width": 1.7903,
+  "height": 1.9847,
+  "tris": 14704,
+  "outlineTris": 7352,
+  "sourceTris": 196232
+ },
  "oni_unagi": {
   "length": 3.9594,
   "width": 1.1394,
@@ -303,6 +535,14 @@
   "outlineTris": 7386,
   "sourceTris": 99472
  },
+ "ryugu_tsukai": {
+  "length": 4.976,
+  "width": 0.9932,
+  "height": 0.8895,
+  "tris": 14744,
+  "outlineTris": 7372,
+  "sourceTris": 93296
+ },
  "ryujin": {
   "length": 4.1542,
   "width": 1.7364,
@@ -310,6 +550,62 @@
   "tris": 14742,
   "outlineTris": 7370,
   "sourceTris": 131172
+ },
+ "sake_no_osuke": {
+  "length": 3.4543,
+  "width": 2.1346,
+  "height": 1.633,
+  "tris": 14794,
+  "outlineTris": 7396,
+  "sourceTris": 169688
+ },
+ "sasabune_medaka": {
+  "length": 2.6573,
+  "width": 1.0485,
+  "height": 1.3376,
+  "tris": 14748,
+  "outlineTris": 7374,
+  "sourceTris": 112408
+ },
+ "seoto_ayu": {
+  "length": 2.9693,
+  "width": 1.0259,
+  "height": 1.1251,
+  "tris": 14726,
+  "outlineTris": 7362,
+  "sourceTris": 94608
+ },
+ "shima_umihebi": {
+  "length": 4.1478,
+  "width": 1.0385,
+  "height": 0.7879,
+  "tris": 14752,
+  "outlineTris": 7376,
+  "sourceTris": 115096
+ },
+ "shiranui_ei": {
+  "length": 2.7932,
+  "width": 2.804,
+  "height": 0.7041,
+  "tris": 14656,
+  "outlineTris": 7328,
+  "sourceTris": 121396
+ },
+ "shirohebi_unagi": {
+  "length": 4.1478,
+  "width": 1.0385,
+  "height": 0.914,
+  "tris": 14774,
+  "outlineTris": 7386,
+  "sourceTris": 118960
+ },
+ "suiko": {
+  "length": 3.1078,
+  "width": 1.6158,
+  "height": 1.096,
+  "tris": 14720,
+  "outlineTris": 7360,
+  "sourceTris": 126756
  },
  "sunakake_dojo": {
   "length": 4.0599,
@@ -326,6 +622,22 @@
   "tris": 14698,
   "outlineTris": 7348,
   "sourceTris": 128732
+ },
+ "tomokazuki": {
+  "length": 2.7193,
+  "width": 1.1905,
+  "height": 1.2618,
+  "tris": 14732,
+  "outlineTris": 7366,
+  "sourceTris": 116472
+ },
+ "toryu_koi": {
+  "length": 3.088,
+  "width": 1.8626,
+  "height": 1.486,
+  "tris": 14748,
+  "outlineTris": 7374,
+  "sourceTris": 125724
  },
  "tsuchinoko_fugu": {
   "length": 2.958,
@@ -351,6 +663,14 @@
   "outlineTris": 7354,
   "sourceTris": 178596
  },
+ "umi_osho": {
+  "length": 2.1505,
+  "width": 1.5759,
+  "height": 1.7238,
+  "tris": 14746,
+  "outlineTris": 7372,
+  "sourceTris": 178996
+ },
  "umibozu_ei": {
   "length": 2.9425,
   "width": 1.4723,
@@ -366,6 +686,14 @@
   "tris": 14694,
   "outlineTris": 7346,
   "sourceTris": 127472
+ },
+ "yamanba_yamame": {
+  "length": 2.9063,
+  "width": 1.0973,
+  "height": 1.1828,
+  "tris": 14746,
+  "outlineTris": 7372,
+  "sourceTris": 117880
  },
  "yamata_chochin": {
   "length": 3.2968,

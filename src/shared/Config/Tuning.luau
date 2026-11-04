@@ -115,6 +115,8 @@ Tuning.Titles = {
 	"yokai_master",
 	"lake_master",
 	"raid_master",
+	"river_master",
+	"sea_master",
 }
 
 return Tuning

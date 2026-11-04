@@ -292,6 +292,29 @@ function M.build()
 		"sign_torii_swamp",
 		Color3.fromRGB(28, 22, 22)
 	)
+	-- 川・海への鳥居(沼の鳥居の両脇。まだ開いていない時は、押すと条件が出る)
+	for _, g in { { x = -26, to = "river" }, { x = 26, to = "sea" } } do
+		local p = at(g.x, 78)
+		local cf = CFrame.lookAt(p, Vector3.new(spawnPos.X, p.Y, spawnPos.Z))
+		Build.torii(root, cf, 0.85)
+		local side = Build.part({
+			name = "Gate",
+			size = Vector3.new(7, 9, 1),
+			cframe = cf * CFrame.new(0, 4.5, 0),
+			transparency = 1,
+			collide = false,
+			parent = root,
+		})
+		Build.prompt(side, "prompt_travel", "travel:" .. g.to, 14)
+		Build.sign(
+			root,
+			cf * CFrame.new(0, 10.4, -0.45),
+			Vector2.new(3.4, 1.4),
+			"sign_torii_" .. g.to,
+			Color3.fromRGB(28, 22, 22)
+		)
+		Terrain.paintPath(basin, { at(0, 80), p }, 5, Enum.Material.Cobblestone)
+	end
 
 	-- 湖の見物台(ぬし釣りの時はここに集まる)
 	Scenery.deck(deco, CFrame.new(center.X, center.Y + 1.4, center.Z + spot.water.rz + 1), 18, 12)

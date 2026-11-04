@@ -62,6 +62,19 @@ local Bosses: { Boss } = {
 		reward = { coins = 40000, bait = { id = "premium", amount = 3 } },
 		title = "raid_master",
 	},
+	{
+		id = "bake_kujira",
+		fish = "bake_kujira",
+		ja = "化け鯨",
+		en = "Bake-Kujira",
+		jaDesc = "骨だけの大鯨。泳いだあとには、怪しい鳥と魚の群れが渦を巻く。",
+		enDesc = "A giant whale of bare bones. Eerie birds and fish swirl in its wake.",
+		level = 50,
+		hpMult = 7,
+		atkMult = 1.3,
+		recommend = 45,
+		reward = { coins = 80000, bait = { id = "premium", amount = 5 } },
+	},
 }
 
 return Bosses

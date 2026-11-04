@@ -70,6 +70,19 @@ SCENES = {
             {"id": "raijin_namazu", "pos": (3.5, 5.0, 4.5), "heading": -1, "turn": 0.4, "length": 4.4},
         ],
     },
+    # 海の大物: 奥に化け鯨、まん中に磯撫で(鮫)と金鯱、手前に小さな恵比寿鯛(大きさの差が一目で分かる)
+    "thumb_sea": {
+        "size": (1920, 1080),
+        "camera": orbit((0, 9, 0), 0.0, 0.06, 28),
+        "fov": 48,
+        "focus": 24,
+        "fish": [
+            {"id": "bake_kujira", "pos": (5.5, 12.5, -9), "heading": -1, "turn": 0.3, "length": 17},
+            {"id": "isonade", "pos": (-8, 8.5, -1), "heading": 1, "turn": 0.45, "length": 9},
+            {"id": "kin_shachi", "pos": (9, 5.8, 2.5), "heading": -1, "turn": 0.5, "length": 7.5},
+            {"id": "ebisu_dai", "pos": (-1.5, 5.2, 6), "heading": 1, "turn": 0.6, "length": 2.6},
+        ],
+    },
 }
 
 

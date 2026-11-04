@@ -97,6 +97,34 @@ local SHAPES = {
 		eyes = "normal",
 		mouth = "smile",
 	},
+	-- 川の大物: 鮭(こぶと曲がったあご)、大山椒魚(平たい体に4本の足)/ 海の主: 鯨
+	salmon = {
+		body = Vector3.new(0.95, 1.05, 2.5),
+		stalk = 0.42,
+		tail = "forked",
+		tailSize = 1.15,
+		dorsal = "sail",
+		eyes = "normal",
+		mouth = "fangs",
+	},
+	salamander = {
+		body = Vector3.new(1.25, 0.6, 2.4),
+		stalk = 0.5,
+		tail = "fan",
+		tailSize = 0.8,
+		dorsal = "small",
+		eyes = "dot",
+		mouth = "wide",
+	},
+	whale = {
+		body = Vector3.new(1.25, 1.1, 2.7),
+		stalk = 0.36,
+		tail = "flukes",
+		tailSize = 1.45,
+		dorsal = "small",
+		eyes = "normal",
+		mouth = "smile",
+	},
 }
 
 -- レア度の格。上に行くほど大きく、派手になる
@@ -651,15 +679,57 @@ function FishBuilder.build(def: Types.FishDef, opts: BuildOptions?): Model
 			nil,
 			bodyMaterial
 		)
-	elseif def.shape == "orca" then
+	elseif def.shape == "orca" or def.shape == "whale" then
+		local k = if def.shape == "whale" then 0.95 else 0.86
 		part(
 			"Head",
-			Vector3.new(bodySize.X * 0.86, bodySize.Y * 0.84, bodySize.Z * 0.42),
+			Vector3.new(bodySize.X * k, bodySize.Y * 0.84, bodySize.Z * 0.42),
 			CFrame.new(0, half.Y * 0.02, -half.Z * 0.74),
 			c1,
 			nil,
 			bodyMaterial
 		)
+	elseif def.shape == "salmon" then
+		-- 背中のこぶと、上へ曲がった下あご
+		part(
+			"Hump",
+			Vector3.new(bodySize.X * 0.9, bodySize.Y * 0.7, bodySize.Z * 0.5),
+			CFrame.new(0, half.Y * 0.45, -half.Z * 0.05),
+			c1,
+			nil,
+			bodyMaterial
+		)
+		part(
+			"Jaw",
+			Vector3.new(bodySize.X * 0.3, bodySize.Y * 0.22, bodySize.Z * 0.18),
+			CFrame.new(0, -half.Y * 0.35, -half.Z * 0.95) * CFrame.Angles(math.rad(35), 0, 0),
+			c1,
+			nil,
+			bodyMaterial
+		)
+	elseif def.shape == "salamander" then
+		-- 平たく広い頭と、4本の短い足
+		part(
+			"Head",
+			Vector3.new(bodySize.X * 1.12, bodySize.Y * 0.9, bodySize.Z * 0.42),
+			CFrame.new(0, 0, -half.Z * 0.72),
+			c1,
+			nil,
+			bodyMaterial
+		)
+		for _, sx in { 1, -1 } do
+			for _, z in { -0.45, 0.4 } do
+				part(
+					"Leg",
+					Vector3.new(bodySize.X * 0.22, bodySize.Y * 0.35, bodySize.Z * 0.12),
+					CFrame.new(sx * half.X * 0.95, -half.Y * 0.55, half.Z * z)
+						* CFrame.Angles(0, 0, sx * math.rad(-35)),
+					c1:Lerp(INK, 0.08),
+					nil,
+					bodyMaterial
+				)
+			end
+		end
 	end
 	if has("bighead") then
 		-- ぬらりひょんのような大きな後頭部
@@ -1017,11 +1087,14 @@ function FishBuilder.build(def: Types.FishDef, opts: BuildOptions?): Model
 				"Y"
 			)
 		end
-	else
+	elseif def.shape ~= "salamander" then -- 山椒魚は胸びれの代わりに足(上で作った)
 		local frills = has("frills")
-		local bigFish = def.shape == "shark" or def.shape == "orca"
+		local bigFish = def.shape == "shark" or def.shape == "orca" or def.shape == "whale"
 		for _, s in { 1, -1 } do
-			local len = bodySize.Z * (if frills then 0.6 elseif bigFish then 0.32 else 0.24)
+			local len = bodySize.Z
+				* (
+					if frills then 0.6 elseif def.shape == "whale" then 0.45 elseif bigFish then 0.32 else 0.24
+				)
 			fin(
 				"PecFin",
 				Vector3.new(
@@ -1037,7 +1110,13 @@ function FishBuilder.build(def: Types.FishDef, opts: BuildOptions?): Model
 				if frills then accent else nil,
 				"Y"
 			)
-			if def.shape ~= "eel" and def.shape ~= "puffer" and def.shape ~= "orca" then
+			if
+				def.shape ~= "eel"
+				and def.shape ~= "puffer"
+				and def.shape ~= "orca"
+				and def.shape ~= "whale"
+				and def.shape ~= "salamander"
+			then
 				fin(
 					"PelvicFin",
 					Vector3.new(bodySize.X * 0.22, 0.05 * scale, bodySize.Z * 0.16),
@@ -1080,8 +1159,10 @@ function FishBuilder.build(def: Types.FishDef, opts: BuildOptions?): Model
 		frontZ = -half.Z * 0.72 - bodySize.Z * 0.32 / 2
 	elseif def.shape == "shark" then
 		frontZ = -half.Z * 0.82 - bodySize.Z * 0.42 / 2
-	elseif def.shape == "orca" then
+	elseif def.shape == "orca" or def.shape == "whale" then
 		frontZ = -half.Z * 0.74 - bodySize.Z * 0.42 / 2
+	elseif def.shape == "salamander" then
+		frontZ = -half.Z * 0.72 - bodySize.Z * 0.42 / 2
 	end
 	local eyeBase = math.min(bodySize.X, bodySize.Y)
 	local eyePositions: { { pos: Vector3, out: Vector3, d: number } } = {}

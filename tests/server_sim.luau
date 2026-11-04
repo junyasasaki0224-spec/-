@@ -468,6 +468,12 @@ H.globals = {
 	game = fakeGame,
 	workspace = workspace,
 	task = task,
+	-- 鳥居の移動で地面を探す時に使う(Lune には無い。Raycast は何にも当たらない扱い)
+	RaycastParams = {
+		new = function()
+			return {}
+		end,
+	},
 	typeof = function(v)
 		if type(v) == "table" and v.__fake then
 			return "Instance"
@@ -701,11 +707,76 @@ H.test("エサ: 買う → 装備 → 投げると1個減る", function()
 end)
 
 H.test("解放していない・存在しない釣り場には行けない", function()
-	Shop.handleRequest(alice, "travel", "river")
-	Shop.handleRequest(alice, "unlockSpot", "river")
-	H.assert(data(alice).spots.river == nil, "unlocked an unavailable spot")
+	Shop.handleRequest(alice, "travel", "waterfall")
+	Shop.handleRequest(alice, "unlockSpot", "waterfall")
+	H.assert(data(alice).spots.waterfall == nil, "unlocked an unavailable spot")
 	Shop.handleRequest(alice, "travel", "../../etc")
 end)
+
+H.test(
+	"川: 開いていないと条件が出る → 竿4と小判で開く → 鳥居で行けて、川岸から釣れる",
+	function()
+		local d = data(alice)
+		local river = Config.SpotById.river
+		local root = alice.Character.HumanoidRootPart
+		local old = root.CFrame
+		local oldTier, oldCoins = d.rodTier, d.coins
+		d.spots.river = nil
+		Shop.handleRequest(alice, "travel", "river")
+		local n = lastSent(alice, "Notify")
+		H.assertEq(n[1], "notify_travel_need")
+		H.assertEq(n[2].spotKey, "spot_river")
+		H.assertEq(n[2].rod, river.unlockRodTier)
+		H.assertEq(n[2].coins, river.unlockCoins)
+		-- 竿が足りない / 小判が足りない
+		d.rodTier, d.coins = river.unlockRodTier - 1, river.unlockCoins * 2
+		Shop.handleRequest(alice, "unlockSpot", "river")
+		H.assert(d.spots.river == nil, "unlocked with a weak rod")
+		d.rodTier, d.coins = river.unlockRodTier, river.unlockCoins - 1
+		Shop.handleRequest(alice, "unlockSpot", "river")
+		H.assert(d.spots.river == nil, "unlocked without enough coins")
+		d.coins = river.unlockCoins + 500
+		Shop.handleRequest(alice, "unlockSpot", "river")
+		H.assert(d.spots.river == true, "river not unlocked")
+		H.assertEq(d.coins, 500, "unlock cost")
+		-- 移動すると川の出現地点へ
+		Shop.handleRequest(alice, "travel", "river")
+		local p = root.Position
+		H.assert(
+			math.abs(p.X - (river.origin.x + river.spawn.x)) < 1
+				and math.abs(p.Z - (river.origin.z + river.spawn.z)) < 1,
+			("not at the river spawn: %.0f, %.0f"):format(p.X, p.Z)
+		)
+		-- 川岸から投げると、川の魚が釣れる状態になる
+		place(root, roblox.CFrame.new(river.origin.x + river.water.rx + 4, 3, river.origin.z))
+		local before = countSent(alice, "FishingState")
+		clientSend(alice, "Cast", 0.5, -1, 0)
+		H.assertEq(countSent(alice, "FishingState"), before + 1, "could not cast at the river")
+		clientSend(alice, "CancelFishing")
+		task.wait(1.5)
+		place(root, old)
+		d.rodTier, d.coins = oldTier, oldCoins
+	end
+)
+
+H.test(
+	"海: 大きくてレアな魚(鮫・鯱・鯨・大鱏・大蛇)は海に、川の頂点は川の大物(鮭・山椒魚)",
+	function()
+		local seaBig, riverTop = {}, {}
+		for _, f in Config.Fish do
+			local order = Config.RarityById[f.rarity].order
+			if f.spot == "sea" and order >= 5 then
+				seaBig[f.shape] = true
+			end
+			if f.spot == "river" and order >= 6 then
+				riverTop[f.shape] = true
+			end
+		end
+		H.assert(seaBig.shark and seaBig.orca and seaBig.ray, "sea legendaries")
+		H.assert(riverTop.salamander and riverTop.salmon, "river lord and salmon king")
+		H.assert(not riverTop.shark and not riverTop.orca, "no sea giants at the top of the river")
+	end
+)
 
 H.test(
 	"課金(運のお札): 付与 → 同じ購入IDが再送されても二重に付与しない",

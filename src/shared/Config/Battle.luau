@@ -35,6 +35,9 @@ Battle.ShapeStats = {
 	-- 大物(伝説以上の魚だけの形)。合計は少し高め
 	shark = { hp = 52, atk = 70, def = 42, spd = 58 }, -- 鋭い攻めと速さ
 	orca = { hp = 70, atk = 62, def = 54, spd = 36 }, -- 重く強い
+	salmon = { hp = 56, atk = 66, def = 44, spd = 56 }, -- 川を上る力(攻めと速さ)
+	salamander = { hp = 82, atk = 56, def = 68, spd = 18 }, -- 川の主: とても硬く、遅い
+	whale = { hp = 96, atk = 56, def = 60, spd = 20 }, -- 海の主: 体力がけた違い
 }
 
 -- レア度による能力の倍率
@@ -158,6 +161,33 @@ Battle.Moves = {
 	},
 	{ id = "breach_slam", ja = "大波返し", en = "Breach Slam", element = "none", power = 75, acc = 85 },
 	{
+		id = "upstream_rush",
+		ja = "遡上突き",
+		en = "Upstream Rush",
+		element = "none",
+		power = 55,
+		acc = 100,
+		effect = "first",
+	},
+	{
+		id = "swallow_whole",
+		ja = "丸のみ",
+		en = "Swallow Whole",
+		element = "none",
+		power = 70,
+		acc = 85,
+		effect = "atk_down",
+	},
+	{
+		id = "spout",
+		ja = "潮吹き",
+		en = "Spout",
+		element = "none",
+		power = 60,
+		acc = 100,
+		effect = "def_down",
+	},
+	{
 		id = "rest",
 		ja = "ひと休み",
 		en = "Rest",
@@ -217,6 +247,9 @@ Battle.ShapeMove = {
 	ray = "tail_strike",
 	shark = "jaw_crush",
 	orca = "breach_slam",
+	salmon = "upstream_rush",
+	salamander = "swallow_whole",
+	whale = "spout",
 }
 
 -- 属性ごとの技(覚えるレベル順)

@@ -72,6 +72,8 @@ H.globals = { game = fakeGame, workspace = workspace }
 local server = H.root("src/server")
 H.require(server.World.Lighting).setup()
 H.require(server.World.Swamp).build()
+H.require(server.World.River).build()
+H.require(server.World.Sea).build()
 H.require(server.World.Village).build()
 
 local parts = {}
@@ -137,8 +139,8 @@ end
 local Config = H.require(shared.Config)
 local spots = {}
 for _, s in Config.Spots do
-	if s.id == "swamp" or s.id == "nushi_lake" then
-		spots[s.id] = { origin = s.origin, water = s.water, spawn = s.spawn }
+	if s.available then
+		spots[s.id] = { origin = s.origin, water = s.water, spawn = s.spawn, available = s.available }
 	end
 end
 

@@ -71,7 +71,7 @@ if Cries.soundId == "rbxassetid://0" or Cries.soundId == "" then
 else
 	ok("鳴き声の音: " .. Cries.soundId)
 end
-for _, f in { "icon.png", "thumb_collection.png", "thumb_attack.png", "thumb_boss.png" } do
+for _, f in { "icon.png", "thumb_collection.png", "thumb_attack.png", "thumb_boss.png", "thumb_sea.png" } do
 	if fs.isFile("assets/marketing/" .. f) then
 		ok("assets/marketing/" .. f)
 	else
@@ -79,7 +79,7 @@ for _, f in { "icon.png", "thumb_collection.png", "thumb_attack.png", "thumb_bos
 	end
 end
 todo(
-	"魚の3Dモデル: Studio で assets/fish/YokaiFishMeshes.glb を読み込み、ReplicatedStorage.FishMeshes に置く(docs/ANIME_MESHES.md)"
+	"魚の3Dモデル: Studio で assets/fish/YokaiFishMeshes.glb と YokaiFishMeshes_RiverSea.glb を読み込み、ReplicatedStorage.FishMeshes に置く(docs/ANIME_MESHES.md)"
 )
 
 print("■ 中身")

@@ -489,9 +489,9 @@ H.test("レア度が上がるほど大きく、派手になる(大きさ・部�
 		"secret vs common size"
 	)
 end)
-H.test("50種そろっていて、釣り場ごとに全レア度がいる", function()
-	H.assertEq(#Config.Fish, 50)
-	for _, spot in { "swamp", "nushi_lake" } do
+H.test("91種そろっていて、遊べる釣り場ごとに全レア度がいる", function()
+	H.assertEq(#Config.Fish, 91)
+	for _, spot in { "swamp", "nushi_lake", "river", "sea" } do
 		for _, r in Config.Rarities do
 			local found = false
 			for _, f in Config.Fish do
@@ -505,7 +505,7 @@ H.test("50種そろっていて、釣り場ごとに全レア度がいる", func
 end)
 
 print("Anime meshes (アニメ風メッシュ)")
-H.test("Blender で作ったメッシュの大きさの表が全50種そろっている", function()
+H.test("Blender で作ったメッシュの大きさの表が全種そろっている", function()
 	local M = H.require(shared.Config.FishMeshes)
 	for _, f in Config.Fish do
 		local info = M.sizes[f.id]
@@ -642,7 +642,7 @@ H.test("スタンプ・ボスの文言が日本語と英語でそろっている
 end)
 
 print("Cries (鳴き声)")
-H.test("全50種に鳴き声があり、区間は音のファイルの中で重ならない", function()
+H.test("全種に鳴き声があり、区間は音のファイルの中で重ならない", function()
 	local fs = require("@lune/fs")
 	H.assert(fs.isFile("assets/sounds/YokaiCries.ogg"), "assets/sounds/YokaiCries.ogg がない")
 	local spans = {}

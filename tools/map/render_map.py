@@ -385,7 +385,7 @@ def views(spots, ground_at):
         x, z = xz[0] + back[0], xz[1] + back[1]
         return rb((x, ground_at(x, z) + up, z))
 
-    return {
+    out = {
         "swamp_top": dict(eye=rb((swc[0], 300, swc[1] + 0.01)), target=rb((swc[0], 0, swc[1])), ortho=250),
         "village_top": dict(eye=rb((vic[0], 300, vic[1] + 0.01)), target=rb((vic[0], 0, vic[1])), ortho=250),
         # 出現した時の画面(Roblox の標準カメラ: 頭の少し上・後ろ)
@@ -396,6 +396,16 @@ def views(spots, ground_at):
         "swamp_pier": dict(eye=rb((swc[0] - 8, 4.5, swc[1] + 30)), target=rb((swc[0] - 14, 2, swc[1] - 30)), lens=20),
         "village_huts": dict(eye=rb((vic[0], 4.5, vic[1] + 20)), target=rb((vic[0], 6, vic[1] - 60)), lens=20),
     }
+    # 川と海(公開した釣り場が表にあれば)
+    for name in ("river", "sea"):
+        if name not in spots or not spots[name].get("available"):
+            continue
+        s = spots[name]
+        c, sp = spot_pos(s, "water"), spot_pos(s, "spawn")
+        out[name + "_top"] = dict(eye=rb((c[0], 340, c[1] + 0.01)), target=rb((c[0], 0, c[1])), ortho=300 if name == "sea" else 250)
+        out[name + "_spawn"] = dict(eye=eye(sp, 10, (6, 10) if name == "river" else (0, 12)), target=rb((c[0], 2, sp[1] - 30 if name == "sea" else c[1] - 20)), lens=22)
+        out[name + "_air"] = dict(eye=rb((c[0] + 130, 100, c[1] + 160)), target=rb((c[0], 0, c[1] - (30 if name == "sea" else 0))), lens=26)
+    return out
 
 
 def main():

@@ -211,16 +211,24 @@ function Codex.init(gui: ScreenGui)
 		end
 	end
 	local tabButtons: { [string]: TextButton } = {}
+	-- タブには短い名前(「ぬしの湖(釣り村)」→「ぬしの湖」)
+	local function shortName(id: string): string
+		local t = Locale.t("spot_" .. id)
+		t = t:gsub("%s*%(.*$", "")
+		t = t:gsub("（.*$", "")
+		return t
+	end
 	local function paintTabs()
 		for id, b in tabButtons do
 			b.BackgroundColor3 = if id == spotFilter then C.vermilion else C.panelDark
-			b.Text = Locale.t("spot_" .. id)
+			b.Text = shortName(id)
 		end
 	end
 	for _, id in spotIds do
+		-- 釣り場が増えても横一列に収まるよう、幅は等分
 		tabButtons[id] = Kit.button({
 			Text = "",
-			Size = UDim2.new(0, 170, 1, 0),
+			Size = UDim2.new(1 / #spotIds, -6, 1, 0),
 			Color = C.panelDark,
 			MaxTextSize = 16,
 			Parent = tabs,

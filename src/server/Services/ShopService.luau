@@ -299,7 +299,12 @@ handlers.travel = function(player, data, payload)
 		return
 	end
 	if not data.spots[spot.id] then
-		S.notify(player, "notify_travel_locked")
+		-- 開け方を出す(竿の段と小判。開けるのはお店の「釣り場」)
+		S.notify(
+			player,
+			"notify_travel_need",
+			{ spotKey = "spot_" .. spot.id, rod = spot.unlockRodTier, coins = spot.unlockCoins }
+		)
 		return
 	end
 	teleportTo(player, spot)

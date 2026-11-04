@@ -7,7 +7,7 @@
 --   time    : any / day / night / morning(朝。昼にも含まれる)
 --   weather : any / sunny / rain / fog / thunder
 --   kg      : 重さの範囲 { 最小, 最大 }
---   shape   : koi(鯉) / catfish(鯰) / puffer(河豚) / eel(鰻) / angler(提灯) / ray(鱏) / shark(鮫) / orca(鯱)
+--   shape   : koi(鯉) / catfish(鯰) / puffer(河豚) / eel(鰻) / angler(提灯) / ray(鱏) / shark(鮫) / orca(鯱) / salmon(鮭) / salamander(山椒魚) / whale(鯨)
 --   c1, c2, c3 : 色(体, 模様, 差し色)
 --   pattern : plain / stripes / spots / belly / patches / saddle / gradient / ribs / dango / orca(鯱の白黒)
 --   eyes    : normal / cute / angry / sleepy / big(一つ目) / cat / glow / dot / none

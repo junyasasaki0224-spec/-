@@ -128,6 +128,59 @@ local Trainers: { Trainer } = {
 		reward = { coins = 150000, bait = { id = "premium", amount = 10 } },
 		title = "yokai_master",
 	},
+	-- 川と海の相手(沼のぬしの後)
+	{
+		id = "kawa_tengu",
+		ja = "川天狗",
+		en = "River Tengu",
+		jaLine = "この川の網は、すべて俺が破ってきた。お前の網もな!",
+		enLine = "I've torn every net on this river. Yours is next!",
+		team = {
+			{ fish = "kawatengu_yamame", level = 42 },
+			{ fish = "kappa_oyabun", level = 43 },
+			{ fish = "suiko", level = 45 },
+		},
+		reward = { coins = 200000, bait = { id = "premium", amount = 5 } },
+	},
+	{
+		id = "river_lord",
+		ja = "川のぬし",
+		en = "Lord of the River",
+		jaLine = "……牛をも呑んだこの口で、お前の相棒も呑んでやろう",
+		enLine = "...This mouth swallowed a cow. Your partner is next.",
+		team = {
+			{ fish = "toryu_koi", level = 46, mutation = "gold" },
+			{ fish = "maboroshi_itou", level = 47 },
+			{ fish = "o_hanzaki", level = 48 },
+		},
+		reward = { coins = 300000, bait = { id = "premium", amount = 10 } },
+	},
+	{
+		id = "funayurei",
+		ja = "船幽霊",
+		en = "Ship Ghosts",
+		jaLine = "柄杓を貸せぇ……底の抜けていない柄杓をなぁ……",
+		enLine = "Lend us a ladle... one with a bottom...",
+		team = {
+			{ fish = "funayurei_ei", level = 47, mutation = "sakura" },
+			{ fish = "ryugu_tsukai", level = 48 },
+			{ fish = "isonade", level = 49 },
+		},
+		reward = { coins = 400000, bait = { id = "premium", amount = 10 } },
+	},
+	{
+		id = "sea_lord",
+		ja = "海のぬし",
+		en = "Lord of the Sea",
+		jaLine = "骨になっても、この海はわしのものだ",
+		enLine = "Even as bones, this sea is mine.",
+		team = {
+			{ fish = "kin_shachi", level = 49 },
+			{ fish = "akaei", level = 49 },
+			{ fish = "bake_kujira", level = 50, mutation = "pearl" },
+		},
+		reward = { coins = 800000, bait = { id = "premium", amount = 15 } },
+	},
 }
 
 return Trainers

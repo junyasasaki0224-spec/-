@@ -34,11 +34,12 @@
 ## Studio に入れる手順(1回だけ)
 
 1. Roblox Studio でゲームを開き、ログインしていることを確認する(読み込み時にメッシュと画像があなたのアカウントにアップロードされます)
-2. **ファイル → 3D をインポート**(Import 3D)で `assets/fish/YokaiFishMeshes.glb`(約 41MB)を選ぶ
+2. **ファイル → 3D をインポート**(Import 3D)で `assets/fish/YokaiFishMeshes.glb`(沼・ぬしの湖の50種、約 41MB)を選ぶ
 3. 設定はそのままで読み込む。数分かかることがあります(色と法線マップは、各魚の `SurfaceAppearance` として入ります)
 4. ワークスペースに読み込まれたモデルを **ReplicatedStorage** へドラッグし、名前を **`FishMeshes`** に変える
    - 中に `hasu_koi` と `hasu_koi_Outline` のように、魚の id と `<id>_Outline` の名前のパーツが並んでいれば OK(フォルダやモデルの入れ子になっていても探せます)
-5. プレイして確認する
+5. 同じように `assets/fish/YokaiFishMeshes_RiverSea.glb`(川・海の41種、約 33MB)を読み込み、できたモデルを **`FishMeshes` の中へ** ドラッグする(1つのファイルにすると大きすぎるので2つに分けています)
+6. プレイして確認する
 
 Rojo は `ReplicatedStorage.Shared` だけを同期するので、`FishMeshes` は Rojo に消されません。
 
@@ -77,7 +78,7 @@ cp build/fish/YokaiFishMeshes.glb assets/fish/
 
 - お手元の Blender(4.2 以降)で動きます。Blender が無い環境では `pip install bpy==4.2.0`(Python 3.11)でも動きます
 - 確認用の画像: `--ids hasu_koi,bake_fugu --render --face`(`--face` で顔のアップも)、書き出した GLB の確認: `--verify assets/fish/YokaiFishMeshes.glb build/verify`
-- 数匹だけ作り直す時は、その魚だけ書き出して、今の GLB の中の同じ魚だけを差し替えられます(ほかの魚は作り直さない):
+- 数匹だけ作り直す時は、その魚だけ書き出して、今の GLB の中の同じ魚だけを差し替えられます(ほかの魚は作り直さない。川・海の魚は `YokaiFishMeshes_RiverSea.glb` を `--update` に渡す):
 
 ```bash
 blender -b -P tools/blender/yokai_fish.py -- --defs build/fish.json --out build/fishexp --ids nue_namazu,kyubi_koi --export --part some

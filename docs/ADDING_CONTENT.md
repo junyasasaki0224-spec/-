@@ -4,7 +4,7 @@
 
 ## 妖怪魚を1匹足す
 
-魚の表(`Config/Fish/Swamp.luau` / `NushiLake.luau`)は `tools/fish_designs.py` から作っています。
+魚の表(`Config/Fish/Swamp.luau` / `NushiLake.luau` / `River.luau` / `Sea.luau`)は `tools/fish_designs.py` から作っています。
 新しい魚は `tools/fish_designs.py` に1行足して `python3 tools/fish_designs.py` を実行してください(表に直接書いても動きますが、次に生成した時に消えます)。
 見た目の項目(目・口・体つき・尾の本数・飾り)は [FISH_DESIGN.md](FISH_DESIGN.md) を参照。表の1行の例:
 
@@ -19,10 +19,10 @@
 | rarity | common(並) / uncommon(上) / rare(特上) / epic(極) / legendary(伝説) / mythic(神話) / secret(秘伝) |
 | time | any / day / night / morning(朝は昼にも含まれる) |
 | weather | any / sunny / rain / fog / thunder |
-| shape | koi(鯉) / catfish(鯰) / puffer(河豚) / eel(鰻) / angler(提灯) / ray(鱏) |
-| pattern | plain / stripes / spots / belly / patches / saddle / gradient / ribs / dango |
+| shape | koi(鯉) / catfish(鯰) / puffer(河豚) / eel(鰻) / angler(提灯) / ray(鱏) / shark(鮫) / orca(鯱) / salmon(鮭) / salamander(山椒魚) / whale(鯨)。大物の形は伝説以上に使う |
+| pattern | plain / stripes / spots / belly / patches / saddle / gradient / ribs / dango / orca(鯱の白黒) |
 | eyes | normal / cute / angry / sleepy / big / cat / glow / dot / none |
-| mouth | small / wide / o / smile / frown / open / tongue / fangs / grin / geta / beak / none |
+| mouth | small / wide / o / smile / frown / open / tongue / fangs / grin / geta / beak / jaws(鮫の歯) / none |
 | body | 体つき { 幅, 高さ, 長さ } の倍率(省略で {1,1,1}) |
 | tails | 尾の本数(1〜9) |
 | deco | 目印の飾り(38種。一覧は Config/init.luau の DECOS) |
@@ -35,15 +35,20 @@
 - `id` は保存データのキーです。**公開後に変えない・消さない**こと(消すと図鑑から消えます)。
 - 遊べる釣り場には、並〜神話の各レア度に `time = "any", weather = "any"` の魚が1匹以上必要です(テストで確認)。
 - 鳴き声: `tools/cries/yokai_cries.py` にレシピを足して作り直し、音をアップロードし直します([CRIES.md](CRIES.md))。レシピが無くても形から自動で作ります
+- 3Dモデル: その魚だけ Blender で書き出して GLB の中で差し替えます([ANIME_MESHES.md](ANIME_MESHES.md) の「数匹だけ作り直す時」)
 
-## 釣り場を足す(例: 川)
+## 釣り場を足す(例: 滝つぼ)
 
-1. `Config/Spots.luau` の `river` の行を `available = true` にし、`origin`(ワールドの位置)・`water`(水面の楕円)・`spawn` を決める
-2. `Config/Fish/River.luau` を作り、魚の行を並べる
-3. `Config/Fish/init.luau` の `SOURCES` に `{ spot = "river", list = require(script.River) :: any },` を足す
-4. 景色: `src/server/World/Swamp.luau` をコピーして `River.luau` を作り、`init.server.luau` で `require(script.World.River).build()` を呼ぶ(地形は `Terrain.build` が楕円の池を作るので、川なら `rx` を小さく `rz` を長くする)
-5. 村の鳥居(移動先)はお店の「釣り場」タブから行けます。村に専用の鳥居を置く場合は `Village.luau` で `Build.torii` と `Build.prompt(gate, "prompt_travel", "travel:river")`
-6. 文言: `Locale/ja.luau` と `en.luau` の `spot_river` は登録済み
+川(`World/River.luau`)と海(`World/Sea.luau`)がお手本です。
+
+1. `Config/Spots.luau` の `waterfall` の行を `available = true` にし、`origin`(ワールドの位置)・`water`(水面の楕円)・`spawn`・解放の条件(`unlockRodTier` / `unlockCoins`)・売値の倍率を決める。`lune run tests/economy_sim.luau` で何分で開くかを確かめる
+2. `tools/fish_designs.py` に魚の表(`WATERFALL = [...]`)を足して表を書き出す(`Config/Fish/Waterfall.luau`)。並〜神話の各レア度に `time = "any", weather = "any"` の魚を1匹以上
+3. `Config/Fish/init.luau` の `SOURCES` に `{ spot = "waterfall", list = require(script.Waterfall) :: any },` を足す
+4. 景色: `River.luau` をコピーして `Waterfall.luau` を作り、`init.server.luau` と `tools/map/export_map.luau` で `build()` を呼ぶ。出現地点は `Enabled = false`(最初は沼に出る)。`tests/world_smoke.luau` に1つテストを足す
+   - 地形は `Terrain.build` が楕円の池を作る(川は `rx` を小さく `rz` を長く)。海のように片側を外海にするなら `Sea.luau` の `isOcean`
+5. 移動はお店の「釣り場」タブと、各釣り場の村への鳥居(`travel:nushi_lake`)
+6. 文言: `Locale/ja.luau` と `en.luau` の `spot_<id>`(登録済み)と、図鑑の称号 `title_<id>_master`(`Tuning.Titles` にも)
+7. 3Dモデル・鳴き声を作る(上の「妖怪魚を1匹足す」)
 
 ## 釣り場ごとの特別な変異
 
