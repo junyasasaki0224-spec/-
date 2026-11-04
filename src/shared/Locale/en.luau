@@ -165,6 +165,7 @@ return {
 	shape_salmon = "salmon",
 	shape_salamander = "giant salamanders",
 	shape_whale = "whales",
+	shape_sturgeon = "sturgeons",
 
 	daily_title = "Daily Reward",
 	daily_day = "Day {n}",

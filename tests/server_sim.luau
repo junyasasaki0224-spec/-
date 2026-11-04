@@ -760,21 +760,25 @@ H.test(
 )
 
 H.test(
-	"海: 大きくてレアな魚(鮫・鯱・鯨・大鱏・大蛇)は海に、川の頂点は川の大物(鮭・山椒魚)",
+	"どの釣り場にも、その場所らしい強い魚がいる(海は鮫・鯱・鱏、川は鮭・山椒魚、沼・湖は鯰・鯉・龍)",
 	function()
-		local seaBig, riverTop = {}, {}
+		local top: { [string]: { [string]: boolean } } = {}
 		for _, f in Config.Fish do
-			local order = Config.RarityById[f.rarity].order
-			if f.spot == "sea" and order >= 5 then
-				seaBig[f.shape] = true
-			end
-			if f.spot == "river" and order >= 6 then
-				riverTop[f.shape] = true
+			if Config.RarityById[f.rarity].order >= 5 then
+				top[f.spot] = top[f.spot] or {}
+				top[f.spot][f.shape] = true
 			end
 		end
-		H.assert(seaBig.shark and seaBig.orca and seaBig.ray, "sea legendaries")
-		H.assert(riverTop.salamander and riverTop.salmon, "river lord and salmon king")
-		H.assert(not riverTop.shark and not riverTop.orca, "no sea giants at the top of the river")
+		H.assert(top.sea.shark and top.sea.orca and top.sea.ray, "sea giants")
+		H.assert(top.river.salamander and top.river.salmon, "river lord and salmon king")
+		H.assert(top.swamp.catfish and top.swamp.eel, "swamp: giant catfish and the water dragon")
+		H.assert(top.nushi_lake.koi and top.nushi_lake.eel, "lake: great carp and the dragon god")
+		for _, spot in { "swamp", "nushi_lake", "river" } do
+			H.assert(
+				not top[spot].shark and not top[spot].orca and not top[spot].whale,
+				"sea giant in " .. spot
+			)
+		end
 	end
 )
 

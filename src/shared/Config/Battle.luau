@@ -38,6 +38,7 @@ Battle.ShapeStats = {
 	salmon = { hp = 56, atk = 66, def = 44, spd = 56 }, -- 川を上る力(攻めと速さ)
 	salamander = { hp = 82, atk = 56, def = 68, spd = 18 }, -- 川の主: とても硬く、遅い
 	whale = { hp = 96, atk = 56, def = 60, spd = 20 }, -- 海の主: 体力がけた違い
+	sturgeon = { hp = 66, atk = 50, def = 74, spd = 30 }, -- 湖の古代魚: 鎧のように硬い
 }
 
 -- レア度による能力の倍率
@@ -188,6 +189,15 @@ Battle.Moves = {
 		effect = "def_down",
 	},
 	{
+		id = "armor_bash",
+		ja = "鎧当て",
+		en = "Armor Bash",
+		element = "none",
+		power = 50,
+		acc = 100,
+		effect = "def_up",
+	},
+	{
 		id = "rest",
 		ja = "ひと休み",
 		en = "Rest",
@@ -250,6 +260,7 @@ Battle.ShapeMove = {
 	salmon = "upstream_rush",
 	salamander = "swallow_whole",
 	whale = "spout",
+	sturgeon = "armor_bash",
 }
 
 -- 属性ごとの技(覚えるレベル順)

@@ -121,7 +121,7 @@ local Trainers: { Trainer } = {
 		jaLine = "……よくぞここまで来た。沼の底の力、見せてやろう",
 		enLine = "...You've come far. Witness the power of the depths.",
 		team = {
-			{ fish = "umibozu_ei", level = 36 },
+			{ fish = "rokurokubi_unagi", level = 36 },
 			{ fish = "nue_namazu", level = 37 },
 			{ fish = "numa_mizuchi", level = 40, mutation = "onibi" },
 		},

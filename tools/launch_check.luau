@@ -79,7 +79,7 @@ for _, f in { "icon.png", "thumb_collection.png", "thumb_attack.png", "thumb_bos
 	end
 end
 todo(
-	"魚の3Dモデル: Studio で assets/fish/YokaiFishMeshes.glb と YokaiFishMeshes_RiverSea.glb を読み込み、ReplicatedStorage.FishMeshes に置く(docs/ANIME_MESHES.md)"
+	"魚の3Dモデル: Studio で assets/fish/YokaiFishMeshes.glb と YokaiFishMeshes_2.glb を読み込み、ReplicatedStorage.FishMeshes に置く(docs/ANIME_MESHES.md)"
 )
 
 print("■ 中身")

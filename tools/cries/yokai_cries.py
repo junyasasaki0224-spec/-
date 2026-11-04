@@ -1111,11 +1111,39 @@ def _(c):
     c.echo = 0.3
 
 
+# ---- 実際の生息地に合わせて足した淡水魚 ----
+@cry("yomeiri_tanago", "こんこん…ちりん♪", "Kon-kon... ting!")
+def _(c):
+    c.syllables(0.0, [(0.1, (900, 950), "o"), (0.12, (950, 880), "o")], gap=0.06, tilt=1.4)
+    c.chime(0.38, 2637, 0.3)
+    c.chime(0.5, 3136, 0.22)
+
+
+@cry("yukimi_wakasagi", "ぴちぴち…しーん", "Pichi-pichi... hush")
+def _(c):
+    for i in range(3):
+        c.voice(i * 0.09, 0.05, (2200, 2500), "i", tilt=1.5, release=0.03, gain=0.7)
+    c.whoosh(0.35, 0.5, (1500, 3000), 1200, 0.12)
+
+
+@cry("tsukimi_himemasu", "ふわぁ…", "Fwaah...")
+def _(c):
+    c.voice(0.0, 0.6, [(0, 520), (0.4, 600), (1, 460)], "uaa", tilt=1.6, breath=0.3, attack=0.08, release=0.25)
+    c.chime(0.55, 1760, 0.18)
+
+
+@cry("yoroi_chouzame", "ガチン…ゴォォ", "Clank... Goooh")
+def _(c):
+    c.clack(0.0, (420, 760, 1300), 0.06, 0.6, 0.3)
+    c.voice(0.2, 0.9, [(0, 120), (0.5, 135), (1, 95)], "oo", tilt=1.2, rough=0.4, drive=0.25, attack=0.1, release=0.3)
+    c.bubbles(0.3, 0.6, 5, (150, 500), 0.3)
+
+
 def auto_recipe(c, d):
     """レシピの無い魚(新しく足した魚)の鳴き声。体の形・目・レア度から作る"""
-    base = {"koi": 700, "catfish": 220, "puffer": 450, "eel": 380, "angler": 300, "ray": 260, "shark": 200, "orca": 330, "salmon": 260, "salamander": 120, "whale": 110}.get(d["shape"], 400)
+    base = {"koi": 700, "catfish": 220, "puffer": 450, "eel": 380, "angler": 300, "ray": 260, "shark": 200, "orca": 330, "salmon": 260, "salamander": 120, "whale": 110, "sturgeon": 160}.get(d["shape"], 400)
     base *= (1.0 / max(0.5, d.get("visualScale", 1))) ** 0.5
-    vowel = {"koi": "iu", "catfish": "uo", "puffer": "uu", "eel": "ion", "angler": "ea", "ray": "ou", "shark": "ao", "orca": "ia", "salmon": "oa", "salamander": "ou", "whale": "oou"}.get(d["shape"], "a")
+    vowel = {"koi": "iu", "catfish": "uo", "puffer": "uu", "eel": "ion", "angler": "ea", "ray": "ou", "shark": "ao", "orca": "ia", "salmon": "oa", "salamander": "ou", "whale": "oou", "sturgeon": "uo"}.get(d["shape"], "a")
     eyes = d.get("eyes") or "normal"
     dur = 0.4 + 0.12 * RARITY_ORDER[d["rarity"]]
     if eyes == "angry":

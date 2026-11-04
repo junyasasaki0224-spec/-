@@ -158,8 +158,8 @@ def add_lights(lights):
 def load_fish():
     """GLB を1回だけ読み、魚ごとの物を名前で引けるようにする(輪郭線は描かない)"""
     before = set(bpy.data.objects)
-    # 魚は2つの GLB に分けてある(沼・湖 / 川・海)
-    for path in (GLB, GLB.replace("YokaiFishMeshes.glb", "YokaiFishMeshes_RiverSea.glb")):
+    # 魚は2つの GLB に分けてある(1つにすると大きすぎるため)
+    for path in (GLB, GLB.replace("YokaiFishMeshes.glb", "YokaiFishMeshes_2.glb")):
         if os.path.exists(path):
             bpy.ops.import_scene.gltf(filepath=path)
     fish = {}

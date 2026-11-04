@@ -116,6 +116,16 @@ local SHAPES = {
 		eyes = "dot",
 		mouth = "wide",
 	},
+	-- 湖の古代魚: 蝶鮫(チョウザメ)。平たく長い鼻先、上の葉が長い尾
+	sturgeon = {
+		body = Vector3.new(0.85, 0.72, 2.6),
+		stalk = 0.34,
+		tail = "crescent",
+		tailSize = 1.0,
+		dorsal = "small",
+		eyes = "normal",
+		mouth = "wide",
+	},
 	whale = {
 		body = Vector3.new(1.25, 1.1, 2.7),
 		stalk = 0.36,
@@ -669,8 +679,8 @@ function FishBuilder.build(def: Types.FishDef, opts: BuildOptions?): Model
 			nil,
 			bodyMaterial
 		)
-	elseif def.shape == "shark" then
-		-- 先のとがった鼻先
+	elseif def.shape == "shark" or def.shape == "sturgeon" then
+		-- 先のとがった鼻先(蝶鮫も)
 		part(
 			"Snout",
 			Vector3.new(bodySize.X * 0.62, bodySize.Y * 0.55, bodySize.Z * 0.42),
@@ -1157,7 +1167,7 @@ function FishBuilder.build(def: Types.FishDef, opts: BuildOptions?): Model
 		frontZ = -half.Z * 0.42 - bodySize.Z * 0.62 / 2
 	elseif def.shape == "eel" then
 		frontZ = -half.Z * 0.72 - bodySize.Z * 0.32 / 2
-	elseif def.shape == "shark" then
+	elseif def.shape == "shark" or def.shape == "sturgeon" then
 		frontZ = -half.Z * 0.82 - bodySize.Z * 0.42 / 2
 	elseif def.shape == "orca" or def.shape == "whale" then
 		frontZ = -half.Z * 0.74 - bodySize.Z * 0.42 / 2
@@ -1259,7 +1269,7 @@ function FishBuilder.build(def: Types.FishDef, opts: BuildOptions?): Model
 			local d = eyeBase
 				* (if def.shape == "puffer" then 0.3 else 0.27)
 				* (if eyesStyle == "cute" then 1.3 elseif eyesStyle == "dot" then 0.8 else 1)
-			local ez = frontZ * (if def.shape == "shark" then 0.62 else 0.72)
+			local ez = frontZ * (if def.shape == "shark" or def.shape == "sturgeon" then 0.62 else 0.72)
 			local ey = half.Y * (if def.shape == "catfish" then 0.38 else 0.28)
 			local ex = half.X
 				* (if def.shape == "catfish" then 0.72 elseif def.shape == "orca" then 0.8 else 0.62)

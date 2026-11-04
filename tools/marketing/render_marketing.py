@@ -54,7 +54,7 @@ SCENES = {
         "focus": 11.5,
         "fish": [{"id": "chochin_anko", "pos": (0, 7, 0), "heading": -1, "turn": 0.55, "length": 6}],
     },
-    # 図鑑: いろいろな妖怪魚が並ぶ。奥に伝説以上の大物(鯱・鮫)、手前に小さな魚(レアほど大きいのが一目で分かる)
+    # 図鑑: いろいろな妖怪魚が並ぶ。奥に強い魚(湖の月読鯉・川の大はんざき)、手前に小さな魚(レアほど大きいのが一目で分かる)
     "thumb_collection": {
         "size": (1920, 1080),
         "camera": orbit((0, 8, 0), 0.0, 0.05, 27),
@@ -62,7 +62,7 @@ SCENES = {
         "focus": 26,
         "fish": [
             {"id": "tsukuyomi_koi", "pos": (7.5, 10.2, -5.5), "heading": -1, "turn": 0.35, "length": 10.5},
-            {"id": "kyubi_koi", "pos": (-8.5, 10.6, -3.5), "heading": 1, "turn": 0.4, "length": 8.5},
+            {"id": "o_hanzaki", "pos": (-8.5, 10.2, -3.5), "heading": 1, "turn": 0.4, "length": 9},
             {"id": "chochin_anko", "pos": (-1.5, 6.4, 2), "heading": -1, "turn": 0.45, "length": 4.2},
             {"id": "furin_kingyo", "pos": (-7.5, 5.4, 3.5), "heading": 1, "turn": 0.6, "length": 3.2},
             {"id": "bake_fugu", "pos": (8.5, 5.4, 3), "heading": -1, "turn": 0.6, "length": 3.2},

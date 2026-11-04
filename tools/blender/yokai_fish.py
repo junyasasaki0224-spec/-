@@ -353,8 +353,20 @@ SHAPES = {
         ],
         head=((0, 0.78, 0.02), (0.55, 0.62, 0.5)), tail="flukes", tailY=-1.52, length=3.2, dorsal="hump",
     ),
+    # 蝶鮫(チョウザメ。湖の古代魚): 平たく長い鼻先、背と横の骨の板(3列)、後ろの小さな背びれ、上の葉が長い尾
+    "sturgeon": dict(
+        parts=[
+            ((0, 0.58, 0.02), (0.36, 0.42, 0.3)),
+            ((0, 1.0, -0.02), (0.24, 0.5, 0.12), (0.45, 1.3)),
+            ((0, 0.25, 0.0), (0.42, 0.4, 0.36)),
+            ((0, -0.05, 0.0), (0.42, 0.75, 0.37)),
+            ((0, -0.62, 0.0), (0.27, 0.58, 0.26)),
+            ((0, -1.08, 0.03), (0.11, 0.38, 0.13)),
+        ],
+        head=((0, 0.58, 0.04), (0.36, 0.42, 0.3)), tail="crescent", tailY=-1.4, length=3.0, dorsal="sturgeon",
+    ),
 }
-BIG = ("shark", "orca", "whale", "salamander")  # 大物の形(ひれは体の色、筋なし)
+BIG = ("shark", "orca", "whale", "salamander", "sturgeon")  # 大物の形(ひれは体の色、筋なし)
 
 EEL_SPINE = [(0.0, 1.25, 0.02, 0.3), (0.05, 0.9, 0.0, 0.28), (0.08, 0.5, 0.0, 0.27), (0.04, 0.1, 0.0, 0.25), (-0.04, -0.3, 0.0, 0.22), (-0.08, -0.7, 0.0, 0.19), (-0.04, -1.1, 0.0, 0.15), (0.03, -1.45, 0.0, 0.11)]
 
@@ -567,6 +579,26 @@ def build_fish(d, parts_only=False):
         fin(sp((0, -0.1, 0.62)), (0.04, 0.3, 0.2), frame(Vector((0, -0.5, 0.85))))
         # 脂びれ(尾の近くの小さな丸いひれ)
         fin(sp((0, -0.92, 0.3)), (0.03, 0.08, 0.06), frame(Vector((0, -0.4, 1))), taper=(0.2, 1.0), rays=0)
+    elif shape["dorsal"] == "sturgeon":
+        # 後ろの小さな背びれと、しりびれ
+        fin(sp((0, -0.8, 0.26)), (0.03, 0.15, 0.09), frame(Vector((0, -0.55, 0.85))), big_fin, taper=(0.8, 1.0), rays=0)
+        fin(sp((0, -0.82, -0.22)), (0.03, 0.12, 0.07), frame(Vector((0, -0.55, -0.85))), big_fin, taper=(0.8, 1.0), rays=0)
+        # 骨の板(背に1列、横に2列)。体の太さに合わせて少し埋める
+        keys = [(0.6, 0.34, 0.28), (0.25, 0.4, 0.34), (-0.05, 0.42, 0.36), (-0.6, 0.26, 0.25), (-0.95, 0.15, 0.15)]
+
+        def wh(y):
+            for (y0, w0, h0), (y1, w1, h1) in zip(keys, keys[1:]):
+                if y1 <= y <= y0:
+                    t = (y0 - y) / (y0 - y1)
+                    return w0 + (w1 - w0) * t, h0 + (h1 - h0) * t
+            return keys[-1][1], keys[-1][2]
+
+        plate = lighten(c2, 0.1)
+        for k in range(12):
+            y = 0.5 - k * 0.12
+            w, h = wh(y)
+            for pos, out in ((Vector((0, y, h * 0.94)), Vector((0, 0, 1))), (Vector((w * 0.94, y, 0)), Vector((1, 0, 0.15))), (Vector((-w * 0.94, y, 0)), Vector((-1, 0, 0.15)))):
+                g.add_sphere(tuple(S @ pos), (0.035, 0.055, 0.035), plate, rot=frame(out), taper=(0.9, 1.0), seg=8, rings=5)
     elif shape["dorsal"] == "hump":
         # 鯨: 背の小さなこぶのようなひれ
         fin(sp((0, -0.62, 0.42)), (0.05, 0.14, 0.12), frame(Vector((0, -0.6, 0.8))), big_fin, taper=(0.7, 1.2), rays=0)
@@ -579,7 +611,7 @@ def build_fish(d, parts_only=False):
     elif shape["dorsal"] == "spines":
         for i in range(3):
             g.add_sphere(sp((0, -0.05 - i * 0.22, 0.6 - i * 0.05)), (0.035, 0.1, 0.2 - i * 0.03), c3, rot=frame(Vector((0, -0.3, 1))), taper=(0.95, 1.2))
-    if order >= 4 and shape["dorsal"] not in ("none", "orca", "hump", "ridge") and "mane" not in deco:
+    if order >= 4 and shape["dorsal"] not in ("none", "orca", "hump", "ridge", "sturgeon") and "mane" not in deco:
         fin(sp((0, -0.55, 0.3)), (0.03, 0.34, 0.12), frame(Vector((0, -0.85, 0.45))), c3)
 
     # 胸びれ
@@ -587,8 +619,8 @@ def build_fish(d, parts_only=False):
         hc, hr = head
         frills = "frills" in deco
         for s in (1, -1):
-            if d["shape"] == "shark":
-                # 鮫: 長く、横へ翼のように張り出す
+            if d["shape"] in ("shark", "sturgeon"):
+                # 鮫: 長く、横へ翼のように張り出す(蝶鮫も)
                 base = Vector((s * hr[0] * 0.75, hc[1] - hr[1] * 0.75, hc[2] - hr[2] * 0.55))
                 dirv = Vector((s * 0.85, -0.55, -0.32)).normalized()
                 L = 0.66 if frills else 0.52
@@ -746,7 +778,7 @@ def sculpt_body(obj, d, head):
         elif shape in ("catfish", "eel"):
             spot = smoothstep(0.25, 0.55, n3) * 0.6  # ぬめった肌のまだら
         # 細かい凹凸(質感)。鮫はざらざらの肌、鯱はつるつる
-        if shape == "shark":
+        if shape in ("shark", "sturgeon"):
             disp += 0.0012 * mnoise.noise(p * 90.0 + seed)
         if shape not in ("orca", "whale"):
             disp += 0.0015 * mnoise.noise(p * 40.0 + seed)
@@ -934,7 +966,7 @@ g_skin = [None]
 
 def add_face(g, d, head, deco, c1, c2, c3, order):
     eyes = d.get("eyes") or ("none" if "noface" in deco else ("big" if "big_eye" in deco else "normal"))
-    mouth = d.get("mouth") or {"koi": "small", "catfish": "wide", "puffer": "o", "eel": "small", "angler": "grin", "ray": "none", "shark": "jaws", "orca": "smile", "salmon": "fangs", "salamander": "wide", "whale": "smile"}[d["shape"]]
+    mouth = d.get("mouth") or {"koi": "small", "catfish": "wide", "puffer": "o", "eel": "small", "angler": "grin", "ray": "none", "shark": "jaws", "orca": "smile", "salmon": "fangs", "salamander": "wide", "whale": "smile", "sturgeon": "wide"}[d["shape"]]
     g_skin[0] = c1
     iris = c3 if d.get("c3") else c2
     # 虹彩の色が体と近すぎるときは補色寄りに
@@ -960,6 +992,8 @@ def add_face(g, d, head, deco, c1, c2, c3, order):
         yaw_side, pitch = 36, 48  # 小さな目が頭の上に
     elif d["shape"] == "whale":
         yaw_side, pitch = 64, -10  # 口の端の近く、低いところ
+    elif d["shape"] == "sturgeon":
+        yaw_side, pitch = 40, 22
     else:
         yaw_side, pitch = 33, 14
     if eyes == "big":
@@ -979,7 +1013,7 @@ def add_face(g, d, head, deco, c1, c2, c3, order):
             p, n = head_point(head, s * (yaw_side + 6), pitch - 22)
             g.add_disc(p + n * 0.005, n, scale_eye * 0.16, scale_eye * 0.09, PINK, thick=0.012, curve=curve)
     # 口
-    p, n = head_point(head, 0, {"ray": 10, "shark": -20, "orca": -14, "salamander": -12, "whale": -26}.get(d["shape"], -12))
+    p, n = head_point(head, 0, {"ray": 10, "shark": -20, "orca": -14, "salamander": -12, "whale": -26, "sturgeon": -34}.get(d["shape"], -12))
     side = Vector((1, 0, 0))
     up = eye_frame(n)
     w = scale_eye * 0.22
@@ -1157,8 +1191,8 @@ def add_decos(g, d, head, deco, c1, c2, c3, order, S, tailY):
             out = Vector((0, math.cos(a), math.sin(a)))
             g.add_sphere(tuple(p + out * 0.1), (0.06, 0.14, 0.06), (1.0, 0.71, 0.28), rot=frame(out), taper=(0.95, 1.2))
     if "sun_disc" in deco:
-        if d["shape"] in BIG:
-            # 大物: 頭の後ろに小さめの日輪(金の縁)
+        if d["shape"] != "ray":
+            # 鱏以外: 頭の後ろに小さめの日輪(金の縁)
             at = hc + Vector((0, -hr[1] * 1.1, hr[2] + 0.26))
             g.add_disc(at, Vector((0, 1, 0)), 0.36, 0.36, (1.0, 0.62, 0.24), thick=0.03)
             g.add_torus(at, Vector((0, 1, 0)), 0.38, 0.03, GOLD)

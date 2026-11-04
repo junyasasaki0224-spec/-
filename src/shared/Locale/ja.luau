@@ -172,6 +172,7 @@ return {
 	shape_salmon = "鮭",
 	shape_salamander = "山椒魚",
 	shape_whale = "鯨",
+	shape_sturgeon = "蝶鮫",
 
 	-- デイリー
 	daily_title = "毎日のごほうび",

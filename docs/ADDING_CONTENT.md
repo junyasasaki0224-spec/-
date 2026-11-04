@@ -19,7 +19,7 @@
 | rarity | common(並) / uncommon(上) / rare(特上) / epic(極) / legendary(伝説) / mythic(神話) / secret(秘伝) |
 | time | any / day / night / morning(朝は昼にも含まれる) |
 | weather | any / sunny / rain / fog / thunder |
-| shape | koi(鯉) / catfish(鯰) / puffer(河豚) / eel(鰻) / angler(提灯) / ray(鱏) / shark(鮫) / orca(鯱) / salmon(鮭) / salamander(山椒魚) / whale(鯨)。大物の形は伝説以上に使う |
+| shape | koi(鯉) / catfish(鯰) / puffer(河豚) / eel(鰻) / angler(提灯) / ray(鱏) / shark(鮫) / orca(鯱) / salmon(鮭) / salamander(山椒魚) / whale(鯨) / sturgeon(蝶鮫) |
 | pattern | plain / stripes / spots / belly / patches / saddle / gradient / ribs / dango / orca(鯱の白黒) |
 | eyes | normal / cute / angry / sleepy / big / cat / glow / dot / none |
 | mouth | small / wide / o / smile / frown / open / tongue / fangs / grin / geta / beak / jaws(鮫の歯) / none |
@@ -34,6 +34,7 @@
 - 色と飾りの決め方は [FISH_DESIGN.md](FISH_DESIGN.md) のルールに合わせてください。見た目は `lune run tools/export_fish.luau out.json` で確認できます
 - `id` は保存データのキーです。**公開後に変えない・消さない**こと(消すと図鑑から消えます)。
 - 遊べる釣り場には、並〜神話の各レア度に `time = "any", weather = "any"` の魚が1匹以上必要です(テストで確認)。
+- **魚は本物が住んでいる場所の釣り場に置きます**。鱏・河豚・鮟鱇・鮫・鯱・鯨の形は海だけ、鯰・鮭・山椒魚・蝶鮫の形は淡水(沼・湖・川)だけ(テストで確認)。強い魚(伝説・神話・秘伝)は、どの釣り場にもその場所らしいものを置きます
 - 鳴き声: `tools/cries/yokai_cries.py` にレシピを足して作り直し、音をアップロードし直します([CRIES.md](CRIES.md))。レシピが無くても形から自動で作ります
 - 3Dモデル: その魚だけ Blender で書き出して GLB の中で差し替えます([ANIME_MESHES.md](ANIME_MESHES.md) の「数匹だけ作り直す時」)
 

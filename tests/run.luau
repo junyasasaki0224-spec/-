@@ -20,7 +20,7 @@ H.test("Config.Validate() に問題がない", function()
 	local problems = Config.Validate()
 	H.assert(#problems == 0, table.concat(problems, "\n      "))
 end)
-H.test("沼の魚は30種、レア度の内訳が揃っている", function()
+H.test("沼の魚は23種、レア度の内訳が揃っている", function()
 	local n, by = 0, {}
 	for _, f in Config.Fish do
 		if f.spot == "swamp" then
@@ -28,7 +28,7 @@ H.test("沼の魚は30種、レア度の内訳が揃っている", function()
 			by[f.rarity] = (by[f.rarity] or 0) + 1
 		end
 	end
-	H.assertEq(n, 30, "swamp fish")
+	H.assertEq(n, 23, "swamp fish")
 	for _, r in Config.Rarities do
 		H.assert((by[r.id] or 0) >= 1, "rarity without fish: " .. r.id)
 	end
@@ -489,8 +489,8 @@ H.test("レア度が上がるほど大きく、派手になる(大きさ・部�
 		"secret vs common size"
 	)
 end)
-H.test("91種そろっていて、遊べる釣り場ごとに全レア度がいる", function()
-	H.assertEq(#Config.Fish, 91)
+H.test("95種そろっていて、遊べる釣り場ごとに全レア度がいる", function()
+	H.assertEq(#Config.Fish, 95)
 	for _, spot in { "swamp", "nushi_lake", "river", "sea" } do
 		for _, r in Config.Rarities do
 			local found = false
@@ -503,6 +503,35 @@ H.test("91種そろっていて、遊べる釣り場ごとに全レア度がい�
 		end
 	end
 end)
+
+H.test(
+	"魚は実際に住む場所の釣り場にいて、どの釣り場にも強い魚(伝説・神話・秘伝)がいる",
+	function()
+		-- 海にしかいない形と、川・沼・湖(淡水)にしかいない形
+		local seaOnly = { ray = true, puffer = true, angler = true, shark = true, orca = true, whale = true }
+		local freshOnly = { catfish = true, salmon = true, salamander = true, sturgeon = true }
+		-- 魚ではない妖怪が丸い体に河豚の形を借りているもの(雨蛙・河童)
+		local notFish = { ame_gaeru = true, kappa_oyabun = true }
+		for _, f in Config.Fish do
+			if f.spot == "sea" then
+				H.assert(not freshOnly[f.shape], f.id .. " is a freshwater fish in the sea")
+			elseif not notFish[f.id] then
+				H.assert(not seaOnly[f.shape], f.id .. " (" .. f.shape .. ") is a sea fish in " .. f.spot)
+			end
+		end
+		for _, spot in Config.Spots do
+			if spot.available then
+				for _, r in { "legendary", "mythic", "secret" } do
+					local found = false
+					for _, f in Config.Fish do
+						found = found or (f.spot == spot.id and f.rarity == r)
+					end
+					H.assert(found, spot.id .. " has no " .. r .. " fish")
+				end
+			end
+		end
+	end
+)
 
 print("Anime meshes (アニメ風メッシュ)")
 H.test("Blender で作ったメッシュの大きさの表が全種そろっている", function()
