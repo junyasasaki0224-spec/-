@@ -8,6 +8,7 @@ local Locale = require(Shared.Locale)
 local Format = require(Shared.Lib.Format)
 local FishBuilder = require(Shared.Lib.FishBuilder)
 local BattleLib = require(Shared.Lib.Battle)
+local FishSort = require(Shared.Lib.FishSort)
 
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Theme = require(script.Parent.Parent.UI.Theme)
@@ -25,6 +26,8 @@ local detail: Frame
 local selected: string? = nil
 local detailTop: Frame? = nil -- 選んだ相棒の映像の枠(鳴き声の吹き出しを出す所)
 local feeding = false
+local sortMode = "level"
+local sortBtn: TextButton
 local detailModel: Model? = nil
 
 function Partners.elementChip(parent: Instance, element: string, size: UDim2, pos: UDim2?): TextLabel
@@ -75,7 +78,13 @@ local function renderList()
 		})
 		return
 	end
-	for i, f in p.partners do
+	local sorted = FishSort.sort(table.clone(p.partners), sortMode, {
+		name = function(f)
+			local d = Config.FishById[f.fishId]
+			return if d then Locale.fishName(d) else f.fishId
+		end,
+	})
+	for i, f in sorted do
 		local def = Config.FishById[f.fishId]
 		if not def then
 			continue
@@ -339,6 +348,20 @@ local function renderDetail()
 			})
 			Kit.corner(chip, Theme.CornerSmall)
 		end
+		local nextId, nextAt = BattleLib.nextMove(def, partner.level)
+		if nextId and nextAt then
+			local nmv = Config.MoveById[nextId]
+			Kit.label({
+				Size = UDim2.new(1, 0, 0, 24),
+				Text = Locale.t("partner_next_move", {
+					lv = nextAt,
+					move = if Locale.get() == "ja" then nmv.ja else nmv.en,
+				}),
+				TextColor3 = C.goldLight,
+				MaxTextSize = 14,
+				Parent = right,
+			})
+		end
 	end
 
 	-- 操作ボタン
@@ -403,6 +426,7 @@ function Partners.render()
 	if not findPartner(selected) then
 		selected = if State.profile.partners[1] then State.profile.partners[1].uid else nil
 	end
+	sortBtn.Text = "↓ " .. Locale.t("sort_label") .. ": " .. Locale.t("sort_" .. sortMode)
 	renderList()
 	renderDetail()
 end
@@ -412,9 +436,24 @@ function Partners.init(gui: ScreenGui)
 	panel.close.Activated:Connect(function()
 		Root.close()
 	end)
-	local listHolder =
-		Kit.new("Frame", { Size = UDim2.new(0.4, -8, 1, 0), BackgroundTransparency = 1, Parent = panel.body })
+	local listHolder = Kit.new("Frame", {
+		Size = UDim2.new(0.4, -8, 1, -48),
+		Position = UDim2.fromOffset(0, 48),
+		BackgroundTransparency = 1,
+		Parent = panel.body,
+	})
 	list = Kit.list(listHolder, 6)
+	-- 並び替え(レベル→レア度→重さ→新しい順→名前)
+	sortBtn = Kit.button({
+		Text = "",
+		Size = UDim2.new(0.4, -8, 0, 40),
+		Color = C.panelDark,
+		MaxTextSize = 16,
+		Parent = panel.body,
+	}, function()
+		sortMode = FishSort.next(FishSort.PartnerModes, sortMode)
+		Partners.render()
+	end)
 	detail = Kit.new("Frame", {
 		Size = UDim2.new(0.6, -8, 1, 0),
 		Position = UDim2.new(0.4, 8, 0, 0),

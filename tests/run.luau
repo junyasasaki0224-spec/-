@@ -954,6 +954,60 @@ H.test(
 	end
 )
 
+print("FishSort (並び替え)")
+H.test("魚の並び替え: 値段・レア度・重さ・新しい順・名前・レベル", function()
+	local FishSort = H.require(shared.Lib.FishSort)
+	local ids = {}
+	for _, f in Config.Fish do
+		ids[f.rarity] = ids[f.rarity] or f.id
+	end
+	local list = {
+		{ uid = "a", fishId = ids.common, grams = 500, at = 3, level = 2 },
+		{ uid = "b", fishId = ids.legendary, grams = 100, at = 1, level = 9 },
+		{ uid = "c", fishId = ids.rare, grams = 900, at = 2, level = 2 },
+	}
+	local function uids(l)
+		local out = {}
+		for _, f in l do
+			table.insert(out, f.uid)
+		end
+		return table.concat(out)
+	end
+	H.assertEq(uids(FishSort.sort(list, "weight")), "cab")
+	H.assertEq(uids(FishSort.sort(list, "new")), "acb")
+	H.assertEq(uids(FishSort.sort(list, "rarity")), "bca")
+	H.assertEq(uids(FishSort.sort(list, "level")), "bca")
+	H.assertEq(
+		uids(FishSort.sort(list, "price", {
+			price = function(f)
+				return f.grams
+			end,
+		})),
+		"cab"
+	)
+	H.assertEq(
+		uids(FishSort.sort(list, "name", {
+			name = function(f)
+				return f.uid
+			end,
+		})),
+		"abc"
+	)
+	-- 同じ値なら uid の順
+	local same =
+		{ { uid = "z", fishId = ids.common, grams = 1 }, { uid = "y", fishId = ids.common, grams = 1 } }
+	H.assertEq(uids(FishSort.sort(same, "weight")), "yz")
+	H.assertEq(FishSort.next(FishSort.Modes, "name"), "price")
+	H.assertEq(FishSort.next(FishSort.Modes, "???"), "price")
+	-- どの並び順にも表示名がある
+	for _, m in FishSort.Modes do
+		H.assert(Locale.t("sort_" .. m) ~= "sort_" .. m, m)
+	end
+	for _, m in FishSort.PartnerModes do
+		H.assert(Locale.t("sort_" .. m) ~= "sort_" .. m, m)
+	end
+end)
+
 print("Glyphs (文字化け)")
 H.test("画面の文字に Roblox のフォントで□になる記号を使わない", function()
 	local fs = require("@lune/fs")

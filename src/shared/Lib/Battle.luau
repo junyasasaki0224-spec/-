@@ -64,7 +64,7 @@ function BattleLib.stats(def: Types.FishDef, grams: number, mutation: string?, l
 end
 
 -- 覚えている技(最大4つ。新しく覚えた順に残る)
-function BattleLib.movesFor(def: Types.FishDef, level: number): { string }
+function BattleLib.movesFor(def: Types.FishDef, level: number): ({ string }, { { id: string, at: number } })
 	local L = B.LearnLevels
 	local learned: { { id: string, at: number } } = {}
 	local em = B.ElementMoves[def.element] or B.ElementMoves.water
@@ -85,7 +85,18 @@ function BattleLib.movesFor(def: Types.FishDef, level: number): { string }
 	while #out > 4 do
 		table.remove(out, 1)
 	end
-	return out
+	return out, learned
+end
+
+-- 次に覚える技とそのレベル(もう全部覚えていれば nil)
+function BattleLib.nextMove(def: Types.FishDef, level: number): (string?, number?)
+	local _, learned = BattleLib.movesFor(def, level)
+	for _, m in learned do
+		if level < m.at then
+			return m.id, m.at
+		end
+	end
+	return nil, nil
 end
 
 function BattleLib.fighter(

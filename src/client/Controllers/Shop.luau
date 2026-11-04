@@ -9,6 +9,7 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Config = require(Shared.Config)
 local Locale = require(Shared.Locale)
 local Format = require(Shared.Lib.Format)
+local FishSort = require(Shared.Lib.FishSort)
 
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Theme = require(script.Parent.Parent.UI.Theme)
@@ -35,6 +36,23 @@ local content: Frame
 local currentTab = "rods"
 local tabButtons: { [string]: TextButton } = {}
 local sellAllOrder = 2
+local sortMode = { sell = "price", tank = "price" } -- 一覧ごとの並び順
+
+-- 並び替えボタン(押すたびに 値段→レア度→重さ→新しい順→名前)
+local function sortButton(parent: Instance, list: string, position: UDim2)
+	return Kit.button({
+		Text = "↓ " .. Locale.t("sort_" .. sortMode[list]),
+		Size = UDim2.fromOffset(104, 42),
+		Position = position,
+		AnchorPoint = Vector2.new(1, 0),
+		Color = C.panelDark,
+		MaxTextSize = 16,
+		Parent = parent,
+	}, function()
+		sortMode[list] = FishSort.next(FishSort.Modes, sortMode[list])
+		Shop.render()
+	end)
+end
 
 local function coins(n: number): string
 	return Format.coins(n, Locale.get())
@@ -178,9 +196,13 @@ end
 local function fishRows(list: Instance, entries: { any }, mode: string)
 	local p = State.profile
 	local near = nearMerchant()
-	table.sort(entries, function(a, b)
-		return State.priceOf(a) > State.priceOf(b)
-	end)
+	FishSort.sort(entries, sortMode[mode] or "price", {
+		price = State.priceOf,
+		name = function(f)
+			local d = Config.FishById[f.fishId]
+			return if d then Locale.fishName(d) else f.fishId
+		end,
+	})
 	for i, f in entries do
 		local def = Config.FishById[f.fishId]
 		if def then
@@ -239,8 +261,9 @@ renderers.sell = function(body)
 	local header =
 		Kit.new("Frame", { Size = UDim2.new(1, 0, 0, 50), BackgroundTransparency = 1, Parent = body })
 	local near = nearMerchant()
+	sortButton(header, "sell", UDim2.new(1, if near then -258 else -228, 0, 4))
 	Kit.label({
-		Size = UDim2.new(0.45, 0, 1, -8),
+		Size = UDim2.new(1, if near then -372 else -342, 1, -8),
 		Position = UDim2.fromOffset(4, 4),
 		Text = if near
 			then Locale.t("hud_creel", { n = #p.creel, max = State.creelCapacity() })
@@ -314,8 +337,9 @@ end
 
 renderers.tank = function(body)
 	local p = State.profile
+	sortButton(body, "tank", UDim2.new(1, -4, 0, -3))
 	Kit.label({
-		Size = UDim2.new(1, 0, 0, 36),
+		Size = UDim2.new(1, -116, 0, 36),
 		Text = ("%s  %d/%d"):format(Locale.t("tank_title"), #p.tank, State.tankCapacity()),
 		TextXAlignment = Enum.TextXAlignment.Left,
 		MaxTextSize = 20,

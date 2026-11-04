@@ -24,6 +24,7 @@ export type Options = {
 	volume: number?,
 	pitch: number?, -- 1 より小さいと低く・ゆっくり(バトルで倒れた時など)
 	parent: Instance?, -- 3D の位置で鳴らす時はパーツを渡す
+	maxLength: number?, -- これより長い鳴き声は途中で止める(バトルの技の時など)
 }
 
 function Cry.text(fishId: string): string?
@@ -39,6 +40,9 @@ function Cry.play(fishId: string, opts: Options?): string?
 	end
 	local a: number, b: number = a0 :: number, b0 :: number
 	local o: Options = opts or {}
+	if o.maxLength then
+		b = math.min(b, a + o.maxLength)
+	end
 	local pitch = math.clamp(o.pitch or 1, 0.5, 2)
 	local s = Instance.new("Sound")
 	s.Name = "Cry_" .. fishId

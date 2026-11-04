@@ -871,10 +871,15 @@ local function refreshCommands()
 			card.eff.Text = Locale.t(if eff > 1 then "card_good" else "card_bad")
 			card.eff.BackgroundColor3 = if eff > 1 then C.jade else C.disabled
 		else
+			-- 空きの札: 次にレベルいくつで技を覚えるかを見せる
 			card.band.BackgroundColor3 = C.disabled
 			card.bandLabel.Text = ""
-			card.name.Text = "—"
-			card.footer.Text = ""
+			local def = f and Config.FishById[f.fishId]
+			local _, at = if def then BattleLib.nextMove(def, f.level) else nil
+			local firstEmpty = i == #(me.moves or {}) + 1
+			card.name.Text = if at and firstEmpty then "🔒" else "—"
+			card.footer.Text = if at and firstEmpty then Locale.t("card_unlock_at", { lv = at }) else ""
+			card.stroke.Thickness = 0
 			card.eff.Visible = false
 		end
 	end
@@ -1769,6 +1774,10 @@ local function playEvents(events: { any })
 					{ name = sideName(side, fishId), move = if Locale.get() == "ja" then mv.ja else mv.en }
 				)
 			)
+			-- 技を出す時に鳴く(短く、少し高く。吹き出しは場に出た時だけ)
+			if fishId ~= "" then
+				Cry.play(fishId, { volume = 0.6, pitch = 1.12, maxLength = 1.4 })
+			end
 			if mv.power > 0 then
 				-- 相手へ泳いでぶつかる
 				scene:attack(side)
