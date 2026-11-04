@@ -76,7 +76,7 @@ function ReelGame.new(
 		Position = UDim2.new(0.5, 0, 0, 0),
 		AnchorPoint = Vector2.new(0.5, 0),
 		Text = if rarity
-			then Locale.t("rarity_" .. rarity.id) .. (if params.mutationHint then " ✦" else "")
+			then Locale.t("rarity_" .. rarity.id) .. (if params.mutationHint then " ◆" else "")
 			else "",
 		TextColor3 = rarityColor,
 		Font = Theme.Fonts.title,

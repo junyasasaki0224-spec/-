@@ -170,7 +170,7 @@ function Kit.panel(parent: Instance, name: string, size: UDim2): Panel
 	})
 	local close = Kit.button({
 		Name = "Close",
-		Text = "✕",
+		Text = "×",
 		Size = UDim2.fromOffset(42, 42),
 		Position = UDim2.new(1, -8, 0, 6),
 		AnchorPoint = Vector2.new(1, 0),

@@ -270,7 +270,7 @@ function HUD.init(gui: ScreenGui)
 	autoButton = menuButton(menu, 7, "⚙", "hud_auto_off", C.panelLight, function()
 		State.request("setAuto", player:GetAttribute("AutoFishing") ~= true)
 	end)
-	menuButton(menu, 8, "☰", "hud_settings", C.panelDark, function()
+	menuButton(menu, 8, "≡", "hud_settings", C.panelDark, function()
 		Root.toggle("settings")
 	end)
 

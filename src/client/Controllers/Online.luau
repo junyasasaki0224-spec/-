@@ -355,7 +355,7 @@ local function showRecruit(msg: any)
 			end,
 		},
 		{
-			text = "✕",
+			text = "×",
 			color = C.panelDark,
 			fn = function()
 				dismiss(key)
@@ -403,7 +403,7 @@ local function makePill(key: string, order: number, color: Color3, onTap: () -> 
 	}, function() end)
 	action.Visible = false
 	local close = Kit.button({
-		Text = "✕",
+		Text = "×",
 		Size = UDim2.fromOffset(32, 32),
 		Position = UDim2.new(1, -6, 0.5, 0),
 		AnchorPoint = Vector2.new(1, 0.5),

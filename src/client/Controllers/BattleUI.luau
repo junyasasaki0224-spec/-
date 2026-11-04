@@ -180,7 +180,7 @@ local function renderTrainers(p: any)
 		Kit.label({
 			Size = UDim2.new(0.5, 0, 0, 30),
 			Position = UDim2.fromOffset(14, 6),
-			Text = (if cleared then "✓ " elseif not unlocked then "🔒 " else "")
+			Text = (if cleared then "○ " elseif not unlocked then "🔒 " else "")
 				.. (if Locale.get() == "ja" then t.ja else t.en),
 			TextColor3 = if cleared then C.success elseif unlocked then C.text else C.textDim,
 			TextXAlignment = Enum.TextXAlignment.Left,
@@ -1583,7 +1583,7 @@ local function openScreen()
 		AnchorPoint = Vector2.new(1, 0),
 		BackgroundTransparency = 0,
 		BackgroundColor3 = C.jadeDark,
-		Text = "✓ " .. Locale.t("pvp_foe_ready"),
+		Text = "○ " .. Locale.t("pvp_foe_ready"),
 		MaxTextSize = 16,
 		Visible = false,
 		ZIndex = 2,

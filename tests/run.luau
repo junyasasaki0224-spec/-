@@ -954,5 +954,72 @@ H.test(
 	end
 )
 
+print("Glyphs (文字化け)")
+H.test("画面の文字に Roblox のフォントで□になる記号を使わない", function()
+	local fs = require("@lune/fs")
+	-- Gotham + 日本語フォールバックで出る記号(JIS の記号と絵文字)だけ許す。✕ ✦ ▾ ✓ ☰ などは□になる
+	local allowed = {}
+	for _, ch in
+		{
+			"…",
+			"—",
+			"“",
+			"”",
+			"※",
+			"→",
+			"←",
+			"↑",
+			"↓",
+			"↩",
+			"≡",
+			"○",
+			"◎",
+			"△",
+			"▲",
+			"▼",
+			"▶",
+			"◆",
+			"★",
+			"♪",
+			"⚔",
+			"⚡",
+			"⚙",
+			"⚠",
+			"☀",
+			"☔",
+			"⛰",
+			"⛩",
+			"⏳",
+			"⏱",
+			"⏩",
+			"➕",
+		}
+	do
+		allowed[utf8.codepoint(ch)] = true
+	end
+	local function scan(dir: string)
+		for _, name in fs.readDir(dir) do
+			local path = dir .. "/" .. name
+			if fs.isDir(path) then
+				scan(path)
+			elseif name:match("%.luau$") then
+				for _, cp in utf8.codes(fs.readFile(path)) do
+					if cp >= 0x2000 and cp < 0x2C00 and not allowed[cp] then
+						error(
+							("%s: U+%04X「%s」は□になるかもしれない"):format(
+								path,
+								cp,
+								utf8.char(cp)
+							)
+						)
+					end
+				end
+			end
+		end
+	end
+	scan("src/client")
+	scan("src/shared/Locale")
+end)
+
 local ok = H.summary()
 process.exit(if ok then 0 else 1)

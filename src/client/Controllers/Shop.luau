@@ -3,6 +3,7 @@
 local Players = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService")
 local CollectionService = game:GetService("CollectionService")
+local RunService = game:GetService("RunService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Config = require(Shared.Config)
@@ -39,18 +40,72 @@ local function coins(n: number): string
 	return Format.coins(n, Locale.get())
 end
 
-local function nearMerchant(): boolean
+local MERCHANT_RANGE = 22 -- サーバー(24)より少し狭く: 境目で「売れる表示なのに断られる」を防ぐ
+
+-- いちばん近い魚屋の台と距離
+local function nearestMerchant(): (BasePart?, number)
 	local char = player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if not root then
-		return false
+		return nil, math.huge
 	end
+	local best: BasePart?, bestDist = nil, math.huge
 	for _, m in CollectionService:GetTagged("Merchant") do
-		if m:IsA("BasePart") and (m.Position - root.Position).Magnitude <= 22 then
-			return true
+		if m:IsA("BasePart") then
+			local d = (m.Position - root.Position).Magnitude
+			if d < bestDist then
+				best, bestDist = m, d
+			end
 		end
 	end
-	return false
+	return best, bestDist
+end
+
+local function nearMerchant(): boolean
+	local _, d = nearestMerchant()
+	return d <= MERCHANT_RANGE
+end
+
+-- 魚屋への光の道(着いたら消える)
+local guideBeam: Beam? = nil
+local guideA0: Attachment? = nil
+local guideA1: Attachment? = nil
+local guideTime = 0
+
+local function clearGuide()
+	for _, inst in { guideBeam, guideA0, guideA1 } :: { Instance? } do
+		if inst then
+			inst:Destroy()
+		end
+	end
+	guideBeam, guideA0, guideA1 = nil, nil, nil
+end
+
+local function guideToMerchant()
+	clearGuide()
+	local target = nearestMerchant()
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not target or not root then
+		return
+	end
+	local a0 = Instance.new("Attachment")
+	a0.Parent = root
+	local a1 = Instance.new("Attachment")
+	a1.Position = Vector3.new(0, 3, 0)
+	a1.Parent = target
+	local b = Instance.new("Beam")
+	b.Attachment0 = a0
+	b.Attachment1 = a1
+	b.Width0 = 1.2
+	b.Width1 = 1.2
+	b.Color = ColorSequence.new(C.goldLight)
+	b.LightEmission = 1
+	b.Transparency = NumberSequence.new(0.3)
+	b.FaceCamera = true
+	b.Parent = root
+	guideBeam, guideA0, guideA1 = b, a0, a1
+	guideTime = 0
 end
 
 -- 1行の中の要素(左: 色帯+文字, 右: ボタン群)
@@ -133,7 +188,7 @@ local function fishRows(list: Instance, entries: { any }, mode: string)
 			local title = (if f.locked then "🔒" else "")
 				.. Locale.fishName(def)
 				.. (if f.level then (" Lv%d"):format(f.level) else "")
-				.. (if f.mutation then " ✦" .. Locale.t("mutation_" .. f.mutation) else "")
+				.. (if f.mutation then " ◆" .. Locale.t("mutation_" .. f.mutation) else "")
 			local sub = ("%s · %s · %s %s"):format(
 				Locale.t("rarity_" .. def.rarity),
 				Format.kg(f.grams),
@@ -195,8 +250,22 @@ renderers.sell = function(body)
 		MaxTextSize = 20,
 		Parent = header,
 	})
+	if not near then
+		Kit.button({
+			Text = "🏮 " .. Locale.t("shop_guide_merchant"),
+			Size = UDim2.fromOffset(220, 42),
+			Position = UDim2.new(1, -4, 0, 4),
+			AnchorPoint = Vector2.new(1, 0),
+			Color = C.vermilion,
+			MaxTextSize = 18,
+			Parent = header,
+		}, function()
+			guideToMerchant()
+			Root.close()
+		end)
+	end
 	local cycle = Kit.button({
-		Text = Locale.t("rarity_" .. Config.Rarities[sellAllOrder].id) .. " ▾",
+		Text = Locale.t("rarity_" .. Config.Rarities[sellAllOrder].id) .. " ▼",
 		Size = UDim2.fromOffset(110, 42),
 		Position = UDim2.new(1, -254, 0, 4),
 		Color = C.panelDark,
@@ -206,6 +275,7 @@ renderers.sell = function(body)
 		sellAllOrder = sellAllOrder % (#Config.Rarities - 1) + 1
 		Shop.render()
 	end)
+	cycle.Visible = near
 	cycle.TextColor3 = Color3.fromHex(Config.Rarities[sellAllOrder].color)
 	local sellAll = Kit.button({
 		Text = Locale.t(
@@ -222,6 +292,7 @@ renderers.sell = function(body)
 		State.request("sellAll", sellAllOrder)
 	end)
 	sellAll.Size = UDim2.fromOffset(136, 42)
+	sellAll.Visible = near
 	Kit.setEnabled(sellAll, near and #p.creel > 0)
 	local listHolder = Kit.new("Frame", {
 		Size = UDim2.new(1, 0, 1, -56),
@@ -503,6 +574,26 @@ function Shop.init(gui: ScreenGui)
 	end)
 	State.Changed:Connect(Shop.render)
 	player:GetAttributeChangedSignal("Passes"):Connect(Shop.render)
+	-- 魚屋に近づいた/離れたら「売る」を切り替え、着いたら案内の光を消す
+	local acc, lastNear = 0, nil :: boolean?
+	RunService.Heartbeat:Connect(function(dt)
+		acc += dt
+		if acc < 0.4 then
+			return
+		end
+		guideTime += acc
+		acc = 0
+		local near = nearMerchant()
+		if guideBeam and (near or guideTime > 90) then
+			clearGuide()
+		end
+		if near ~= lastNear then
+			lastNear = near
+			if currentTab == "sell" then
+				Shop.render()
+			end
+		end
+	end)
 end
 
 return Shop

@@ -109,7 +109,7 @@ local function renderDetail()
 			end
 		end
 		if #muts > 0 then
-			table.insert(lines, "✦ " .. table.concat(muts, " / "))
+			table.insert(lines, "◆ " .. table.concat(muts, " / "))
 		end
 		table.insert(lines, Locale.fishDesc(def))
 	end
