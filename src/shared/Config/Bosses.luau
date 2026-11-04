@@ -25,8 +25,8 @@ local Bosses: { Boss } = {
 	{
 		id = "oonamazu",
 		fish = "raijin_namazu",
-		ja = "大鯰",
-		en = "Great Catfish",
+		ja = "ライドドン",
+		en = "Raidodon",
 		jaDesc = "地の底で暴れる雷の大鯰。腹の太鼓で地震を起こす。",
 		enDesc = "A thunder catfish raging underground. Its belly drums shake the earth.",
 		level = 26,
@@ -38,8 +38,8 @@ local Bosses: { Boss } = {
 	{
 		id = "umibozu",
 		fish = "umibozu_ei",
-		ja = "海坊主",
-		en = "Umibozu",
+		ja = "ウミボン",
+		en = "Umibon",
 		jaDesc = "嵐の夜に海から立ち上がる黒い大入道。",
 		enDesc = "A black giant that rises from the sea on stormy nights.",
 		level = 36,
@@ -51,8 +51,8 @@ local Bosses: { Boss } = {
 	{
 		id = "yamata",
 		fish = "yamata_chochin",
-		ja = "八岐提灯",
-		en = "Yamata Lantern",
+		ja = "ヤツアカリ",
+		en = "Yatsuakari",
 		jaDesc = "八つの灯りを持つ大妖怪。灯りがすべてともると手がつけられない。",
 		enDesc = "A great yokai with eight lanterns. Once all eight are lit, nothing can stop it.",
 		level = 48,
@@ -65,8 +65,8 @@ local Bosses: { Boss } = {
 	{
 		id = "bake_kujira",
 		fish = "bake_kujira",
-		ja = "化け鯨",
-		en = "Bake-Kujira",
+		ja = "ホネクジ",
+		en = "Honekuji",
 		jaDesc = "骨だけの大鯨。泳いだあとには、怪しい鳥と魚の群れが渦を巻く。",
 		enDesc = "A giant whale of bare bones. Eerie birds and fish swirl in its wake.",
 		level = 50,

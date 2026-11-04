@@ -228,6 +228,12 @@ function Config.Validate(): { string }
 		if type(f.ja) ~= "string" or type(f.en) ~= "string" or f.ja == "" or f.en == "" then
 			bad(where .. ": 名前(ja/en)が必要です")
 		end
+		for _, k in { "kindJa", "kindEn" } do
+			local v = (f :: any)[k]
+			if v ~= nil and (type(v) ~= "string" or v == "") then
+				bad(where .. ": " .. k .. " は文字で")
+			end
+		end
 	end
 
 	-- 遊べる釣り場には、並〜神話の各レア度に「いつでも・どんな天気でも」釣れる魚が最低1匹必要

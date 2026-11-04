@@ -9,13 +9,15 @@
 見た目の項目(目・口・体つき・尾の本数・飾り)は [FISH_DESIGN.md](FISH_DESIGN.md) を参照。表の1行の例:
 
 ```lua
-{ id = "kawa_tengu", ja = "川天狗", en = "River Tengu", rarity = "rare", time = "night", weather = "any",
+{ id = "kawa_tengu", ja = "カワテン", en = "Kawaten", kindJa = "川天狗", kindEn = "River Tengu", rarity = "rare", time = "night", weather = "any",
   kg = { 1.0, 4.0 }, shape = "koi", c1 = "#B03A2E", c2 = "#F2D0A4", pattern = "stripes", deco = { "horns" },
   jaDesc = "図鑑の説明", enDesc = "Index text" },
 ```
 
 | 項目 | 書けるもの |
 | --- | --- |
+| ja / en | 名前。カタカナのあだ名(3〜6文字)と、その読みのローマ字([FISH_DESIGN.md](FISH_DESIGN.md) のルール0) |
+| kindJa / kindEn | 種類(もとになった魚と妖怪。例: 川天狗 / River Tengu)。図鑑と釣果の画面に小さく出る |
 | rarity | common(並) / uncommon(上) / rare(特上) / epic(極) / legendary(伝説) / mythic(神話) / secret(秘伝) |
 | time | any / day / night / morning(朝は昼にも含まれる) |
 | weather | any / sunny / rain / fog / thunder |

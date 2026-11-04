@@ -3,8 +3,10 @@
 
 export type FishDef = {
 	id: string,
-	ja: string,
+	ja: string, -- 名前(カタカナのあだ名)
 	en: string,
+	kindJa: string?, -- 種類(もとになった魚と妖怪。図鑑と釣果の画面に小さく出る)
+	kindEn: string?,
 	spot: string,
 	index: number,
 	rarity: string,

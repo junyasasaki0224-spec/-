@@ -600,14 +600,22 @@ H.test(
 		end
 		Input.release("test")
 		H.assert(result and type(result.args[1]) == "boolean", "no ReelResult sent")
-		-- 釣果の画面(本物の CatchResult)
+		-- 釣果の画面(本物の CatchResult)。名前はカタカナのあだ名、その横に種類(もとの魚と妖怪)が出る
+		local caught = nil
 		for _, m in rec.fishing do
 			if m.name == "CatchResult" then
-				serverSays("CatchResult", dec(m.args))
+				local args = dec(m.args)
+				caught = args[1]
+				serverSays("CatchResult", args)
 			end
 		end
 		advance(1)
 		F.snapshot("boot_catch")
+		local def = caught and Config.FishById[caught.fishId]
+		H.assert(def ~= nil, "no catch result in the fixture")
+		local name, kind = Locale.fishName(def), Locale.fishKind(def)
+		H.assert(F.hasText(gui, name), "nickname not shown: " .. name)
+		H.assert(kind ~= name and F.hasText(gui, kind), "kind not shown: " .. kind)
 		advance(8)
 	end
 )

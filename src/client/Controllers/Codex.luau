@@ -87,7 +87,14 @@ local function renderDetail()
 		Parent = detail,
 	})
 	local lines = {}
-	table.insert(lines, Locale.t("spot_" .. def.spot) .. "  ·  " .. hint(def))
+	-- 見つけた魚は、種類(もとになった魚と妖怪)も出す
+	table.insert(
+		lines,
+		(if entry then Locale.fishKind(def) .. "  ·  " else "")
+			.. Locale.t("spot_" .. def.spot)
+			.. "  ·  "
+			.. hint(def)
+	)
 	if entry then
 		table.insert(
 			lines,

@@ -197,8 +197,9 @@ local function showNext()
 	local rarityLabel = Kit.label({
 		Size = UDim2.new(1, -40, 0, 30),
 		Position = UDim2.fromOffset(20, 262),
-		Text = Locale.t("rarity_" .. rarity.id)
-			.. (if r.mutation then "  ·  " .. Locale.t("mutation_" .. r.mutation) else ""),
+		Text = Locale.t("rarity_" .. rarity.id) .. "  ·  " .. Locale.fishKind(fish) .. (if r.mutation
+			then "  ·  " .. Locale.t("mutation_" .. r.mutation)
+			else ""),
 		TextColor3 = rColor,
 		Font = Theme.Fonts.title,
 		MaxTextSize = 26,

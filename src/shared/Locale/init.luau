@@ -47,6 +47,14 @@ function Locale.fishName(def: any, lang: string?): string
 	return if (lang or current) == "ja" then def.ja else def.en
 end
 
+-- 種類(もとになった魚と妖怪)。無い時は名前
+function Locale.fishKind(def: any, lang: string?): string
+	if (lang or current) == "ja" then
+		return def.kindJa or def.ja
+	end
+	return def.kindEn or def.en
+end
+
 function Locale.fishDesc(def: any, lang: string?): string
 	return if (lang or current) == "ja" then def.jaDesc else def.enDesc
 end

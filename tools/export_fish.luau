@@ -55,6 +55,8 @@ for _, def in Config.Fish do
 		id = def.id,
 		ja = def.ja,
 		en = def.en,
+		kindJa = def.kindJa,
+		kindEn = def.kindEn,
 		rarity = def.rarity,
 		element = def.element,
 		shape = def.shape,
