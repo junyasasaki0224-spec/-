@@ -78,6 +78,25 @@ local SHAPES = {
 		eyes = "normal",
 		mouth = "none",
 	},
+	-- 大物(伝説以上): 鮫と鯱
+	shark = {
+		body = Vector3.new(0.95, 0.92, 2.5),
+		stalk = 0.36,
+		tail = "crescent",
+		tailSize = 1.15,
+		dorsal = "shark",
+		eyes = "normal",
+		mouth = "jaws",
+	},
+	orca = {
+		body = Vector3.new(1.15, 1.1, 2.4),
+		stalk = 0.4,
+		tail = "flukes",
+		tailSize = 1.15,
+		dorsal = "orca",
+		eyes = "normal",
+		mouth = "smile",
+	},
 }
 
 -- レア度の格。上に行くほど大きく、派手になる
@@ -96,7 +115,7 @@ type Style = {
 }
 local RARITY_STYLE: { [string]: Style } = {
 	common = {
-		scale = 0.8,
+		scale = 0.75,
 		gloss = 0,
 		fin = 1.0,
 		rim = false,
@@ -109,7 +128,7 @@ local RARITY_STYLE: { [string]: Style } = {
 		orbs = 0,
 	},
 	uncommon = {
-		scale = 0.92,
+		scale = 0.88,
 		gloss = 0.03,
 		fin = 1.06,
 		rim = false,
@@ -135,7 +154,7 @@ local RARITY_STYLE: { [string]: Style } = {
 		orbs = 0,
 	},
 	epic = {
-		scale = 1.2,
+		scale = 1.3,
 		gloss = 0.1,
 		fin = 1.22,
 		rim = true,
@@ -148,7 +167,7 @@ local RARITY_STYLE: { [string]: Style } = {
 		orbs = 0,
 	},
 	legendary = {
-		scale = 1.4,
+		scale = 1.7,
 		gloss = 0.14,
 		fin = 1.3,
 		rim = true,
@@ -161,7 +180,7 @@ local RARITY_STYLE: { [string]: Style } = {
 		orbs = 0,
 	},
 	mythic = {
-		scale = 1.65,
+		scale = 2.15,
 		gloss = 0.18,
 		fin = 1.38,
 		rim = true,
@@ -174,7 +193,7 @@ local RARITY_STYLE: { [string]: Style } = {
 		orbs = 0,
 	},
 	secret = {
-		scale = 1.9,
+		scale = 2.6,
 		gloss = 0.2,
 		fin = 1.45,
 		rim = true,
@@ -622,6 +641,25 @@ function FishBuilder.build(def: Types.FishDef, opts: BuildOptions?): Model
 			nil,
 			bodyMaterial
 		)
+	elseif def.shape == "shark" then
+		-- 先のとがった鼻先
+		part(
+			"Snout",
+			Vector3.new(bodySize.X * 0.62, bodySize.Y * 0.55, bodySize.Z * 0.42),
+			CFrame.new(0, -half.Y * 0.06, -half.Z * 0.82),
+			c1,
+			nil,
+			bodyMaterial
+		)
+	elseif def.shape == "orca" then
+		part(
+			"Head",
+			Vector3.new(bodySize.X * 0.86, bodySize.Y * 0.84, bodySize.Z * 0.42),
+			CFrame.new(0, half.Y * 0.02, -half.Z * 0.74),
+			c1,
+			nil,
+			bodyMaterial
+		)
 	end
 	if has("bighead") then
 		-- ぬらりひょんのような大きな後頭部
@@ -737,6 +775,28 @@ function FishBuilder.build(def: Types.FishDef, opts: BuildOptions?): Model
 			)
 		end
 	end
+	if pattern == "orca" then
+		-- 鯱: 白いお腹と、目の後ろの白い楕円
+		part(
+			"Belly",
+			Vector3.new(bodySize.X * 0.94, bodySize.Y * 0.58, bodySize.Z * 0.92),
+			CFrame.new(0, -half.Y * 0.4, -half.Z * 0.05),
+			c2,
+			nil,
+			patternMaterial
+		)
+		for _, s in { 1, -1 } do
+			part(
+				"EyePatch",
+				Vector3.new(0.14 * scale, bodySize.Y * 0.2, bodySize.Z * 0.2),
+				CFrame.new(s * half.X * 0.86, half.Y * 0.28, -half.Z * 0.66)
+					* CFrame.Angles(math.rad(-12), 0, 0),
+				c2,
+				nil,
+				patternMaterial
+			)
+		end
+	end
 	if not silhouette and pattern ~= "stripes" and pattern ~= "dango" and pattern ~= "saddle" then
 		part(
 			"Back",
@@ -750,8 +810,10 @@ function FishBuilder.build(def: Types.FishDef, opts: BuildOptions?): Model
 
 	-- 尾びれ ----------------------------------------------------------------
 	local ts = shape.tailSize * scale
+	local tailKind: string = shape.tail
 	local tails = def.tails or (if has("long_tail") then 3 else 0)
-	if tails >= 2 and shape.tail ~= "whip" then
+	local manyTails = tails >= 2 and tailKind ~= "whip"
+	if manyTails then
 		-- 何本もの長い尾(猫又・九尾)。扇のように広げる
 		local len = ts * 1.55
 		for i = 1, tails do
@@ -766,17 +828,43 @@ function FishBuilder.build(def: Types.FishDef, opts: BuildOptions?): Model
 				col
 			)
 		end
-	elseif shape.tail == "forked" then
+	elseif tailKind == "forked" then
 		local len = ts * 0.95
 		for _, s in { 1, -1 } do
 			local cf = along(Vector3.new(0, s * len * 0.22, tailZ + len * 0.38), Vector3.new(0, s * 0.55, 1))
 			fin("Tail", Vector3.new(0.07 * scale, len * 0.42, len * 0.85), cf)
 		end
-	elseif shape.tail == "fan" then
+	elseif tailKind == "fan" then
 		fin("Tail", Vector3.new(0.07 * scale, ts * 0.95, ts * 0.75), CFrame.new(0, 0, tailZ + ts * 0.3))
-	elseif shape.tail == "ribbon" then
+	elseif tailKind == "crescent" then
+		-- 鮫の尾: 上の葉が長い三日月
+		local up = ts * 1.05
+		fin(
+			"Tail",
+			Vector3.new(0.08 * scale, up * 0.3, up * 0.9),
+			along(Vector3.new(0, up * 0.3, tailZ + up * 0.32), Vector3.new(0, 0.85, 1)),
+			c1
+		)
+		fin(
+			"Tail",
+			Vector3.new(0.08 * scale, up * 0.24, up * 0.55),
+			along(Vector3.new(0, -up * 0.18, tailZ + up * 0.2), Vector3.new(0, -0.75, 1)),
+			c1
+		)
+	elseif tailKind == "flukes" then
+		-- 鯱の尾: 横に広がる2枚
+		for _, s in { 1, -1 } do
+			fin(
+				"Tail",
+				Vector3.new(ts * 0.42, 0.08 * scale, ts * 0.6),
+				CFrame.new(s * ts * 0.24, 0, tailZ + ts * 0.26) * CFrame.Angles(0, s * math.rad(-38), 0),
+				c1,
+				"Y"
+			)
+		end
+	elseif tailKind == "ribbon" then
 		fin("Tail", Vector3.new(0.06 * scale, ts * 0.55, ts * 0.9), CFrame.new(0, 0, tailZ + ts * 0.32))
-	elseif shape.tail == "whip" then
+	elseif tailKind == "whip" then
 		local len = bodySize.Z * (if has("cloth") then 2.2 else 0.95)
 		if has("cloth") then
 			-- 一反木綿: 長くたなびく布の尾
@@ -870,6 +958,21 @@ function FishBuilder.build(def: Types.FishDef, opts: BuildOptions?): Model
 			Vector3.new(0.05 * scale, bodySize.Y * 0.3, bodySize.Z * 0.6),
 			CFrame.new(0, -half.Y * 0.88, half.Z * 0.45)
 		)
+	elseif shape.dorsal == "shark" or shape.dorsal == "orca" then
+		-- 鮫は後ろへ傾いた三角、鯱はまっすぐ高い背びれ
+		local tall = shape.dorsal == "orca"
+		part(
+			"Dorsal",
+			Vector3.new(
+				0.12 * scale,
+				bodySize.Y * (if tall then 0.95 else 0.62),
+				bodySize.Z * (if tall then 0.2 else 0.3)
+			),
+			CFrame.new(0, half.Y * (if tall then 1.3 else 1.12), -half.Z * 0.02),
+			c1:Lerp(INK, 0.06),
+			"wedge",
+			bodyMaterial
+		)
 	elseif shape.dorsal == "spines" then
 		for i = 1, 3 do
 			local z = -half.Z * 0.1 + (i - 1) * half.Z * 0.25
@@ -883,7 +986,7 @@ function FishBuilder.build(def: Types.FishDef, opts: BuildOptions?): Model
 			)
 		end
 	end
-	if style.frill and shape.dorsal ~= "none" and not has("mane") then
+	if style.frill and shape.dorsal ~= "none" and shape.dorsal ~= "orca" and not has("mane") then
 		-- 2枚目の背びれ(極以上): 後ろへ長く流れる
 		fin(
 			"Frill",
@@ -916,11 +1019,16 @@ function FishBuilder.build(def: Types.FishDef, opts: BuildOptions?): Model
 		end
 	else
 		local frills = has("frills")
+		local bigFish = def.shape == "shark" or def.shape == "orca"
 		for _, s in { 1, -1 } do
-			local len = bodySize.Z * (if frills then 0.6 else 0.24)
+			local len = bodySize.Z * (if frills then 0.6 elseif bigFish then 0.32 else 0.24)
 			fin(
 				"PecFin",
-				Vector3.new(bodySize.X * (if frills then 0.5 else 0.42), 0.06 * scale, len),
+				Vector3.new(
+					bodySize.X * (if frills then 0.5 elseif bigFish then 0.55 else 0.42),
+					0.06 * scale,
+					len
+				),
 				CFrame.new(
 					s * half.X * 0.95,
 					-half.Y * 0.28,
@@ -929,7 +1037,7 @@ function FishBuilder.build(def: Types.FishDef, opts: BuildOptions?): Model
 				if frills then accent else nil,
 				"Y"
 			)
-			if def.shape ~= "eel" and def.shape ~= "puffer" then
+			if def.shape ~= "eel" and def.shape ~= "puffer" and def.shape ~= "orca" then
 				fin(
 					"PelvicFin",
 					Vector3.new(bodySize.X * 0.22, 0.05 * scale, bodySize.Z * 0.16),
@@ -970,6 +1078,10 @@ function FishBuilder.build(def: Types.FishDef, opts: BuildOptions?): Model
 		frontZ = -half.Z * 0.42 - bodySize.Z * 0.62 / 2
 	elseif def.shape == "eel" then
 		frontZ = -half.Z * 0.72 - bodySize.Z * 0.32 / 2
+	elseif def.shape == "shark" then
+		frontZ = -half.Z * 0.82 - bodySize.Z * 0.42 / 2
+	elseif def.shape == "orca" then
+		frontZ = -half.Z * 0.74 - bodySize.Z * 0.42 / 2
 	end
 	local eyeBase = math.min(bodySize.X, bodySize.Y)
 	local eyePositions: { { pos: Vector3, out: Vector3, d: number } } = {}
@@ -1066,9 +1178,10 @@ function FishBuilder.build(def: Types.FishDef, opts: BuildOptions?): Model
 			local d = eyeBase
 				* (if def.shape == "puffer" then 0.3 else 0.27)
 				* (if eyesStyle == "cute" then 1.3 elseif eyesStyle == "dot" then 0.8 else 1)
-			local ez = frontZ * 0.72
+			local ez = frontZ * (if def.shape == "shark" then 0.62 else 0.72)
 			local ey = half.Y * (if def.shape == "catfish" then 0.38 else 0.28)
-			local ex = half.X * (if def.shape == "catfish" then 0.72 else 0.62)
+			local ex = half.X
+				* (if def.shape == "catfish" then 0.72 elseif def.shape == "orca" then 0.8 else 0.62)
 			for _, s in { 1, -1 } do
 				eye(Vector3.new(s * ex, ey, ez), Vector3.new(s, 0.15, -0.35), d, eyesStyle)
 			end
@@ -1157,15 +1270,16 @@ function FishBuilder.build(def: Types.FishDef, opts: BuildOptions?): Model
 				tongueColor
 			)
 		end
-	elseif mouthStyle == "fangs" or mouthStyle == "grin" or mouthStyle == "geta" then
-		local w = bodySize.X * (if mouthStyle == "grin" then 0.72 else 0.42)
+	elseif mouthStyle == "fangs" or mouthStyle == "grin" or mouthStyle == "geta" or mouthStyle == "jaws" then
+		local wideMouth = mouthStyle == "grin" or mouthStyle == "jaws"
+		local w = bodySize.X * (if wideMouth then 0.72 else 0.42)
 		part(
 			"Mouth",
-			Vector3.new(w, bodySize.Y * (if mouthStyle == "grin" then 0.3 else 0.14), 0.24 * scale),
+			Vector3.new(w, bodySize.Y * (if wideMouth then 0.3 else 0.14), 0.24 * scale),
 			CFrame.new(0, my, mz + 0.03 * scale),
 			mouthColor
 		)
-		if mouthStyle == "grin" then
+		if wideMouth then
 			for i = 1, 5 do
 				local x = (i - 3) * w * 0.18
 				part(
@@ -1610,9 +1724,15 @@ function FishBuilder.build(def: Types.FishDef, opts: BuildOptions?): Model
 	if has("sun_disc") then
 		-- 八咫烏の日輪(背負った大きな円盤)
 		-- 鱏は正面から見るので円盤も正面向き、ほかの形は横向き
-		local r = math.max(half.Z * 0.75, half.Y)
+		local big = def.shape == "shark" or def.shape == "orca"
+		local r = if big then half.Y * 0.75 else math.max(half.Z * 0.75, half.Y)
 		local sunCF = if def.shape == "ray"
 			then CFrame.new(0, half.Y + r * 0.5, half.Z * 0.35) * CFrame.Angles(0, math.rad(90), 0)
+			elseif big then CFrame.new(0, half.Y + r * 0.6, -half.Z * 0.45) * CFrame.Angles(
+				0,
+				math.rad(90),
+				0
+			)
 			else CFrame.new(-0.05 * scale, half.Y + r * 0.55, half.Z * 0.15)
 		part(
 			"Sun",

@@ -79,6 +79,12 @@ end
 
 -- 写す場面(カメラと2匹の位置)。魚の向きと泳ぎはゲームと同じ計算
 local B = Arena.BASE_SHOT
+local Config = H.require(shared.Config)
+local FishBuilder = H.require(shared.Lib.FishBuilder)
+-- ゲームの BattleScene.lengthFor と同じ(レアな大物ほど大きい)
+local function L(id: string): number
+	return 6 * math.clamp(math.sqrt(FishBuilder.sizeOf(Config.FishById[id]) / 1.05), 0.82, 1.45)
+end
 local function fish(id: string, side: string, pos: any, length: number, heading: number?)
 	local h = heading or (if side == "player" then 1 else -1)
 	local c = roblox.CFrame.new(pos) * roblox.CFrame.Angles(0, Arena.fishYaw(h), 0)
@@ -92,10 +98,13 @@ local views = {
 		name = "battle",
 		camera = cf(Arena.orbit(center, B.yaw, B.pitch, B.dist)),
 		fov = B.fov,
-		fish = { fish("doro_funa", "player", pIdle, 6), fish("ashi_medaka", "enemy", eIdle, 6) },
+		fish = {
+			fish("doro_funa", "player", pIdle, L("doro_funa")),
+			fish("ashi_medaka", "enemy", eIdle, L("ashi_medaka")),
+		},
 	},
 	{
-		-- 攻撃: 攻める側の後ろへ回りこみ、ぶつかる瞬間
+		-- 攻撃: 攻める側の後ろへ回りこみ、ぶつかる瞬間(伝説の鮫が、伝説の鯱へ)
 		name = "attack",
 		camera = cf(
 			Arena.orbit(
@@ -107,15 +116,24 @@ local views = {
 		),
 		fov = Arena.ATTACK_SHOT.fov,
 		fish = {
-			fish("doro_funa", "player", eIdle - roblox.Vector3.new(4.8, 0, 0), 6),
-			fish("ashi_medaka", "enemy", eIdle + roblox.Vector3.new(1.4, 0.3, 0), 6),
+			-- ぶつかる距離はゲームと同じ (2匹の長さ) × 0.4
+			fish(
+				"kyubi_koi",
+				"player",
+				eIdle - roblox.Vector3.new((L("kyubi_koi") + L("umibozu_ei")) * 0.4, 0, 0),
+				L("kyubi_koi")
+			),
+			fish("umibozu_ei", "enemy", eIdle + roblox.Vector3.new(1.4, 0.3, 0), L("umibozu_ei")),
 		},
 	},
 	{
 		name = "boss",
 		camera = cf(Arena.orbit(center, 0.06, B.pitch + 0.02, B.bossDist)),
 		fov = B.fov,
-		fish = { fish("doro_funa", "player", pIdle, 6), fish("raijin_namazu", "enemy", eIdle, 10) },
+		fish = {
+			fish("houou_koi", "player", pIdle, L("houou_koi")),
+			fish("raijin_namazu", "enemy", eIdle, 10),
+		},
 	},
 	{
 		-- 登場の始まり(水面の近くの高いところから)
@@ -129,7 +147,10 @@ local views = {
 			)
 		),
 		fov = Arena.INTRO_SHOT.fov,
-		fish = { fish("doro_funa", "player", pIdle, 6), fish("ashi_medaka", "enemy", eIdle, 6) },
+		fish = {
+			fish("doro_funa", "player", pIdle, L("doro_funa")),
+			fish("ashi_medaka", "enemy", eIdle, L("ashi_medaka")),
+		},
 	},
 }
 

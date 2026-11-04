@@ -167,6 +167,8 @@ return {
 	shape_eel = "鰻",
 	shape_angler = "提灯魚",
 	shape_ray = "鱏",
+	shape_shark = "鮫",
+	shape_orca = "鯱",
 
 	-- デイリー
 	daily_title = "毎日のごほうび",

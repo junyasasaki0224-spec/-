@@ -31,7 +31,7 @@ from mathutils import noise as mnoise
 # ---------------------------------------------------------------------------
 # 基本
 
-RARITY_SCALE = {"common": 0.8, "uncommon": 0.92, "rare": 1.05, "epic": 1.2, "legendary": 1.4, "mythic": 1.65, "secret": 1.9}
+RARITY_SCALE = {"common": 0.75, "uncommon": 0.88, "rare": 1.05, "epic": 1.3, "legendary": 1.7, "mythic": 2.15, "secret": 2.6}  # FishBuilder と同じ
 RARITY_ORDER = {"common": 1, "uncommon": 2, "rare": 3, "epic": 4, "legendary": 5, "mythic": 6, "secret": 7}
 INK = (0.07, 0.05, 0.09)
 WHITE = (0.98, 0.97, 0.95)
@@ -289,7 +289,35 @@ SHAPES = {
         ],
         head=((0, 0.42, 0.1), (0.44, 0.36, 0.32)), tail="whip", tailY=-0.6, length=2.0, dorsal="none",
     ),
+    # 鮫(伝説以上の大物): 先へ細くなる鼻先、高い三角の背びれ、上の葉が長い三日月の尾、えらの切れ目
+    # 部品の3つ目は taper(先 = +Y 側を細くする強さ, べき)
+    "shark": dict(
+        parts=[
+            ((0, 0.55, 0.03), (0.4, 0.5, 0.37)),
+            ((0, 0.92, -0.02), (0.31, 0.42, 0.25), (0.45, 1.3)),
+            ((0, 0.3, 0.01), (0.47, 0.42, 0.44)),  # 頭と胴のつなぎ(くびれを埋める)
+            ((0, 0.02, 0.0), (0.5, 0.8, 0.49)),
+            ((0, -0.38, 0.0), (0.4, 0.45, 0.39)),  # 胴と尾のつなぎ
+            ((0, -0.62, 0.01), (0.3, 0.62, 0.3)),
+            ((0, -1.12, 0.02), (0.12, 0.4, 0.15)),
+        ],
+        head=((0, 0.55, 0.03), (0.4, 0.5, 0.37)), tail="crescent", tailY=-1.42, length=2.9, dorsal="shark",
+    ),
+    # 鯱: 丸く太い頭と体、まっすぐ高い背びれ、横に広がる尾びれ(白黒の模様は pattern="orca")
+    "orca": dict(
+        parts=[
+            ((0, 0.7, 0.02), (0.44, 0.5, 0.42)),
+            ((0, 1.08, -0.1), (0.25, 0.18, 0.17)),
+            ((0, 0.45, 0.01), (0.52, 0.42, 0.5)),  # 頭と胴のつなぎ
+            ((0, 0.1, 0.0), (0.56, 0.82, 0.55)),
+            ((0, -0.4, 0.0), (0.46, 0.45, 0.45)),  # 胴と尾のつなぎ
+            ((0, -0.62, 0.0), (0.34, 0.66, 0.36)),
+            ((0, -1.12, 0.0), (0.12, 0.38, 0.2)),
+        ],
+        head=((0, 0.7, 0.02), (0.44, 0.5, 0.42)), tail="flukes", tailY=-1.42, length=2.9, dorsal="orca",
+    ),
 }
+BIG = ("shark", "orca")  # 大物の形(ひれは体の色、筋なし)
 
 EEL_SPINE = [(0.0, 1.25, 0.02, 0.3), (0.05, 0.9, 0.0, 0.28), (0.08, 0.5, 0.0, 0.27), (0.04, 0.1, 0.0, 0.25), (-0.04, -0.3, 0.0, 0.22), (-0.08, -0.7, 0.0, 0.19), (-0.04, -1.1, 0.0, 0.15), (0.03, -1.45, 0.0, 0.11)]
 
@@ -339,8 +367,9 @@ def build_fish(d, parts_only=False):
             x, y, z, r = EEL_SPINE[-1]
             body.add_sphere(sp((x, y, z)), tuple(S @ Vector((r, r * 1.1, r * 1.08))), c1, seg=20, rings=12)
         else:
-            for c, r in shape["parts"]:
-                body.add_sphere(sp(c), tuple(S @ Vector(r)), c1)
+            for part in shape["parts"]:
+                c, r = part[0], part[1]
+                body.add_sphere(sp(c), tuple(S @ Vector(r)), c1, taper=part[2] if len(part) > 2 else None)
         if "bighead" in deco:
             (hc, hr) = head
             body.add_sphere(Vector(hc) + Vector((0, -hr[1] * 0.25, hr[2] * 0.7)), (hr[0] * 0.95, hr[1] * 0.9, hr[2] * 0.85), c1)
@@ -371,6 +400,8 @@ def build_fish(d, parts_only=False):
     fin_col = lighten(c3, 0.18)
     rim = GOLD if order >= 5 else darken(c3, 0.28)
     fin_scale = 1 + (order - 1) * 0.07
+    big = d["shape"] in BIG
+    big_fin = darken(c1, 0.05)  # 鮫・鯱のひれは体と同じ色(縁取りはレア度で付く)
 
     def fin(center, radii, rot, color=None, taper=(0.75, 1.4), rays=7):
         """ひれ: 根元から放射状に伸びる筋、根元→先のグラデーション、縁の色(レアほど太く、伝説以上は金)、
@@ -419,6 +450,18 @@ def build_fish(d, parts_only=False):
             fin((0, tailY - 0.2, s * 0.14), (0.05, 0.5, 0.24), frame(Vector((0, -1, s * 0.75))))
     elif tail_kind == "fan":
         fin((0, tailY - 0.12, 0), (0.05, 0.36, 0.34), frame(Vector((0, -1, 0))), taper=(0.0, 1))
+    elif tail_kind == "crescent":
+        # 鮫の尾: 上の葉が長く、下の葉が短い三日月
+        base = Vector((0, tailY + 0.08, 0.02))
+        upv, lov = Vector((0, -0.62, 0.78)).normalized(), Vector((0, -0.55, -0.72)).normalized()
+        fin(tuple(base + upv * 0.3), (0.045, 0.36, 0.12), frame(upv), big_fin, taper=(0.85, 1.1), rays=0)
+        fin(tuple(base + lov * 0.2), (0.045, 0.23, 0.1), frame(lov), big_fin, taper=(0.8, 1.1), rays=0)
+    elif tail_kind == "flukes":
+        # 鯱の尾: 横に広がる2枚(水平)
+        base = Vector((0, tailY + 0.06, 0.0))
+        for s in (1, -1):
+            dirv = Vector((s * 0.95, -0.5, 0.0)).normalized()
+            fin(tuple(base + dirv * 0.27), (0.04, 0.31, 0.17), frame(dirv, Vector((0, 1, 0))), big_fin, taper=(0.55, 1.3), rays=0)
     elif tail_kind == "ribbon":
         fin((0, tailY - 0.05, 0), (0.04, 0.42, 0.2), frame(Vector((0, -1, 0))), taper=(0.6, 1))
     elif tail_kind == "whip":
@@ -460,14 +503,41 @@ def build_fish(d, parts_only=False):
     elif shape["dorsal"] == "ribbon":
         for i, (x, y, z, r) in enumerate(EEL_SPINE[1:]):
             g.add_sphere(sp((x, y, z + r * 0.95)), (0.025, 0.22, 0.09), fin_col, seg=16, rings=8)
+    elif shape["dorsal"] == "shark":
+        dirv = Vector((0, -0.42, 0.9)).normalized()
+        fin(tuple(sp((0, 0.02, 0.36)) + dirv * 0.32), (0.05, 0.36, 0.22), frame(dirv), big_fin, taper=(0.9, 1.0), rays=0)
+        # 尾の近くの小さな第2背びれと、しりびれ
+        fin(sp((0, -0.98, 0.21)), (0.03, 0.1, 0.07), frame(Vector((0, -0.6, 1))), big_fin, taper=(0.9, 1.0), rays=0)
+        fin(sp((0, -0.95, -0.2)), (0.03, 0.09, 0.06), frame(Vector((0, -0.6, -1))), big_fin, taper=(0.9, 1.0), rays=0)
+    elif shape["dorsal"] == "orca":
+        dirv = Vector((0, -0.16, 1)).normalized()
+        fin(tuple(sp((0, -0.05, 0.42)) + dirv * 0.4), (0.06, 0.44, 0.2), frame(dirv), big_fin, taper=(0.88, 1.25), rays=0)
     elif shape["dorsal"] == "spines":
         for i in range(3):
             g.add_sphere(sp((0, -0.05 - i * 0.22, 0.6 - i * 0.05)), (0.035, 0.1, 0.2 - i * 0.03), c3, rot=frame(Vector((0, -0.3, 1))), taper=(0.95, 1.2))
-    if order >= 4 and shape["dorsal"] != "none" and "mane" not in deco:
+    if order >= 4 and shape["dorsal"] not in ("none", "orca") and "mane" not in deco:
         fin(sp((0, -0.55, 0.3)), (0.03, 0.34, 0.12), frame(Vector((0, -0.85, 0.45))), c3)
 
     # 胸びれ
-    if d["shape"] != "ray":
+    if big:
+        hc, hr = head
+        frills = "frills" in deco
+        for s in (1, -1):
+            if d["shape"] == "shark":
+                # 鮫: 長く、横へ翼のように張り出す
+                base = Vector((s * hr[0] * 0.75, hc[1] - hr[1] * 0.75, hc[2] - hr[2] * 0.55))
+                dirv = Vector((s * 0.85, -0.55, -0.32)).normalized()
+                L = 0.66 if frills else 0.52
+                fin(tuple(base + dirv * L * 0.5), (0.035, L * 0.55, 0.17), frame(dirv, Vector((0, 1, 0))), c3 if frills else big_fin, taper=(0.85, 1.1), rays=0)
+                # 腹びれ
+                fin(sp((s * 0.17, -0.5, -0.3)), (0.025, 0.12, 0.07), frame(Vector((s * 0.4, -0.8, -0.5)), Vector((0, 1, 0))), big_fin, taper=(0.85, 1.1), rays=0)
+            else:
+                # 鯱: 丸いうちわ形
+                base = Vector((s * hr[0] * 0.8, hc[1] - hr[1] * 0.7, hc[2] - hr[2] * 0.6))
+                dirv = Vector((s * 0.7, -0.45, -0.6)).normalized()
+                L = 0.62 if frills else 0.46
+                fin(tuple(base + dirv * L * 0.5), (0.035, L * 0.55, 0.18), frame(dirv, Vector((0, 1, 0))), c3 if frills else big_fin, taper=(0.3, 1.0), rays=0)
+    elif d["shape"] != "ray":
         frills = "frills" in deco
         for s in (1, -1):
             if d["shape"] == "eel":
@@ -542,6 +612,12 @@ def sculpt_body(obj, d, head):
             if abs(zz) < 1.0 and abs(p.x) > hrx * 0.35:
                 gill = (1 - smoothstep(0.006, 0.02, abs(p.y - gy))) * (1 - smoothstep(0.75, 1.0, abs(zz)))
                 disp -= 0.01 * gill
+        # 鮫のえら: 頭の後ろに5本の切れ目(少し斜め)
+        if shape == "shark" and abs(p.x) > hrx * 0.45 and abs(zz) < 0.85:
+            for i in range(5):
+                gyi = hcy - hry * 0.55 - i * 0.07 + 0.04 * zz
+                gill = max(gill, (1 - smoothstep(0.005, 0.014, abs(p.y - gyi))) * (1 - smoothstep(0.6, 0.85, abs(zz))))
+            disp -= 0.012 * gill
         # 鱗(鯉型)。えらぶたより後ろだけ
         if shape == "koi":
             fade = smoothstep(0.28, 0.42, h) * smoothstep(0.1, 0.22, t) * (1 - smoothstep(gy - 0.09, gy - 0.04, p.y))
@@ -578,8 +654,11 @@ def sculpt_body(obj, d, head):
             speck = 1.0  # 背中の点々
         elif shape in ("catfish", "eel"):
             spot = smoothstep(0.25, 0.55, n3) * 0.6  # ぬめった肌のまだら
-        # 細かい凹凸(質感)
-        disp += 0.0015 * mnoise.noise(p * 40.0 + seed)
+        # 細かい凹凸(質感)。鮫はざらざらの肌、鯱はつるつる
+        if shape == "shark":
+            disp += 0.0012 * mnoise.noise(p * 90.0 + seed)
+        if shape != "orca":
+            disp += 0.0015 * mnoise.noise(p * 40.0 + seed)
         v.co = p + nrm * disp
         if scale_edge or gill or lateral or spot or speck:
             feats[v.index] = (scale_edge, gill, lateral, spot, speck)
@@ -608,7 +687,8 @@ def paint_body(obj, d, head, c1, c2, c3, rng, S, feats=None):
         verts = [v.co.copy() for v in mesh.vertices if v.co.z > (zmin + zmax) / 2 - 0.05]
         for _ in range(n):
             spots.append(rng.choice(verts))
-    belly_c = lighten(c1, 0.45) if pat != "belly" else c2
+    belly_c = c2 if pat in ("belly", "orca") else lighten(c1, 0.45)
+    (hcx, hcy, hcz), (hrx, hry, hrz) = head
     for poly in mesh.polygons:
         for li in poly.loop_indices:
             v = mesh.vertices[mesh.loops[li].vertex_index].co
@@ -638,6 +718,16 @@ def paint_body(obj, d, head, c1, c2, c3, rng, S, feats=None):
             elif pat == "dango":
                 k = int(t * 3.0)
                 c = [c3, lighten(c1, 0.3), c2][min(2, k)]
+            elif pat == "orca":
+                # 鯱: 白いお腹とあご、横腹へ跳ね上がる白、目の後ろの白い楕円、背びれの後ろの灰色の鞍
+                flank = 0.36 + 0.26 * smoothstep(0.26, 0.36, t) * (1 - smoothstep(0.42, 0.52, t))
+                if (h < flank and t > 0.12) or (h < 0.46 and t > 0.86):
+                    c = c2
+                ey, ez = hcy - hry * 0.3, hcz + hrz * 0.4
+                if abs(v.x) > hrx * 0.35 and ((v.y - ey) / 0.21) ** 2 + ((v.z - ez) / 0.1) ** 2 < 1:
+                    c = c2
+                if h > 0.84 and 0.36 < t < 0.5:
+                    c = mix(c1, c2, 0.4)
             # 細部の色(鱗の弧・えらの線・側線・いぼ・点々)
             f = feats.get(mesh.loops[li].vertex_index) if feats else None
             if f:
@@ -753,7 +843,7 @@ g_skin = [None]
 
 def add_face(g, d, head, deco, c1, c2, c3, order):
     eyes = d.get("eyes") or ("none" if "noface" in deco else ("big" if "big_eye" in deco else "normal"))
-    mouth = d.get("mouth") or {"koi": "small", "catfish": "wide", "puffer": "o", "eel": "small", "angler": "grin", "ray": "none"}[d["shape"]]
+    mouth = d.get("mouth") or {"koi": "small", "catfish": "wide", "puffer": "o", "eel": "small", "angler": "grin", "ray": "none", "shark": "jaws", "orca": "smile"}[d["shape"]]
     g_skin[0] = c1
     iris = c3 if d.get("c3") else c2
     # 虹彩の色が体と近すぎるときは補色寄りに
@@ -769,6 +859,10 @@ def add_face(g, d, head, deco, c1, c2, c3, order):
         yaw_side, pitch = 40, 18
     elif d["shape"] == "puffer":
         yaw_side, pitch = 34, 12
+    elif d["shape"] == "shark":
+        yaw_side, pitch = 50, 14
+    elif d["shape"] == "orca":
+        yaw_side, pitch = 52, 6
     else:
         yaw_side, pitch = 33, 14
     if eyes == "big":
@@ -788,7 +882,7 @@ def add_face(g, d, head, deco, c1, c2, c3, order):
             p, n = head_point(head, s * (yaw_side + 6), pitch - 22)
             g.add_disc(p + n * 0.005, n, scale_eye * 0.16, scale_eye * 0.09, PINK, thick=0.012, curve=curve)
     # 口
-    p, n = head_point(head, 0, -12 if d["shape"] != "ray" else 10)
+    p, n = head_point(head, 0, {"ray": 10, "shark": -20, "orca": -14}.get(d["shape"], -12))
     side = Vector((1, 0, 0))
     up = eye_frame(n)
     w = scale_eye * 0.22
@@ -798,7 +892,7 @@ def add_face(g, d, head, deco, c1, c2, c3, order):
         return p + side * du + up * dv + n * dn
 
     if mouth in ("small", "smile", "frown", "wide", "fangs", "geta"):
-        width = w * (2.2 if mouth == "wide" else 1.0)
+        width = w * (2.2 if mouth == "wide" else (1.9 if d["shape"] == "orca" else 1.0))
         bend = {"smile": 1, "frown": -1}.get(mouth, 0.35)
         pts = [m(width * (i / 6 * 2 - 1), -bend * w * 0.35 * (1 - (i / 6 * 2 - 1) ** 2)) for i in range(7)]
         g.add_tube(pts, 0.018 * (scale_eye / 0.45), lip)
@@ -819,6 +913,18 @@ def add_face(g, d, head, deco, c1, c2, c3, order):
         for i in range(6):
             x = (i / 5 * 2 - 1) * w * 1.25
             g.add_sphere(tuple(m(x, w * 0.25, 0.025)), (0.03, 0.03, 0.07), WHITE, rot=frame(Vector((0, 0, -1))), taper=(0.95, 1))
+    elif mouth == "jaws":
+        # 鮫の口: 横に広い、にやりとした口と、とがった歯の列
+        width = w * 3.0
+        lw = 0.022 * (scale_eye / 0.45)
+
+        def jaw(u):
+            return m(width * u, w * 0.45 * u * u - w * 0.1)
+
+        g.add_tube([jaw(i / 8 * 2 - 1) for i in range(9)], lw, lip)
+        for i in range(7):
+            u = (i / 6 * 2 - 1) * 0.78
+            g.add_sphere(tuple(jaw(u) - up * w * 0.14 + n * 0.012), (0.026, 0.065, 0.026), WHITE, rot=frame(-up), taper=(0.95, 1))
     elif mouth == "beak":
         g.add_sphere(tuple(m(0, 0, 0.08)), (0.09, 0.22, 0.07), GOLD, rot=frame(n), taper=(0.95, 1))
 
@@ -952,7 +1058,13 @@ def add_decos(g, d, head, deco, c1, c2, c3, order, S, tailY):
             out = Vector((0, math.cos(a), math.sin(a)))
             g.add_sphere(tuple(p + out * 0.1), (0.06, 0.14, 0.06), (1.0, 0.71, 0.28), rot=frame(out), taper=(0.95, 1.2))
     if "sun_disc" in deco:
-        g.add_disc(hc + Vector((0, -0.55, 0.65)), Vector((0, 1, 0)), 0.55, 0.55, (1.0, 0.62, 0.24), thick=0.03)
+        if d["shape"] in BIG:
+            # 大物: 頭の後ろに小さめの日輪(金の縁)
+            at = hc + Vector((0, -hr[1] * 1.1, hr[2] + 0.26))
+            g.add_disc(at, Vector((0, 1, 0)), 0.36, 0.36, (1.0, 0.62, 0.24), thick=0.03)
+            g.add_torus(at, Vector((0, 1, 0)), 0.38, 0.03, GOLD)
+        else:
+            g.add_disc(hc + Vector((0, -0.55, 0.65)), Vector((0, 1, 0)), 0.55, 0.55, (1.0, 0.62, 0.24), thick=0.03)
     if "moon" in deco:
         # 三日月: 太さが中央で太く端で細い弧(管を重ねて作る)
         pts = []
@@ -1346,6 +1458,7 @@ def main():
     ap.add_argument("--luau", default="", help="大きさの表を書き出す Config/FishMeshes.luau のパス")
     ap.add_argument("--part", default="", help="並列で作る時の途中のファイル名(PNG の GLB + JSON を書く)")
     ap.add_argument("--merge", nargs="*", default=None, help="--part で作った GLB を1つにまとめる")
+    ap.add_argument("--update", default="", help="--merge と一緒に: 今の GLB(この中の同じ魚だけ --merge の GLB で差し替える)")
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else sys.argv[1:]
     a = ap.parse_args(argv)
     defs = json.load(open(a.defs)) if a.defs else []
@@ -1353,6 +1466,11 @@ def main():
         defs = defs["fish"]
     ids = [x for x in a.ids.split(",") if x]
     os.makedirs(a.out, exist_ok=True)
+    if a.merge is not None and a.update:
+        manifest = run_update(a.update, a.out, a.merge)
+        if a.luau:
+            write_luau(manifest, a.luau)
+        return
     if a.merge is not None:
         manifest = run_merge(a.out, a.merge)
         if a.luau:
@@ -1466,6 +1584,42 @@ def run_merge(out, parts):
     manifest = dict(sorted(manifest.items()))
     json.dump(manifest, open(os.path.join(out, "manifest.json"), "w"), indent=1)
     print("merged", len(manifest), "fish ->", path, os.path.getsize(path) // 1024, "KB")
+    return manifest
+
+
+def run_update(base, out, parts):
+    """今の GLB(全魚)の中の、parts に入っている魚だけを差し替える(作り直した数匹だけを入れ替える時)。
+    manifest は base と同じフォルダの manifest.json を引き継ぎ、差し替えた魚の分を上書きする"""
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    manifest = json.load(open(os.path.join(os.path.dirname(base), "manifest.json")))
+    new = {}
+    for part in parts:
+        mf = os.path.splitext(part)[0] + ".json"
+        new.update(json.load(open(mf)))
+    bpy.ops.import_scene.gltf(filepath=base)
+    for o in list(bpy.context.scene.objects):
+        if o.type == "MESH" and o.name.removesuffix("_Outline") in new:
+            bpy.data.objects.remove(o)
+    for m in list(bpy.data.meshes):
+        if m.users == 0:
+            bpy.data.meshes.remove(m)
+    for part in parts:
+        bpy.ops.import_scene.gltf(filepath=part)
+    objs = [o for o in bpy.context.scene.objects if o.type == "MESH"]
+    for o in objs:
+        if "." in o.name:
+            raise RuntimeError("名前がぶつかった: " + o.name)
+        o.data.name = o.name
+    manifest.update(new)
+    missing = [k for k in manifest if k not in bpy.data.objects or k + "_Outline" not in bpy.data.objects]
+    if missing:
+        raise RuntimeError("見つからない魚: " + ", ".join(missing))
+    os.makedirs(out, exist_ok=True)
+    path = os.path.join(out, "YokaiFishMeshes.glb")
+    export_glb(path, objs, "JPEG")
+    manifest = dict(sorted(manifest.items()))
+    json.dump(manifest, open(os.path.join(out, "manifest.json"), "w"), indent=1)
+    print("updated", len(new), "of", len(manifest), "fish ->", path, os.path.getsize(path) // 1024, "KB")
     return manifest
 
 

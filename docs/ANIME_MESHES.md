@@ -77,4 +77,11 @@ cp build/fish/YokaiFishMeshes.glb assets/fish/
 
 - お手元の Blender(4.2 以降)で動きます。Blender が無い環境では `pip install bpy==4.2.0`(Python 3.11)でも動きます
 - 確認用の画像: `--ids hasu_koi,bake_fugu --render --face`(`--face` で顔のアップも)、書き出した GLB の確認: `--verify assets/fish/YokaiFishMeshes.glb build/verify`
-- 作り直した GLB は、上の「Studio に入れる手順」をもう一度行ってください
+- 数匹だけ作り直す時は、その魚だけ書き出して、今の GLB の中の同じ魚だけを差し替えられます(ほかの魚は作り直さない):
+
+```bash
+blender -b -P tools/blender/yokai_fish.py -- --defs build/fish.json --out build/fishexp --ids nue_namazu,kyubi_koi --export --part some
+blender -b -P tools/blender/yokai_fish.py -- --out assets/fish --update assets/fish/YokaiFishMeshes.glb --merge build/fishexp/some.glb --luau src/shared/Config/FishMeshes.luau
+```
+
+- 作り直した GLB は、上の「Studio に入れる手順」をもう一度行ってください(`ReplicatedStorage.FishMeshes` を消してから読み込み直す)

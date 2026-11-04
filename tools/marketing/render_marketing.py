@@ -54,20 +54,20 @@ SCENES = {
         "focus": 11.5,
         "fish": [{"id": "chochin_anko", "pos": (0, 7, 0), "heading": -1, "turn": 0.55, "length": 6}],
     },
-    # 図鑑: いろいろな妖怪魚が並ぶ
+    # 図鑑: いろいろな妖怪魚が並ぶ。奥に伝説以上の大物(鯱・鮫)、手前に小さな魚(レアほど大きいのが一目で分かる)
     "thumb_collection": {
         "size": (1920, 1080),
         "camera": orbit((0, 8, 0), 0.0, 0.05, 27),
         "fov": 46,
         "focus": 26,
         "fish": [
-            {"id": "kyubi_koi", "pos": (-12.5, 9.5, -2), "heading": 1, "turn": 0.5, "length": 5.5},
-            {"id": "furin_kingyo", "pos": (-7, 6.2, 2), "heading": 1, "turn": 0.6, "length": 4.6},
-            {"id": "chochin_anko", "pos": (-1.5, 10.5, -1), "heading": -1, "turn": 0.45, "length": 5.2},
-            {"id": "raijin_namazu", "pos": (3.5, 5.6, 1.5), "heading": -1, "turn": 0.4, "length": 6.2},
-            {"id": "tengu_ei", "pos": (9.5, 10.2, -2.5), "heading": -1, "turn": 0.35, "length": 6},
-            {"id": "bake_fugu", "pos": (13.5, 5.8, 1), "heading": -1, "turn": 0.6, "length": 4.2},
-            {"id": "kappa_koi", "pos": (-12, 4.6, 3), "heading": 1, "turn": 0.7, "length": 4.2},
+            {"id": "tsukuyomi_koi", "pos": (7.5, 10.2, -5.5), "heading": -1, "turn": 0.35, "length": 10.5},
+            {"id": "kyubi_koi", "pos": (-8.5, 10.6, -3.5), "heading": 1, "turn": 0.4, "length": 8.5},
+            {"id": "chochin_anko", "pos": (-1.5, 6.4, 2), "heading": -1, "turn": 0.45, "length": 4.2},
+            {"id": "furin_kingyo", "pos": (-7.5, 5.4, 3.5), "heading": 1, "turn": 0.6, "length": 3.2},
+            {"id": "bake_fugu", "pos": (8.5, 5.4, 3), "heading": -1, "turn": 0.6, "length": 3.2},
+            {"id": "kappa_koi", "pos": (-12.5, 4.4, 4), "heading": 1, "turn": 0.7, "length": 3.4},
+            {"id": "raijin_namazu", "pos": (3.5, 5.0, 4.5), "heading": -1, "turn": 0.4, "length": 4.4},
         ],
     },
 }

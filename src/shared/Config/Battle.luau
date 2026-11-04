@@ -32,6 +32,9 @@ Battle.ShapeStats = {
 	eel = { hp = 44, atk = 60, def = 36, spd = 72 }, -- 速攻型
 	angler = { hp = 52, atk = 66, def = 44, spd = 38 }, -- 攻撃型
 	ray = { hp = 56, atk = 46, def = 60, spd = 46 }, -- 守り寄り
+	-- 大物(伝説以上の魚だけの形)。合計は少し高め
+	shark = { hp = 52, atk = 70, def = 42, spd = 58 }, -- 鋭い攻めと速さ
+	orca = { hp = 70, atk = 62, def = 54, spd = 36 }, -- 重く強い
 }
 
 -- レア度による能力の倍率
@@ -145,6 +148,16 @@ Battle.Moves = {
 	},
 	{ id = "tail_strike", ja = "尾の一撃", en = "Tail Strike", element = "none", power = 62, acc = 88 },
 	{
+		id = "jaw_crush",
+		ja = "噛み砕き",
+		en = "Jaw Crush",
+		element = "none",
+		power = 60,
+		acc = 95,
+		effect = "def_down",
+	},
+	{ id = "breach_slam", ja = "大波返し", en = "Breach Slam", element = "none", power = 75, acc = 85 },
+	{
 		id = "rest",
 		ja = "ひと休み",
 		en = "Rest",
@@ -202,6 +215,8 @@ Battle.ShapeMove = {
 	eel = "coil",
 	angler = "lure",
 	ray = "tail_strike",
+	shark = "jaw_crush",
+	orca = "breach_slam",
 }
 
 -- 属性ごとの技(覚えるレベル順)

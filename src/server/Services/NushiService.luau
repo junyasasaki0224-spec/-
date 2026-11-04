@@ -78,7 +78,8 @@ end
 local function spawnModel()
 	-- ぬしの湖の本当の主「龍神」が現れる
 	local def = Config.FishById[NT.fishId] or Config.FishById["numa_mizuchi"] or Config.Fish[1]
-	local model = FishBuilder.build(def, { scale = 2.6, anchored = true })
+	-- 神話の大きさ(2.15)× 2 ≒ 前と同じ大きさ(約23スタッド)
+	local model = FishBuilder.build(def, { scale = 2.0, anchored = true })
 	model.Name = "Nushi"
 	local c = lakeCenter()
 	model:PivotTo(CFrame.new(c + Vector3.new(0, 1.5, 0)))

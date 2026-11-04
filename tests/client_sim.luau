@@ -172,12 +172,14 @@ H.override(client.Controllers.LightingFX, {
 	end,
 })
 H.override(shared.Lib.Remotes, { event = remote })
+local RealFishBuilder = H.require(shared.Lib.FishBuilder)
 H.override(shared.Lib.FishBuilder, {
 	build = function(def)
 		local m = fakeNew("Model")
 		m.Name = def.id
 		return m
 	end,
+	sizeOf = RealFishBuilder.sizeOf, -- 大きさの計算(レア度)は本物
 })
 
 -- 自分のデータ(サーバーから届く写しと同じ形)
@@ -711,6 +713,16 @@ H.test(
 		end
 		local mine, foe = fishModel(fishA.id), fishModel(fishB.id)
 		H.assert(mine and foe, "fish not in the water")
+		-- レアな大物ほど大きく戦う(並 約5 〜 秘伝 約8.7。舞台からはみ出さない)
+		local common, legend, secret =
+			Scene.lengthFor(Config.FishById.doro_funa),
+			Scene.lengthFor(Config.FishById.kyubi_koi),
+			Scene.lengthFor(Config.FishById.tsukuyomi_koi)
+		H.assert(legend > common * 1.3 and secret > legend, "rarer fish should be bigger in battle")
+		H.assert(
+			common >= 4.8 and secret <= 8.8,
+			("battle sizes out of range %.2f..%.2f"):format(common, secret)
+		)
 		local function x(m: any): number
 			return m.Pivot.Position.X - origin.X
 		end

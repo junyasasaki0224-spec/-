@@ -56,16 +56,73 @@ end)
 roblox.implementMethod("Instance", "WaitForChild", function(inst, name)
 	return inst:FindFirstChild(name)
 end)
+local function modelParts(model): { any }
+	local list = {}
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then
+			table.insert(list, d)
+		end
+	end
+	return list
+end
+roblox.implementMethod("Model", "GetPivot", function(model)
+	local p = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
+	return if p then p.CFrame else roblox.CFrame.new()
+end)
 roblox.implementMethod("Model", "PivotTo", function(model, cf)
 	local root = model:FindFirstChild("HumanoidRootPart")
 	if root then
 		root.CFrame = cf
 		root.Position = cf.Position
+		return
+	end
+	-- キャラクター以外(水槽の魚など): 全部の部品を、基準の位置からの相対で動かす
+	local p = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
+	if not p then
+		return
+	end
+	local inv = p.CFrame:Inverse()
+	for _, part in modelParts(model) do
+		local c = cf * (inv * part.CFrame)
+		part.CFrame = c
+		part.Position = c.Position
 	end
 end)
-roblox.implementMethod("Model", "GetPivot", function(model)
-	local p = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
-	return if p then p.CFrame else roblox.CFrame.new()
+-- 部品の箱を合わせた、軸にそろった箱(モデルを原点・無回転に置いてから使う前提)
+roblox.implementMethod("Model", "GetBoundingBox", function(model)
+	local mn, mx = nil, nil
+	for _, part in modelParts(model) do
+		local h = part.Size / 2
+		for _, sx in { -1, 1 } do
+			for _, sy in { -1, 1 } do
+				for _, sz in { -1, 1 } do
+					local c = part.CFrame * roblox.Vector3.new(h.X * sx, h.Y * sy, h.Z * sz)
+					mn = if mn then mn:Min(c) else c
+					mx = if mx then mx:Max(c) else c
+				end
+			end
+		end
+	end
+	if not mn then
+		return roblox.CFrame.new(), roblox.Vector3.zero
+	end
+	return roblox.CFrame.new((mn + mx) / 2), mx - mn
+end)
+roblox.implementMethod("Model", "GetScale", function(model)
+	local s = model:GetAttribute("__scale")
+	return if type(s) == "number" then s else 1
+end)
+roblox.implementMethod("Model", "ScaleTo", function(model, scale)
+	local k = scale / model:GetScale()
+	local pivot = model:GetPivot()
+	for _, part in modelParts(model) do
+		local rel = pivot:Inverse() * part.CFrame
+		local c = pivot * (roblox.CFrame.new(rel.Position * k) * (rel - rel.Position))
+		part.Size = part.Size * k
+		part.CFrame = c
+		part.Position = c.Position
+	end
+	model:SetAttribute("__scale", scale)
 end)
 roblox.implementProperty("Humanoid", "Health", function()
 	return 100
@@ -729,6 +786,77 @@ H.test("水槽: 飾ると小屋に魚が出る、戻すと消える", function()
 	Shop.handleRequest(alice, "fromTank", "t1")
 	H.assertEq(#hut.TankFish:GetChildren(), 0)
 end)
+
+H.test(
+	"水槽: レアな大物(鮫・鯱)ほど大きく飾られ、ガラスからはみ出さない",
+	function()
+		local Aquarium = H.require(server.Services.AquariumService)
+		local FishBuilder = H.require(shared.Lib.FishBuilder)
+		local hut = Aquarium.hutOf(alice)
+		local tank = hut.Tank
+		local inner = tank.Size / 2
+		local lengths = {}
+		for i, id in { "doro_funa", "kappa_koi", "kyubi_koi", "umibozu_ei", "ryujin", "tsukuyomi_koi" } do
+			local def = Config.FishById[id]
+			local size = FishBuilder.sizeOf(def)
+			local model = FishBuilder.build(def, {
+				forceParts = true,
+				scale = math.clamp(0.95 / math.sqrt(size), 0.4, 1.2),
+				anchored = true,
+			})
+			-- 体の長さ(向きに関係ない本当の長さ)= 置く前の長さ × place で縮めた分
+			model:PivotTo(roblox.CFrame.new())
+			local _, box0 = model:GetBoundingBox()
+			Aquarium.place(model, tank, H.Random.new(i))
+			lengths[id] = box0.Z * model:GetScale()
+			-- 泳ぐ範囲まで含めて、水槽の中(水槽から見た座標)に収まる
+			local swimX, swimZ = model:GetAttribute("SwimX"), model:GetAttribute("SwimZ")
+			local hover = model:GetAttribute("Hover")
+			local mn, mx = nil, nil
+			for _, part in model:GetDescendants() do
+				if part:IsA("BasePart") then
+					local h = part.Size / 2
+					for _, sx in { -1, 1 } do
+						for _, sy in { -1, 1 } do
+							for _, sz in { -1, 1 } do
+								local c = tank.CFrame:Inverse()
+									* (part.CFrame * roblox.Vector3.new(h.X * sx, h.Y * sy, h.Z * sz))
+								mn = if mn then mn:Min(c) else c
+								mx = if mx then mx:Max(c) else c
+							end
+						end
+					end
+				end
+			end
+			local len = if hover then mx.X - mn.X else math.max(mx.X - mn.X, mx.Z - mn.Z)
+			-- 向きを変える魚は、体の長さ(どの向きでも)+ 泳ぐ幅 が収まる。大物は横向きのまま
+			local reachX = if hover then (mx.X - mn.X) / 2 else len / 2
+			local cx = (mn.X + mx.X) / 2
+			H.assert(math.abs(cx) + reachX + swimX <= inner.X + 0.01, id .. " leaves the tank along X")
+			H.assert(mn.Y >= -inner.Y - 0.01 and mx.Y <= inner.Y + 0.01, id .. " leaves the tank vertically")
+			if hover then
+				H.assert(mx.Z - mn.Z <= tank.Size.Z + 0.01, id .. " wider than the tank")
+			else
+				H.assert(len / 2 + swimZ <= inner.Z + 0.01, id .. " pokes out when turning")
+			end
+		end
+		H.assert(
+			lengths.tsukuyomi_koi > lengths.kappa_koi * 1.4 and lengths.kyubi_koi > lengths.doro_funa * 1.4,
+			"big rare fish should look bigger in the tank: "
+				.. table.concat(
+					(function()
+						local out = {}
+						for k, v in lengths do
+							table.insert(out, ("%s=%.2f"):format(k, v))
+						end
+						return out
+					end)(),
+					" "
+				)
+		)
+		H.assert(lengths.kappa_koi >= lengths.doro_funa * 0.95, "uncommon smaller than common")
+	end
+)
 
 H.test("相棒: 魚籠の魚を相棒にして、魚を食べさせるとレベルが上がる", function()
 	local d = data(alice)

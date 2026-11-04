@@ -9,6 +9,7 @@
   - 終わると、カメラ・光の設定・霧を元に戻し、舞台をしまう(`BattleScene.destroy`)
 - 光はバトルの間だけ水の中のものにする(`BattleScene` の `UNDERWATER`): 太陽を真上に、青い霧(FogStart 26 / FogEnd 190)、色の補正・ブルーム・被写界深度(奥と手前がぼける)。Atmosphere があると霧が効かないので一時的に外す。時間帯と天気の見た目(`LightingFX`)は `LightingFX.hold` で止めておく(雨も降らない)
 - 相棒は本物の3Dモデル(`FishBuilder`。アニメ風メッシュがあればそれ)。影が海底に落ちる。カメラについて回るやわらかい光で、水の中でもはっきり見える
+- 大きさはレア度で変わる(`BattleScene.lengthFor`: 並 約5 〜 秘伝 約8.7 スタッド、ボスは10)。伝説以上は鮫・鯱の大物の形で、能力も大物向け(鮫 = 攻めと速さ・技「噛み砕き」、鯱 = 体力と力・技「大波返し」。`Config/Battle.luau` の `ShapeStats` / `ShapeMove`)
 - 勝ち負け・ダメージはサーバーが決める。画面は届いた出来事を順に再生するだけ(`BattleUI` → `BattleScene`)
 
 ## 舞台(BattleArena)

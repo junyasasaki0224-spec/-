@@ -23,8 +23,13 @@ local HOME = BattleArena.HOME -- 舞台の中心から
 local BASE = BattleArena.BASE_SHOT
 local ATTACK = BattleArena.ATTACK_SHOT
 local OFFSCREEN = 30
-local LENGTH = 6 -- 魚の長さ(スタッド)。どの魚も同じ大きさで戦う
+local LENGTH = 6 -- 魚の長さ(スタッド)の基準。レアな大物ほど大きく(並 約5 〜 秘伝 約8.7)
 local BOSS_LENGTH = 10
+
+-- 戦う時の大きさの倍率。図鑑の大きさの差(並 0.75 〜 秘伝 2.6)を、舞台に収まるようにゆるめる
+function BattleScene.lengthFor(def: any): number
+	return LENGTH * math.clamp(math.sqrt(FishBuilder.sizeOf(def) / 1.05), 0.82, 1.45)
+end
 
 local TEX = {
 	sparkle = "rbxasset://textures/particles/sparkles_main.dds",
@@ -568,7 +573,7 @@ function BattleScene.setFish(self: any, side: string, fishId: string, mutation: 
 	model:PivotTo(CFrame.new())
 	local _, size = model:GetBoundingBox()
 	local long = math.max(size.X, size.Y, size.Z, 0.1)
-	a.length = if self.boss and side == "enemy" then BOSS_LENGTH else LENGTH
+	a.length = if self.boss and side == "enemy" then BOSS_LENGTH else BattleScene.lengthFor(def)
 	pcall(function()
 		model:ScaleTo(model:GetScale() * a.length / long)
 	end)

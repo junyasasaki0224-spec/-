@@ -32,11 +32,14 @@ SWAMP_LOOK = {
     "tsuchinoko_fugu":  dict(c1="#8A7A4A", c2="#5A4A2A", c3="#D8C27A", pattern="stripes", eyes="cute",   mouth="tongue", body=[1.1, 0.85, 1.35], deco=["coin", "smooth"]),
     "rokurokubi_unagi": dict(c1="#EADBCB", c2="#B03A5A", c3="#2B1B2E", pattern="belly",   eyes="sleepy", mouth="smile", body=[0.9, 0.9, 1.35], deco=["hair", "kanzashi"]),
     "kodama_koi":       dict(c1="#D6EBC4", c2="#6FAF4A", c3="#A7D98A", pattern="spots",   eyes="dot",    mouth="o",     body=[1.0, 1.1, 0.9], deco=["glow", "leaf"]),
-    "nue_namazu":       dict(c1="#4A3220", c2="#D9A441", c3="#5E8C4A", pattern="stripes", eyes="angry",  mouth="fangs", tails=2, deco=["horns", "ears", "whiskers", "flame"]),
-    "kyubi_koi":        dict(c1="#FFDC8A", c2="#FF8F3D", c3="#FFF0B8", pattern="belly",   eyes="sleepy", mouth="smile", tails=9, deco=["ears", "flame"]),
-    "umibozu_ei":       dict(c1="#16182A", c2="#2E3456", c3="#6E7BD6", pattern="belly",   eyes="big",    mouth="none",  size=1.1, deco=["bighead", "glow"]),
-    "numa_mizuchi":     dict(c1="#1F7A63", c2="#FFD34D", c3="#FFE9A3", pattern="spots",   eyes="angry",  mouth="fangs", deco=["antlers", "whiskers", "mane", "orb", "glow"]),
-    "yamata_chochin":   dict(c1="#3A0F24", c2="#FF3D6E", c3="#FFC94D", pattern="stripes", eyes="angry",  mouth="grin",  deco=["lantern", "third_eye", "horns", "flame"]),
+    # 伝説以上は大物(鮫・鯱)。名前・説明も形に合わせて上書きする
+    "nue_namazu":       dict(shape="shark", ja="鵺鮫", en="Nue Shark", c1="#4A3220", c2="#D9A441", c3="#5E8C4A", pattern="stripes", eyes="angry", mouth="jaws", deco=["horns", "ears", "whiskers", "flame"],
+                             jaDesc="猿の顔に虎の縞。雷雲を連れて泳ぐ鮫。正体は誰も知らない。", enDesc="A monkey's face and tiger stripes. It swims with thunderclouds. No one knows what it really is."),
+    "kyubi_koi":        dict(shape="shark", ja="九尾鮫", en="Nine-Tailed Shark", c1="#FFDC8A", c2="#FF8F3D", c3="#FFF0B8", pattern="belly", eyes="sleepy", mouth="smile", tails=9, deco=["ears", "flame"],
+                             jaDesc="千年を生きて九本の尾を得た、狐火をまとう鮫。", enDesc="A shark that lived a thousand years and grew nine fox-fire tails."),
+    "umibozu_ei":       dict(shape="orca", ja="海坊主鯱", en="Umibozu Orca", c1="#16182A", c2="#C9D2F5", c3="#6E7BD6", pattern="orca", eyes="big", mouth="none", size=1.1, deco=["bighead", "glow"]),
+    "numa_mizuchi":     dict(shape="shark", c1="#1F7A63", c2="#FFD34D", c3="#FFE9A3", pattern="spots", eyes="angry", mouth="jaws", deco=["antlers", "whiskers", "orb", "glow"]),
+    "yamata_chochin":   dict(shape="shark", c1="#3A0F24", c2="#FF3D6E", c3="#FFC94D", pattern="stripes", eyes="angry", mouth="jaws", body=[1.12, 1.08, 1.05], deco=["lantern", "third_eye", "horns", "flame"]),
 }
 
 # ---- ぬしの湖(20種・新規) ----
@@ -94,20 +97,20 @@ LAKE = [
          c1="#FF6B4A", c2="#FFE0D6", c3="#FFD34D", pattern="patches", eyes="cute", mouth="smile", body=[1.15, 1.2, 0.85], tails=4, deco=["kanzashi", "frills", "blush"],
          jaDesc="城の池から逃げ出した、金魚のお姫さま。", enDesc="A goldfish princess who escaped the castle pond."),
     # 伝説
-    dict(id="yatagarasu_ei", ja="八咫烏鱏", en="Yatagarasu Ray", element="fire", rarity="legendary", time="any", weather="any", kg=[6.0, 20.0], shape="ray",
-         c1="#1A1A22", c2="#3A3A48", c3="#FFB547", pattern="belly", eyes="normal", mouth="beak", deco=["sun_disc", "crest"],
+    dict(id="yatagarasu_ei", ja="八咫烏鯱", en="Yatagarasu Orca", element="fire", rarity="legendary", time="any", weather="any", kg=[6.0, 20.0], shape="orca",
+         c1="#1A1A22", c2="#FFB547", c3="#FFE08A", pattern="orca", eyes="normal", mouth="beak", deco=["sun_disc", "crest"],
          jaDesc="太陽の使い。道に迷った者を正しい方へ導く。", enDesc="Messenger of the sun. It guides the lost the right way."),
-    dict(id="houou_koi", ja="鳳凰鯉", en="Phoenix Koi", element="fire", rarity="legendary", time="morning", weather="any", kg=[4.0, 14.0], shape="koi",
+    dict(id="houou_koi", ja="鳳凰鮫", en="Phoenix Shark", element="fire", rarity="legendary", time="morning", weather="any", kg=[4.0, 14.0], shape="shark",
          c1="#E8483B", c2="#FFC94D", c3="#3FB7A8", pattern="gradient", eyes="sleepy", mouth="small", deco=["plumes", "crest", "flame"],
-         jaDesc="朝日とともに舞い上がる、不死の鯉。", enDesc="An undying koi that rises with the morning sun."),
+         jaDesc="朝日とともに舞い上がる、不死の鮫。", enDesc="An undying shark that rises with the morning sun."),
     # 神話
     dict(id="ryujin", ja="龍神", en="Ryujin", element="water", rarity="mythic", time="any", weather="any", kg=[40.0, 120.0], shape="eel",
          c1="#E8F1F2", c2="#7FC8D8", c3="#FFD34D", pattern="spots", eyes="angry", mouth="fangs", size=1.1, deco=["antlers", "mane", "whiskers", "orb", "shimenawa"],
          jaDesc="湖の底の宮に住む龍の神。ぬしの湖の本当の主。", enDesc="The dragon god of the lake-bottom palace. The lake's true lord."),
     # 秘伝
-    dict(id="tsukuyomi_koi", ja="月読鯉", en="Tsukuyomi Koi", element="spirit", rarity="secret", time="night", weather="fog", kg=[20.0, 80.0], shape="koi",
-         c1="#2B3A6B", c2="#C9D6FF", c3="#F4F1C8", pattern="gradient", eyes="glow", mouth="small", tails=3, deco=["moon", "frills", "kanzashi"],
-         jaDesc="霧の夜、湖に映った月から生まれるという鯉。", enDesc="Said to be born from the moon's reflection on foggy nights."),
+    dict(id="tsukuyomi_koi", ja="月読鯱", en="Tsukuyomi Orca", element="spirit", rarity="secret", time="night", weather="fog", kg=[20.0, 80.0], shape="orca",
+         c1="#2B3A6B", c2="#C9D6FF", c3="#F4F1C8", pattern="orca", eyes="glow", mouth="small", deco=["moon", "frills", "kanzashi"],
+         jaDesc="霧の夜、湖に映った月から生まれるという鯱。", enDesc="Said to be born from the moon's reflection on foggy nights."),
 ]
 
 LOOK_KEYS = ["shape", "c1", "c2", "c3", "pattern", "eyes", "mouth", "body", "tails", "deco", "size"]
@@ -141,11 +144,11 @@ HEADER = """--!strict
 --   time    : any / day / night / morning(朝。昼にも含まれる)
 --   weather : any / sunny / rain / fog / thunder
 --   kg      : 重さの範囲 {{ 最小, 最大 }}
---   shape   : koi(鯉) / catfish(鯰) / puffer(河豚) / eel(鰻) / angler(提灯) / ray(鱏)
+--   shape   : koi(鯉) / catfish(鯰) / puffer(河豚) / eel(鰻) / angler(提灯) / ray(鱏) / shark(鮫) / orca(鯱)
 --   c1, c2, c3 : 色(体, 模様, 差し色)
---   pattern : plain / stripes / spots / belly / patches / saddle / gradient / ribs / dango
+--   pattern : plain / stripes / spots / belly / patches / saddle / gradient / ribs / dango / orca(鯱の白黒)
 --   eyes    : normal / cute / angry / sleepy / big(一つ目) / cat / glow / dot / none
---   mouth   : small / wide / o / smile / frown / open / tongue / fangs / grin / geta / beak / none
+--   mouth   : small / wide / o / smile / frown / open / tongue / fangs / grin / geta / beak / jaws(鮫の歯) / none
 --   body    : 体つき {{ 幅, 高さ, 長さ }} の倍率 / tails : 尾の本数 / size : 大きさの微調整(レア度の大きさに掛け算)
 --   deco    : 飾り(一覧は Config/init.luau の DECOS)
 --   jaDesc / enDesc : 図鑑の説明

@@ -56,11 +56,11 @@ local function hut(parent: Instance, cf: CFrame, index: number)
 			parent = model,
 		})
 	end
-	-- 水槽
+	-- 水槽(大物の鮫・鯱も横向きで入る奥行き。前に5スタッドの通路が残る)
 	local tank = Build.part({
 		name = "Tank",
-		size = Vector3.new(9, 4.4, 3.2),
-		cframe = cf * CFrame.new(0, 3.2, 2.6),
+		size = Vector3.new(10, 5, 4.2),
+		cframe = cf * CFrame.new(0, 3.5, 2.35),
 		color = Color3.fromRGB(140, 210, 230),
 		material = Enum.Material.Glass,
 		transparency = 0.72,
@@ -68,16 +68,16 @@ local function hut(parent: Instance, cf: CFrame, index: number)
 	})
 	Build.part({
 		name = "TankStand",
-		size = Vector3.new(9.4, 1, 3.6),
-		cframe = cf * CFrame.new(0, 0.9, 2.6),
+		size = Vector3.new(10.4, 1, 4.6),
+		cframe = cf * CFrame.new(0, 0.9, 2.35),
 		color = darkWood,
 		material = Enum.Material.Wood,
 		parent = model,
 	})
 	Build.part({
 		name = "TankSand",
-		size = Vector3.new(8.8, 0.3, 3),
-		cframe = cf * CFrame.new(0, 1.15, 2.6),
+		size = Vector3.new(9.8, 0.3, 4),
+		cframe = cf * CFrame.new(0, 1.15, 2.35),
 		color = Color3.fromRGB(214, 196, 150),
 		material = Enum.Material.Sand,
 		collide = false,

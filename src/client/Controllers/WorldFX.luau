@@ -162,7 +162,17 @@ local function updateBobbers()
 end
 
 -- 水槽の魚 / 虹 / ぬし ------------------------------------------------
-type Swimmer = { model: Model, base: CFrame, phase: number, radius: number }
+-- 泳ぐ範囲と水槽の向きは、サーバー(AquariumService.place)が属性で決める
+type Swimmer = {
+	model: Model,
+	base: CFrame,
+	phase: number,
+	hover: boolean,
+	swimX: number,
+	swimZ: number,
+	tankX: Vector3,
+	tankZ: Vector3,
+}
 local swimmers: { [Model]: Swimmer } = {}
 
 local function addSwimmer(obj: Instance)
@@ -171,11 +181,23 @@ local function addSwimmer(obj: Instance)
 	end
 	local inst = obj :: Model
 	local idx = inst:GetAttribute("Index")
+	local function num(name: string, default: number): number
+		local v = inst:GetAttribute(name)
+		return if type(v) == "number" then v else default
+	end
+	local function vec(name: string, default: Vector3): Vector3
+		local v = inst:GetAttribute(name)
+		return if typeof(v) == "Vector3" then v else default
+	end
 	swimmers[inst] = {
 		model = inst,
 		base = inst:GetPivot(),
 		phase = (if type(idx) == "number" then idx else 1) * 1.7,
-		radius = 1.2,
+		hover = inst:GetAttribute("Hover") == true,
+		swimX = num("SwimX", 1.9),
+		swimZ = num("SwimZ", 0.48),
+		tankX = vec("TankX", Vector3.xAxis),
+		tankZ = vec("TankZ", -Vector3.zAxis),
 	}
 end
 
@@ -195,15 +217,25 @@ local function updateSwimmers(dt: number)
 			continue
 		end
 		local a = now * 0.6 + s.phase
-		local offset = Vector3.new(
-			math.sin(a) * s.radius * 1.6,
-			math.sin(a * 2) * 0.25,
-			math.sin(a * 2) * s.radius * 0.4
-		)
-		local dir = Vector3.new(math.cos(a) * 1.6, 0, math.cos(a * 2) * 0.8)
+		if s.hover then
+			-- 大物: 向きは変えず、前後にゆったり漂い、少し揺れる
+			local pos = s.base.Position
+				+ s.tankX * math.sin(a * 0.4) * s.swimX
+				+ Vector3.yAxis * math.sin(a) * 0.15
+			m:PivotTo(s.base.Rotation + pos)
+			m:PivotTo(m:GetPivot() * CFrame.Angles(0, math.sin(a * 0.7) * 0.06, math.sin(a * 0.9) * 0.04))
+			continue
+		end
+		-- 8の字に泳ぐ(水槽の向きに沿って)
+		local offset = s.tankX * math.sin(a) * s.swimX
+			+ Vector3.yAxis * math.sin(a * 2) * 0.25
+			+ s.tankZ * math.sin(a * 2) * s.swimZ
+		local dir = s.tankX * math.cos(a) * s.swimX + s.tankZ * math.cos(a * 2) * 2 * s.swimZ
 		local cf = CFrame.new(s.base.Position + offset)
-		if dir.Magnitude > 0.01 then
+		if dir.Magnitude > 0.05 then
 			cf = CFrame.lookAt(cf.Position, cf.Position + dir)
+		else
+			cf = s.base.Rotation + cf.Position
 		end
 		m:PivotTo(cf)
 	end

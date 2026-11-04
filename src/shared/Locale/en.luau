@@ -160,6 +160,8 @@ return {
 	shape_eel = "eels",
 	shape_angler = "anglers",
 	shape_ray = "rays",
+	shape_shark = "sharks",
+	shape_orca = "orcas",
 
 	daily_title = "Daily Reward",
 	daily_day = "Day {n}",

@@ -164,8 +164,8 @@ local function showNext()
 	Kit.corner(vpHolder, UDim.new(0, 16))
 	Kit.gradient(vpHolder, Color3.fromRGB(70, 140, 170), C.waterDeep)
 	local model = FishBuilder.build(fish, { mutation = r.mutation })
-	-- 大物ほど画面いっぱいに(並は小さく、伝説以上ははみ出すほど)
-	local vpf = Kit.viewport(vpHolder, model, { ZIndex = 23 }, 2.4)
+	-- 大物ほど画面いっぱいに(並は小さく、伝説以上の鮫・鯱は枠いっぱい)
+	local vpf = Kit.viewport(vpHolder, model, { ZIndex = 23 }, 3.2)
 	local spin = 0
 	local spinConn = RunService.RenderStepped:Connect(function(dt)
 		spin += dt * 0.9

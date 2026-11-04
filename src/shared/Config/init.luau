@@ -57,7 +57,16 @@ local Config = {
 	BossById = index(Bosses, "id"),
 }
 
-local SHAPES = { koi = true, catfish = true, puffer = true, eel = true, angler = true, ray = true }
+local SHAPES = {
+	koi = true,
+	catfish = true,
+	puffer = true,
+	eel = true,
+	angler = true,
+	ray = true,
+	shark = true,
+	orca = true,
+}
 local PATTERNS = {
 	plain = true,
 	stripes = true,
@@ -68,6 +77,7 @@ local PATTERNS = {
 	gradient = true,
 	ribs = true,
 	dango = true,
+	orca = true,
 }
 local DECOS = {}
 for _, d in
@@ -137,6 +147,7 @@ local MOUTHS = {
 	grin = true,
 	geta = true,
 	beak = true,
+	jaws = true,
 	none = true,
 }
 local TIMES = { any = true, day = true, night = true, morning = true }

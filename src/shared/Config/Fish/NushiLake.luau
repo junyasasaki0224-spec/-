@@ -7,11 +7,11 @@
 --   time    : any / day / night / morning(朝。昼にも含まれる)
 --   weather : any / sunny / rain / fog / thunder
 --   kg      : 重さの範囲 { 最小, 最大 }
---   shape   : koi(鯉) / catfish(鯰) / puffer(河豚) / eel(鰻) / angler(提灯) / ray(鱏)
+--   shape   : koi(鯉) / catfish(鯰) / puffer(河豚) / eel(鰻) / angler(提灯) / ray(鱏) / shark(鮫) / orca(鯱)
 --   c1, c2, c3 : 色(体, 模様, 差し色)
---   pattern : plain / stripes / spots / belly / patches / saddle / gradient / ribs / dango
+--   pattern : plain / stripes / spots / belly / patches / saddle / gradient / ribs / dango / orca(鯱の白黒)
 --   eyes    : normal / cute / angry / sleepy / big(一つ目) / cat / glow / dot / none
---   mouth   : small / wide / o / smile / frown / open / tongue / fangs / grin / geta / beak / none
+--   mouth   : small / wide / o / smile / frown / open / tongue / fangs / grin / geta / beak / jaws(鮫の歯) / none
 --   body    : 体つき { 幅, 高さ, 長さ } の倍率 / tails : 尾の本数 / size : 大きさの微調整(レア度の大きさに掛け算)
 --   deco    : 飾り(一覧は Config/init.luau の DECOS)
 --   jaDesc / enDesc : 図鑑の説明
@@ -349,18 +349,18 @@ local F = {
 	},
 	{
 		id = "yatagarasu_ei",
-		ja = "八咫烏鱏",
-		en = "Yatagarasu Ray",
+		ja = "八咫烏鯱",
+		en = "Yatagarasu Orca",
 		element = "fire",
 		rarity = "legendary",
 		time = "any",
 		weather = "any",
 		kg = { 6.0, 20.0 },
-		shape = "ray",
+		shape = "orca",
 		c1 = "#1A1A22",
-		c2 = "#3A3A48",
-		c3 = "#FFB547",
-		pattern = "belly",
+		c2 = "#FFB547",
+		c3 = "#FFE08A",
+		pattern = "orca",
 		eyes = "normal",
 		mouth = "beak",
 		deco = { "sun_disc", "crest" },
@@ -369,14 +369,14 @@ local F = {
 	},
 	{
 		id = "houou_koi",
-		ja = "鳳凰鯉",
-		en = "Phoenix Koi",
+		ja = "鳳凰鮫",
+		en = "Phoenix Shark",
 		element = "fire",
 		rarity = "legendary",
 		time = "morning",
 		weather = "any",
 		kg = { 4.0, 14.0 },
-		shape = "koi",
+		shape = "shark",
 		c1 = "#E8483B",
 		c2 = "#FFC94D",
 		c3 = "#3FB7A8",
@@ -384,8 +384,8 @@ local F = {
 		eyes = "sleepy",
 		mouth = "small",
 		deco = { "plumes", "crest", "flame" },
-		jaDesc = "朝日とともに舞い上がる、不死の鯉。",
-		enDesc = "An undying koi that rises with the morning sun.",
+		jaDesc = "朝日とともに舞い上がる、不死の鮫。",
+		enDesc = "An undying shark that rises with the morning sun.",
 	},
 	{
 		id = "ryujin",
@@ -410,23 +410,22 @@ local F = {
 	},
 	{
 		id = "tsukuyomi_koi",
-		ja = "月読鯉",
-		en = "Tsukuyomi Koi",
+		ja = "月読鯱",
+		en = "Tsukuyomi Orca",
 		element = "spirit",
 		rarity = "secret",
 		time = "night",
 		weather = "fog",
 		kg = { 20.0, 80.0 },
-		shape = "koi",
+		shape = "orca",
 		c1 = "#2B3A6B",
 		c2 = "#C9D6FF",
 		c3 = "#F4F1C8",
-		pattern = "gradient",
+		pattern = "orca",
 		eyes = "glow",
 		mouth = "small",
-		tails = 3,
 		deco = { "moon", "frills", "kanzashi" },
-		jaDesc = "霧の夜、湖に映った月から生まれるという鯉。",
+		jaDesc = "霧の夜、湖に映った月から生まれるという鯱。",
 		enDesc = "Said to be born from the moon's reflection on foggy nights.",
 	},
 }

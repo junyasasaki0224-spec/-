@@ -112,12 +112,12 @@
   "sourceTris": 101756
  },
  "houou_koi": {
-  "length": 3.1692,
-  "width": 1.2074,
-  "height": 1.3324,
-  "tris": 14736,
-  "outlineTris": 7368,
-  "sourceTris": 158564
+  "length": 3.8254,
+  "width": 1.5992,
+  "height": 1.5493,
+  "tris": 14762,
+  "outlineTris": 7380,
+  "sourceTris": 185444
  },
  "ittan_ei": {
   "length": 4.1331,
@@ -224,12 +224,12 @@
   "sourceTris": 128396
  },
  "kyubi_koi": {
-  "length": 2.89,
-  "width": 1.2074,
-  "height": 1.2638,
-  "tris": 14732,
-  "outlineTris": 7366,
-  "sourceTris": 159340
+  "length": 3.5466,
+  "width": 1.5992,
+  "height": 1.549,
+  "tris": 14756,
+  "outlineTris": 7378,
+  "sourceTris": 186220
  },
  "nekomata_koi": {
   "length": 2.5978,
@@ -248,20 +248,20 @@
   "sourceTris": 109616
  },
  "nue_namazu": {
-  "length": 2.8898,
-  "width": 1.959,
-  "height": 1.0607,
-  "tris": 14786,
-  "outlineTris": 7392,
-  "sourceTris": 146364
+  "length": 3.1299,
+  "width": 1.8106,
+  "height": 1.5486,
+  "tris": 14764,
+  "outlineTris": 7382,
+  "sourceTris": 177596
  },
  "numa_mizuchi": {
-  "length": 4.1675,
-  "width": 1.7364,
-  "height": 1.3093,
-  "tris": 14776,
-  "outlineTris": 7388,
-  "sourceTris": 125732
+  "length": 3.1464,
+  "width": 1.8106,
+  "height": 1.5977,
+  "tris": 14770,
+  "outlineTris": 7384,
+  "sourceTris": 170364
  },
  "nurari_unagi": {
   "length": 3.9272,
@@ -336,12 +336,12 @@
   "sourceTris": 111068
  },
  "tsukuyomi_koi": {
-  "length": 2.8351,
-  "width": 2.1257,
-  "height": 1.9796,
-  "tris": 14738,
-  "outlineTris": 7368,
-  "sourceTris": 157176
+  "length": 2.9642,
+  "width": 2.1346,
+  "height": 2.2252,
+  "tris": 14790,
+  "outlineTris": 7394,
+  "sourceTris": 186684
  },
  "tsurube_fugu": {
   "length": 2.1504,
@@ -352,12 +352,12 @@
   "sourceTris": 178596
  },
  "umibozu_ei": {
-  "length": 2.8133,
-  "width": 2.8048,
-  "height": 0.8483,
-  "tris": 14608,
-  "outlineTris": 7304,
-  "sourceTris": 120780
+  "length": 2.9425,
+  "width": 1.4723,
+  "height": 1.9324,
+  "tris": 14688,
+  "outlineTris": 7344,
+  "sourceTris": 155720
  },
  "ushioni_ei": {
   "length": 2.8321,
@@ -368,20 +368,20 @@
   "sourceTris": 127472
  },
  "yamata_chochin": {
-  "length": 2.6998,
+  "length": 3.2968,
   "width": 2.1257,
-  "height": 2.1681,
-  "tris": 14730,
-  "outlineTris": 7364,
-  "sourceTris": 182992
+  "height": 1.6625,
+  "tris": 14774,
+  "outlineTris": 7386,
+  "sourceTris": 175136
  },
  "yatagarasu_ei": {
-  "length": 3.0888,
-  "width": 2.8063,
-  "height": 1.5574,
-  "tris": 14692,
-  "outlineTris": 7346,
-  "sourceTris": 128740
+  "length": 3.1667,
+  "width": 1.4723,
+  "height": 1.9324,
+  "tris": 14786,
+  "outlineTris": 7392,
+  "sourceTris": 167148
  },
  "yukionna_ei": {
   "length": 2.8237,
