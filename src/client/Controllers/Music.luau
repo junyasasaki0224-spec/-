@@ -118,6 +118,23 @@ function Music.current(): string?
 end
 
 function Music.init()
+	-- Studio で遊んだ時、まだアップロードしていない曲を知らせる(音が鳴らない理由が分かるように)
+	if RunService:IsStudio() then
+		local missing = {}
+		for name in M.tracks do
+			if not hasAudio(name) then
+				table.insert(missing, name)
+			end
+		end
+		if #missing > 0 then
+			table.sort(missing)
+			warn(
+				"[BGM] 曲がまだアップロードされていないので鳴りません: "
+					.. table.concat(missing, ", ")
+					.. " → assets/sounds/bgm/<曲>.ogg を Roblox にアップロードし、Config/Music.luau の soundId に番号を書いてください(docs/MUSIC.md)"
+			)
+		end
+	end
 	local acc = 0
 	RunService.Heartbeat:Connect(function(dt)
 		acc += dt
