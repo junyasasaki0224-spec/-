@@ -15,13 +15,13 @@
   "outlineTris": 7378,
   "sourceTris": 127880
  },
- "amaterasu_kujira": {
-  "length": 3.3,
-  "width": 2.4871,
-  "height": 1.9655,
-  "tris": 14780,
-  "outlineTris": 7390,
-  "sourceTris": 192156
+ "amaterasu_manbou": {
+  "length": 2.3544,
+  "width": 0.9376,
+  "height": 3.6999,
+  "tris": 14794,
+  "outlineTris": 7396,
+  "sourceTris": 170280
  },
  "ame_gaeru": {
   "length": 2.1231,
@@ -144,12 +144,12 @@
   "sourceTris": 165608
  },
  "gin_kitsune": {
-  "length": 2.878,
-  "width": 1.1638,
-  "height": 1.254,
-  "tris": 14712,
-  "outlineTris": 7356,
-  "sourceTris": 124288
+  "length": 1.7803,
+  "width": 0.6026,
+  "height": 2.4378,
+  "tris": 14764,
+  "outlineTris": 7382,
+  "sourceTris": 101520
  },
  "hako_fugu": {
   "length": 2.2745,
@@ -176,12 +176,12 @@
   "sourceTris": 133132
  },
  "hi_no_tori": {
-  "length": 3.6329,
-  "width": 1.2074,
-  "height": 1.3248,
-  "tris": 14736,
-  "outlineTris": 7368,
-  "sourceTris": 157704
+  "length": 3.9072,
+  "width": 2.8605,
+  "height": 1.1166,
+  "tris": 14766,
+  "outlineTris": 7382,
+  "sourceTris": 152172
  },
  "hitotsume_namazu": {
   "length": 2.8767,
@@ -432,12 +432,12 @@
   "sourceTris": 111512
  },
  "koku_ryu": {
-  "length": 4.987,
-  "width": 1.7587,
-  "height": 1.1852,
-  "tris": 14742,
-  "outlineTris": 7370,
-  "sourceTris": 111024
+  "length": 4.5686,
+  "width": 1.7152,
+  "height": 1.441,
+  "tris": 14792,
+  "outlineTris": 7396,
+  "sourceTris": 173156
  },
  "komainu_koi": {
   "length": 2.61,
@@ -551,14 +551,6 @@
   "outlineTris": 7358,
   "sourceTris": 110080
  },
- "raijin_fugu": {
-  "length": 2.3104,
-  "width": 1.7106,
-  "height": 2.056,
-  "tris": 14746,
-  "outlineTris": 7372,
-  "sourceTris": 191764
- },
  "raijin_namazu": {
   "length": 2.8377,
   "width": 1.959,
@@ -566,6 +558,14 @@
   "tris": 14788,
   "outlineTris": 7394,
   "sourceTris": 144948
+ },
+ "raijin_shumoku": {
+  "length": 3.3681,
+  "width": 2.8453,
+  "height": 1.7122,
+  "tris": 14752,
+  "outlineTris": 7376,
+  "sourceTris": 183564
  },
  "rokurokubi_unagi": {
   "length": 5.1442,
@@ -751,13 +751,13 @@
   "outlineTris": 7370,
   "sourceTris": 120356
  },
- "yamata_shachi": {
-  "length": 3.533,
-  "width": 2.1257,
-  "height": 1.6973,
-  "tris": 14748,
-  "outlineTris": 7374,
-  "sourceTris": 202312
+ "yamata_orochi": {
+  "length": 4.1627,
+  "width": 3.233,
+  "height": 2.332,
+  "tris": 14752,
+  "outlineTris": 7376,
+  "sourceTris": 391352
  },
  "yatagarasu_ei": {
   "length": 3.3303,
@@ -783,21 +783,21 @@
   "outlineTris": 7386,
   "sourceTris": 142672
  },
- "yozakura_ei": {
-  "length": 2.793,
-  "width": 2.8057,
-  "height": 1.0052,
-  "tris": 14702,
-  "outlineTris": 7350,
-  "sourceTris": 129384
+ "yozakura_kurage": {
+  "length": 1.8432,
+  "width": 1.8432,
+  "height": 2.0748,
+  "tris": 18644,
+  "outlineTris": 9322,
+  "sourceTris": 184508
  },
  "yuki_hime": {
-  "length": 3.4009,
-  "width": 1.0718,
-  "height": 1.442,
-  "tris": 14788,
-  "outlineTris": 7394,
-  "sourceTris": 164776
+  "length": 2.7334,
+  "width": 1.5923,
+  "height": 2.2581,
+  "tris": 14770,
+  "outlineTris": 7384,
+  "sourceTris": 108004
  },
  "yukimi_wakasagi": {
   "length": 2.9635,

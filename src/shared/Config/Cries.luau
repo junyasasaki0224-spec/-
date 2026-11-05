@@ -5,8 +5,8 @@
 -- audioHash は音の中身の印。音を作り直すと変わり、そのときは soundId が 0 に戻る(古い音と区間がずれないように)
 return {
 	soundId = "rbxassetid://0",
-	audioHash = "3a8cebd8f87e",
-	length = 285.363, -- 音のファイル全体の長さ(秒)
+	audioHash = "50bf23119265",
+	length = 285.661, -- 音のファイル全体の長さ(秒)
 	cries = {
 		doro_funa = { start = 0.500, length = 1.380, ja = "ぼこぉ…", en = "Bohko..." },
 		ashi_medaka = { start = 2.380, length = 0.866, ja = "ぴぃぴぃ♪", en = "Pee-pee!" },
@@ -264,13 +264,13 @@ return {
 			ja = "こぉん…しゃらん♪",
 			en = "Ko-on... shalan!",
 		},
-		yozakura_ei = {
+		yozakura_kurage = {
 			start = 255.868,
 			length = 3.890,
 			ja = "ふわぁ…はらはら",
 			en = "Fwaah... hara-hara",
 		},
-		raijin_fugu = {
+		raijin_shumoku = {
 			start = 260.258,
 			length = 2.740,
 			ja = "ゴロゴロ…ドン!",
@@ -284,14 +284,14 @@ return {
 			ja = "しんしん…ふぅ…",
 			en = "Shin-shin... fuu...",
 		},
-		amaterasu_kujira = {
+		amaterasu_manbou = {
 			start = 273.760,
-			length = 4.443,
+			length = 4.741,
 			ja = "オォォ…ン(光の音)",
 			en = "Ooooh... (light)",
 		},
-		yamata_shachi = {
-			start = 278.703,
+		yamata_orochi = {
+			start = 279.001,
 			length = 6.160,
 			ja = "ガアアァァ!!(八つの声)",
 			en = "GAAAAH!! (eight voices)",

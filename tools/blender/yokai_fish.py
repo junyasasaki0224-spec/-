@@ -380,17 +380,19 @@ SHAPES.update({
             ((0, 0.3, 0.01), (0.45, 0.42, 0.42)),
             ((0, 0.02, 0.0), (0.48, 0.8, 0.47)),
             ((0, -0.38, 0.0), (0.38, 0.45, 0.37)),
-            ((0, -1.45, 0.03), (0.12, 0.4, 0.2)),
-            ((0, 0.95, 0.04), (0.95, 0.24, 0.15)),
+            ((0, -0.88, 0.01), (0.25, 0.42, 0.26)),  # 胴と尾のつなぎ
+            ((0, -1.35, 0.03), (0.15, 0.4, 0.2)),
+            ((0, 0.92, 0.06), (1.25, 0.28, 0.17)),
+            ((0, 0.75, 0.03), (0.4, 0.3, 0.26)),
         ],
-        head=((0, 0.95, 0.04), (0.95, 0.24, 0.15)), tail="crescent", tailY=-1.75, length=3.4, dorsal="shark",
+        head=((0, 0.92, 0.06), (1.25, 0.28, 0.17)), tail="crescent", tailY=-1.75, length=3.4, dorsal="shark",
     ),
     # 龍: うねる長い体、4本の足と爪、長い鼻先、背中の棘、尾の先の炎のような房
     "dragon": dict(parts=None, head=((0, 1.42, 0.22), (0.33, 0.42, 0.3)), tail="none", tailY=-1.95, length=3.9, dorsal="none"),
     # 八岐大蛇: がっしりした胴から8本の首が扇に伸び、それぞれに頭。尾は8本
     "hydra": dict(
         parts=[((0, 0.1, 0.0), (0.62, 0.8, 0.5)), ((0, -0.62, 0.0), (0.42, 0.55, 0.36)), ((0, -1.1, 0.0), (0.18, 0.4, 0.2))],
-        head=((0, 1.22, 0.62), (0.3, 0.36, 0.26)), tail="fan", tailY=-1.35, length=3.0, dorsal="none",
+        head=((0, 1.45, 1.25), (0.3, 0.36, 0.26)), tail="fan", tailY=-1.35, length=3.0, dorsal="none",
     ),
     # 海月(クラゲ): 丸い傘、ふちのひだ、垂れ下がる口腕と細い触手
     "jelly": dict(
@@ -419,10 +421,11 @@ SEAHORSE_SPINE = [(0.0, 0.12, 0.8, 0.17), (0.0, 0.12, 0.55, 0.24), (0.0, 0.16, 0
 
 # 八岐大蛇の首の先の頭の位置(真ん中が主の頭。ほかの7つは左右に扇)
 def hydra_heads():
-    heads = [((0, 1.22, 0.62), 1.0)]
+    """8つの頭: 真ん中の主の頭は高く前へ、ほかの7つは左右に大きく広げて高さを変える(冠のように見える)"""
+    heads = [((0, 1.45, 1.25), 1.0)]
     for k in range(7):
-        a = math.radians(-78 + k * 26)
-        heads.append(((math.sin(a) * 1.0, 0.62 + 0.32 * math.cos(a), 0.62 + 0.42 * math.cos(a) - 0.18 * abs(math.sin(a))), 0.7))
+        a = math.radians(-81 + k * 27)
+        heads.append(((math.sin(a) * 1.35, 0.75 + 0.45 * math.cos(a), 0.75 + 0.55 * math.cos(a) + 0.12 * (k % 2)), 0.78))
     return heads
 
 
@@ -449,7 +452,7 @@ def special_body(d, body, sp, S, c1):
             for sgn in (1, -1):
                 dirv = Vector((sgn * 0.8, 0.25 if y > 0 else -0.2, -0.6)).normalized()
                 root = sp((sgn * 0.18, y, z - 0.08))
-                body.add_sphere(tuple(root + dirv * 0.17), (0.09, 0.22, 0.09), c1, rot=frame(dirv))
+                body.add_sphere(tuple(root + dirv * 0.22), (0.1, 0.3, 0.1), c1, rot=frame(dirv))
     elif shape == "seahorse":
         spine_body(body, SEAHORSE_SPINE, sp, S, c1)
         body.add_sphere(sp((0, 0.24, 1.0)), (0.23, 0.29, 0.23), c1)
@@ -457,11 +460,11 @@ def special_body(d, body, sp, S, c1):
     elif shape == "hydra":
         for (hp_, k) in hydra_heads():
             hp = Vector(hp_)
-            base = Vector((hp.x * 0.42, 0.45, 0.28))
-            mid = (base + hp) / 2 + Vector((0, -0.08, 0.22))
-            pts = catmull([tuple(base), tuple(mid), tuple(hp)], 5)
+            base = Vector((hp.x * 0.35, 0.45, 0.3))
+            mid = (base + hp) / 2 + Vector((hp.x * 0.1, -0.15, 0.3))
+            pts = catmull([tuple(base), tuple(mid), tuple(hp)], 7)
             for i, pt in enumerate(pts):
-                r = (0.16 - 0.05 * i / len(pts)) * (1.0 if k == 1.0 else 0.85)
+                r = (0.17 - 0.06 * i / len(pts)) * (1.0 if k == 1.0 else 0.85)
                 body.add_sphere(pt, (r, r, r), c1, seg=16, rings=10)
             fwd = (hp - mid).normalized()
             body.add_sphere(tuple(hp), (0.3 * k, 0.36 * k, 0.26 * k), c1, rot=frame(fwd) if k != 1.0 else None)
@@ -498,8 +501,10 @@ def special_details(d, g, fin, sp, S, head, c1, c2, c3, fin_col, order, deco):
         for s in (1, -1):  # 小さな胸びれ
             fin((s * 0.3, 0.12, -0.05), (0.03, 0.18, 0.12), frame(Vector((s * 0.7, -0.6, 0.1)), Vector((0, 0, 1))))
     elif shape == "hammer":
-        for s in (1, -1):  # 金づちの両端のまぶたの出っぱり
-            g.add_sphere((s * 0.92, 0.95, 0.06), (0.1, 0.12, 0.1), darken(c1, 0.05), seg=12, rings=8)
+        for s in (1, -1):  # 金づちの両端の丸いふくらみ(目がここに付く)
+            g.add_sphere((s * 1.2, 0.93, 0.07), (0.14, 0.2, 0.17), darken(c1, 0.04), seg=14, rings=8)
+            g.add_disc(Vector((s * 1.33, 0.95, 0.08)), Vector((s, 0.25, 0.1)), 0.08, 0.09, WHITE, thick=0.02)
+            g.add_disc(Vector((s * 1.345, 0.955, 0.08)), Vector((s, 0.25, 0.1)), 0.045, 0.06, INK, thick=0.02)
     elif shape == "dragon":
         # 背中の棘(先へいくほど小さい)と、尾の先の炎のような房
         for i, (x, y, z, r) in enumerate(DRAGON_SPINE[:-1]):
@@ -514,7 +519,7 @@ def special_details(d, g, fin, sp, S, head, c1, c2, c3, fin_col, order, deco):
         for (y, z) in ((0.78, 0.0), (-0.75, 0.1)):
             for sgn in (1, -1):
                 dirv = Vector((sgn * 0.8, 0.25 if y > 0 else -0.2, -0.6)).normalized()
-                foot = sp((sgn * 0.18, y, z - 0.08)) + dirv * 0.36
+                foot = sp((sgn * 0.18, y, z - 0.08)) + dirv * 0.5
                 for kk in range(3):
                     a = (kk - 1) * 0.5
                     toe = Vector((sgn * 0.5, math.cos(a) * 0.7, -0.5 + math.sin(a) * 0.2)).normalized()
@@ -535,8 +540,8 @@ def special_details(d, g, fin, sp, S, head, c1, c2, c3, fin_col, order, deco):
         # 主ではない7つの頭の目(光る)と小さな角
         for (hp_, k) in hydra_heads()[1:]:
             hp = Vector(hp_)
-            base = Vector((hp.x * 0.42, 0.45, 0.28))
-            mid = (base + hp) / 2 + Vector((0, -0.08, 0.22))
+            base = Vector((hp.x * 0.35, 0.45, 0.3))
+            mid = (base + hp) / 2 + Vector((hp.x * 0.1, -0.15, 0.3))
             fwd = (hp - mid).normalized()
             side = fwd.cross(Vector((0, 0, 1))).normalized()
             up = side.cross(fwd).normalized()
@@ -1265,6 +1270,8 @@ def add_face(g, d, head, deco, c1, c2, c3, order):
     eyes = d.get("eyes") or ("none" if "noface" in deco else ("big" if "big_eye" in deco else "normal"))
     mouth = d.get("mouth") or {"koi": "small", "catfish": "wide", "puffer": "o", "eel": "small", "angler": "grin", "ray": "none", "shark": "jaws", "orca": "smile", "salmon": "fangs", "salamander": "wide", "whale": "smile", "sturgeon": "wide"}.get(d["shape"], "small")
     g_skin[0] = c1
+    if d["shape"] == "hammer":
+        eyes = "none"  # 撞木鮫の目は金づちの両端(special_details)
     iris = c3 if d.get("c3") else c2
     # 虹彩の色が体と近すぎるときは補色寄りに
     if sum(abs(iris[i] - c1[i]) for i in range(3)) < 0.35:
@@ -1292,7 +1299,7 @@ def add_face(g, d, head, deco, c1, c2, c3, order):
     elif d["shape"] == "sturgeon":
         yaw_side, pitch = 40, 22
     elif d["shape"] == "hammer":
-        yaw_side, pitch = 72, 4  # 金づちの両端
+        yaw_side, pitch = 30, 20  # 金づちの前の上(両端の目は special_details で付ける)
     elif d["shape"] == "mola":
         yaw_side, pitch = 46, 18
     elif d["shape"] == "jelly":
@@ -1478,8 +1485,8 @@ def add_decos(g, d, head, deco, c1, c2, c3, order, S, tailY):
     if "wind_bag" in deco:
         g.add_torus(hc + Vector((0, -hr[1] * 0.9, hr[2] * 0.6)), Vector((0, 1, 0)), max(hr[0] * 1.8, 0.6), 0.09, c3, arc=0.5, start=0.0)
     if "drums" in deco:
-        center = Vector((0, -0.3, 0.35))
-        R = 1.0
+        center = Vector((0, -0.3, 0.35)) if d["shape"] != "hammer" else Vector((0, -0.25, 0.55))
+        R = 1.0 if d["shape"] != "hammer" else 0.62
         g.add_torus(center, Vector((1, 0, 0)), R, 0.03, GOLD)
         for i in range(6):
             a = i / 6 * 2 * math.pi
