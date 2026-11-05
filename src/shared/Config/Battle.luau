@@ -297,7 +297,7 @@ Battle.Moves = {
 		ja = "黒雷",
 		en = "Black Lightning",
 		element = "thunder",
-		power = 70,
+		power = 75,
 		acc = 90,
 	},
 	{
@@ -315,7 +315,7 @@ Battle.Moves = {
 		ja = "天岩戸開き",
 		en = "Heavenly Dawn",
 		element = "fire",
-		power = 75,
+		power = 70,
 		acc = 90,
 	},
 	{

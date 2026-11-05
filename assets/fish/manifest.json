@@ -17,8 +17,8 @@
  },
  "amaterasu_manbou": {
   "length": 2.3544,
-  "width": 0.9376,
-  "height": 3.6999,
+  "width": 0.9201,
+  "height": 3.6342,
   "tris": 14794,
   "outlineTris": 7396,
   "sourceTris": 170280
@@ -432,7 +432,7 @@
   "sourceTris": 111512
  },
  "koku_ryu": {
-  "length": 4.5686,
+  "length": 4.5874,
   "width": 1.7152,
   "height": 1.441,
   "tris": 14792,

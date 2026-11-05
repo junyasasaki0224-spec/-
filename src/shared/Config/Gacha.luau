@@ -24,8 +24,8 @@ Gacha.Pity = { star4 = 10, star5 = 90 }
 
 -- 星ごとの限定の魚(Config/Fish/Shrine.luau の id)。同じ星の中は同じ確率
 Gacha.Fish = {
-	[5] = { "amaterasu_manbou", "yamata_orochi" },
-	[4] = { "hi_no_tori", "koku_ryu", "yuki_hime" },
+	[5] = { "koku_ryu", "yamata_orochi" },
+	[4] = { "hi_no_tori", "amaterasu_manbou", "yuki_hime" },
 	[3] = { "gin_kitsune", "yozakura_kurage", "raijin_shumoku" },
 } :: { [number]: { string } }
 

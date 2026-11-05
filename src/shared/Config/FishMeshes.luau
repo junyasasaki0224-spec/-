@@ -10,7 +10,7 @@ return {
 	sizes = {
 		akaei = { length = 2.7972, width = 2.804, height = 1.0974 },
 		akaname_namazu = { length = 2.8767, width = 1.9612, height = 1.0282 },
-		amaterasu_manbou = { length = 2.3544, width = 0.9376, height = 3.6999 },
+		amaterasu_manbou = { length = 2.3544, width = 0.9201, height = 3.6342 },
 		ame_gaeru = { length = 2.1231, width = 1.6189, height = 1.2883 },
 		ashi_medaka = { length = 2.8665, width = 1.0109, height = 1.1131 },
 		ayakashi = { length = 4.7218, width = 2.1346, height = 1.2834 },
@@ -62,7 +62,7 @@ return {
 		koban_funa = { length = 2.3596, width = 1.2741, height = 1.189 },
 		kodama_koi = { length = 2.5339, width = 1.2052, height = 1.5042 },
 		koke_iwana = { length = 2.878, width = 1.1237, height = 1.1531 },
-		koku_ryu = { length = 4.5686, width = 1.7152, height = 1.441 },
+		koku_ryu = { length = 4.5874, width = 1.7152, height = 1.441 },
 		komainu_koi = { length = 2.61, width = 1.2246, height = 1.4753 },
 		kurage_anko = { length = 2.6211, width = 1.5265, height = 1.5998 },
 		kyubi_koi = { length = 2.89, width = 1.2074, height = 1.2638 },
