@@ -23,6 +23,18 @@ export type BuildOptions = {
 }
 
 -- 体の形ごとの基本(スタッド)
+-- 限定の魚だけの形 → パーツ版で借りる形
+local PART_ALIAS: { [string]: string } = {
+	mola = "puffer",
+	hammer = "shark",
+	dragon = "eel",
+	hydra = "orca",
+	jelly = "puffer",
+	seahorse = "eel",
+	phoenix = "koi",
+	veil = "koi",
+}
+
 local SHAPES = {
 	koi = {
 		body = Vector3.new(0.92, 1.0, 2.1),
@@ -527,6 +539,12 @@ function FishBuilder.build(def: Types.FishDef, opts: BuildOptions?): Model
 		if template then
 			return buildFromMesh(def, o, template, findMesh(def.id .. "_Outline"))
 		end
+	end
+	-- 限定の魚だけの形は、パーツで組み立てる時は近い形を借りる(本番はアニメ風メッシュ)
+	local alias = PART_ALIAS[def.shape]
+	if alias then
+		def = table.clone(def)
+		def.shape = alias
 	end
 	local shape = SHAPES[def.shape] or SHAPES.koi
 	local style = RARITY_STYLE[def.rarity] or RARITY_STYLE.common

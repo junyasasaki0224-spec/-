@@ -74,6 +74,15 @@ local SHAPES = {
 	salamander = true,
 	whale = true,
 	sturgeon = true,
+	-- 百鬼の祠の限定の魚だけの形
+	mola = true,
+	hammer = true,
+	dragon = true,
+	hydra = true,
+	jelly = true,
+	seahorse = true,
+	phoenix = true,
+	veil = true,
 }
 local PATTERNS = {
 	plain = true,

@@ -39,6 +39,15 @@ Battle.ShapeStats = {
 	salamander = { hp = 82, atk = 56, def = 68, spd = 18 }, -- 川の主: とても硬く、遅い
 	whale = { hp = 96, atk = 56, def = 60, spd = 20 }, -- 海の主: 体力がけた違い
 	sturgeon = { hp = 66, atk = 50, def = 74, spd = 30 }, -- 湖の古代魚: 鎧のように硬い
+	-- 百鬼の祠の限定の魚だけの形(合計は大物と同じくらい。課金で強くなりすぎないように)
+	mola = { hp = 92, atk = 50, def = 62, spd = 26 }, -- 翻車魚: 大きく丸く、体力が多い
+	hammer = { hp = 54, atk = 68, def = 44, spd = 56 }, -- 撞木鮫: 鮫と同じくらい
+	dragon = { hp = 56, atk = 66, def = 46, spd = 62 }, -- 龍: 攻めと速さ
+	hydra = { hp = 78, atk = 64, def = 52, spd = 32 }, -- 八岐大蛇: 重く強い
+	jelly = { hp = 60, atk = 44, def = 64, spd = 42 }, -- 海月: 守り寄り
+	seahorse = { hp = 48, atk = 50, def = 52, spd = 60 }, -- 竜の落とし子: すばやい
+	phoenix = { hp = 50, atk = 64, def = 40, spd = 66 }, -- 鳳凰魚: 速攻
+	veil = { hp = 58, atk = 52, def = 52, spd = 54 }, -- 羽衣魚: 平均より少し上
 }
 
 -- レア度による能力の倍率

@@ -1148,7 +1148,7 @@ def _(c):
     c.echo = 0.22
 
 
-@cry("yozakura_ei", "ふわぁ…はらはら", "Fwaah... hara-hara")
+@cry("yozakura_kurage", "ふわぁ…はらはら", "Fwaah... hara-hara")
 def _(c):
     c.voice(0.0, 0.9, [(0, 300), (0.5, 340), (1, 260)], "ua", tilt=1.6, breath=0.5, attack=0.2, release=0.4, swell=True)
     for i in range(6):
@@ -1156,7 +1156,7 @@ def _(c):
     c.echo = 0.25
 
 
-@cry("raijin_fugu", "ゴロゴロ…ドン!", "Goro-goro... DON!")
+@cry("raijin_shumoku", "ゴロゴロ…ドン!", "Goro-goro... DON!")
 def _(c):
     c.rumble(0.0, 0.7, 0.4, 60)
     c.voice(0.1, 0.4, (300, 260), "o", tilt=1.2, rough=0.4, release=0.1)
@@ -1189,7 +1189,7 @@ def _(c):
     c.echo = 0.3
 
 
-@cry("amaterasu_kujira", "オォォ…ン(光の音)", "Ooooh... (light)")
+@cry("amaterasu_manbou", "オォォ…ン(光の音)", "Ooooh... (light)")
 def _(c):
     c.voice(0.0, 2.0, [(0, 110), (0.4, 165), (0.8, 220), (1, 196)], "oooa", tilt=1.3, vib=(2.5, 0.02), attack=0.4, release=0.6, swell=True)
     c.voice(0.3, 1.7, [(0, 330), (1, 392)], "a", tilt=1.5, breath=0.2, gain=0.4, attack=0.5, release=0.6)
@@ -1198,7 +1198,7 @@ def _(c):
     c.echo = 0.34
 
 
-@cry("yamata_shachi", "ガアアァァ!!(八つの声)", "GAAAAH!! (eight voices)")
+@cry("yamata_orochi", "ガアアァァ!!(八つの声)", "GAAAAH!! (eight voices)")
 def _(c):
     for i in range(4):
         c.voice(i * 0.08, 1.2 - i * 0.1, [(0, 140 + i * 30), (0.4, 190 + i * 35), (1, 110 + i * 20)], "aao", tilt=1.0, rough=0.45, drive=0.45, gain=0.55, release=0.4)

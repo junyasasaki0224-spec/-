@@ -80,7 +80,7 @@ def frame(forward, up_hint=Vector((0, 0, 1))):
     return Matrix((x, f, z)).transposed()
 
 
-QUALITY = 2.0  # 体の細かさ(1 = 軽い試作、2 = 本番)
+QUALITY = float(os.environ.get("FISH_QUALITY", "2.0"))  # 体の細かさ(1 = 軽い試作、2 = 本番)。試し描きは FISH_QUALITY=1
 # 部品(目・ひれ・飾り)の作り方。ゲーム用の軽い版は LOD["parts"] を下げ、目の上に重ねる薄い模様
 # (虹彩・瞳・光)を省く。その色は細かい版からテクスチャに焼き込まれるので見た目は同じ
 LOD = {"parts": QUALITY, "decals": True}
@@ -366,7 +366,296 @@ SHAPES = {
         head=((0, 0.58, 0.04), (0.36, 0.42, 0.3)), tail="crescent", tailY=-1.4, length=3.0, dorsal="sturgeon",
     ),
 }
-BIG = ("shark", "orca", "whale", "salamander", "sturgeon")  # 大物の形(ひれは体の色、筋なし)
+# --- 百鬼の祠の限定の魚だけの形(釣れる魚には無い、ひとめで違うシルエット) ---
+SHAPES.update({
+    # 翻車魚(マンボウ): 縦に高い円盤の体、上下に高い背びれ・しりびれ、尾の代わりのひだ(舵びれ)。天照では体のまわりに日の光の棘
+    "mola": dict(
+        parts=[((0, 0.0, 0.0), (0.3, 0.86, 0.98)), ((0, 0.52, 0.04), (0.33, 0.44, 0.6))],
+        head=((0, 0.52, 0.04), (0.33, 0.44, 0.6)), tail="none", tailY=-0.86, length=1.9, dorsal="none",
+    ),
+    # 撞木鮫(シュモクザメ): 鮫の体に、横へ長い金づちの頭。目は金づちの両端
+    "hammer": dict(
+        parts=[
+            ((0, 0.55, 0.03), (0.36, 0.45, 0.33)),
+            ((0, 0.3, 0.01), (0.45, 0.42, 0.42)),
+            ((0, 0.02, 0.0), (0.48, 0.8, 0.47)),
+            ((0, -0.38, 0.0), (0.38, 0.45, 0.37)),
+            ((0, -1.45, 0.03), (0.12, 0.4, 0.2)),
+            ((0, 0.95, 0.04), (0.95, 0.24, 0.15)),
+        ],
+        head=((0, 0.95, 0.04), (0.95, 0.24, 0.15)), tail="crescent", tailY=-1.75, length=3.4, dorsal="shark",
+    ),
+    # 龍: うねる長い体、4本の足と爪、長い鼻先、背中の棘、尾の先の炎のような房
+    "dragon": dict(parts=None, head=((0, 1.42, 0.22), (0.33, 0.42, 0.3)), tail="none", tailY=-1.95, length=3.9, dorsal="none"),
+    # 八岐大蛇: がっしりした胴から8本の首が扇に伸び、それぞれに頭。尾は8本
+    "hydra": dict(
+        parts=[((0, 0.1, 0.0), (0.62, 0.8, 0.5)), ((0, -0.62, 0.0), (0.42, 0.55, 0.36)), ((0, -1.1, 0.0), (0.18, 0.4, 0.2))],
+        head=((0, 1.22, 0.62), (0.3, 0.36, 0.26)), tail="fan", tailY=-1.35, length=3.0, dorsal="none",
+    ),
+    # 海月(クラゲ): 丸い傘、ふちのひだ、垂れ下がる口腕と細い触手
+    "jelly": dict(
+        parts=[((0, 0.0, 0.32), (0.74, 0.74, 0.5)), ((0, 0.0, 0.04), (0.8, 0.8, 0.16))],
+        head=((0, 0.0, 0.32), (0.74, 0.74, 0.5)), tail="none", tailY=-0.8, length=1.6, dorsal="none",
+    ),
+    # 竜の落とし子(タツノオトシゴ): 立った体、長い口先、前にふくらむお腹、くるりと巻いた尾
+    "seahorse": dict(parts=None, head=((0, 0.24, 1.0), (0.23, 0.29, 0.23)), tail="none", tailY=-0.2, length=1.5, dorsal="none"),
+    # 鳳凰魚: 細い体に、鳥のつばさのように広がる胸びれ(3枚重ね)と、長い尾羽
+    "phoenix": dict(
+        parts=[((0, 0.55, 0.05), (0.34, 0.44, 0.38)), ((0, 0.1, 0.02), (0.36, 0.56, 0.38)), ((0, -0.45, 0.0), (0.24, 0.6, 0.28)), ((0, -0.95, 0.0), (0.1, 0.34, 0.12))],
+        head=((0, 0.55, 0.05), (0.34, 0.44, 0.38)), tail="none", tailY=-1.2, length=2.4, dorsal="none",
+    ),
+    # 羽衣魚(ベタのような): 短く高い体に、体より大きく流れる尾・背びれ・しりびれ、袖のような長い胸びれ
+    "veil": dict(
+        parts=[((0, 0.35, 0.02), (0.31, 0.4, 0.4)), ((0, -0.05, 0.0), (0.33, 0.5, 0.44)), ((0, -0.45, 0.0), (0.2, 0.34, 0.27))],
+        head=((0, 0.35, 0.02), (0.31, 0.4, 0.4)), tail="none", tailY=-0.72, length=2.0, dorsal="none",
+    ),
+})
+NEW_SHAPES = ("mola", "hammer", "dragon", "hydra", "jelly", "seahorse", "phoenix", "veil")
+
+# 龍の背骨(x, y, z, 太さ)。上下にうねる
+DRAGON_SPINE = [(0.0, 1.2, 0.2, 0.26), (0.0, 0.85, 0.05, 0.27), (0.0, 0.5, -0.12, 0.27), (0.0, 0.15, -0.08, 0.26), (0.0, -0.2, 0.12, 0.24), (0.0, -0.55, 0.22, 0.21), (0.0, -0.9, 0.08, 0.18), (0.0, -1.25, -0.1, 0.14), (0.0, -1.6, -0.06, 0.1), (0.0, -1.9, 0.06, 0.06)]
+# 竜の落とし子の背骨(頭の下から、お腹、巻いた尾の先まで)
+SEAHORSE_SPINE = [(0.0, 0.12, 0.8, 0.17), (0.0, 0.12, 0.55, 0.24), (0.0, 0.16, 0.25, 0.3), (0.0, 0.08, -0.05, 0.27), (0.0, -0.04, -0.33, 0.2), (0.0, -0.06, -0.58, 0.15), (0.0, 0.06, -0.8, 0.11), (0.0, 0.24, -0.86, 0.09), (0.0, 0.36, -0.72, 0.075), (0.0, 0.3, -0.56, 0.06), (0.0, 0.18, -0.6, 0.05)]
+
+# 八岐大蛇の首の先の頭の位置(真ん中が主の頭。ほかの7つは左右に扇)
+def hydra_heads():
+    heads = [((0, 1.22, 0.62), 1.0)]
+    for k in range(7):
+        a = math.radians(-78 + k * 26)
+        heads.append(((math.sin(a) * 1.0, 0.62 + 0.32 * math.cos(a), 0.62 + 0.42 * math.cos(a) - 0.18 * abs(math.sin(a))), 0.7))
+    return heads
+
+
+def spine_body(body, spine, sp, S, c1):
+    for k in range(len(spine) - 1):
+        a0, a1 = spine[k], spine[k + 1]
+        for j in range(5):
+            t = j / 5
+            x, y, z, r = (a0[i] + (a1[i] - a0[i]) * t for i in range(4))
+            body.add_sphere(sp((x, y, z)), tuple(S @ Vector((r, r * 1.1, r * 1.08))), c1, seg=20, rings=12)
+    x, y, z, r = spine[-1]
+    body.add_sphere(sp((x, y, z)), tuple(S @ Vector((r, r * 1.1, r * 1.08))), c1, seg=20, rings=12)
+
+
+def special_body(d, body, sp, S, c1):
+    """限定の形の体(溶かして一体にする部分)"""
+    shape = d["shape"]
+    if shape == "dragon":
+        spine_body(body, DRAGON_SPINE, sp, S, c1)
+        body.add_sphere(sp((0, 1.42, 0.22)), (0.33, 0.42, 0.3), c1)
+        body.add_sphere(sp((0, 1.82, 0.12)), (0.2, 0.32, 0.15), c1, taper=(0.35, 1.2))  # 長い鼻先
+        body.add_sphere(sp((0, 1.7, 0.0)), (0.17, 0.3, 0.08), c1, taper=(0.4, 1.2))  # 下あご
+        for (y, z) in ((0.78, 0.0), (-0.75, 0.1)):  # 4本の足
+            for sgn in (1, -1):
+                dirv = Vector((sgn * 0.8, 0.25 if y > 0 else -0.2, -0.6)).normalized()
+                root = sp((sgn * 0.18, y, z - 0.08))
+                body.add_sphere(tuple(root + dirv * 0.17), (0.09, 0.22, 0.09), c1, rot=frame(dirv))
+    elif shape == "seahorse":
+        spine_body(body, SEAHORSE_SPINE, sp, S, c1)
+        body.add_sphere(sp((0, 0.24, 1.0)), (0.23, 0.29, 0.23), c1)
+        body.add_sphere(sp((0, 0.62, 0.97)), (0.075, 0.32, 0.085), c1, rot=frame(Vector((0, 1, -0.08))), taper=(0.3, 1.0))  # 管のような口
+    elif shape == "hydra":
+        for (hp_, k) in hydra_heads():
+            hp = Vector(hp_)
+            base = Vector((hp.x * 0.42, 0.45, 0.28))
+            mid = (base + hp) / 2 + Vector((0, -0.08, 0.22))
+            pts = catmull([tuple(base), tuple(mid), tuple(hp)], 5)
+            for i, pt in enumerate(pts):
+                r = (0.16 - 0.05 * i / len(pts)) * (1.0 if k == 1.0 else 0.85)
+                body.add_sphere(pt, (r, r, r), c1, seg=16, rings=10)
+            fwd = (hp - mid).normalized()
+            body.add_sphere(tuple(hp), (0.3 * k, 0.36 * k, 0.26 * k), c1, rot=frame(fwd) if k != 1.0 else None)
+            body.add_sphere(tuple(hp + fwd * 0.3 * k), (0.17 * k, 0.26 * k, 0.12 * k), c1, rot=frame(fwd), taper=(0.35, 1.1))
+
+
+def special_details(d, g, fin, sp, S, head, c1, c2, c3, fin_col, order, deco):
+    """限定の形のひれ・尾・飾り(体とは別の部品)"""
+    shape = d["shape"]
+    hc, hr = head
+    if shape == "mola":
+        # 高い背びれとしりびれ(鎌のよう)
+        for zs in (1, -1):
+            dirv = Vector((0, -0.25, zs)).normalized()
+            fin(tuple(Vector((0, -0.3, zs * 0.78)) + dirv * 0.45), (0.05, 0.55, 0.26), frame(dirv), c3, taper=(0.75, 1.3), rays=5)
+        # 舵びれ(尾の代わりの、ふちのひだ)
+        for i in range(7):
+            a = math.radians(-60 + i * 20)
+            dirv = Vector((0, -math.cos(a), math.sin(a)))
+            p = Vector((0, -0.8 * math.cos(a) - 0.02, 0.92 * math.sin(a)))
+            fin(tuple(p + dirv * 0.12), (0.035, 0.16, 0.12), frame(dirv, Vector((1, 0, 0))), lighten(c2, 0.1), taper=(0.1, 1.0), rays=3)
+        # 日の光: 体のまわりに金と朱の棘(天照)
+        if "sun_disc" in deco:
+            for i in range(20):
+                a = i / 20 * 2 * math.pi
+                out = Vector((0, math.cos(a), math.sin(a)))
+                if out.y > 0.55:
+                    continue  # 顔の前はあける
+                rim = Vector((0, 0.92 * math.cos(a), 1.04 * math.sin(a)))
+                L = 0.42 if i % 2 == 0 else 0.28
+                col = GOLD if i % 2 == 0 else (1.0, 0.5, 0.2)
+                g.add_sphere(tuple(rim + out * L * 0.5), (0.03, L * 0.5, 0.07), col, rot=frame(out, Vector((1, 0, 0))), taper=(0.95, 1.3), seg=10, rings=6)
+            g.add_torus(Vector((0, 0, 0)), Vector((1, 0, 0)), 1.0, 0.03, GOLD, seg=48, sides=8)
+        for s in (1, -1):  # 小さな胸びれ
+            fin((s * 0.3, 0.12, -0.05), (0.03, 0.18, 0.12), frame(Vector((s * 0.7, -0.6, 0.1)), Vector((0, 0, 1))))
+    elif shape == "hammer":
+        for s in (1, -1):  # 金づちの両端のまぶたの出っぱり
+            g.add_sphere((s * 0.92, 0.95, 0.06), (0.1, 0.12, 0.1), darken(c1, 0.05), seg=12, rings=8)
+    elif shape == "dragon":
+        # 背中の棘(先へいくほど小さい)と、尾の先の炎のような房
+        for i, (x, y, z, r) in enumerate(DRAGON_SPINE[:-1]):
+            p = sp((x, y, z + r * 0.95))
+            dirv = Vector((0, -0.45, 1)).normalized()
+            g.add_sphere(tuple(p + dirv * 0.09), (0.03, 0.06, 0.16 - i * 0.01), c3, rot=frame(dirv), taper=(0.95, 1.2), seg=10, rings=6)
+        tip = Vector(sp(DRAGON_SPINE[-1][:3]))
+        for k in range(5):
+            dirv = Vector(((k - 2) * 0.22, -1, 0.3 + (k % 2) * 0.25)).normalized()
+            fin(tuple(tip + dirv * 0.22), (0.035, 0.28, 0.12), frame(dirv), c3 if k % 2 else lighten(c3, 0.25), taper=(0.9, 1.2), rays=0)
+        # 足の爪(3本ずつ)
+        for (y, z) in ((0.78, 0.0), (-0.75, 0.1)):
+            for sgn in (1, -1):
+                dirv = Vector((sgn * 0.8, 0.25 if y > 0 else -0.2, -0.6)).normalized()
+                foot = sp((sgn * 0.18, y, z - 0.08)) + dirv * 0.36
+                for kk in range(3):
+                    a = (kk - 1) * 0.5
+                    toe = Vector((sgn * 0.5, math.cos(a) * 0.7, -0.5 + math.sin(a) * 0.2)).normalized()
+                    g.add_sphere(tuple(foot + toe * 0.07), (0.025, 0.08, 0.025), GOLD, rot=frame(toe), taper=(0.9, 1.2), seg=8, rings=5)
+        # 長い龍のひげ
+        for sgn in (1, -1):
+            p0 = Vector((sgn * 0.1, 1.98, 0.1))
+            pts = [p0, p0 + Vector((sgn * 0.3, 0.1, 0.05)), p0 + Vector((sgn * 0.6, -0.15, -0.1)), p0 + Vector((sgn * 0.75, -0.55, -0.05))]
+            g.add_tube([tuple(x) for x in pts], 0.018, GOLD, radius_end=0.008)
+        # たてがみ(首のまわり)
+        if "mane" in deco:
+            for i in range(9):
+                a = (i - 4) * 0.33
+                p = Vector((math.sin(a) * 0.26, 1.15 - abs(i - 4) * 0.02, 0.32 + math.cos(a) * 0.18))
+                dirv = Vector((math.sin(a) * 0.8, -0.7, math.cos(a) * 0.6)).normalized()
+                g.add_sphere(tuple(p + dirv * 0.12), (0.04, 0.17, 0.08), c2, rot=frame(dirv), taper=(0.9, 1.2), seg=10, rings=6)
+    elif shape == "hydra":
+        # 主ではない7つの頭の目(光る)と小さな角
+        for (hp_, k) in hydra_heads()[1:]:
+            hp = Vector(hp_)
+            base = Vector((hp.x * 0.42, 0.45, 0.28))
+            mid = (base + hp) / 2 + Vector((0, -0.08, 0.22))
+            fwd = (hp - mid).normalized()
+            side = fwd.cross(Vector((0, 0, 1))).normalized()
+            up = side.cross(fwd).normalized()
+            for s in (1, -1):
+                e = hp + fwd * 0.1 + side * s * 0.15 + up * 0.08
+                g.add_sphere(tuple(e), (0.05, 0.05, 0.05), c3, seg=10, rings=6)
+                g.add_sphere(tuple(e + (e - hp).normalized() * 0.03), (0.022, 0.022, 0.022), INK, seg=8, rings=5)
+                hdir = (up * 0.9 - fwd * 0.4 + side * s * 0.3).normalized()
+                g.add_sphere(tuple(hp + up * 0.15 + side * s * 0.1 + hdir * 0.08), (0.03, 0.12, 0.03), (0.96, 0.92, 0.82), rot=frame(hdir), taper=(0.95, 1.3), seg=8, rings=5)
+        # 背中の棘
+        for i in range(6):
+            y = 0.3 - i * 0.28
+            g.add_sphere((0, y, 0.48 - i * 0.03 + 0.08), (0.035, 0.08, 0.16 - i * 0.012), c3, rot=frame(Vector((0, -0.4, 1))), taper=(0.95, 1.2), seg=10, rings=6)
+        for s in (1, -1):
+            fin((s * 0.55, 0.0, -0.3), (0.035, 0.3, 0.16), frame(Vector((s * 0.8, -0.5, -0.4)), Vector((0, 1, 0))), darken(c1, 0.05), taper=(0.4, 1.1), rays=0)
+    elif shape == "jelly":
+        # 傘のふちのひだ
+        for i in range(16):
+            a = i / 16 * 2 * math.pi
+            out = Vector((math.cos(a), math.sin(a), -0.35)).normalized()
+            p = Vector((math.cos(a) * 0.78, math.sin(a) * 0.78, -0.02))
+            g.add_sphere(tuple(p + out * 0.05), (0.13, 0.1, 0.04), lighten(c2, 0.2), rot=frame(out, Vector((0, 0, 1))), seg=10, rings=6)
+        # 口腕(ひらひらの4本)
+        for k in range(4):
+            a = k / 4 * 2 * math.pi + 0.4
+            for i in range(9):
+                z = -0.05 - i * 0.14
+                wob = math.sin(i * 0.8 + k) * 0.08
+                p = (math.cos(a) * (0.15 + wob), math.sin(a) * (0.15 + wob), z)
+                g.add_sphere(p, (0.14 - i * 0.008, 0.06, 0.08), mix(c2, WHITE, 0.25 + 0.05 * (i % 2)), rot=frame(Vector((math.cos(a), math.sin(a), 0)), Vector((0, 0, 1))), seg=10, rings=6)
+        # 細い触手と、そこに咲く桜
+        for k in range(12):
+            a = k / 12 * 2 * math.pi
+            r0 = 0.66
+            pts = [(math.cos(a) * r0, math.sin(a) * r0, -0.05)]
+            for i in range(1, 6):
+                pts.append((math.cos(a) * (r0 + 0.05 * math.sin(i + k)), math.sin(a) * (r0 + 0.05 * math.cos(i + k)), -0.05 - i * 0.24))
+            g.add_tube(pts, 0.022, lighten(c2, 0.35), radius_end=0.008)
+            if k % 3 == 0:
+                tip = Vector(pts[3])
+                for pi_ in range(5):
+                    pa = pi_ / 5 * 2 * math.pi
+                    pd = Vector((math.cos(pa), math.sin(pa), 0))
+                    g.add_sphere(tuple(tip + pd * 0.06), (0.05, 0.035, 0.012), PINK, rot=frame(pd, Vector((0, 0, 1))), seg=8, rings=5)
+                g.add_sphere(tuple(tip), (0.025, 0.025, 0.025), GOLD, seg=8, rings=5)
+        # 傘の上の桜の花
+        for k in range(6):
+            a = k / 6 * 2 * math.pi + 0.3
+            c = Vector((math.cos(a) * 0.45, math.sin(a) * 0.45, 0.7))
+            nrm = Vector((c.x / 0.74**2, c.y / 0.74**2, (c.z - 0.32) / 0.5**2)).normalized()
+            cc = Vector((math.cos(a) * 0.45, math.sin(a) * 0.45, 0.32 + 0.5 * math.sqrt(max(0.0, 1 - (0.45 / 0.74) ** 2))))
+            for pi_ in range(5):
+                pa = pi_ / 5 * 2 * math.pi
+                u = nrm.cross(Vector((0, 0, 1)) if abs(nrm.z) < 0.9 else Vector((1, 0, 0))).normalized()
+                v = nrm.cross(u)
+                pd = u * math.cos(pa) + v * math.sin(pa)
+                g.add_sphere(tuple(cc + pd * 0.07 + nrm * 0.01), (0.06, 0.04, 0.012), PINK, rot=frame(pd, nrm), seg=8, rings=5)
+    elif shape == "seahorse":
+        # 頭の冠(とげ)、背びれ、胸びれ、狐の尾(3本のふさ)
+        for i in range(5):
+            a = (i - 2) * 0.35
+            dirv = Vector((math.sin(a) * 0.5, -0.3, 1)).normalized()
+            g.add_sphere((math.sin(a) * 0.1, 0.18, 1.22), (0.03, 0.05, 0.12), c3, rot=frame(dirv), taper=(0.95, 1.2), seg=8, rings=5)
+        fin((0, -0.16, 0.05), (0.03, 0.2, 0.16), frame(Vector((0, -1, 0.1))), lighten(c2, 0.2), taper=(0.1, 1.0), rays=7)
+        for s in (1, -1):
+            fin((s * 0.2, 0.18, 0.82), (0.025, 0.12, 0.08), frame(Vector((s * 0.7, -0.6, 0)), Vector((0, 0, 1))), lighten(c2, 0.2))
+        for k in range(max(1, d.get("tails") or 3)):
+            a = (k - 1) * 0.45
+            dirv = Vector((math.sin(a) * 0.6, -1, 0.55 + 0.15 * math.cos(a))).normalized()
+            base = Vector((0, -0.08, 0.35))
+            g.add_sphere(tuple(base + dirv * 0.42), (0.13, 0.48, 0.15), WHITE if k % 2 == 0 else lighten(c2, 0.3), rot=frame(dirv), taper=(0.7, 1.6))
+            g.add_sphere(tuple(base + dirv * 0.82), (0.07, 0.16, 0.08), lighten(c3, 0.3), rot=frame(dirv), taper=(0.9, 1.4), seg=10, rings=6)
+    elif shape == "phoenix":
+        # 鳥のつばさのような胸びれ(3枚重ね、根元は体の色 → 先は金)
+        for s in (1, -1):
+            for k, (dy, dz, L) in enumerate(((-0.15, 0.55, 1.15), (-0.45, 0.25, 0.95), (-0.75, 0.0, 0.75))):
+                dirv = Vector((s * 1.0, dy, dz)).normalized()
+                base = Vector((s * 0.28, 0.35 - k * 0.12, 0.12))
+                col = (c1, c3, c2)[k]
+                fin(tuple(base + dirv * L * 0.5), (0.03, L * 0.55, 0.2 - k * 0.03), frame(dirv, Vector((0, 0, 1)) if abs(dirv.z) < 0.9 else Vector((0, 1, 0))), col, taper=(0.7, 1.4), rays=9)
+        # 長い尾羽(真ん中の3本はとても長く、先に目玉の模様)
+        base = Vector((0, -1.05, 0.02))
+        for i in range(7):
+            t = (i - 3) / 3
+            dirv = Vector((t * 0.55, -1, 0.15 + 0.3 * (1 - abs(t)))).normalized()
+            L = 1.5 - abs(t) * 0.7
+            fin(tuple(base + dirv * L * 0.5), (0.03, L * 0.52, 0.09), frame(dirv), c2 if i % 2 else c3, taper=(0.4, 1.2), rays=0)
+            tip = base + dirv * L * 0.98
+            g.add_disc(tip, Vector((1, 0, 0)), 0.09, 0.11, GOLD, thick=0.03)
+            g.add_disc(tip + Vector((0.016, 0, 0)), Vector((1, 0, 0)), 0.05, 0.06, (0.2, 0.35, 0.9), thick=0.02)
+        # 背中の炎のようなひれ
+        for i in range(3):
+            dirv = Vector((0, -0.5, 1)).normalized()
+            g.add_sphere((0, 0.1 - i * 0.3, 0.42 - i * 0.05), (0.035, 0.12, 0.22 - i * 0.04), lighten(c3, 0.15), rot=frame(dirv), taper=(0.95, 1.3))
+    elif shape == "veil":
+        veil = lighten(c2, 0.25)
+        tipc = WHITE
+
+        def wavy(x, y, z):
+            k = 1 + 0.06 * math.sin(math.atan2(z, y + 1) * 9) * max(0.0, (y + 1) / 2)
+            return x, -1 + (y + 1) * k, z * k
+
+        # 体より大きく流れる尾(扇)
+        base = Vector((0, -0.62, 0.0))
+        for i in range(7):
+            a = math.radians(-66 + i * 22)
+            dirv = Vector((0, -math.cos(a), math.sin(a)))
+            L = 1.15 - abs(a) * 0.15
+            g.add_sphere(tuple(base + dirv * L * 0.55), (0.025, L * 0.58, 0.3), mix(veil, c3, 0.15 * (i % 2)), rot=frame(dirv, Vector((1, 0, 0))), taper=(0.1, 1.0), shape_fn=wavy, seg=20, rings=12)
+            g.add_sphere(tuple(base + dirv * L * 1.05), (0.02, 0.06, 0.2), tipc, rot=frame(dirv, Vector((1, 0, 0))), seg=10, rings=6)
+        # 背びれ・しりびれ(後ろへ長く流れる)
+        for zs, L in ((1, 0.95), (-1, 1.05)):
+            dirv = Vector((0, -0.7, zs * 0.7)).normalized()
+            g.add_sphere(tuple(Vector((0, -0.1, zs * 0.36)) + dirv * L * 0.5), (0.025, L * 0.55, 0.28), veil, rot=frame(dirv, Vector((1, 0, 0))), taper=(0.1, 1.0), shape_fn=wavy, seg=20, rings=12)
+        # 袖のような長い胸びれ
+        for s in (1, -1):
+            dirv = Vector((s * 0.55, -0.6, -0.6)).normalized()
+            fin(tuple(Vector((s * 0.28, 0.2, -0.12)) + dirv * 0.4), (0.025, 0.46, 0.13), frame(dirv, Vector((0, 0, 1))), veil, taper=(0.3, 1.1), rays=5)
+BIG = ("shark", "orca", "whale", "salamander", "sturgeon", "hammer")  # 大物の形(ひれは体の色、筋なし)
 
 EEL_SPINE = [(0.0, 1.25, 0.02, 0.3), (0.05, 0.9, 0.0, 0.28), (0.08, 0.5, 0.0, 0.27), (0.04, 0.1, 0.0, 0.25), (-0.04, -0.3, 0.0, 0.22), (-0.08, -0.7, 0.0, 0.19), (-0.04, -1.1, 0.0, 0.15), (0.03, -1.45, 0.0, 0.11)]
 
@@ -405,7 +694,9 @@ def build_fish(d, parts_only=False):
     if not parts_only:
         # --- 体(溶かして一体化) ---
         body = Geo()
-        if d["shape"] == "eel":
+        if d["shape"] in ("dragon", "seahorse"):
+            special_body(d, body, sp, S, c1)
+        elif d["shape"] == "eel":
             # 背骨の点を細かく補間して、つなぎ目の無い一本の体にする
             for k in range(len(EEL_SPINE) - 1):
                 a0, a1 = EEL_SPINE[k], EEL_SPINE[k + 1]
@@ -419,6 +710,8 @@ def build_fish(d, parts_only=False):
             for part in shape["parts"]:
                 c, r = part[0], part[1]
                 body.add_sphere(sp(c), tuple(S @ Vector(r)), c1, taper=part[2] if len(part) > 2 else None)
+        if d["shape"] == "hydra":
+            special_body(d, body, sp, S, c1)
         if "bighead" in deco:
             (hc, hr) = head
             body.add_sphere(Vector(hc) + Vector((0, -hr[1] * 0.25, hr[2] * 0.7)), (hr[0] * 0.95, hr[1] * 0.9, hr[2] * 0.85), c1)
@@ -495,7 +788,7 @@ def build_fish(d, parts_only=False):
     tailY = sp((0, shape["tailY"], 0)).y
     tails = d.get("tails") or 0
     tail_kind = shape["tail"]
-    if tails >= 2 and tail_kind != "whip":
+    if tails >= 2 and tail_kind != "whip" and (d["shape"] not in NEW_SHAPES or d["shape"] == "hydra"):
         # 何本もの尾: ふわっと扇に広げる(九尾は9本)
         L = 0.62 if tails <= 4 else 0.7
         for i in range(tails):
@@ -549,7 +842,9 @@ def build_fish(d, parts_only=False):
 
     # 背びれ
     top_z = head[0][2] + head[1][2]
-    if "mane" in deco:
+    if d["shape"] in NEW_SHAPES:
+        pass  # 限定の形の背びれ・たてがみは special_details で付ける
+    elif "mane" in deco:
         if d["shape"] == "eel":
             for i, (x, y, z, r) in enumerate(EEL_SPINE[:-1]):
                 p = sp((x, y, z + r * 1.0))
@@ -611,7 +906,7 @@ def build_fish(d, parts_only=False):
     elif shape["dorsal"] == "spines":
         for i in range(3):
             g.add_sphere(sp((0, -0.05 - i * 0.22, 0.6 - i * 0.05)), (0.035, 0.1, 0.2 - i * 0.03), c3, rot=frame(Vector((0, -0.3, 1))), taper=(0.95, 1.2))
-    if order >= 4 and shape["dorsal"] not in ("none", "orca", "hump", "ridge", "sturgeon") and "mane" not in deco:
+    if order >= 4 and shape["dorsal"] not in ("none", "orca", "hump", "ridge", "sturgeon") and "mane" not in deco and d["shape"] not in NEW_SHAPES:
         fin(sp((0, -0.55, 0.3)), (0.03, 0.34, 0.12), frame(Vector((0, -0.85, 0.45))), c3)
 
     # 胸びれ
@@ -619,7 +914,7 @@ def build_fish(d, parts_only=False):
         hc, hr = head
         frills = "frills" in deco
         for s in (1, -1):
-            if d["shape"] in ("shark", "sturgeon"):
+            if d["shape"] in ("shark", "sturgeon", "hammer"):
                 # 鮫: 長く、横へ翼のように張り出す(蝶鮫も)
                 base = Vector((s * hr[0] * 0.75, hc[1] - hr[1] * 0.75, hc[2] - hr[2] * 0.55))
                 dirv = Vector((s * 0.85, -0.55, -0.32)).normalized()
@@ -648,7 +943,7 @@ def build_fish(d, parts_only=False):
                 dirv = Vector((s * 0.7, -0.45, -0.6)).normalized()
                 L = 0.62 if frills else 0.46
                 fin(tuple(base + dirv * L * 0.5), (0.035, L * 0.55, 0.18), frame(dirv, Vector((0, 1, 0))), c3 if frills else big_fin, taper=(0.3, 1.0), rays=0)
-    elif d["shape"] != "ray":
+    elif d["shape"] not in ("ray",) + NEW_SHAPES:
         frills = "frills" in deco
         for s in (1, -1):
             if d["shape"] == "eel":
@@ -671,6 +966,8 @@ def build_fish(d, parts_only=False):
                 continue
             g.add_sphere(tuple(p + n * 0.05), (0.035, 0.13, 0.035), lighten(c2, 0.25), rot=frame(n), taper=(0.95, 1.1))
 
+    if d["shape"] in NEW_SHAPES:
+        special_details(d, g, fin, sp, S, head, c1, c2, c3, fin_col, order, deco)
     add_face(g, d, head, deco, c1, c2, c3, order)
     add_decos(g, d, head, deco, c1, c2, c3, order, S, tailY)
 
@@ -679,7 +976,7 @@ def build_fish(d, parts_only=False):
     if order >= 5 and not ({"coin", "okappa"} & deco):
         p, n = head_point(head, 0, 38)
         g.add_disc(p + n * 0.01, n, 0.1, 0.1, GOLD, up=Vector((0, 0, 1)) - n * n.z if abs(n.z) < 0.95 else Vector((0, 1, 0)), thick=0.02)
-    if order >= 6:
+    if order >= 6 and d["shape"] not in NEW_SHAPES:  # 限定の形は形そのものが特別(後光はゲームの中で付く)
         ring_c = Vector((0, hc[1] - hr[1] * 0.6, hc[2] + hr[2] * 1.05))
         R = max(hr[0], hr[2]) * 1.35
         g.add_torus(ring_c, Vector((0, 1, 0)), R, 0.035, lighten(c3, 0.5))
@@ -966,7 +1263,7 @@ g_skin = [None]
 
 def add_face(g, d, head, deco, c1, c2, c3, order):
     eyes = d.get("eyes") or ("none" if "noface" in deco else ("big" if "big_eye" in deco else "normal"))
-    mouth = d.get("mouth") or {"koi": "small", "catfish": "wide", "puffer": "o", "eel": "small", "angler": "grin", "ray": "none", "shark": "jaws", "orca": "smile", "salmon": "fangs", "salamander": "wide", "whale": "smile", "sturgeon": "wide"}[d["shape"]]
+    mouth = d.get("mouth") or {"koi": "small", "catfish": "wide", "puffer": "o", "eel": "small", "angler": "grin", "ray": "none", "shark": "jaws", "orca": "smile", "salmon": "fangs", "salamander": "wide", "whale": "smile", "sturgeon": "wide"}.get(d["shape"], "small")
     g_skin[0] = c1
     iris = c3 if d.get("c3") else c2
     # 虹彩の色が体と近すぎるときは補色寄りに
@@ -994,6 +1291,14 @@ def add_face(g, d, head, deco, c1, c2, c3, order):
         yaw_side, pitch = 64, -10  # 口の端の近く、低いところ
     elif d["shape"] == "sturgeon":
         yaw_side, pitch = 40, 22
+    elif d["shape"] == "hammer":
+        yaw_side, pitch = 72, 4  # 金づちの両端
+    elif d["shape"] == "mola":
+        yaw_side, pitch = 46, 18
+    elif d["shape"] == "jelly":
+        yaw_side, pitch = 22, 4  # 傘の前
+    elif d["shape"] == "dragon":
+        yaw_side, pitch = 40, 26
     else:
         yaw_side, pitch = 33, 14
     if eyes == "big":
@@ -1190,7 +1495,7 @@ def add_decos(g, d, head, deco, c1, c2, c3, order, S, tailY):
             p = center + Vector((0, math.cos(a) * R, math.sin(a) * R))
             out = Vector((0, math.cos(a), math.sin(a)))
             g.add_sphere(tuple(p + out * 0.1), (0.06, 0.14, 0.06), (1.0, 0.71, 0.28), rot=frame(out), taper=(0.95, 1.2))
-    if "sun_disc" in deco:
+    if "sun_disc" in deco and d["shape"] != "mola":  # 翻車魚は体そのものが日輪(special_details)
         if d["shape"] != "ray":
             # 鱏以外: 頭の後ろに小さめの日輪(金の縁)
             at = hc + Vector((0, -hr[1] * 1.1, hr[2] + 0.26))
