@@ -1,0 +1,18 @@
+{
+  "siteName": "まいにちゲーム工房",
+  "siteDescription": "毎日ひとつ新しいミニゲームが増える、登録不要・無料のブラウザゲームサイト。",
+  "baseUrl": "",
+  "lang": "ja",
+  "adsense": {
+    "client": "",
+    "h5GamesAds": false,
+    "testMode": true,
+    "displaySlots": {
+      "belowHowto": "",
+      "indexInFeed": ""
+    }
+  },
+  "analytics": {
+    "goatcounterCode": ""
+  }
+}

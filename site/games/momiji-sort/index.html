@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ja" data-slug="momiji-sort">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>もみじ仕分け｜毎日1問の秋の仕分けパズル（無料・登録不要） | %SITE_NAME%</title>
+<meta name="description" content="紅葉やどんぐりを同じ種類ごとにかごへ集める仕分けパズル。毎日全員同じ1問に挑戦して、最短手数との差を競えます。スマホ・PCで無料、登録不要。">
+<meta name="gk-title" content="もみじ仕分け">
+<link rel="stylesheet" href="../../assets/core.css">
+<style>
+  .ms-tabs { display: flex; gap: 6px; justify-content: center; margin: 6px 0 4px; }
+  .ms-tab { border: 1px solid var(--line); background: var(--surface); color: var(--muted); font: inherit; font-size: 14px; font-weight: 600; padding: 8px 16px; border-radius: 999px; cursor: pointer; min-height: 40px; }
+  .ms-tab[aria-selected="true"] { background: var(--text); border-color: var(--text); color: var(--bg); }
+  .ms-msg { text-align: center; font-size: 14px; color: var(--muted); min-height: 1.7em; margin: 6px 0 10px; }
+  .ms-board {
+    --cols: 7;
+    display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+    gap: 10px 8px; width: min(100%, 640px); margin: 0 auto; padding: 18px 8px 10px;
+  }
+  .ms-basket {
+    position: relative; display: flex; flex-direction: column-reverse; justify-content: flex-start; align-items: center;
+    gap: 2px; padding: 6px 2px 8px; min-height: 196px; min-width: 44px;
+    background: linear-gradient(to bottom, transparent 0 18px, var(--surface) 18px);
+    border: 2px solid var(--line); border-top-color: transparent; border-radius: 6px 6px 22px 22px;
+    cursor: pointer; transition: border-color .15s, background-color .15s, transform .15s;
+    -webkit-tap-highlight-color: transparent; outline: none;
+  }
+  .ms-basket:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 50%, transparent); }
+  .ms-basket.is-selected { border-color: var(--accent); }
+  .ms-basket.is-hint { border-color: var(--ok); border-style: dashed; }
+  .ms-basket.is-hint-from { border-color: var(--accent); border-style: dashed; }
+  .ms-basket.is-done { border-color: var(--ok); background: linear-gradient(to bottom, transparent 0 18px, color-mix(in srgb, var(--ok) 12%, var(--surface)) 18px); }
+  .ms-basket.is-done::after { content: "✓"; position: absolute; top: -6px; left: 50%; transform: translateX(-50%); font-size: 13px; font-weight: 800; color: var(--ok); }
+  .ms-basket.is-shake { animation: ms-shake .28s; }
+  .ms-key { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--muted); }
+  .ms-item { width: 40px; height: 40px; transition: transform .16s ease-out; flex: none; }
+  .ms-item svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 1px 1px rgba(0,0,0,.18)); }
+  .ms-item.is-lift { transform: translateY(-14px); }
+  .ms-item.is-new { animation: ms-pop .22s ease-out; }
+  @keyframes ms-pop { from { transform: scale(.6); } to { transform: scale(1); } }
+  @keyframes ms-shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+  .ms-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: center; font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .ms-legend span { display: inline-flex; align-items: center; gap: 2px; }
+  .ms-legend svg { width: 18px; height: 18px; }
+  .ms-result-stars { font-size: 28px; letter-spacing: 4px; color: #e0a020; }
+  @media (max-width: 420px) {
+    .ms-board { gap: 18px 6px; padding-left: 0; padding-right: 0; }
+    .ms-basket { min-height: 180px; }
+    .ms-item { width: 36px; height: 36px; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- 0 もみじ -->
+    <symbol id="ms-i0" viewBox="0 0 40 40">
+      <path d="M20 37 L20 29" stroke="#8a2a1a" stroke-width="2" stroke-linecap="round"/>
+      <path d="M20 3 L23.5 12 L31 8 L28.5 16.5 L37 18 L29.5 22.5 L33 30 L23.5 27 L20 31 L16.5 27 L7 30 L10.5 22.5 L3 18 L11.5 16.5 L9 8 L16.5 12 Z" fill="#d93a26"/>
+      <path d="M20 9 L20 29 M20 20 L29 13 M20 20 L11 13 M20 22 L30 25 M20 22 L10 25" stroke="#a82312" stroke-width="1" fill="none"/>
+    </symbol>
+    <!-- 1 いちょう -->
+    <symbol id="ms-i1" viewBox="0 0 40 40">
+      <path d="M20 37 L20 25" stroke="#9c7a12" stroke-width="2" stroke-linecap="round"/>
+      <path d="M5 15 C9 5 31 5 35 15 C31 22 25 25.5 20 25.5 C15 25.5 9 22 5 15 Z" fill="#f4c534"/>
+      <path d="M20 7 L20 14" stroke="#c99a12" stroke-width="2" stroke-linecap="round"/>
+      <path d="M20 25 L11 12 M20 25 L16 9 M20 25 L24 9 M20 25 L29 12" stroke="#d9a91c" stroke-width=".8"/>
+    </symbol>
+    <!-- 2 どんぐり -->
+    <symbol id="ms-i2" viewBox="0 0 40 40">
+      <ellipse cx="20" cy="24" rx="10" ry="12" fill="#b5793d"/>
+      <path d="M8 18 C8 9 32 9 32 18 Z" fill="#6b4423"/>
+      <path d="M10 15 L30 15 M11 12.5 L29 12.5" stroke="#875a33" stroke-width="1"/>
+      <path d="M20 9 L21 5" stroke="#6b4423" stroke-width="2.4" stroke-linecap="round"/>
+      <ellipse cx="16" cy="25" rx="2" ry="4" fill="#d29a5c" opacity=".8"/>
+    </symbol>
+    <!-- 3 かき -->
+    <symbol id="ms-i3" viewBox="0 0 40 40">
+      <ellipse cx="20" cy="23" rx="14" ry="12.5" fill="#f08424"/>
+      <ellipse cx="15" cy="20" rx="3" ry="2" fill="#ffb15c" opacity=".8"/>
+      <path d="M20 13 L12 9 L17 15 L11 17 L20 16 L29 17 L23 15 L28 9 Z" fill="#3f8a3a"/>
+      <path d="M20 13 L20 7" stroke="#5a3a1a" stroke-width="2.2" stroke-linecap="round"/>
+    </symbol>
+    <!-- 4 ぶどう -->
+    <symbol id="ms-i4" viewBox="0 0 40 40">
+      <path d="M20 8 L22 3" stroke="#5a3a1a" stroke-width="2" stroke-linecap="round"/>
+      <path d="M22 6 C27 3 31 5 31 8 C27 9 24 8 22 6 Z" fill="#4c9a40"/>
+      <g fill="#7b47b8">
+        <circle cx="13" cy="13" r="5"/><circle cx="20" cy="12" r="5"/><circle cx="27" cy="13" r="5"/>
+        <circle cx="16.5" cy="20.5" r="5"/><circle cx="23.5" cy="20.5" r="5"/>
+        <circle cx="20" cy="28" r="5"/>
+      </g>
+      <g fill="#a57ad8" opacity=".7"><circle cx="11.5" cy="11.5" r="1.5"/><circle cx="18.5" cy="10.5" r="1.5"/><circle cx="15" cy="19" r="1.5"/><circle cx="18.5" cy="26.5" r="1.5"/></g>
+    </symbol>
+    <!-- 5 あおば -->
+    <symbol id="ms-i5" viewBox="0 0 40 40">
+      <path d="M6 34 C6 16 18 6 35 5 C35 22 25 34 6 34 Z" fill="#4caf50"/>
+      <path d="M6 34 L30 10 M14 26 L14 17 M14 26 L23 26 M21 19 L21 12 M21 19 L28 19" stroke="#2e7d32" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    </symbol>
+    <!-- 6 りんどう -->
+    <symbol id="ms-i6" viewBox="0 0 40 40">
+      <path d="M20 38 L20 28" stroke="#2f7a3a" stroke-width="2" stroke-linecap="round"/>
+      <g fill="#3d6fe0">
+        <ellipse cx="20" cy="9" rx="5" ry="7"/>
+        <ellipse cx="20" cy="9" rx="5" ry="7" transform="rotate(72 20 19)"/>
+        <ellipse cx="20" cy="9" rx="5" ry="7" transform="rotate(144 20 19)"/>
+        <ellipse cx="20" cy="9" rx="5" ry="7" transform="rotate(216 20 19)"/>
+        <ellipse cx="20" cy="9" rx="5" ry="7" transform="rotate(288 20 19)"/>
+      </g>
+      <circle cx="20" cy="19" r="4" fill="#f5f0ff"/>
+      <circle cx="20" cy="19" r="1.8" fill="#e8c23a"/>
+    </symbol>
+  </defs>
+</svg>
+<main class="gk-page">
+  <div class="ms-tabs" role="tablist" aria-label="モード">
+    <button type="button" class="ms-tab" role="tab" id="tab-daily" aria-selected="true">今日の1問</button>
+    <button type="button" class="ms-tab" role="tab" id="tab-practice" aria-selected="false">練習</button>
+  </div>
+  <div class="gk-hud">
+    <span id="hud-left">手数 <strong id="moves">0</strong></span>
+    <span id="hud-mid"></span>
+    <span id="hud-right"></span>
+  </div>
+  <section class="gk-stage" id="stage" aria-label="ゲーム画面">
+    <div class="ms-board" id="board"></div>
+    <p class="ms-msg" id="msg" aria-live="polite"></p>
+  </section>
+  <div class="gk-controls">
+    <button type="button" class="gk-btn" id="undo">1手もどす</button>
+    <button type="button" class="gk-btn" id="restart">はじめから</button>
+    <button type="button" class="gk-btn" id="hint">ヒント</button>
+  </div>
+  <div class="ms-legend" id="legend" aria-hidden="true"></div>
+
+  <article class="gk-howto">
+    <h2>もみじ仕分けの遊び方</h2>
+    <p>もみじ・いちょう・どんぐり・かきなど、秋の葉っぱや木の実がバラバラにかごへ入っています。同じ種類を1つのかごに4つずつ集めて、すべてのかごを揃えたらクリアです。「今日の1問」は毎日0時（日本時間）に新しい問題になり、遊ぶ人全員が同じ配置に挑戦します。</p>
+    <h3>操作方法</h3>
+    <ul>
+      <li>スマホ：動かしたいかごをタップし、次に入れたいかごをタップします。</li>
+      <li>パソコン：クリックで同じように操作できます。数字キー（1〜9）でかごを選ぶこともできます。</li>
+    </ul>
+    <h3>ルール</h3>
+    <ul>
+      <li>動かせるのは、かごのいちばん上にあるものだけです。同じ種類が上に続けて重なっていれば、入る分だけまとめて移動します。</li>
+      <li>入れられるのは、空のかごか、いちばん上が同じ種類のかごだけです。1つのかごには4つまで入ります。</li>
+      <li>「今日の1問」では、コンピューターが計算した最短手数が表示されます。最短と同じ手数なら★3つ、最短＋3手以内なら★2つです。</li>
+      <li>曜日によって難しさが変わります。月曜はやさしく、土曜は種類が多く、日曜は空きかごが1つしかない特別な問題です。</li>
+    </ul>
+    <h3>コツ</h3>
+    <p>最初に空きかごへ何を入れるかで、その後の手数が大きく変わります。下のほうに埋もれている種類を先に確認し、「同じ種類がいちばん多く上に見えているもの」から空きかごに入れると、まとめて動かせる場面が増えます。迷ったら「1手もどす」で何度でもやり直せます。手数は、もどした分だけ減ります。</p>
+  </article>
+  <div class="gk-ad-slot" data-ad-slot-name="belowHowto"></div>
+</main>
+<script src="../../assets/config.js"></script>
+<script src="../../assets/core.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

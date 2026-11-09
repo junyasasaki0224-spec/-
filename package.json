@@ -1,0 +1,18 @@
+{
+  "name": "mini-game-factory",
+  "private": true,
+  "type": "module",
+  "description": "毎日1本ミニゲームを企画・実装・公開するための静的サイトと自動化",
+  "scripts": {
+    "new": "node scripts/new-game.mjs",
+    "validate": "node scripts/validate.mjs",
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/smoke-test.mjs",
+    "check": "node scripts/validate.mjs && node scripts/build.mjs && node scripts/smoke-test.mjs",
+    "serve": "node scripts/serve.mjs 8080",
+    "portfolio": "node scripts/portfolio.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

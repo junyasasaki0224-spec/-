@@ -1,0 +1,28 @@
+{
+  "slug": "momiji-sort",
+  "title": "もみじ仕分け",
+  "title_en": "Autumn Leaf Sort",
+  "icon": "🍁",
+  "description": "紅葉やどんぐりを同じ種類ごとにかごへ集める仕分けパズル。毎日全員同じ1問で、最短手数との差を競えます。",
+  "genre": "puzzle",
+  "subgenre": "sort",
+  "lane": "proven-twist",
+  "lineage": "仕分けパズル系（積み重ねたものを同じ種類ごとに容器へ集めるジャンル共通ルール）",
+  "twist": "毎日全員共通の盤面を幅優先探索で解いて「最短手数」を表示し、最短との差（★）と連続日数を共有して競う。曜日で難易度が変わる",
+  "controls": ["tap", "mouse", "keyboard"],
+  "session_minutes": 3,
+  "retention_hooks": ["daily-seed", "streak", "best-score", "level-progress"],
+  "tags": ["秋", "毎日", "紅葉"],
+  "created": "2026-11-09",
+  "score": 51,
+  "legal_check": {
+    "no_copied_assets": true,
+    "no_trademarks_in_name": true,
+    "not_a_specific_game_clone": true,
+    "no_real_people_or_brands": true,
+    "no_gambling_or_prizes": true,
+    "notes": "絵柄はすべて自作SVG、音はWebAudio合成。タイトルは「もみじ仕分け ゲーム」で検索し同名作品なし（2026-11-09）。仕分けパズルの基本ルールは古くからある一般的な仕組みで、特定作品の見た目・名称・ステージは使っていない。"
+  },
+  "hypothesis": "仕分け系はモバイルで2025年+116%・2026年上半期も+46%と伸びている（AppMagic）。ポータル上の仕分けゲームは英語・無国籍テーマが中心なので、日本の秋（東京の紅葉見頃は11月下旬）と『全員同じ日替わり1問＋最短手数』で差別化できる。",
+  "kpi": { "target_avg_minutes": 3, "target_return_rate": 0.15 }
+}

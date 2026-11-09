@@ -1,0 +1,28 @@
+{
+  "slug": "__SLUG__",
+  "title": "__TITLE__",
+  "title_en": "TODO",
+  "icon": "🎮",
+  "description": "TODO: 120字以内",
+  "genre": "puzzle",
+  "subgenre": "TODO",
+  "lane": "proven-twist",
+  "lineage": "TODO: ジャンル一般名で書く（例: 仕分けパズル系）。特定作品名は書かない",
+  "twist": "TODO: このゲームならではの工夫を1文で",
+  "controls": ["tap", "mouse"],
+  "session_minutes": 3,
+  "retention_hooks": ["best-score"],
+  "tags": [],
+  "created": "__DATE__",
+  "score": 0,
+  "legal_check": {
+    "no_copied_assets": false,
+    "no_trademarks_in_name": false,
+    "not_a_specific_game_clone": false,
+    "no_real_people_or_brands": false,
+    "no_gambling_or_prizes": false,
+    "notes": ""
+  },
+  "hypothesis": "TODO: なぜ遊ばれるはずか（市場分析のどの根拠に基づくか）",
+  "kpi": { "target_avg_minutes": 3, "target_return_rate": 0.15 }
+}

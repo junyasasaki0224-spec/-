@@ -1,0 +1,119 @@
+/* 全ゲーム共通スタイル。ゲーム固有の見た目は各ゲームの index.html 内で上書きする */
+:root {
+  --bg: #f7f5f0;
+  --surface: #ffffff;
+  --surface-2: #efebe3;
+  --text: #22201c;
+  --muted: #6b665d;
+  --line: #ddd7cc;
+  --accent: #d2552d;
+  --accent-ink: #ffffff;
+  --ok: #2f8a4c;
+  --radius: 14px;
+  --shadow: 0 6px 24px rgba(30, 25, 15, .08);
+  --font: system-ui, -apple-system, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", Meiryo, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15140f; --surface: #1f1d18; --surface-2: #2a2721; --text: #f1ede4; --muted: #a59f93;
+    --line: #3a362e; --accent: #f07a50; --accent-ink: #1a0f0a; --ok: #5cc27d;
+    --shadow: 0 6px 24px rgba(0, 0, 0, .35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15140f; --surface: #1f1d18; --surface-2: #2a2721; --text: #f1ede4; --muted: #a59f93;
+  --line: #3a362e; --accent: #f07a50; --accent-ink: #1a0f0a; --ok: #5cc27d;
+  --shadow: 0 6px 24px rgba(0, 0, 0, .35);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  line-height: 1.7;
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+}
+a { color: var(--accent); }
+img, canvas, svg { max-width: 100%; }
+
+/* ヘッダー（core.js が自動挿入） */
+.gk-bar {
+  position: sticky; top: 0; z-index: 10;
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px;
+  padding: 8px 16px; padding-top: max(8px, env(safe-area-inset-top));
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.gk-bar__home { font-size: 13px; text-decoration: none; color: var(--muted); white-space: nowrap; }
+.gk-bar__title { margin: 0; font-size: 16px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gk-bar__mute { border: 0; background: none; font-size: 18px; cursor: pointer; padding: 4px; }
+
+/* ページ骨格 */
+.gk-page { max-width: 720px; margin: 0 auto; padding: 12px 16px 48px; }
+.gk-stage {
+  position: relative;
+  margin: 0 auto;
+  user-select: none; -webkit-user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.gk-hud { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 4px 0 10px; font-size: 14px; color: var(--muted); flex-wrap: wrap; }
+.gk-hud strong { color: var(--text); font-variant-numeric: tabular-nums; }
+.gk-controls { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 14px 0 0; }
+
+.gk-btn {
+  appearance: none; border: 1px solid var(--line); background: var(--surface); color: var(--text);
+  font: inherit; font-size: 15px; font-weight: 600;
+  padding: 10px 18px; border-radius: 999px; cursor: pointer; min-height: 44px;
+}
+.gk-btn:hover { border-color: var(--muted); }
+.gk-btn:disabled { opacity: .45; cursor: default; }
+.gk-btn--primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+/* 遊び方（SEO・広告審査のための本文。ゲームごとに必ず書く） */
+.gk-howto {
+  margin: 32px 0 0; padding: 20px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); font-size: 15px;
+}
+.gk-howto h2 { font-size: 18px; margin: 0 0 8px; }
+.gk-howto h3 { font-size: 15px; margin: 18px 0 4px; }
+.gk-howto p, .gk-howto ul, .gk-howto ol { margin: 6px 0; }
+
+/* 広告枠：ゲーム操作エリアから必ず離す（誤クリック防止）。未設定時は高さ0 */
+.gk-ad-slot { margin: 28px 0 0; min-height: 0; }
+.gk-ad-slot.is-filled { min-height: 120px; }
+.gk-ad-slot.is-filled::before { content: "広告"; display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+
+/* モーダル・トースト */
+.gk-modal {
+  position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px;
+  background: rgba(0, 0, 0, .45);
+}
+.gk-modal__box {
+  width: min(420px, 100%); background: var(--surface); color: var(--text); border-radius: 18px;
+  padding: 22px 20px; box-shadow: var(--shadow); text-align: center;
+}
+.gk-modal__box h2 { margin: 0 0 8px; font-size: 20px; }
+.gk-modal__body { font-size: 15px; color: var(--muted); white-space: pre-line; }
+.gk-modal__actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+.gk-toast {
+  position: fixed; left: 50%; bottom: 24px; z-index: 60; transform: translate(-50%, 20px); opacity: 0;
+  background: var(--text); color: var(--bg); padding: 8px 16px; border-radius: 999px; font-size: 14px;
+  transition: opacity .25s, transform .25s; pointer-events: none;
+}
+.gk-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+
+/* フッター */
+.gk-foot { max-width: 720px; margin: 0 auto; padding: 24px 16px 40px; font-size: 12px; color: var(--muted); text-align: center; }
+.gk-foot a { color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

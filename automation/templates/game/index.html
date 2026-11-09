@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ja" data-slug="__SLUG__">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>__TITLE__ | 無料で遊べるミニゲーム | %SITE_NAME%</title>
+<meta name="description" content="TODO: 120字以内。何をするゲームか＋魅力＋登録不要・無料。">
+<meta name="gk-title" content="__TITLE__">
+<link rel="stylesheet" href="../../assets/core.css">
+<style>
+  /* ゲーム固有のスタイル */
+  .board { aspect-ratio: 1 / 1; width: min(100%, 520px); margin: 0 auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+</style>
+</head>
+<body>
+<main class="gk-page">
+  <div class="gk-hud">
+    <span>スコア <strong id="score">0</strong></span>
+    <span>ベスト <strong id="best">-</strong></span>
+  </div>
+  <section class="gk-stage" id="stage" aria-label="ゲーム画面">
+    <canvas class="board" id="board"></canvas>
+  </section>
+  <div class="gk-controls">
+    <button type="button" class="gk-btn" id="restart">やり直す</button>
+  </div>
+
+  <article class="gk-howto">
+    <h2>__TITLE__の遊び方</h2>
+    <p>TODO: どんなゲームか（2〜3文）。</p>
+    <h3>操作方法</h3>
+    <ul><li>スマホ：TODO</li><li>パソコン：TODO</li></ul>
+    <h3>ルール</h3>
+    <p>TODO</p>
+    <h3>コツ</h3>
+    <p>TODO: 上達のヒントを具体的に。</p>
+  </article>
+  <div class="gk-ad-slot" data-ad-slot-name="belowHowto"></div>
+</main>
+<script src="../../assets/config.js"></script>
+<script src="../../assets/core.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "_comment": "計測ツールの数字を週1回ここに転記し、performance.json として保存する。日次の自動化がこれを読んで、当たり作品の派生を優先する。",
+  "updated": "2026-12-01",
+  "games": {
+    "example-slug": {
+      "pv_28d": 3200,
+      "avg_minutes": 3.4,
+      "return_rate_7d": 0.18,
+      "share_rate": 0.04,
+      "top_referrers": ["google", "x.com"],
+      "notes": "日替わりモードの再訪が多い"
+    }
+  }
+}

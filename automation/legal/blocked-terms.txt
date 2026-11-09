@@ -1,0 +1,81 @@
+# ゲームの公開ファイル（site/games/**）に含めてはいけない語。validate.mjs が検査する。
+# 既存作品名・商標（登録商標と思われるもの・特定作品を連想させる固有名）。
+# 調査メモ(research/)には市場分析として作品名を書いてよい。公開ページには書かない。
+# 一般名への言い換え例を右に書く。追加は自由（1行1語）。
+
+# --- 落ち物・パズル系 ---
+テトリス          # → 落ち物ブロックパズル
+Tetris
+ぷよぷよ          # → 連鎖パズル
+Puyo
+ピクロス          # → ノノグラム / ロジックパズル
+Picross
+数独              # 日本ではニコリの登録商標 → 数字パズル
+Candy Crush
+キャンディークラッシュ
+Bejeweled
+Threes
+スイカゲーム      # → 合体パズル
+Wordle            # → 単語当てパズル
+ワードル
+Flappy            # → 羽ばたきアクション
+Angry Birds
+Cut the Rope
+Monument Valley
+
+# --- ボード・テーブル系 ---
+オセロ            # 登録商標 → リバーシ
+Othello
+UNO
+ジェンガ          # → 積み木崩し
+Jenga
+ルービック        # → 回転パズル
+Rubik
+人生ゲーム        # → すごろく
+モノポリー
+Monopoly
+スクラブル
+Scrabble
+
+# --- キャラクター・有名IP ---
+マリオ
+Mario
+ポケモン
+ポケットモンスター
+Pokemon
+Pokémon
+ゼルダ
+Zelda
+カービィ
+Kirby
+ソニック
+Sonic
+パックマン
+Pac-Man
+PAC-MAN
+インベーダー      # → シューティング
+Space Invaders
+ドラクエ
+ドラゴンクエスト
+Dragon Quest
+ファイナルファンタジー
+Final Fantasy
+マインクラフト
+マイクラ
+Minecraft
+Roblox
+Fortnite
+フォートナイト
+Among Us
+スプラトゥーン
+Splatoon
+どうぶつの森
+あつ森
+ディズニー
+Disney
+ジブリ
+ドラえもん
+アンパンマン
+ちいかわ
+サンリオ
+ハローキティ

@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate games (structure / legal guard)
+        run: node scripts/validate.mjs
+      - name: Build
+        run: node scripts/build.mjs
+      - name: Install Playwright (Chromium)
+        run: npm i --no-save playwright && npx playwright install --with-deps chromium
+      - name: Smoke test (PC + mobile)
+        run: node scripts/smoke-test.mjs
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: artifacts/screens/
+          retention-days: 7
