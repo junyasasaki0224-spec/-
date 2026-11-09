@@ -4,7 +4,10 @@
   'use strict';
   var GK = window.GameKit;
   var CAP = 4;
-  var NAMES = ['もみじ', 'いちょう', 'どんぐり', 'かき', 'ぶどう', 'あおば', 'りんどう'];
+  var T = GK.t;
+  var EN = GK.lang === 'en';
+  var NAMES = EN ? ['Maple', 'Ginkgo', 'Acorn', 'Persimmon', 'Grapes', 'Green leaf', 'Gentian']
+                 : ['もみじ', 'いちょう', 'どんぐり', 'かき', 'ぶどう', 'あおば', 'りんどう'];
 
   // ---------------- パズルの純粋ロジック ----------------
   // 盤面 = かごの配列。かご = 文字列（下→上）。各文字 '0'〜'6' が種類。
@@ -102,13 +105,13 @@
 
   // 曜日ごとの難しさ（0=日曜）
   var DAILY_RULES = [
-    { colors: 5, empties: 1, label: '日曜・空きかご1つ' },
-    { colors: 4, empties: 2, label: '月曜・やさしい' },
-    { colors: 5, empties: 2, label: '火曜' },
-    { colors: 5, empties: 2, label: '水曜' },
-    { colors: 6, empties: 2, label: '木曜' },
-    { colors: 6, empties: 2, label: '金曜' },
-    { colors: 7, empties: 2, label: '土曜・むずかしい' }
+    { colors: 5, empties: 1, label: T('日曜・空きかご1つ', 'Sunday · only 1 empty basket') },
+    { colors: 4, empties: 2, label: T('月曜・やさしい', 'Monday · easy') },
+    { colors: 5, empties: 2, label: T('火曜', 'Tuesday') },
+    { colors: 5, empties: 2, label: T('水曜', 'Wednesday') },
+    { colors: 6, empties: 2, label: T('木曜', 'Thursday') },
+    { colors: 6, empties: 2, label: T('金曜', 'Friday') },
+    { colors: 7, empties: 2, label: T('土曜・むずかしい', 'Saturday · hard') }
   ];
   function dailyRule(dateStr) { return DAILY_RULES[new Date(dateStr + 'T00:00:00Z').getUTCDay()]; }
   function dailyPuzzle(dateStr) {
@@ -146,12 +149,14 @@
     $('legend').innerHTML = Object.keys(used).sort().map(function (c) { return '<span>' + svgItem(+c) + NAMES[+c] + '</span>'; }).join('');
     if (mode === 'daily') {
       var rec = GK.store.get('daily:' + S.date, null);
-      setMsg(rec ? '今日はクリア済み（' + rec.moves + '手）。もっと少ない手数にも挑戦できます' : dailyRule(S.date).label + '：同じ種類を1つのかごに4つ集めよう');
+      setMsg(rec ? T('今日はクリア済み（' + rec.moves + '手）。もっと少ない手数にも挑戦できます', 'Solved today in ' + rec.moves + ' moves. Try for fewer!')
+                 : dailyRule(S.date).label + T('：同じ種類を1つのかごに4つ集めよう', ': collect 4 of a kind in each basket'));
     } else {
-      setMsg('レベル ' + S.level + '：同じ種類を1つのかごに4つ集めよう');
+      setMsg(T('レベル ' + S.level + '：同じ種類を1つのかごに4つ集めよう', 'Level ' + S.level + ': collect 4 of a kind in each basket'));
     }
     GK.track('start', { mode: mode });
     render();
+    GK.gameplayStart();
   }
 
   function setMsg(t) { msgEl.textContent = t; }
@@ -167,8 +172,8 @@
       var lift = i === S.selected ? topRun(s) : 0;
       var cls = 'ms-basket' + (i === S.selected ? ' is-selected' : '') + (isFullSame(s) ? ' is-done' : '') +
         (S.hint && S.hint[0] === i ? ' is-hint-from' : '') + (S.hint && S.hint[1] === i ? ' is-hint' : '');
-      html += '<div class="' + cls + '" role="button" tabindex="0" data-i="' + i + '" aria-label="かご' + (i + 1) + '：' +
-        (s ? s.split('').map(function (c) { return NAMES[+c]; }).join('、') : '空') + '">';
+      html += '<div class="' + cls + '" role="button" tabindex="0" data-i="' + i + '" aria-label="' + T('かご', 'Basket ') + (i + 1) + T('：', ': ') +
+        (s ? s.split('').map(function (c) { return NAMES[+c]; }).join(T('、', ', ')) : T('空', 'empty')) + '">';
       for (var k = 0; k < s.length; k++) {
         var isLift = k >= s.length - lift;
         var isNew = i === S.lastTo && k >= s.length - S.lastN;
@@ -180,13 +185,13 @@
     boardEl.innerHTML = html;
     $('moves').textContent = S.history.length;
     if (S.mode === 'daily') {
-      $('hud-mid').innerHTML = '最短 <strong>' + S.puzzle.par + '</strong> 手';
+      $('hud-mid').innerHTML = T('最短 <strong>' + S.puzzle.par + '</strong> 手', 'Best possible <strong>' + S.puzzle.par + '</strong>');
       var st = GK.streak.get();
-      $('hud-right').innerHTML = st ? '🔥 <strong>' + st + '</strong> 日連続' : '';
+      $('hud-right').innerHTML = st ? T('🔥 <strong>' + st + '</strong> 日連続', '🔥 <strong>' + st + '</strong>-day streak') : '';
     } else {
-      $('hud-mid').innerHTML = 'レベル <strong>' + S.level + '</strong>';
+      $('hud-mid').innerHTML = T('レベル', 'Level') + ' <strong>' + S.level + '</strong>';
       var b = GK.store.get('best:level', 0);
-      $('hud-right').innerHTML = b ? '最高 <strong>' + b + '</strong>' : '';
+      $('hud-right').innerHTML = b ? T('最高', 'Best') + ' <strong>' + b + '</strong>' : '';
     }
     $('undo').disabled = !S.history.length || S.done;
     $('hint').disabled = S.done;
@@ -225,6 +230,8 @@
 
   function win() {
     S.done = true;
+    GK.gameplayStop();
+    GK.happy();
     var moves = S.history.length;
     render();
     GK.sfx.play('win');
@@ -240,19 +247,21 @@
       var starStr = '★★★'.slice(0, sc) + '☆☆☆'.slice(0, 3 - sc);
       var body = document.createElement('div');
       body.innerHTML = '<div class="ms-result-stars">' + starStr + '</div>' +
-        '<div>' + moves + '手（最短 ' + par + '手）' + (S.hintsUsed ? '・ヒント' + S.hintsUsed + '回' : '') + '</div>' +
-        (prev && prev.moves <= moves ? '<div>今日のベスト：' + prev.moves + '手</div>' : '') +
-        '<div>🔥 ' + streak + '日連続</div>' +
-        (sc < 3 ? '<div style="margin-top:6px">最短まであと ' + (rec.moves - par) + '手。もう一度挑戦できます</div>' : '<div style="margin-top:6px">最短手数で完璧です！</div>');
+        '<div>' + T(moves + '手（最短 ' + par + '手）', moves + ' moves (best possible ' + par + ')') +
+        (S.hintsUsed ? T('・ヒント' + S.hintsUsed + '回', ' · ' + S.hintsUsed + ' hint(s)') : '') + '</div>' +
+        (prev && prev.moves <= moves ? '<div>' + T('今日のベスト：' + prev.moves + '手', 'Today\'s best: ' + prev.moves + ' moves') + '</div>' : '') +
+        '<div>' + T('🔥 ' + streak + '日連続', '🔥 ' + streak + '-day streak') + '</div>' +
+        '<div style="margin-top:6px">' + (sc < 3 ? T('最短まであと ' + (rec.moves - par) + '手。もう一度挑戦できます', (rec.moves - par) + ' moves above the best. Try again!') : T('最短手数で完璧です！', 'Perfect — the fewest moves possible!')) + '</div>';
       GK.modal({
-        title: '今日の1問 クリア！',
+        title: T('今日の1問 クリア！', 'Daily puzzle solved!'),
         body: body,
         buttons: [
-          { label: '結果をシェア', primary: true, keepOpen: true, onClick: function () {
-            GK.share('🍁もみじ仕分け ' + md + '\n' + starStr + ' ' + rec.moves + '手（最短' + par + '手）' + (rec.hints ? ' ヒント' + rec.hints : '') + '\n🔥' + streak + '日連続');
+          { label: T('結果をシェア', 'Copy result'), primary: true, keepOpen: true, onClick: function () {
+            GK.share(T('🍁もみじ仕分け ' + md + '\n' + starStr + ' ' + rec.moves + '手（最短' + par + '手）' + (rec.hints ? ' ヒント' + rec.hints : '') + '\n🔥' + streak + '日連続',
+                       '🍁 Autumn Leaf Sort ' + md + '\n' + starStr + ' ' + rec.moves + ' moves (best ' + par + ')' + (rec.hints ? ' hints ' + rec.hints : '') + '\n🔥 ' + streak + '-day streak'));
           } },
-          { label: 'もう一度', onClick: function () { load('daily'); } },
-          { label: '練習モードへ', onClick: function () { load('practice'); } }
+          { label: T('もう一度', 'Play again'), onClick: function () { load('daily'); } },
+          { label: T('練習モードへ', 'Practice mode'), onClick: function () { load('practice'); } }
         ]
       });
     } else {
@@ -261,16 +270,16 @@
       S.level = cleared + 1;
       GK.store.set('level', S.level);
       GK.modal({
-        title: 'レベル ' + cleared + ' クリア！',
-        body: moves + '手（最短 ' + S.puzzle.par + '手）' + (b.isNew && cleared > 1 ? '\n最高レベル更新！' : ''),
+        title: T('レベル ' + cleared + ' クリア！', 'Level ' + cleared + ' cleared!'),
+        body: T(moves + '手（最短 ' + S.puzzle.par + '手）', moves + ' moves (best possible ' + S.puzzle.par + ')') + (b.isNew && cleared > 1 ? T('\n最高レベル更新！', '\nNew best level!') : ''),
         buttons: [
-          { label: '次のレベルへ', primary: true, onClick: function () {
+          { label: T('次のレベルへ', 'Next level'), primary: true, onClick: function () {
             // 3レベルごとの区切りでだけ広告（設定がなければ即座に次へ）
             var p = cleared % 3 === 0 ? GK.adBreak('next', 'practice-level-' + cleared) : Promise.resolve();
             p.then(function () { load('practice'); });
           } },
-          { label: 'シェア', onClick: function () {
-            GK.share('🍁もみじ仕分け 練習レベル' + cleared + 'をクリア！');
+          { label: T('シェア', 'Copy result'), onClick: function () {
+            GK.share(T('🍁もみじ仕分け 練習レベル' + cleared + 'をクリア！', '🍁 Autumn Leaf Sort: cleared practice level ' + cleared + '!'));
           } }
         ]
       });
@@ -288,11 +297,12 @@
   function hint() {
     if (S.done) return;
     GK.adBreak('reward', 'hint').then(function (ok) {
-      if (!ok) { GK.toast('広告を最後まで見るとヒントが出ます'); return; }
+      GK.gameplayStart(); // 広告の前に止めたプレイ状態を再開
+      if (!ok) { GK.toast(T('広告を最後まで見るとヒントが出ます', 'Watch the whole ad to get a hint')); return; }
       var path = solve(S.tubes, 200000);
-      if (!path || !path.length) { GK.toast('ここからは解けません。「1手もどす」で戻ってみよう'); return; }
+      if (!path || !path.length) { GK.toast(T('ここからは解けません。「1手もどす」で戻ってみよう', 'No solution from here. Try Undo.')); return; }
       S.hint = path[0]; S.selected = -1; S.hintsUsed++;
-      setMsg('ヒント：オレンジの点線のかご → 緑の点線のかごへ');
+      setMsg(T('ヒント：オレンジの点線のかご → 緑の点線のかごへ', 'Hint: move from the orange dashed basket to the green one'));
       render();
     });
   }

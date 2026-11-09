@@ -11,6 +11,26 @@
   var CONFIG = window.SITE_CONFIG || {};
   var slug = document.documentElement.getAttribute('data-slug') || 'site';
 
+  // ---------- 配信先と言語 ----------
+  // portal: 大手サイト向けビルドで設定される（'crazygames' | 'poki'）。自サイトでは空。
+  var PORTAL = CONFIG.portal || '';
+  var lang = (function () {
+    try {
+      var q = new URLSearchParams(location.search).get('lang');
+      if (q === 'en' || q === 'ja') return q;
+    } catch (e) {}
+    return CONFIG.lang === 'en' ? 'en' : 'ja';
+  })();
+  document.documentElement.setAttribute('lang', lang);
+  /** 表示文言の切り替え。GameKit.t('日本語', 'English') */
+  function t(ja, en) { return lang === 'en' && en !== undefined ? en : ja; }
+  /** HTML側の data-en="..."（文字）/ data-en-label="..."（aria-label）を英語に差し替える */
+  function applyI18n(root) {
+    if (lang !== 'en') return;
+    (root || document).querySelectorAll('[data-en]').forEach(function (el) { el.textContent = el.getAttribute('data-en'); });
+    (root || document).querySelectorAll('[data-en-label]').forEach(function (el) { el.setAttribute('aria-label', el.getAttribute('data-en-label')); });
+  }
+
   // ---------- storage（localStorage が使えない環境でも落ちない） ----------
   var memory = {};
   function key(k) { return 'gk:' + slug + ':' + k; }
@@ -84,19 +104,29 @@
     get: function () { return store.get('streak', { count: 0 }).count; }
   };
 
-  // ---------- 共有（Web Share → X → クリップボードの順） ----------
+  // ---------- 共有（自サイト: Web Share → X → コピー / 大手サイト: コピーのみ） ----------
+  function copyText(text) {
+    var ok = function () { toast(t('結果をコピーしました', 'Result copied to clipboard')); };
+    var ng = function () { toast(t('コピーできませんでした', 'Could not copy')); };
+    try {
+      if (navigator.clipboard) return navigator.clipboard.writeText(text).then(ok, ng);
+    } catch (e) {}
+    ng();
+    return Promise.resolve();
+  }
   function share(text) {
+    track('share');
+    // 大手サイトは外部リンク・外部共有を嫌うため、結果テキストのコピーだけにする
+    if (PORTAL) return copyText(text);
     var url = location.href.split('#')[0].split('?')[0];
     var full = text + '\n' + url;
-    track('share');
     if (navigator.share) {
       return navigator.share({ text: text, url: url }).catch(function () {});
     }
     var intent = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(full);
-    var w = window.open(intent, '_blank', 'noopener');
-    if (!w && navigator.clipboard) {
-      return navigator.clipboard.writeText(full).then(function () { toast('結果をコピーしました'); });
-    }
+    var w = null;
+    try { w = window.open(intent, '_blank', 'noopener'); } catch (e) {}
+    if (!w) return copyText(full);
     return Promise.resolve();
   }
 
@@ -131,10 +161,18 @@
     } catch (e) { /* audio unavailable */ }
   }
 
-  // ---------- 広告（H5 Games Ads の adBreak。未設定なら即スキップ） ----------
+  // ---------- 広告 ----------
+  // 自サイト: AdSense の H5 Games Ads（adBreak）
+  // 大手サイト: 各サイトのSDK（CrazyGames SDK v3 / Poki SDK v2）。SDKが読めなければ何もしない。
   var adsReady = false;
   var adPlaying = false;
-  var ads = CONFIG.adsense || {};
+  var ads = PORTAL ? {} : (CONFIG.adsense || {});
+  var cg = function () { return window.CrazyGames && window.CrazyGames.SDK; };
+  var poki = function () { return window.PokiSDK; };
+  var sdkReady = Promise.resolve().then(function () {
+    if (PORTAL === 'crazygames' && cg()) return cg().init();
+    if (PORTAL === 'poki' && poki()) return poki().init();
+  }).catch(function () { /* SDKの初期化失敗時も遊べるようにする */ });
   if (ads.client && /^ca-pub-\d+$/.test(ads.client)) {
     var s = document.createElement('script');
     s.async = true;
@@ -160,7 +198,34 @@
    */
   function adBreak(type, name) {
     track('adbreak', { type: type, name: name });
-    if (!adsReady) return Promise.resolve(type === 'reward' ? true : undefined);
+    var isReward = type === 'reward';
+    var none = isReward ? false : undefined;
+    if (PORTAL && type === 'start') return Promise.resolve(); // 開始前広告は大手サイト側が出す
+    if (PORTAL && playing) gameplayStop();
+    if (PORTAL === 'crazygames' && cg()) {
+      return sdkReady.then(function () {
+        return new Promise(function (resolve) {
+          var done = false;
+          var fin = function (v) { if (!done) { done = true; adPlaying = false; resolve(v); } };
+          try {
+            cg().ad.requestAd(isReward ? 'rewarded' : 'midgame', {
+              adStarted: function () { adPlaying = true; },
+              adFinished: function () { fin(isReward ? true : undefined); },
+              adError: function () { fin(none); }
+            });
+          } catch (e) { fin(none); }
+        });
+      });
+    }
+    if (PORTAL === 'poki' && poki()) {
+      return sdkReady.then(function () {
+        var p = isReward ? poki().rewardedBreak(function () { adPlaying = true; })
+                         : poki().commercialBreak(function () { adPlaying = true; });
+        return p.then(function (ok) { adPlaying = false; return isReward ? !!ok : undefined; });
+      }).catch(function () { adPlaying = false; return none; });
+    }
+    if (PORTAL) return Promise.resolve(isReward ? true : undefined); // SDKなし（テスト環境など）
+    if (!adsReady) return Promise.resolve(isReward ? true : undefined);
     return new Promise(function (resolve) {
       var rewarded = false;
       var opts = {
@@ -197,8 +262,33 @@
     });
   }
 
+  // ---------- プレイ中の通知（大手サイトの必須要件。自サイトでは何もしない） ----------
+  var playing = false;
+  /** 実際に操作できる状態になったら呼ぶ（レベル開始時など） */
+  function gameplayStart() {
+    if (playing) return;
+    playing = true;
+    try {
+      if (PORTAL === 'crazygames' && cg()) cg().game.gameplayStart();
+      if (PORTAL === 'poki' && poki()) poki().gameplayStart();
+    } catch (e) {}
+  }
+  /** 結果画面・メニュー・ポーズに入ったら呼ぶ */
+  function gameplayStop() {
+    if (!playing) return;
+    playing = false;
+    try {
+      if (PORTAL === 'crazygames' && cg()) cg().game.gameplayStop();
+      if (PORTAL === 'poki' && poki()) poki().gameplayStop();
+    } catch (e) {}
+  }
+  /** クリアや記録更新など、盛り上がった瞬間に呼ぶ */
+  function happy() {
+    try { if (PORTAL === 'crazygames' && cg() && cg().game.happytime) cg().game.happytime(); } catch (e) {}
+  }
+
   // ---------- 計測（Cookie不要のGoatCounterを想定。未設定なら no-op） ----------
-  var an = CONFIG.analytics || {};
+  var an = PORTAL ? {} : (CONFIG.analytics || {});
   if (an.goatcounterCode && /^[a-z0-9-]+$/.test(an.goatcounterCode)) {
     var g = document.createElement('script');
     g.async = true;
@@ -241,7 +331,7 @@
     }
     var row = document.createElement('div');
     row.className = 'gk-modal__actions';
-    (opts.buttons || [{ label: 'とじる', primary: true }]).forEach(function (bt) {
+    (opts.buttons || [{ label: t('とじる', 'Close'), primary: true }]).forEach(function (bt) {
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'gk-btn' + (bt.primary ? ' gk-btn--primary' : '');
@@ -285,11 +375,23 @@
   function ready() {
     window.__GAME_READY__ = true;
     track('ready');
+    sdkReady.then(function () {
+      try {
+        if (PORTAL === 'poki' && poki()) poki().gameLoadingFinished();
+        if (PORTAL === 'crazygames' && cg() && cg().game.loadingStop) cg().game.loadingStop();
+      } catch (e) {}
+    });
   }
 
   window.GameKit = {
     config: CONFIG,
     slug: slug,
+    lang: lang,
+    portal: PORTAL,
+    t: t,
+    gameplayStart: gameplayStart,
+    gameplayStop: gameplayStop,
+    happy: happy,
     store: store,
     today: today,
     rng: rng,
@@ -305,9 +407,13 @@
     ready: ready
   };
 
+  // core.js は body の末尾で読み込むので、静的な文言はゲーム本体より先に差し替えておく
+  var i18nDone = false;
+  if (document.body) { applyI18n(); i18nDone = true; }
   function boot() {
-    if (slug !== 'site') mountHeader();
-    fillDisplaySlots();
+    if (!i18nDone) applyI18n();
+    if (slug !== 'site' && !PORTAL) mountHeader();
+    if (!PORTAL) fillDisplaySlots();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

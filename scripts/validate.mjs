@@ -49,6 +49,13 @@ for (const g of games) {
     if (lc[k] !== true) err(slug, `meta.legal_check.${k} が true ではありません（LEGAL.md のチェックを実施）`);
   }
   if (typeof meta.score !== 'number') err(slug, 'meta.score は数値（企画スコア）');
+  // 大手サイト提出用の英語情報
+  const JA = /[\u3040-\u30ff\u3400-\u9fff]/;
+  for (const k of ['title_en', 'description_en', 'howto_en', 'twist_en']) {
+    if (!meta[k]) err(slug, `meta.${k} がありません（大手サイト提出用の英語）`);
+    else if (JA.test(meta[k])) err(slug, `meta.${k} に日本語が含まれています`);
+  }
+  if (meta.description_en && meta.description_en.length > 300) warn(slug, 'meta.description_en は300字以内推奨');
 
   // ---- index.html ----
   const htmlPath = path.join(dir, 'index.html');

@@ -22,18 +22,20 @@
 | `automation/STRATEGY.md` | 4レーンの配分・企画スコア表・品質基準・KPI |
 | `automation/legal/LEGAL.md` | 法務ガイドラインとチェックリスト |
 | `automation/legal/blocked-terms.txt` | 公開ページで使用禁止の作品名・商標（validate が検査） |
+| `automation/PORTAL_GUIDE.md` | 大手ゲームサイト（CrazyGames / Poki）への出し方（オーナー向け） |
 | `automation/templates/game/` | 新作の雛形 |
 | `research/MARKET_ANALYSIS.md` | 市場分析（ベースライン・出典付き） |
 | `research/SEASONAL_CALENDAR.md` | 季節・行事カレンダー |
 | `research/daily/` | 毎日の調査・企画・採点・法務チェックの記録 |
 | `site/` | 公開サイトのソース（`site/games/<slug>/` が各ゲーム） |
 | `site/assets/core.js` | 共通ランタイム GameKit（保存・日替わり乱数・共有・広告・効果音・計測） |
-| `scripts/` | validate / build / smoke-test / portfolio / new-game |
+| `scripts/` | validate / build / smoke-test / portfolio / new-game / build-portal / portal-test |
 
 ## コマンド
 
 ```bash
-npm run check        # validate → build → 実ブラウザテスト（PC/スマホ・自動プレイ）
+npm run check        # validate → build → 大手サイト用ビルド → 実ブラウザテスト → 英語版/SDKテスト
+npm run portal       # 大手サイト提出用パッケージだけ作る（portal-dist/）
 npm run serve        # dist/ を http://127.0.0.1:8080 で確認
 npm run portfolio    # 既存ゲームの偏り分析（次に作るべきレーン/ジャンル）
 npm run new -- <slug> "<タイトル>"   # 雛形作成
@@ -51,6 +53,12 @@ npm run new -- <slug> "<タイトル>"   # 雛形作成
 6. 計測：GoatCounter（Cookie不要）のコードを `analytics.goatcounterCode` に設定する。
    - 週1回、数字を `research/performance.json` に転記する。
    - 日次の自動化はこのファイルを読んで、当たった作品の派生を優先する。
+
+## 大手ゲームサイトへの提出
+
+全作品について、英語版と CrazyGames / Poki のSDKを組み込んだ提出用パッケージが自動で作られます。
+GitHub の Actions → 最新の CI → Artifacts の `portal-packages` からダウンロードできます。
+どの作品をいつ出すか、どう出すかは `automation/PORTAL_GUIDE.md` を参照してください。
 
 ## 守っているルール（要約）
 

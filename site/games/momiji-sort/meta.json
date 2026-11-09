@@ -2,6 +2,17 @@
   "slug": "momiji-sort",
   "title": "もみじ仕分け",
   "title_en": "Autumn Leaf Sort",
+  "description_en": "Sort autumn leaves, acorns and fruit into baskets until every basket holds four of a kind. A new shared daily puzzle every day: can you match the fewest possible moves?",
+  "howto_en": "Tap a basket to pick up the top item (matching items on top move together), then tap another basket to drop it. You can only drop onto an empty basket or onto the same kind. Fill every basket with 4 of a kind to win. The daily puzzle shows the fewest possible moves; match it for 3 stars. Practice mode adds more kinds as you level up.",
+  "portal_category": "Puzzle",
+  "portal_tags": [
+    "sort",
+    "puzzle",
+    "daily",
+    "relaxing",
+    "autumn",
+    "casual"
+  ],
   "icon": "🍁",
   "description": "紅葉やどんぐりを同じ種類ごとにかごへ集める仕分けパズル。毎日全員同じ1問で、最短手数との差を競えます。",
   "genre": "puzzle",
@@ -9,10 +20,24 @@
   "lane": "proven-twist",
   "lineage": "仕分けパズル系（積み重ねたものを同じ種類ごとに容器へ集めるジャンル共通ルール）",
   "twist": "毎日全員共通の盤面を幅優先探索で解いて「最短手数」を表示し、最短との差（★）と連続日数を共有して競う。曜日で難易度が変わる",
-  "controls": ["tap", "mouse", "keyboard"],
+  "twist_en": "Everyone gets the same daily puzzle, and the game solves it to show the fewest possible moves. Match it for 3 stars, keep a daily streak, and face a different difficulty each weekday (Sunday has only one empty basket).",
+  "controls": [
+    "tap",
+    "mouse",
+    "keyboard"
+  ],
   "session_minutes": 3,
-  "retention_hooks": ["daily-seed", "streak", "best-score", "level-progress"],
-  "tags": ["秋", "毎日", "紅葉"],
+  "retention_hooks": [
+    "daily-seed",
+    "streak",
+    "best-score",
+    "level-progress"
+  ],
+  "tags": [
+    "秋",
+    "毎日",
+    "紅葉"
+  ],
   "created": "2026-11-09",
   "score": 51,
   "legal_check": {
@@ -24,5 +49,8 @@
     "notes": "絵柄はすべて自作SVG、音はWebAudio合成。タイトルは「もみじ仕分け ゲーム」で検索し同名作品なし（2026-11-09）。仕分けパズルの基本ルールは古くからある一般的な仕組みで、特定作品の見た目・名称・ステージは使っていない。"
   },
   "hypothesis": "仕分け系はモバイルで2025年+116%・2026年上半期も+46%と伸びている（AppMagic）。ポータル上の仕分けゲームは英語・無国籍テーマが中心なので、日本の秋（東京の紅葉見頃は11月下旬）と『全員同じ日替わり1問＋最短手数』で差別化できる。",
-  "kpi": { "target_avg_minutes": 3, "target_return_rate": 0.15 }
+  "kpi": {
+    "target_avg_minutes": 3,
+    "target_return_rate": 0.15
+  }
 }

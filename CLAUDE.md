@@ -7,4 +7,5 @@
 - 特定の既存ゲームの再現（名前・キャラ・絵・音・ステージ・見た目）は作らない。ジャンル共通のルールに独自の工夫を加える。
 - 外部ライブラリ・外部素材・Webフォントは使わない。依存パッケージを増やさない（playwright はインストール済みのものを使う。`npm install playwright` しない）。
 - 変更後は必ず `npm run check` を通す。テストを無効化して通すことは禁止。
+- ゲームは日英対応にする（`data-en` / `GameKit.t`）。大手サイト用に `GameKit.gameplayStart/Stop` を呼ぶ。詳細は DAILY_PROMPT.md の STEP 5。
 - ゲームは `site/games/<slug>/` に閉じる。共通ファイル（`site/assets/*`、`scripts/*`）の変更は最小限にし、理由をPRに書く。

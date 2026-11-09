@@ -79,7 +79,19 @@
      - `share`、`modal`、`toast`
      - `adBreak`、`track`、`ready`
    - `GameKit.ready()` は遊べる状態になったら必ず呼ぶ。
-   - `window.__GAME_TEST__.selfTest()` を実装する。盤面が必ず解ける、スコア計算が正しい、などゲーム固有の正しさを検証する。
+   - `window.__GAME_TEST__` に次の2つを実装する。
+     - `selfTest()`：盤面が必ず解ける、スコア計算が正しい、などゲーム固有の正しさを検証する。
+     - `autoplay()`：実際の入力処理を通してクリア（または終了）し、結果画面まで進める。
+   - **英語対応（大手サイト提出用・必須）**：
+     - HTMLの固定の文字には `data-en="English"` を付ける（aria-label には `data-en-label`）。
+     - JSで出す文字はすべて `GameKit.t('日本語', 'English')` で書く。
+     - 例外は日本語の遊び方（`.gk-howto`）だけ。英語版では自動で消える。
+     - `?lang=en` を付けて開くと英語で表示される。
+   - **プレイ状態の通知（大手サイトの必須要件）**：
+     - 操作できる状態になったら（レベル開始時など）`GameKit.gameplayStart()`。
+     - 結果画面・メニューに入ったら `GameKit.gameplayStop()`。
+     - クリアや記録更新の瞬間は `GameKit.happy()`。
+     - 広告（adBreak）の後に遊びを再開するときは、もう一度 `gameplayStart()` を呼ぶ。
    - `.gk-stage` の中にゲーム画面を置く。広告枠 `.gk-ad-slot` は遊び方の下にだけ置く。
    - 色は `core.css` の変数（`--surface` 等）を使い、ライト／ダークの両方で見えるようにする。
    - 遊び方（`.gk-howto`）は独自の文章で250字以上。操作方法・ルール・コツを含める。
@@ -88,13 +100,14 @@
      - `legal_check` は確認した項目だけ `true` にする。
      - `score` は STEP 3 の点数。
      - `hypothesis` は、なぜ遊ばれるはずか（市場の根拠）。
+     - 英語の `title_en` / `description_en` / `howto_en` / `twist_en` / `portal_category` / `portal_tags` も埋める。大手サイトの審査担当が読む文章なので、自然な英語で、独自の工夫が伝わるように書く。
 3. 1つのゲームは合計400KB以内。
 4. 既存のゲームや共通ファイル（`site/assets/*`）は、今日のゲームに必要なバグ修正以外は変更しない。変更した場合はPRに理由を書く。
 
 ## STEP 6. テストとセルフレビュー
 
-1. `npm run check` を実行する（validate → build → smoke test）。失敗したら直して再実行し、全部通るまで繰り返す。
-2. `artifacts/screens/<slug>-*.png` を Read で開いて目で確認する。表示崩れ、文字のはみ出し、見えにくい色を直す。
+1. `npm run check` を実行する（validate → build → 大手サイト用ビルド → 実ブラウザテスト → 英語版・SDK呼び出しのテスト）。失敗したら直して再実行し、全部通るまで繰り返す。
+2. `artifacts/screens/<slug>-*.png`（日本語版）と `portal-dist/crazygames/<slug>-*.png`（英語版）を Read で開いて目で確認する。表示崩れ、文字のはみ出し、見えにくい色を直す。
 3. 自分でロジックを追って確かめる：
    - クリアできるか
    - 負けられるか
@@ -146,6 +159,10 @@
 - `research/performance.json` があれば、当たり／撤退の判定
 - 来週優先するレーン・ジャンル・派生候補
 - `STRATEGY.md` の配分や採点基準を変える提案（変更はPRの本文で提案するだけにし、STRATEGY.md 自体は書き換えない）
+- **大手サイトへの提出候補**：`automation/PORTAL_GUIDE.md` の判断ルールで、CrazyGames（または Poki）に出すべき作品を最大2本挙げる。
+  - 理由（数字）と、オーナーがやる手順を書く（Actions の `portal-packages` をダウンロードして、`SUBMISSION.md` に沿って提出）。
+  - 英語の説明文を良くできる余地があれば、`meta.json` の `*_en` を改善してPRに含める。
+  - `performance.json` がまだない場合は「計測を入れたら判断できる」と書き、練習用に1本だけ候補を挙げる。
 
 ## 禁止事項（どんな理由があっても）
 

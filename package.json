@@ -8,9 +8,11 @@
     "validate": "node scripts/validate.mjs",
     "build": "node scripts/build.mjs",
     "test": "node scripts/smoke-test.mjs",
-    "check": "node scripts/validate.mjs && node scripts/build.mjs && node scripts/smoke-test.mjs",
+    "check": "node scripts/validate.mjs && node scripts/build.mjs && node scripts/build-portal.mjs && node scripts/smoke-test.mjs && node scripts/portal-test.mjs",
     "serve": "node scripts/serve.mjs 8080",
-    "portfolio": "node scripts/portfolio.mjs"
+    "portfolio": "node scripts/portfolio.mjs",
+    "portal": "node scripts/build-portal.mjs",
+    "portal:test": "node scripts/portal-test.mjs"
   },
   "engines": {
     "node": ">=20"

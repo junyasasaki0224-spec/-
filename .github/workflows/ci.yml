@@ -21,6 +21,10 @@ jobs:
         run: npm i --no-save playwright && npx playwright install --with-deps chromium
       - name: Smoke test (PC + mobile)
         run: node scripts/smoke-test.mjs
+      - name: Build portal packages (CrazyGames / Poki)
+        run: node scripts/build-portal.mjs
+      - name: Portal test (English only / SDK calls / screenshots)
+        run: node scripts/portal-test.mjs
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -28,3 +32,13 @@ jobs:
           name: screenshots
           path: artifacts/screens/
           retention-days: 7
+      # 大手サイト提出用パッケージ（zip・画面写真・提出シート）。Actions の実行結果ページからダウンロードできる
+      - name: Upload portal packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: portal-packages
+          path: |
+            portal-dist/*/*.zip
+            portal-dist/*/*.png
+            portal-dist/*/*-SUBMISSION.md
+          retention-days: 30
