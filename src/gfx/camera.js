@@ -55,9 +55,10 @@ export class CameraRig {
       }
     } else if (mode === CAM.ONBOARD) {
       onboard = true;
-      view.tilt.updateMatrixWorld();
-      this.pos.set(-0.5, 1.16, 0).applyMatrix4(view.tilt.matrixWorld);
-      this.look.set(7, 0.55, 0).applyMatrix4(view.tilt.matrixWorld);
+      // レーサーの目の位置(頭部はゲーム側で非表示にする)
+      view.root.updateMatrixWorld(true);
+      this.pos.set(0.6, 0.52, 0).applyMatrix4(view.upper.matrixWorld);
+      this.look.set(8, 0.75, 0).applyMatrix4(view.tilt.matrixWorld);
       fov = 74 + 12 * f * f;
     } else if (mode === CAM.TV) {
       let want = b.x > 96 ? 1 : b.x < -96 ? 3 : b.z >= zc(b.x) ? 0 : 2;

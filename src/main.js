@@ -364,6 +364,7 @@ function step(dt) {
     else if (G.state === 'result') mode = CAM.ORBIT;
     else mode = replay ? G.replayCam : G.camMode;
     rig.shakeOn = S.shake;
+    for (let i = 0; i < 6; i++) views[i].setFirstPerson(mode === CAM.ONBOARD && i === target.i);
     rig.update(dt, G.time, target, views[target.i], mode, live ? G.introT : -1);
     focus = target;
 

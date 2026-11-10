@@ -110,6 +110,10 @@ export class BoatView {
     this.upper = model.getObjectByName('RacerUpper');
     this.upperP = this.upper.position.clone();
     this.upperQ = this.upper.quaternion.clone();
+    // オンボード視点のときに隠す頭部
+    this.head = [];
+    this.upper.traverse((o) => { if (o.isMesh && /^(Helmet|HelmetStripe|Visor|Rubber)/.test(o.material.name)) this.head.push(o); });
+    this.fp = false;
     // 艇旗: 頂点を揺らすので専用のジオメトリにする
     this.flag = null;
     const fl = model.getObjectByName('Flag');
@@ -133,6 +137,8 @@ export class BoatView {
     this.poundT = Math.random(); this.poundV = 0; this.poundY = 0;
     this._q = new THREE.Quaternion(); this._e = new THREE.Euler();
   }
+
+  setFirstPerson(on) { if (on === this.fp) return; this.fp = on; for (const o of this.head) o.visible = !on; }
 
   // レーサーごとのヘルメットに塗り替える
   setRacer(r) { const h = HELMETS[r.helmet % HELMETS.length]; this.mHelmet.color.set(h[0]); this.mStripe.color.set(h[1]); }
