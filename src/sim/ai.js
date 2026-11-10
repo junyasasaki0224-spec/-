@@ -4,16 +4,17 @@ import { PI, clamp, wrapAngle, sm, lerp, M1, M2, BOUNDS, region } from './course
 import { timeToCover } from './physics.js';
 
 const ST_LAG = 0.15;   // レバー操作の遅れぶん早めに起こす
+const MAKURI_LEAD = 2.2;   // 内の艇の前を横切るのに必要なリード(m)。艇の長さの約3/4
 
 // cfg: { skill, st(狙うスタートタイミング), sashi(差しを狙う確率), lane }
 export function initAI(b, rng, cfg) {
   b.ai = {
     skill: cfg.skill * (0.985 + 0.03 * rng()),
-    stTarget: Math.max(0.02, cfg.st + (rng() - 0.35) * 0.1),
+    stTarget: Math.max(0.02, cfg.st + (rng() - 0.4) * 0.17),   // スタートのばらつき(まくりが生まれる展開のもと)
     going: false,
     sashi: cfg.lane >= 1 && rng() < cfg.sashi,   // 1周目1マーク: 差し狙いか、まくり狙いか
     lane: cfg.lane, rng,
-    plan: null, planMark: 0, refined: false, firstTurn: true,
+    plan: null, planMark: 0, refined: false, firstTurn: true, effLane: cfg.lane, makuri: 0,
     k: 0, dodge: 0, wob: rng() * 10, stuck: 0, off: 0,
   };
   b.advice = { steer: 0, throttle: 0, lift: false };
@@ -39,8 +40,9 @@ function makePlan(b, mark, boats) {
   let n = countInside(b, boats, M), dA, c, exit;
   if (ai.firstTurn && mark === 1) {
     // スタート直後は枠なりのまま横一線で1マークへ
-    n = Math.max(n, ai.refined ? 0 : ai.lane);
-    dA = 8 + 3.4 * ai.lane;
+    // effLane: 内の艇を何艇抜いたかを差し引いた実質のコース(まくりで前に出ると内へ切り込める)
+    n = Math.max(n, ai.refined ? 0 : ai.effLane);
+    dA = 8 + 3.4 * ai.effLane;
     if (ai.sashi) { c = 3.8 + 1.0 * Math.min(n, 2) + r(); exit = 12 + 2 * n + r() * 4; }
     else { c = 3.8 + 1.7 * n + r(); exit = 14 + 2.4 * n + r() * 4; }
   } else {
@@ -115,6 +117,18 @@ export function updateAI(b, race, dt, apply = true) {
   // ラインを引き直す時は必ず次のマークへ向ける(回り終えたマークへ戻るラインにしない)
   const keepPrev = ai.plan && ai.planMark !== target && ((lv === 2 && b.x > 0) || (lv === 0 && b.x < 0));
   const want = keepPrev ? ai.planMark : target;
+  // ---- まくりの判断(1周目1マークの手前) ----
+  // 内側の艇より艇首が十分前に出ていれば、その艇の前を横切って内へ切り込む(絞る)
+  if (ai.firstTurn && lv === 0 && ai.lane > 0 && b.x > 20 && b.x < 100) {
+    let beaten = 0;
+    const inner = race.boats.filter((o) => o !== b && !o.flying && o.started && o.z < b.z).sort((a, c) => c.z - a.z);   // 近い内側から
+    for (const o of inner) { if (b.x - o.x >= MAKURI_LEAD) beaten++; else break; }
+    if (beaten > ai.makuri) {
+      ai.makuri = beaten; ai.effLane = ai.lane - beaten;
+      if (beaten === inner.length) ai.sashi = false;     // 全艇を抜いたなら差しではなくまくりで先に回る
+      ai.refined = false; makePlan(b, 1, race.boats);
+    }
+  }
   if (want !== ai.planMark || !ai.plan) { ai.refined = false; makePlan(b, want, race.boats); }
   let P = ai.plan;
   const uNow = (b.x - P.M.x) * P.s;
@@ -185,6 +199,15 @@ export function updateAI(b, race, dt, apply = true) {
     let vIn = P.vArc * 1.16;
     if (ai.firstTurn && ai.sashi) vIn *= 0.93;      // 差しは一呼吸おいて内を突く
     if (sp * sp - vIn * vIn > 2 * 6.2 * dT) thr = 0.05;
+  }
+  // 前を横切られたら(まくられたら)レバーを落として譲る。突っ込むと接触して両方失速する
+  if (reg === 0 || reg === 2) {
+    for (const o of race.boats) {
+      if (o === b) continue;
+      const rx = o.x - b.x, rz = o.z - b.z;
+      const ahead = rx * ch + rz * sh, side = -rx * sh + rz * ch;
+      if (ahead > 0.3 && ahead < 6 && Math.abs(side) < 2.3) thr = Math.min(thr, 0.25 + 0.1 * ahead);
+    }
   }
   // 壁などに引っかかった時の復帰
   if (sp < 1.5) { ai.stuck += dt; if (ai.stuck > 1.2) thr = 1; } else ai.stuck = 0;
