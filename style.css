@@ -69,19 +69,30 @@ button { font-family: inherit; cursor: pointer; }
 /* ---------- タッチ操作 ---------- */
 #touch { display: none; position: fixed; inset: 0; pointer-events: none; }
 body.touch.playing #touch { display: block; }
-#t-steer { position: absolute; left: max(16px, env(safe-area-inset-left)); bottom: max(18px, env(safe-area-inset-bottom)); width: min(250px, 42vw); height: 84px; border-radius: 42px; border: 2px solid rgba(255, 255, 255, 0.6); background: rgba(8, 24, 48, 0.4); pointer-events: auto; touch-action: none; display: flex; align-items: center; justify-content: center; }
-#t-steer span { font-size: 12px; font-weight: 800; color: rgba(255, 255, 255, 0.55); letter-spacing: 0.1em; pointer-events: none; position: absolute; bottom: 5px; }
-#t-knob { width: 62px; height: 62px; border-radius: 50%; background: rgba(255, 255, 255, 0.85); box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4); pointer-events: none; }
-#t-steer.on { background: rgba(255, 210, 60, 0.25); border-color: var(--gold); }
-#touch .tr { position: absolute; right: max(18px, env(safe-area-inset-right)); bottom: max(18px, env(safe-area-inset-bottom)); display: flex; gap: 14px; pointer-events: auto; align-items: flex-end; }
-#touch button { width: 84px; height: 84px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.7); background: rgba(8, 24, 48, 0.45); color: #fff; font-size: 22px; font-weight: 900; touch-action: none; }
-#touch button.on { background: rgba(255, 210, 60, 0.85); color: #111; }
-#touch #t-gas { width: 104px; height: 104px; background: rgba(40, 170, 100, 0.55); }
+/* レバー式の操作: 左 = ハンドルレバー(左右に倒す) / 右 = スロットルレバー(押し上げると全開) */
+.lv { position: absolute; bottom: max(14px, env(safe-area-inset-bottom)); pointer-events: auto; touch-action: none; border-radius: 18px; background: rgba(8, 24, 48, 0.42); border: 2px solid rgba(255, 255, 255, 0.45); }
+.lv.on { border-color: var(--gold); background: rgba(40, 50, 40, 0.5); }
+.lv span { position: absolute; left: 0; right: 0; text-align: center; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.7); pointer-events: none; }
+#lv-steer { left: max(14px, env(safe-area-inset-left)); width: 210px; height: 150px; --arm: 100px; }
+#lv-steer svg { position: absolute; left: 5px; right: 5px; top: 6px; width: calc(100% - 10px); height: auto; pointer-events: none; }
+#lv-steer span { bottom: 3px; }
+.lv-arm { position: absolute; left: 50%; bottom: 30px; width: 14px; height: var(--arm); margin-left: -7px; border-radius: 7px; background: linear-gradient(90deg, #6d747c, #e6e9ec 45%, #8c939b); transform-origin: 50% 100%; transition: transform 0.14s ease-out; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45); pointer-events: none; }
+.lv.on .lv-arm { transition: none; }
+.lv-arm b { position: absolute; left: 50%; top: -24px; width: 52px; height: 52px; margin-left: -26px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #5a5f66, #17191d 70%); border: 3px solid rgba(255, 255, 255, 0.85); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); }
+.lv-pivot { position: absolute; left: 50%; bottom: 19px; width: 26px; height: 26px; margin-left: -13px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #cfd4d9, #555b62); box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5); pointer-events: none; }
+#lv-thr { right: max(14px, env(safe-area-inset-right)); width: 96px; height: 176px; --travel: 108px; }
+#lv-thr span.t { top: 4px; color: #7dffb0; }
+#lv-thr span.b { bottom: 3px; }
+.lv-slot { position: absolute; left: 50%; bottom: 26px; width: 16px; height: calc(var(--travel) + 16px); margin-left: -8px; border-radius: 8px; background: rgba(0, 0, 0, 0.55); border: 1px solid rgba(255, 255, 255, 0.35); overflow: hidden; pointer-events: none; }
+.lv-slot i { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: linear-gradient(0deg, #39d98a, #ffe14d 70%, #ff7a3c); }
+.lv-grip { position: absolute; left: 50%; bottom: 12px; width: 76px; height: 44px; margin-left: -38px; border-radius: 12px; background: linear-gradient(180deg, #4a4f56, #15171a); border: 3px solid rgba(255, 255, 255, 0.85); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); transition: transform 0.12s ease-out; pointer-events: none; }
+.lv.on .lv-grip { transition: none; }
+.lv-grip b { position: absolute; left: 14px; right: 14px; top: 50%; height: 4px; margin-top: -2px; border-radius: 2px; background: #ff5a3c; }
 body.touch #speedo { left: 50%; right: auto; transform: translateX(-50%); bottom: max(12px, env(safe-area-inset-bottom)); }
 body.touch #minimap { top: 142px; bottom: auto; width: 230px; height: 61px; }
 body.touch #ticker { bottom: 126px; }
 body.touch #wx { bottom: auto; top: 12px; left: auto; right: 150px; transform: none; }
-body.touch #lift { bottom: 140px; }
+body.touch #lift { right: auto; left: 50%; width: 170px; margin-left: -85px; text-align: center; bottom: 118px; }
 
 /* ---------- 小さい画面(スマホ) ---------- */
 @media (max-height: 520px), (max-width: 640px) {
@@ -102,9 +113,12 @@ body.touch #lift { bottom: 140px; }
   #gap span { padding: 1px 6px; }
   #wx, body.touch #wx { font-size: 10px; padding: 2px 7px; top: auto; bottom: 4px; left: 50%; right: auto; transform: translateX(-50%); }
   body.touch #speedo { bottom: 24px; }
-  #lift, body.touch #lift { font-size: 13px; padding: 4px 9px; bottom: 112px; }
-  #t-steer { height: 70px; }
-  #t-knob { width: 52px; height: 52px; }
+  #lift { font-size: 13px; padding: 4px 9px; bottom: 112px; }
+  body.touch #lift { font-size: 13px; padding: 4px 9px; bottom: 104px; width: 140px; margin-left: -70px; }
+  #lv-steer { width: 176px; height: 124px; --arm: 78px; }
+  .lv-arm b { width: 44px; height: 44px; margin-left: -22px; top: -20px; }
+  #lv-thr { width: 84px; height: 142px; --travel: 78px; }
+  .lv-grip { width: 66px; height: 40px; margin-left: -33px; }
   #startbox { top: 6px; gap: 2px; }
   #hclock { width: 84px; height: 84px; }
   #cd { font-size: 17px; }
@@ -119,16 +133,15 @@ body.touch #lift { bottom: 140px; }
   #thr { height: 52px; width: 10px; }
   #speedo { gap: 8px; bottom: 10px; }
   #ticker, body.touch #ticker { font-size: 12px; padding: 4px 10px; bottom: 74px; }
-  #touch button { width: 70px; height: 70px; font-size: 18px; }
-  #touch #t-gas { width: 86px; height: 86px; }
-  #touch .tl, #touch .tr { gap: 10px; }
   #warn { font-size: 13px; }
 }
 @media (max-width: 640px) {
-  #startbox { top: 110px; }
+  #startbox { top: 148px; }
   #rank { top: 46px; }
-  body.touch #speedo { bottom: 104px; }
-  #ticker, body.touch #ticker { bottom: 168px; }
+  #lv-steer { width: 164px; }
+  body.touch #speedo { bottom: 164px; }
+  #ticker, body.touch #ticker { bottom: 216px; }
+  body.touch #lift { bottom: 250px; }
 }
 
 /* ---------- オーバーレイ ---------- */

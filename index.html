@@ -44,8 +44,24 @@
 </div>
 
 <div id="touch">
-  <div id="t-steer"><i id="t-knob"></i><span>◀　ハンドル　▶</span></div>
-  <div class="tr"><button id="t-brake">減速</button><button id="t-gas">全開</button></div>
+  <div id="lv-steer" class="lv">
+    <svg viewBox="0 0 200 120" aria-hidden="true">
+      <path d="M22 104 A82 82 0 0 1 178 104" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="3" stroke-linecap="round"/>
+      <g stroke="rgba(255,255,255,.75)" stroke-width="3" stroke-linecap="round">
+        <line x1="100" y1="16" x2="100" y2="30"/><line x1="45" y1="43" x2="54" y2="52"/><line x1="155" y1="43" x2="146" y2="52"/>
+        <line x1="26" y1="88" x2="38" y2="91"/><line x1="174" y1="88" x2="162" y2="91"/>
+      </g>
+    </svg>
+    <div id="lv-steer-arm" class="lv-arm"><b></b></div>
+    <i class="lv-pivot"></i>
+    <span>◀ ハンドル ▶</span>
+  </div>
+  <div id="lv-thr" class="lv">
+    <span class="t">全開</span>
+    <div class="lv-slot"><i id="lv-thr-fill"></i></div>
+    <div id="lv-thr-grip" class="lv-grip"><b></b></div>
+    <span class="b">スロットル</span>
+  </div>
 </div>
 
 <div id="title" class="overlay hidden">
@@ -93,7 +109,7 @@
         <p>艇どうしはぶつかります。接触するとお互いに弾かれて失速します。</p></div>
       <div class="card"><em>4</em><b>操作</b>
         <p><kbd>↑</kbd>/<kbd>W</kbd> 全開　<kbd>↓</kbd>/<kbd>S</kbd> 減速<br><kbd>←</kbd><kbd>→</kbd>/<kbd>A</kbd><kbd>D</kbd> ハンドル<br><kbd>C</kbd> カメラ　<kbd>M</kbd> 音　<kbd>Esc</kbd> ポーズ　<kbd>R</kbd> やり直し</p>
-        <p>スマホ: 左のパッドを左右にスライドでハンドル、右のボタンで全開・減速。ゲームパッドにも対応。</p></div>
+        <p>スマホ: 左の<b>ハンドルレバー</b>を左右に倒して操舵、右の<b>スロットルレバー</b>を押し上げると全開、下げる(離す)とレバーが落ちて減速します。ゲームパッドにも対応。</p></div>
     </div>
     <button id="btn-howto-close" class="primary">OK</button>
   </div>
@@ -108,6 +124,7 @@
     <label class="row"><span>走行ガイドライン</span><input id="set-guide" type="checkbox"></label>
     <label class="row"><span>スタートアシスト(予想STバー)</span><input id="set-assist" type="checkbox"></label>
     <label class="row"><span>画面の揺れ</span><input id="set-shake" type="checkbox"></label>
+    <label class="row"><span>スロットルレバーを離した位置で止める</span><input id="set-hold" type="checkbox"></label>
     <button id="btn-settings-close" class="primary">閉じる</button>
   </div>
 </div>
