@@ -16,10 +16,10 @@ function sprayAtlas() {
       c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
     };
     // 左: 水滴の群れ
-    dot(128, 128, 104, 0.2);
-    for (let i = 0; i < 110; i++) {
-      const a = R() * 6.283, d = Math.pow(R(), 0.8) * 100;
-      const r = 2.5 + R() * R() * 9, x = 128 + Math.cos(a) * d, y = 128 + Math.sin(a) * d;
+    dot(128, 128, 104, 0.22);
+    for (let i = 0; i < 170; i++) {
+      const a = R() * 6.283, d = Math.pow(R(), 0.8) * 102;
+      const r = 1.6 + R() * R() * 6, x = 128 + Math.cos(a) * d, y = 128 + Math.sin(a) * d;
       c.fillStyle = `rgba(255,255,255,${0.7 + 0.3 * R()})`;
       c.beginPath(); c.arc(x, y, r * 0.6, 0, 7); c.fill();
       dot(x, y, r * 1.6, 0.3);
@@ -248,8 +248,8 @@ export class Wakes {
           float edge = smoothstep(0.62, 0.86, v) * smoothstep(1.0, 0.9, v);   // 両縁の波
           // 新しい航跡ほど泡が濃く、時間とともに細かくちぎれて消える
           float th = mix(0.56, 0.34, vA);
-          float foam = core * smoothstep(th, th + 0.1, tex) + edge * smoothstep(0.52, 0.6, tex) * 0.35 * vA;
-          float a = clamp(foam, 0.0, 1.0) * (0.4 + 0.6 * vA);
+          float foam = core * smoothstep(th - 0.04, th + 0.16, tex) + edge * smoothstep(0.5, 0.62, tex) * 0.3 * vA;
+          float a = clamp(foam, 0.0, 1.0) * (0.3 + 0.55 * vA) * (1.0 - v * v * 0.6);
           if (a < 0.01) discard;
           gl_FragColor = vec4(uColor, a * 0.9);
           #include <tonemapping_fragment>

@@ -196,7 +196,7 @@ function step(dt) {
     if (race.finishCount > 0 && race.state !== 'done') cheer = 1;
     G.cheer = cheer;
 
-    stage.update(dt, G.time, race, { title: RACE_TITLE, cheer: G.cheer > 0.8 ? 1 : 0 });
+    stage.update(dt, G.time, race, { title: RACE_TITLE, cheer: G.cheer > 0.8 ? 1 : 0, names: RACERS });
     for (let i = 0; i < 6; i++) {
       const v = views[i];
       if (v.slapped > 0) { if (race.boats[i] === pl && G.state === 'race') audio.slap(Math.min(0.3, v.slapped * 0.5)); v.slapped = 0; }

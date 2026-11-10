@@ -49,7 +49,7 @@ export class Stage {
     this.water = createWater(scene, this.waveTex);
     this.reflection = new Reflection(this.renderer);
     this.water.uniforms.tRefl.value = this.reflection.rt.texture;
-    this.venue = createVenue(scene);
+    this.venue = await createVenue(scene);
     this.wakes = new Wakes(scene, this.waveTex);
     this.spray = new Spray(scene);
     for (let i = 0; i < 6; i++) this.views.push(new BoatView(scene, i + 1));
@@ -80,6 +80,7 @@ export class Stage {
     this.scene.traverse((o) => { if (o.material) { const ms = Array.isArray(o.material) ? o.material : [o.material]; for (const m of ms) m.needsUpdate = true; } });
     this.resize();
     this._applyEnvPost();
+    if (this.envRT) this.venue.bakeShadow(r, this.sunDir, q.shadow ? q.shadow * 2 : 0);
   }
 
   _buildComposer(w, h) {
@@ -137,6 +138,7 @@ export class Stage {
     this.spray.uniforms.uColor.value.set(e.spray); this.spray.uniforms.uShade.value.set(e.sprayShade);
     this.wakes.uniforms.uColor.value.set(e.wake);
     this.venue.setEnv(e, this.wind);
+    this.venue.bakeShadow(this.renderer, sd, this.q.shadow ? this.q.shadow * 2 : 0);
     setShadowProjection(sd);
     // 環境マップを作り直す
     if (this.envRT) this.envRT.dispose();
@@ -157,7 +159,7 @@ export class Stage {
     }
     this.spray.update(dt);
     this.wakes.update(race.boats, race.clock, time);
-    this.venue.update(dt, time, race, opts.title || '', opts.cheer || 0);
+    this.venue.update(dt, time, race, opts.title || '', opts.cheer || 0, opts.names);
     this.sky.uniforms.uTime.value = time; this.water.uniforms.uTime.value = time;
   }
 

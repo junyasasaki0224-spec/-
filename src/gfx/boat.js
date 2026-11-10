@@ -29,6 +29,13 @@ function numberTex(num) {
   return t;
 }
 
+// 量子化された(整数の)頂点位置を Float32 に展開する
+function floatPositions(geo) {
+  const p = geo.attributes.position, a = new Float32Array(p.count * 3);
+  for (let i = 0; i < p.count; i++) { a[i * 3] = p.getX(i); a[i * 3 + 1] = p.getY(i); a[i * 3 + 2] = p.getZ(i); }
+  return new THREE.BufferAttribute(a, 3);
+}
+
 // 水面に落とす影用に、位置だけのジオメトリへまとめる
 function mergedPositions(root, filter) {
   const list = [];
@@ -37,8 +44,8 @@ function mergedPositions(root, filter) {
   root.traverse((o) => {
     if (!o.isMesh || !filter(o)) return;
     const g = new THREE.BufferGeometry();
-    g.setAttribute('position', o.geometry.attributes.position.clone());
-    if (o.geometry.index) g.setIndex(o.geometry.index.clone());
+    g.setAttribute('position', floatPositions(o.geometry));
+    if (o.geometry.index) g.setIndex(Array.from(o.geometry.index.array));
     g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld));
     list.push(g.index ? g.toNonIndexed() : g);
   });
@@ -107,8 +114,13 @@ export class BoatView {
     this.flag = null;
     const fl = model.getObjectByName('Flag');
     fl.traverse((o) => { if (o.isMesh && !this.flag) this.flag = o; });
-    this.flag.geometry = this.flag.geometry.clone();
-    this.flagBase = this.flag.geometry.attributes.position.array.slice();
+    const fg = new THREE.BufferGeometry();
+    fg.setAttribute('position', floatPositions(this.flag.geometry));
+    fg.setAttribute('uv', this.flag.geometry.attributes.uv);
+    fg.setIndex(this.flag.geometry.index);
+    fg.computeVertexNormals();
+    this.flag.geometry = fg;
+    this.flagBase = fg.attributes.position.array.slice();
 
     // 水面の影
     this.shBody = new THREE.Mesh(shadowBodyGeo, shadowMat);

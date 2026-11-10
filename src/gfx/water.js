@@ -200,7 +200,7 @@ export function createWater(scene, waveTex) {
         if (uRefl > 0.5) {
           vec4 mc = uTexM * vec4(vW.x, 0.0, vW.z, 1.0);
           vec2 uv = mc.xy / mc.w + vec2(Nf.x * 0.05, -abs(Nf.z) * 0.11 - abs(Nf.x) * 0.03) * (0.35 + 0.65 * clamp(dist / 30.0, 0.0, 1.0));
-          refl = texture2D(tRefl, clamp(uv, 0.001, 0.999), 1.2).rgb;
+          refl = min(texture2D(tRefl, clamp(uv, 0.001, 0.999), 1.2).rgb, vec3(1.6));
         }
         // 水の色: 濁った緑がかった水。波の峰と太陽側を明るく
         float sunUp = clamp(uSunDir.y * 2.0 + 0.3, 0.0, 1.0);
