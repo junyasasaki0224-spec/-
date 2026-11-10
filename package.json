@@ -1,0 +1,16 @@
+{
+  "name": "minato-boat-race",
+  "version": "1.0.0",
+  "private": true,
+  "description": "3D ボートレース(競艇)ゲーム — Three.js + WebAudio",
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/main.js --bundle --minify --format=iife --target=es2020 --outfile=dist/game.js",
+    "dev": "esbuild src/main.js --bundle --format=iife --target=es2020 --outfile=dist/game.js --sourcemap --watch --servedir=.",
+    "sim": "node tools/sim-test.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "three": "^0.170.0"
+  }
+}
