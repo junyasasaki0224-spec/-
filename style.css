@@ -70,7 +70,7 @@ button { font-family: inherit; cursor: pointer; }
 #touch { display: none; position: fixed; inset: 0; pointer-events: none; }
 body.touch.playing #touch { display: block; }
 /* レバー式の操作: 左 = ハンドルレバー(左右に倒す) / 右 = スロットルレバー(押し上げると全開) */
-.lv { position: absolute; bottom: max(14px, env(safe-area-inset-bottom)); pointer-events: auto; touch-action: none; border-radius: 18px; background: rgba(8, 24, 48, 0.42); border: 2px solid rgba(255, 255, 255, 0.45); }
+.lv { position: absolute; bottom: calc(max(14px, env(safe-area-inset-bottom)) + var(--lv-up, 40px)); pointer-events: auto; touch-action: none; border-radius: 18px; background: rgba(8, 24, 48, 0.42); border: 2px solid rgba(255, 255, 255, 0.45); }
 .lv.on { border-color: var(--gold); background: rgba(40, 50, 40, 0.5); }
 .lv span { position: absolute; left: 0; right: 0; text-align: center; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.7); pointer-events: none; }
 #lv-steer { left: max(14px, env(safe-area-inset-left)); width: 210px; height: 150px; --arm: 100px; }
@@ -139,9 +139,9 @@ body.touch #lift { right: auto; left: 50%; width: 170px; margin-left: -85px; tex
   #startbox { top: 148px; }
   #rank { top: 46px; }
   #lv-steer { width: 164px; }
-  body.touch #speedo { bottom: 164px; }
-  #ticker, body.touch #ticker { bottom: 216px; }
-  body.touch #lift { bottom: 250px; }
+  body.touch #speedo { bottom: calc(164px + var(--lv-up, 40px)); }
+  #ticker, body.touch #ticker { bottom: calc(216px + var(--lv-up, 40px)); }
+  body.touch #lift { bottom: calc(250px + var(--lv-up, 40px)); }
 }
 
 /* ---------- オーバーレイ ---------- */

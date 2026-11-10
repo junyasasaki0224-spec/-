@@ -15,7 +15,7 @@ const show = (id, v) => $(id).classList.toggle('hidden', !v);
 
 // ---------------- 設定と記録(ブラウザに保存) ----------------
 const KEY = 'minato-gp-v2';
-const S = { quality: 'auto', volume: 0.8, voice: true, guide: true, assist: true, shake: true, leverReturn: false, tilt: 1, difficulty: 1, env: 'day', lane: 0, mode: 'single', seenHowto: false, rec: { races: 0, wins: 0, bestST: null, bestTime: null, gpWins: 0 } };
+const S = { quality: 'auto', volume: 0.8, voice: true, guide: true, assist: true, shake: true, leverReturn: false, leverUp: 40, tilt: 1, difficulty: 1, env: 'day', lane: 0, mode: 'single', seenHowto: false, rec: { races: 0, wins: 0, bestST: null, bestTime: null, gpWins: 0 } };
 try { const o = JSON.parse(localStorage.getItem(KEY) || '{}'); Object.assign(S, o, { rec: Object.assign(S.rec, o.rec || {}) }); } catch (e) { /* 保存データなし */ }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* 保存できない環境 */ } };
 const isTouch = matchMedia('(pointer: coarse)').matches;
@@ -388,6 +388,7 @@ function applySettings() {
   if (stage.quality !== q || !stage._qInit) { stage.setQuality(q); stage._qInit = true; }
   audio.setVolume(S.volume); com.volume = S.volume; com.voice = S.voice && !audio.muted;
   input.holdThrottle = !S.leverReturn;
+  document.documentElement.style.setProperty('--lv-up', `${S.leverUp}px`);
 }
 
 function bindUi() {
@@ -419,13 +420,14 @@ function bindUi() {
   const openSettings = () => {
     audio.init(); audio.click();
     $('set-quality').value = S.quality; $('set-volume').value = Math.round(S.volume * 100);
-    $('set-voice').checked = S.voice; $('set-guide').checked = S.guide; $('set-assist').checked = S.assist; $('set-shake').checked = S.shake; $('set-hold').checked = S.leverReturn;
+    $('set-voice').checked = S.voice; $('set-guide').checked = S.guide; $('set-assist').checked = S.assist; $('set-shake').checked = S.shake; $('set-hold').checked = S.leverReturn; $('set-leverup').value = S.leverUp;
     show('settings', true);
   };
   click('btn-settings', openSettings); click('btn-pause-settings', openSettings);
   click('btn-settings-close', () => { audio.click(); show('settings', false); });
   $('set-quality').addEventListener('change', (e) => { S.quality = e.target.value; save(); applySettings(); });
   $('set-volume').addEventListener('input', (e) => { S.volume = e.target.value / 100; save(); applySettings(); });
+  $('set-leverup').addEventListener('input', (e) => { S.leverUp = +e.target.value; save(); applySettings(); });
   for (const [id, k] of [['set-voice', 'voice'], ['set-guide', 'guide'], ['set-assist', 'assist'], ['set-shake', 'shake'], ['set-hold', 'leverReturn']]) {
     $(id).addEventListener('change', (e) => { S[k] = e.target.checked; save(); applySettings(); });
   }
