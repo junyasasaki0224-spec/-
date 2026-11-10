@@ -19,7 +19,7 @@ export class CameraRig {
   constructor(camera) {
     this.camera = camera;
     this.dir = 0; this.pos = new THREE.Vector3(0, 30, 120); this.look = new THREE.Vector3();
-    this.fov = 62; this.init = false; this.shake = 0; this.shakeOn = true;
+    this.fov = 62; this.init = false; this.shake = 0; this.shakeOn = true; this.ti = 0;
     this.tv = -1; this.tvHold = 0;
     this.right = new THREE.Vector3(1, 0, 0);
     this._v = new THREE.Vector3(); this._l = new THREE.Vector3(); this._u = new THREE.Vector3();
@@ -31,6 +31,9 @@ export class CameraRig {
     const cam = this.camera, f = clamp(b.speed / VMAX, 0, 1);
     const V = this._v, Lk = this._l;
     let fov = 62, onboard = false;
+    // 旋回の激しさ(なめらかに追従)。ターン中はカメラを低く近く、視野を広く、傾きを大きくして迫力を出す
+    this.ti += (clamp(b.turnInt, 0, 1) - this.ti) * Math.min(1, dt * 5);
+    const ti = this.ti;
     if (mode === CAM.CHASE || mode === CAM.CLOSE) {
       // 進行方向と艇の向きの中間を見るので、艇が流れると横向きに見える
       const velA = b.speed > 3 ? Math.atan2(b.vz, b.vx) : b.h;
@@ -38,10 +41,10 @@ export class CameraRig {
       if (!this.init) this.dir = want;
       this.dir = angLerp(this.dir, want, 1 - Math.exp(-dt * 4.2));
       const cx = Math.cos(this.dir), cz = Math.sin(this.dir);
-      const back = mode === CAM.CHASE ? 6.4 + 1.5 * f : 4.0, up = mode === CAM.CHASE ? 2.35 + 0.3 * f : 1.3;
+      const back = mode === CAM.CHASE ? 6.4 + 1.5 * f - 1.5 * ti : 4.0 - 0.6 * ti, up = mode === CAM.CHASE ? 2.35 + 0.3 * f - 0.75 * ti : 1.3 - 0.25 * ti;
       V.set(b.x - cx * back, up, b.z - cz * back);
       Lk.set(b.x + cx * 6, mode === CAM.CHASE ? 1.0 : 0.85, b.z + cz * 6);
-      fov = (mode === CAM.CHASE ? 58 : 68) + 17 * f * f;
+      fov = (mode === CAM.CHASE ? 60 : 68) + 13 * f * f + 13 * ti;
       if (intro >= 0 && intro < 3.2) {
         // 発走前の導入: 上空から艇の後ろへ降りてくる
         const k = 1 - Math.pow(1 - clamp(intro / 3.2, 0, 1), 3);
@@ -59,7 +62,7 @@ export class CameraRig {
       view.root.updateMatrixWorld(true);
       this.pos.set(0.6, 0.52, 0).applyMatrix4(view.upper.matrixWorld);
       this.look.set(8, 0.75, 0).applyMatrix4(view.tilt.matrixWorld);
-      fov = 74 + 12 * f * f;
+      fov = 74 + 10 * f * f + 10 * ti;
     } else if (mode === CAM.TV) {
       let want = b.x > 96 ? 1 : b.x < -96 ? 3 : b.z >= zc(b.x) ? 0 : 2;
       this.tvHold -= dt;
@@ -101,14 +104,14 @@ export class CameraRig {
     const player = mode <= CAM.ONBOARD;
     if (player && this.shakeOn) {
       // 速度による細かい揺れ + 衝突の衝撃
-      const s = 0.012 * f * f + this.shake * 0.16;
+      const s = 0.012 * f * f + 0.02 * ti + this.shake * 0.16;
       cam.position.x += (Math.random() - 0.5) * s; cam.position.y += (Math.random() - 0.5) * s * 1.4; cam.position.z += (Math.random() - 0.5) * s;
       if (!onboard) cam.position.y += view.poundY * 0.5;
     }
     if (cam.position.y < 0.45) cam.position.y = 0.45;
     if (onboard) { cam.up.set(0, 1, 0).transformDirection(view.tilt.matrixWorld); } else cam.up.set(0, 1, 0);
     cam.lookAt(this.look);
-    if (player && !onboard) cam.rotation.z += clamp(b.w * f * 0.05, -0.08, 0.08) + (this.shakeOn ? (Math.random() - 0.5) * this.shake * 0.03 : 0);
+    if (player && !onboard) cam.rotation.z += clamp(b.w * (0.035 + 0.05 * f) * (1 + ti), -0.2, 0.2) + (this.shakeOn ? (Math.random() - 0.5) * this.shake * 0.03 : 0);
     if (Math.abs(cam.fov - this.fov) > 0.01) { cam.fov = this.fov; cam.updateProjectionMatrix(); }
     this.shake *= Math.exp(-dt * 5);
     cam.updateMatrixWorld();

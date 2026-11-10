@@ -374,7 +374,7 @@ function step(dt) {
 
     // レンズの水滴: 旋回で自分のしぶきをかぶる / 他艇の引き波に入る
     if (live && mode <= CAM.ONBOARD) {
-      const wet = target.turnInt * 0.6 + target.inWake * 0.8 * clamp(target.speed / VMAX, 0, 1);
+      const wet = target.turnInt * 1.0 + target.inWake * 0.8 * clamp(target.speed / VMAX, 0, 1);
       if (Math.random() < wet * 14 * dt) hud.addDrops(1);
     }
   }
