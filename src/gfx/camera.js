@@ -9,9 +9,9 @@ export const CAM = { CHASE: 0, CLOSE: 1, ONBOARD: 2, TV: 3, TOP: 4, FLY: 5, ORBI
 // 中継カメラの設置位置: スタンド屋根 / 1マーク奥 / 対岸 / 2マーク奥
 const TV = [
   { p: [20, 27, 80], zoom: 13 },
-  { p: [BOUNDS.maxX + 7, 4.5, -14], zoom: 8.5 },
+  { p: [BOUNDS.maxX + 5, 8, -14], zoom: 8.5 },
   { p: [44, 12, BOUNDS.minZ - 7], zoom: 12 },
-  { p: [BOUNDS.minX - 5, 5.5, 34], zoom: 8.5 },
+  { p: [BOUNDS.minX - 3, 7.5, 50], zoom: 8.5 },
 ];
 const angLerp = (a, b, t) => { let d = b - a; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2; return a + d * t; };
 

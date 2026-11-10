@@ -20,6 +20,16 @@ export const CR = 0.68;
 const INERTIA = 1.25;
 const REST = 0.25;
 
+// チルト角度: 下げると出足と回り足、上げると伸び(最高速)が良くなる
+export const TILTS = [
+  { deg: -0.5, label: '-0.5°', note: '出足・回り足', acc: 1.07, top: 0.965, grip: 1.06 },
+  { deg: 0.0, label: '0°', note: 'バランス', acc: 1.0, top: 1.0, grip: 1.0 },
+  { deg: 1.5, label: '+1.5°', note: '伸び寄り', acc: 0.94, top: 1.035, grip: 0.95 },
+  { deg: 3.0, label: '+3.0°', note: '伸び特化', acc: 0.88, top: 1.07, grip: 0.9 },
+];
+export function applyTilt(b, k) { const t = TILTS[k]; b.tilt = k; b.accF = t.acc; b.topF = t.top; b.gripSet = t.grip; }
+const WIND_K = 0.045;              // 追い風・向かい風による加速度 (m/s^2 per m/s)
+
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 
 export function makeBoat(i) {
@@ -29,6 +39,7 @@ export function makeBoat(i) {
     throttle: 0, steer: 0, brake: 0,          // 実際の操作量(なめらかに追従)
     cmdThrottle: 0, cmdSteer: 0, cmdBrake: 0, // 入力
     motor: 1, gripF: 1, thrustF: 1, inWake: 0,
+    accF: 1, topF: 1, gripSet: 1, chop: 1,   // チルト角度と水面状況による補正
     speed: 0, vf: 0, vl: 0, af: 0, turnInt: 0,
     bump: 0, bumpSide: 0,                     // 衝突の揺れ(表示用)
     isPlayer: false, ai: null,
@@ -36,7 +47,7 @@ export function makeBoat(i) {
   };
 }
 
-export function stepBoat(b, dt) {
+export function stepBoat(b, dt, env) {
   // 操作のなまし(スロットルレバー/ハンドル)
   const tr = b.cmdThrottle > b.throttle ? 3.2 : 5.0;
   b.throttle += clamp(b.cmdThrottle - b.throttle, -tr * dt, tr * dt);
@@ -61,11 +72,13 @@ export function stepBoat(b, dt) {
   let vf = b.vx * ch + b.vz * sh;
   let vl = -b.vx * sh + b.vz * ch;
 
-  const thrust = b.throttle * ACC * b.motor * b.thrustF + IDLE;
+  const fs = Math.min(1.2, sp / VMAX);
+  const thrust = b.throttle * ACC * b.motor * b.thrustF * (b.accF + (b.topF - b.accF) * fs) + IDLE;
   const sgn = vf >= 0 ? 1 : -1;
-  const af = thrust - K1 * vf - K2 * vf * Math.abs(vf)
+  let af = thrust - K1 * vf - K2 * vf * Math.abs(vf)
     - sgn * (KDRIFT * Math.abs(vl) + b.brake * BRAKE * smooth(0, 3, sp));
-  const G = GRIP * b.gripF;
+  if (env) af += WIND_K * (env.wx * ch + env.wz * sh) * smooth(2, 10, sp);
+  const G = GRIP * b.gripF * b.gripSet;
   const al = -clamp(KLAT * vl, -G, G);
   vf += af * dt;
   vl += al * dt;
@@ -82,12 +95,13 @@ export function stepBoat(b, dt) {
 }
 
 // 全開で dist 進むのにかかる時間(スタートの起こしタイミング予測)
-export function timeToCover(dist, v, motor) {
+export function timeToCover(dist, v, b, env) {
   if (dist <= 0) return 0;
-  const dt = 0.02;
+  const dt = 0.02, wind = env ? WIND_K * env.wx : 0;
   let t = 0, d = 0;
   while (d < dist && t < 30) {
-    v += (ACC * motor + IDLE - K1 * v - K2 * v * v) * dt;
+    const fs = Math.min(1.2, v / VMAX);
+    v += (ACC * b.motor * (b.accF + (b.topF - b.accF) * fs) + IDLE - K1 * v - K2 * v * v + wind * smooth(2, 10, v)) * dt;
     d += v * dt; t += dt;
   }
   return t - (d - dist) / Math.max(v, 0.1);

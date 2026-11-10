@@ -9,7 +9,7 @@ import { VMAX } from '../sim/physics.js';
 import { clamp } from '../sim/course.js';
 
 // レーサーごとのヘルメットの配色 [地色, ストライプ]
-const HELMETS = [[0xf4f4f2, 0x1e4fd0], [0x16171b, 0xf2c200], [0xd91e2e, 0xffffff], [0x1b50d4, 0xffffff], [0xf3d21b, 0x111111], [0x18a24c, 0xffffff]];
+const HELMETS = [[0xf4f4f2, 0x1e4fd0], [0x16171b, 0xf2c200], [0xb81d2a, 0xffffff], [0x1740b0, 0xff8a1e], [0xe9e2c8, 0x0f7a55], [0x6a2fa8, 0xffffff], [0xff7a1a, 0x101010]];
 const SUIT_COLORS = [0xf1f1ee, 0x1a1b20, 0xd91e2e, 0x1b50d4, 0xf3d21b, 0x18a24c];
 
 export function loadGLB(bytes) {
@@ -94,8 +94,8 @@ export class BoatView {
       const base = m.name.replace(/\.\d+$/, '');
       if (base === 'BoatColor') { n = m.clone(); n.color.set(BOAT_COLORS[i]); }
       else if (base === 'Suit') { n = m.clone(); n.color.set(SUIT_COLORS[i]); }
-      else if (base === 'Helmet') { n = m.clone(); n.color.set(HELMETS[i][0]); }
-      else if (base === 'HelmetStripe') { n = m.clone(); n.color.set(HELMETS[i][1]); }
+      else if (base === 'Helmet') { n = m.clone(); n.color.set(HELMETS[i][0]); this.mHelmet = n; }
+      else if (base === 'HelmetStripe') { n = m.clone(); n.color.set(HELMETS[i][1]); this.mStripe = n; }
       else if (base === 'NumberPlate') { n = m.clone(); n.color.set(0xffffff); n.map = numTex; }
       else if (base === 'Flag') { n = m.clone(); n.color.set(0xffffff); n.map = numTex; n.side = THREE.DoubleSide; }
       else if (base === 'Glass') { n = m.clone(); n.transparent = true; n.opacity = 0.4; n.depthWrite = false; n.side = THREE.DoubleSide; }
@@ -133,6 +133,9 @@ export class BoatView {
     this.poundT = Math.random(); this.poundV = 0; this.poundY = 0;
     this._q = new THREE.Quaternion(); this._e = new THREE.Euler();
   }
+
+  // レーサーごとのヘルメットに塗り替える
+  setRacer(r) { const h = HELMETS[r.helmet % HELMETS.length]; this.mHelmet.color.set(h[0]); this.mStripe.color.set(h[1]); }
 
   update(b, dt, time) {
     const sp = b.speed, f = clamp(sp / VMAX, 0, 1);

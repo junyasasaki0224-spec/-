@@ -3,25 +3,20 @@
 import { PI, clamp, wrapAngle, sm, lerp, M1, M2, BOUNDS, region } from './course.js';
 import { timeToCover } from './physics.js';
 
-const DIFF = [
-  { motor: [0.90, 0.95], skill: 0.88, st: [0.12, 0.34] },   // 初級
-  { motor: [0.955, 0.995], skill: 0.96, st: [0.08, 0.26] }, // 中級
-  { motor: [0.99, 1.03], skill: 1.03, st: [0.04, 0.19] },   // 上級
-];
 const ST_LAG = 0.15;   // レバー操作の遅れぶん早めに起こす
 
-export function initAI(b, rng, difficulty, lane) {
-  const D = DIFF[difficulty];
-  b.motor = D.motor[0] + (D.motor[1] - D.motor[0]) * rng();
+// cfg: { skill, st(狙うスタートタイミング), sashi(差しを狙う確率), lane }
+export function initAI(b, rng, cfg) {
   b.ai = {
-    skill: D.skill * (0.97 + 0.06 * rng()),
-    stTarget: D.st[0] + (D.st[1] - D.st[0]) * rng(),
+    skill: cfg.skill * (0.985 + 0.03 * rng()),
+    stTarget: Math.max(0.02, cfg.st + (rng() - 0.35) * 0.1),
     going: false,
-    sashi: lane >= 1 && rng() < 0.45,   // 1周目1マーク: 差し狙いか、まくり狙いか
-    lane, rng,
+    sashi: cfg.lane >= 1 && rng() < cfg.sashi,   // 1周目1マーク: 差し狙いか、まくり狙いか
+    lane: cfg.lane, rng,
     plan: null, planMark: 0, refined: false, firstTurn: true,
     k: 0, dodge: 0, wob: rng() * 10, stuck: 0, off: 0,
   };
+  b.advice = { steer: 0, throttle: 0, lift: false };
 }
 
 // 自分より内側で並走している艇の数
@@ -77,7 +72,7 @@ function makePlan(b, mark, boats) {
   // 立ち上がり: 外へ流れながらバック(ホーム)ストレッチへ
   const vEnd = dC - rho;
   for (let u = ux - 5; u > -175; u -= 5) push(u, lerp(vEnd, -Math.max(exit, -vEnd), sm((ux - u) / 60)));
-  ai.plan = { xs, zs, kT, ux, s, M, vArc: Math.sqrt(11.6 * ai.skill * rho) };
+  ai.plan = { xs, zs, kT, ux, s, M, vArc: Math.sqrt(11.6 * ai.skill * b.gripSet * rho) };
   ai.planMark = mark;
   // 最も近い点から追従を始める
   let best = 1e9, k = 0;
@@ -88,28 +83,28 @@ function makePlan(b, mark, boats) {
   ai.k = k;
 }
 
-export function updateAI(b, race, dt) {
-  const ai = b.ai;
+// apply=false のときは操作せず、助言(b.advice)だけ更新する(プレイヤーのガイド用)
+export function updateAI(b, race, dt, apply = true) {
+  const ai = b.ai, out = apply ? null : b.advice;
   ai.wob += dt;
 
   // ---- スタート前: レーンを保ち、起こしのタイミングを計る ----
   if (!b.started) {
     const hd = clamp((b.laneZ - b.z) * 0.05, -0.2, 0.2);
-    b.cmdSteer = clamp(-(hd - b.h) * 3, -1, 1);
+    const st0 = clamp(-(hd - b.h) * 3, -1, 1);
     const remain = -race.clock + ai.stTarget - ST_LAG;
-    const tArr = timeToCover(-b.x, Math.max(b.vf, 0), b.motor);
-    if (!ai.going) {
-      if (tArr >= remain) ai.going = true;
-      b.cmdThrottle = 0;
-    }
-    if (ai.going) b.cmdThrottle = tArr < remain - 0.04 ? 0.5 : 1;
-    b.cmdBrake = 0;
+    const tArr = timeToCover(-b.x, Math.max(b.vf, 0), b, race.env);
+    let th0 = 0;
+    if (!ai.going && tArr >= remain) ai.going = true;
+    if (ai.going) th0 = tArr < remain - 0.04 ? 0.5 : 1;
+    if (apply) { b.cmdSteer = st0; b.cmdThrottle = th0; b.cmdBrake = 0; }
+    else { out.steer = st0; out.throttle = th0; out.lift = false; ai.going = false; }
     return;
   }
 
   // ---- どのマークへ向かうか ----
   const reg = region(b.x, b.z);
-  if (b.offCourse) {
+  if (b.offCourse && apply) {
     // 接触などでマークの内側へ押し込まれた場合は周回扱いにして復帰する
     ai.off += dt;
     if (ai.off > 0.4 && (reg + 2) % 4 === b.lastValid) { b.sectorCount += 2; b.lastValid = reg; ai.off = 0; }
@@ -131,6 +126,10 @@ export function updateAI(b, race, dt) {
   }
   ai.k = k;
   if (bd > 30 * 30) { makePlan(b, want, race.boats); return; }
+  if (!apply && bd > 30) {     // プレイヤーがラインを外れたら、今の位置から引き直す
+    ai.replanT = (ai.replanT || 0) - dt;
+    if (ai.replanT <= 0) { ai.replanT = 0.5; ai.refined = uNow > -42; makePlan(b, want, race.boats); return; }
+  }
   const L = 6.5 + sp * 0.5;
   let j = k, tx = xs[k], tz = zs[k];
   while (j < N - 1) {
@@ -163,12 +162,12 @@ export function updateAI(b, race, dt) {
   const dx = tx - b.x, dz = tz - b.z, dist = Math.hypot(dx, dz) || 1;
   const err = wrapAngle(Math.atan2(dz, dx) - b.h);
   const noise = Math.sin(ai.wob * 2.3 + b.i) * 0.03 * (1.15 - ai.skill * 0.6);
-  b.cmdSteer = clamp(-(err + noise) * 3.2, -1, 1);
+  const steer = clamp(-(err + noise) * 3.2, -1, 1);
 
   // ---- スロットル ----
   // 旋回に必要な横Gから目標速度を決め、超えていればレバーを落とす
   const kappa = 2 * Math.sin(Math.min(Math.abs(err), PI / 2)) / dist;
-  const aLim = 11.6 * ai.skill * b.gripF;
+  const aLim = 11.6 * ai.skill * b.gripF * b.gripSet;
   const vT = Math.max(9.5, Math.sqrt(aLim / Math.max(kappa, 1e-4)));
   let thr = clamp(0.55 + (vT - sp) * 0.45, 0.1, 1);
   // ターン進入前の減速(少しオーバースピード気味に入って艇を流す)
@@ -178,9 +177,8 @@ export function updateAI(b, race, dt) {
     if (ai.firstTurn && ai.sashi) vIn *= 0.93;      // 差しは一呼吸おいて内を突く
     if (sp * sp - vIn * vIn > 2 * 6.2 * dT) thr = 0.05;
   }
-  b.cmdThrottle = thr;
-  b.cmdBrake = 0;
-
   // 壁などに引っかかった時の復帰
-  if (sp < 1.5) { ai.stuck += dt; if (ai.stuck > 1.2) b.cmdThrottle = 1; } else ai.stuck = 0;
+  if (sp < 1.5) { ai.stuck += dt; if (ai.stuck > 1.2) thr = 1; } else ai.stuck = 0;
+  if (apply) { b.cmdSteer = steer; b.cmdThrottle = thr; b.cmdBrake = 0; }
+  else { out.steer = steer; out.throttle = thr; out.lift = thr < 0.5 && sp > 11; }
 }

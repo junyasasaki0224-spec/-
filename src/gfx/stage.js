@@ -9,6 +9,7 @@ import { createSky, createWater, makeWaveTexture, Reflection } from './water.js'
 import { Spray, Wakes } from './spray.js';
 import { BoatView, loadBoatModel, setShadowProjection } from './boat.js';
 import { createVenue } from './venue.js';
+import { Guide } from './guide.js';
 import { clamp } from '../sim/course.js';
 
 export const QUALITY = {
@@ -52,6 +53,7 @@ export class Stage {
     this.venue = await createVenue(scene);
     this.wakes = new Wakes(scene, this.waveTex);
     this.spray = new Spray(scene);
+    this.guide = new Guide(scene);
     for (let i = 0; i < 6; i++) this.views.push(new BoatView(scene, i + 1));
     // 環境マップ(艇体の映り込みと間接光)用に空だけのシーンを持つ
     this.pmrem = new THREE.PMREMGenerator(this.renderer);
@@ -159,6 +161,7 @@ export class Stage {
     }
     this.spray.update(dt);
     this.wakes.update(race.boats, race.clock, time);
+    this.guide.update(opts.guideBoat, time, !!opts.guide);
     this.venue.update(dt, time, race, opts.title || '', opts.cheer || 0, opts.names);
     this.sky.uniforms.uTime.value = time; this.water.uniforms.uTime.value = time;
   }

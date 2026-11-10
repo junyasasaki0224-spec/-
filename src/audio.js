@@ -5,7 +5,7 @@ import { VMAX } from './sim/physics.js';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
 export class GameAudio {
-  constructor() { this.ctx = null; this.ready = false; this.muted = false; this.engines = []; this.cheer = 0; }
+  constructor() { this.ctx = null; this.ready = false; this.muted = false; this.vol = 0.8; this.engines = []; this.cheer = 0; }
 
   init() {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
@@ -14,7 +14,7 @@ export class GameAudio {
     const ctx = this.ctx = new AC();
     const comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -16; comp.knee.value = 18; comp.ratio.value = 5; comp.attack.value = 0.004; comp.release.value = 0.2;
-    this.master = ctx.createGain(); this.master.gain.value = 0.8;
+    this.master = ctx.createGain(); this.master.gain.value = this.muted ? 0 : this.vol;
     this.master.connect(comp); comp.connect(ctx.destination);
     this.sfx = ctx.createGain(); this.sfx.connect(this.master);
 
@@ -71,15 +71,25 @@ export class GameAudio {
     const lfoG = ctx.createGain(); lfoG.gain.value = 0.2; lfo.connect(lfoG); lfoG.connect(trem.gain);
     const out = ctx.createGain(); out.gain.value = 0;
     const pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    // 排気管の共鳴(回転数によらず一定の帯域が強調される)
+    const formant = ctx.createBiquadFilter(); formant.type = 'peaking'; formant.frequency.value = 760 + i * 25; formant.Q.value = 1.4; formant.gain.value = 7;
     o1.connect(g1); o2.connect(g2); o3.connect(g3);
     g1.connect(pre); g2.connect(pre); g3.connect(pre);
-    pre.connect(shaper); shaper.connect(lp); lp.connect(trem); trem.connect(out);
+    pre.connect(shaper); shaper.connect(lp); lp.connect(formant); formant.connect(trem); trem.connect(out);
+    // 2ストローク特有のざらついた排気音: ノイズを爆発の周期で刻む
+    const rasp = ctx.createBufferSource(); rasp.buffer = this.noiseBuf; rasp.loop = true; rasp.playbackRate.value = 0.8 + i * 0.07;
+    const raspBp = ctx.createBiquadFilter(); raspBp.type = 'bandpass'; raspBp.frequency.value = 1500; raspBp.Q.value = 0.9;
+    const raspG = ctx.createGain(); raspG.gain.value = 0;
+    const raspAm = ctx.createGain(); raspAm.gain.value = 0.5;
+    o1.connect(raspAm); raspAm.connect(raspG.gain);
+    rasp.connect(raspBp); raspBp.connect(raspG); raspG.connect(out); rasp.start(i * 0.13);
     if (pan) { out.connect(pan); pan.connect(this.master); } else out.connect(this.master);
     o1.start(); o2.start(); o3.start(); lfo.start();
-    return { o1, o2, o3, lp, lfo, lfoG, out, pan, rpm: 1500, detune: 1 + (i - 2.5) * 0.012 };
+    return { o1, o2, o3, lp, lfo, lfoG, out, pan, raspG, raspBp, rpm: 1500, jit: 0, detune: 1 + (i - 2.5) * 0.012 };
   }
 
-  setMuted(m) { this.muted = m; if (this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.8, this.ctx.currentTime, 0.05); }
+  setMuted(m) { this.muted = m; if (this.master) this.master.gain.setTargetAtTime(m ? 0 : this.vol, this.ctx.currentTime, 0.05); }
+  setVolume(v) { this.vol = v; if (this.master && !this.muted) this.master.gain.setTargetAtTime(v, this.ctx.currentTime, 0.05); }
 
   // 毎フレーム: 艇とカメラの状態から各音を更新
   update(dt, boats, listenerBoat, cam, camRight, active, cheer) {
@@ -94,17 +104,20 @@ export class GameAudio {
       const slip = b.turnInt * 0.12 + b.inWake * 0.05;
       const target = 1500 + 5100 * clamp(0.62 * f + 0.38 * b.throttle + slip * b.throttle, 0, 1.08);
       e.rpm += (target - e.rpm) * Math.min(1, dt * 6);
+      e.jit += (Math.random() - 0.5 - e.jit * 0.2) * 0.25;                    // 回転のわずかなばらつき
       const dx = b.x - cam.x, dz = b.z - cam.z, dist = Math.hypot(dx, dz, cam.y);
       // ドップラー効果
       const vr = dist > 1 ? (b.vx * dx + b.vz * dz) / dist - (listenerBoat ? (listenerBoat.vx * dx + listenerBoat.vz * dz) / dist : 0) : 0;
       const dop = clamp(340 / (340 + vr), 0.8, 1.25);
-      const hz = e.rpm / 60 * 2 * e.detune * dop;      // 2気筒2ストローク
+      const hz = e.rpm / 60 * 2 * e.detune * dop * (1 + e.jit * 0.012);      // 2気筒2ストローク
       e.o1.frequency.setTargetAtTime(hz, t, 0.03);
       e.o2.frequency.setTargetAtTime(hz * 0.5, t, 0.03);
       e.o3.frequency.setTargetAtTime(hz * 2.01, t, 0.03);
       e.lp.frequency.setTargetAtTime(500 + 2600 * b.throttle + 900 * f, t, 0.05);
       e.lfo.frequency.setTargetAtTime(hz / 8, t, 0.05);
       e.lfoG.gain.setTargetAtTime(0.28 * (1 - f), t, 0.1);
+      e.raspG.gain.setTargetAtTime(0.25 + 0.5 * b.throttle, t, 0.05);
+      e.raspBp.frequency.setTargetAtTime(1100 + 1500 * b.throttle + 600 * f, t, 0.05);
       const own = b === listenerBoat;
       const att = own ? 1 : 1 / (1 + (dist / 9) ** 2);
       const vol = (own ? 0.2 : 0.28) * (0.35 + 0.65 * b.throttle) * att;

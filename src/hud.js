@@ -1,6 +1,7 @@
-// HUD: 順位・周回・速度計・ミニマップ・大時計・実況メッセージ・レンズの水滴。
-import { BOAT_CSS, BOAT_TEXT_CSS, RACERS } from './gfx/common.js';
+// HUD: 順位・周回・前後との差・速度計・ミニマップ・大時計・風・テロップ・レンズの水滴。
+import { BOAT_CSS, BOAT_TEXT_CSS } from './gfx/common.js';
 import { BOUNDS, M1, M2, LAPS } from './sim/course.js';
+import { windLabel } from './sim/roster.js';
 
 const $ = (id) => document.getElementById(id);
 export const fmtTime = (t) => {
@@ -13,14 +14,15 @@ export const chip = (i) => `<span class="chip" style="background:${BOAT_CSS[i]};
 export class Hud {
   constructor() {
     this.el = $('hud');
-    this.posN = $('pos-n'); this.lap = $('lap'); this.time = $('time');
+    this.posN = $('pos-n'); this.lap = $('lap'); this.time = $('time'); this.gap = $('gap');
     this.rank = $('rank'); this.spd = $('spd'); this.thr = $('thr-bar'); this.spdBar = $('spd-bar');
     this.mini = $('minimap'); this.mctx = this.mini.getContext('2d');
     this.startbox = $('startbox'); this.hclock = $('hclock'); this.cctx = this.hclock.getContext('2d');
     this.cd = $('cd'); this.dist = $('dist'); this.assist = $('assist'); this.assistM = $('assist-m'); this.assistT = $('assist-t');
-    this.msg = $('msg'); this.ticker = $('ticker'); this.warn = $('warn');
+    this.msg = $('msg'); this.ticker = $('ticker'); this.warn = $('warn'); this.lift = $('lift');
+    this.wx = $('wx'); this.wxArrow = $('wx-arrow'); this.wxText = $('wx-text');
     this.fx = $('fx'); this.fctx = this.fx.getContext('2d');
-    this.msgT = 0; this.tickT = 0; this.rankT = 0; this.rankKey = '';
+    this.msgT = 0; this.tickT = 0; this.rankT = 0; this.rankKey = ''; this.gapT = 0;
     this.drops = [];
     this.resize();
   }
@@ -29,7 +31,19 @@ export class Hud {
     this.fx.width = Math.floor(window.innerWidth / 2); this.fx.height = Math.floor(window.innerHeight / 2);
   }
 
-  show(v) { this.el.classList.toggle('hidden', !v); if (!v) { this.msg.className = ''; this.ticker.className = ''; this.warn.className = ''; } }
+  show(v, replay = false) {
+    this.el.classList.toggle('hidden', !v);
+    this.el.classList.toggle('replay', replay);
+    if (!v) { this.msg.className = ''; this.ticker.className = ''; this.warn.className = ''; this.lift.className = ''; }
+    this.rankKey = '';
+  }
+
+  setWeather(w) {
+    this.wxText.textContent = `${windLabel(w)}　波 ${w.wave}cm`;
+    // 矢印: ホームストレッチの進行方向(画面右)を基準にした風下の向き
+    this.wxArrow.style.transform = `rotate(${w.windDir}rad)`;
+    this.wxArrow.style.opacity = w.wind < 0.5 ? 0.25 : 1;
+  }
 
   message(text, sub = '', dur = 2.2, cls = '') {
     this.msg.innerHTML = `<b>${text}</b>${sub ? `<span>${sub}</span>` : ''}`;
@@ -44,54 +58,62 @@ export class Hud {
     }
   }
 
-  update(dt, race, player, opts) {
-    // メッセージの寿命
+  // target: HUD の主役にする艇(自艇、リプレイ中は追っている艇)
+  update(dt, race, target, opts) {
     if (this.msgT > 0 && (this.msgT -= dt) <= 0) this.msg.className = '';
     if (this.tickT > 0 && (this.tickT -= dt) <= 0) this.ticker.className = '';
-
     this._drops(dt);
-    if (!player) return;
+    if (!target) return;
 
-    this.spd.textContent = Math.round(player.speed * 3.6);
-    this.spdBar.style.width = `${Math.min(100, player.speed / 22.6 * 100)}%`;
-    this.thr.style.height = `${player.throttle * 100}%`;
-    this.posN.textContent = player.started ? player.rank : '–';
-    this.posN.parentElement.dataset.p = player.started ? player.rank : 0;
-    this.lap.textContent = player.started ? `${Math.min(LAPS, player.lap + 1)} / ${LAPS} 周` : 'スタート前';
-    this.time.textContent = race.clock > 0 ? fmtTime(player.finished ? player.finishTime : race.clock) : `0'00"0`;
-    this.warn.className = player.offCourse && !player.finished ? 'show' : '';
+    this.spd.textContent = Math.round(target.speed * 3.6);
+    this.spdBar.style.width = `${Math.min(100, target.speed / 23.5 * 100)}%`;
+    this.thr.style.height = `${target.throttle * 100}%`;
+    this.posN.textContent = target.started ? target.rank : '–';
+    this.posN.parentElement.dataset.p = target.started ? target.rank : 0;
+    this.lap.textContent = target.started ? `${Math.min(LAPS, target.lap + 1)} / ${LAPS} 周` : 'スタート前';
+    this.time.textContent = race.clock > 0 ? fmtTime(target.finished ? target.finishTime : race.clock) : `0'00"0`;
+    this.warn.className = target.offCourse && !target.finished && !opts.replay ? 'show' : '';
+    this.lift.className = opts.guide && target.advice && target.advice.lift && target.started && !target.finished && target.throttle > 0.5 ? 'show' : '';
 
-    // 順位表
+    // 順位表と前後の差
     this.rankT -= dt;
     if (this.rankT <= 0) {
       this.rankT = 0.25;
-      const key = race.order.map((b) => b.i).join('') + race.order.map((b) => (b.finished ? 'f' : '')).join('');
+      const key = race.order.map((b) => b.i).join('') + race.order.map((b) => (b.finished ? 'f' : b.flying ? 'x' : '')).join('') + target.i;
       if (key !== this.rankKey) {
         this.rankKey = key;
-        this.rank.innerHTML = race.order.map((b, k) => `<div class="row${b.isPlayer ? ' me' : ''}"><em>${k + 1}</em>${chip(b.i)}<span>${RACERS[b.i]}${b.isPlayer ? ' ◀' : ''}</span></div>`).join('');
+        this.rank.innerHTML = race.order.map((b, k) => `<div class="row${b === target ? ' me' : ''}"><em>${b.flying ? 'F' : k + 1}</em>${chip(b.i)}<span>${b.racer.name}</span></div>`).join('');
       }
+      let g = '';
+      if (target.started && !target.finished && !target.flying && race.mode !== 'practice') {
+        const k = target.rank - 1, v = Math.max(target.speed, 8);
+        const ahead = k > 0 ? race.order[k - 1] : null, behind = k < 5 ? race.order[k + 1] : null;
+        if (ahead && !ahead.flying) g += `<span class="up">前 ${chip(ahead.i)} ${ahead.finished ? 'ゴール' : '+' + ((ahead.R - target.R) / v).toFixed(1) + '秒'}</span>`;
+        if (behind && !behind.flying && behind.started) g += `<span class="dn">後 ${chip(behind.i)} -${((target.R - behind.R) / v).toFixed(1)}秒</span>`;
+      }
+      this.gap.innerHTML = g;
     }
 
     // スタート前: 大時計と起こしの目安
-    const pre = !player.started;
+    const pre = !target.started;
     this.startbox.classList.toggle('hidden', !pre);
     if (pre) {
       const t = race.clock;
       this._clock(t);
       this.cd.textContent = t < 0 ? `スタートまで ${(-t).toFixed(1)}` : `+${t.toFixed(2)}`;
       this.cd.classList.toggle('hot', t > -3);
-      this.dist.textContent = `スタートラインまで ${Math.max(0, -player.x).toFixed(0)} m`;
-      this.assist.classList.toggle('hidden', !opts.assist);
-      if (opts.assist) {
-        const st = race.predictST(player);
-        // バーの範囲: -0.5 〜 +1.0 秒
-        const p = Math.max(0, Math.min(1, (st + 0.5) / 1.5));
+      this.dist.textContent = `スタートラインまで ${Math.max(0, -target.x).toFixed(0)} m`;
+      const showAssist = opts.assist && !opts.replay;
+      this.assist.classList.toggle('hidden', !showAssist);
+      if (showAssist) {
+        const st = race.predictST(target);
+        const p = Math.max(0, Math.min(1, (st + 0.5) / 1.5));          // バーの範囲: -0.5 〜 +1.0 秒
         this.assistM.style.left = `${p * 100}%`;
         this.assistT.textContent = st < 0 ? `全開だと ${(-st).toFixed(2)}秒 早い(フライング)` : st < 0.25 ? `今だ！ 全開で ST ${st.toFixed(2)}` : `全開で ST ${st.toFixed(2)}`;
         this.assistT.className = st < 0 ? 'bad' : st < 0.25 ? 'good' : '';
       }
     }
-    this._minimap(race, player);
+    this._minimap(race, target);
   }
 
   _clock(t) {
@@ -107,8 +129,7 @@ export class Hud {
     }
     c.fillStyle = '#111'; c.font = `900 ${Math.round(w * 0.11)}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
     for (const i of [0, 3, 6, 9]) { const a = i / 12 * Math.PI * 2; c.fillText(String(i), r + Math.sin(a) * (r - 40), r - Math.cos(a) * (r - 40)); }
-    // 12秒針: 0秒で真上
-    const a = (t / 12) * Math.PI * 2;
+    const a = (t / 12) * Math.PI * 2;               // 12秒針: 0秒で真上
     c.strokeStyle = '#f4a300'; c.lineWidth = 7; c.lineCap = 'round'; c.beginPath();
     c.moveTo(r - Math.sin(a) * 12, r + Math.cos(a) * 12); c.lineTo(r + Math.sin(a) * (r - 18), r - Math.cos(a) * (r - 18)); c.stroke();
     c.fillStyle = '#222'; c.beginPath(); c.arc(r, r, 7, 0, 7); c.fill();

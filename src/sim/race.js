@@ -1,11 +1,12 @@
-// レース進行: フライングスタート、周回判定、順位、引き波、衝突イベント。
+// レース進行: フライングスタート、周回判定、順位、引き波、衝突イベント、入力の記録(リプレイ用)。
 import {
   clamp, M1, M2, START_X, LAP_S, LAPS, zc, region, sOf,
 } from './course.js';
 import {
-  makeBoat, stepBoat, collideBoats, collideWalls, collideObstacles, timeToCover,
+  makeBoat, stepBoat, collideBoats, collideWalls, collideObstacles, timeToCover, applyTilt,
 } from './physics.js';
 import { initAI, updateAI } from './ai.js';
+import { ROSTER, PLAYER, DIFFS, motorFactor, randomWeather } from './roster.js';
 
 export const DT = 1 / 120;
 export const PRE_TIME = 14;          // 発走までの秒数(大時計の針が回る)
@@ -21,11 +22,39 @@ export function mulberry32(a) {
   };
 }
 
+// レースの設定を作る。lanes[枠] = レーサー('P' がプレイヤー)。同じ設定からは同じレースが再現される
+export function makeConfig(o = {}) {
+  const seed = o.seed ?? ((Math.random() * 1e9) | 0);
+  const rng = mulberry32(seed ^ 0x5bd1e995);
+  const playerLane = o.playerLane ?? -1;
+  let lanes = o.lanes;
+  if (!lanes) {
+    const pool = ROSTER.map((r) => r.id);
+    for (let i = pool.length - 1; i > 0; i--) { const j = (rng() * (i + 1)) | 0; [pool[i], pool[j]] = [pool[j], pool[i]]; }
+    lanes = [];
+    for (let i = 0; i < 6; i++) lanes.push(i === playerLane ? 'P' : pool.pop());
+  }
+  const motors = o.motors || {};        // レーサー id → 2連率
+  const rate = (id) => motors[id] ?? (motors[id] = Math.round((28 + rng() * 20) * 10) / 10);
+  lanes.forEach(rate);
+  // 相手のチルト: 外枠ほど伸び型を選びやすい
+  const tilts = o.tilts || lanes.map((id, i) => (id === 'P' ? (o.playerTilt ?? 1) : (rng() < 0.12 + i * 0.07 ? 2 : rng() < 0.3 ? 0 : 1)));
+  return {
+    seed, mode: o.mode || 'race', difficulty: o.difficulty ?? 1, lanes, motors, tilts,
+    weather: o.weather || randomWeather(rng), env: o.env || 'day', title: o.title || '第12R 優勝戦',
+  };
+}
+
 export class Race {
-  constructor({ playerIndex = -1, difficulty = 1, seed = (Math.random() * 1e9) | 0 } = {}) {
-    this.rng = mulberry32(seed);
-    this.playerIndex = playerIndex;
-    this.difficulty = difficulty;
+  constructor(cfg, replayInputs = null) {
+    this.cfg = cfg;
+    this.rng = mulberry32(cfg.seed);
+    const guideRng = mulberry32(cfg.seed ^ 0x9e3779b9);
+    this.difficulty = cfg.difficulty;
+    this.mode = cfg.mode;
+    this.weather = cfg.weather;
+    this.env = { wx: Math.cos(cfg.weather.windDir) * cfg.weather.wind, wz: Math.sin(cfg.weather.windDir) * cfg.weather.wind, chop: 1 + cfg.weather.wave * 0.12 };
+    this.playerIndex = cfg.lanes.indexOf('P');
     this.clock = -PRE_TIME;         // 0 = スタート時刻
     this.acc = 0;
     this.events = [];
@@ -35,14 +64,20 @@ export class Race {
     this.leader = -1;
     this.turn1 = { order: [], r: {} };   // 決まり手判定用
     this.kimarite = '';
+    this.replay = replayInputs;     // リプレイ時は記録済みの入力を使う
+    this.rec = replayInputs ? null : [];
+    this.stepN = 0;
     this.boats = [];
+    const D = DIFFS[cfg.difficulty];
     for (let i = 0; i < 6; i++) {
-      const b = makeBoat(i);
+      const b = makeBoat(i), id = cfg.lanes[i];
+      b.racer = id === 'P' ? PLAYER : ROSTER[id];
+      b.motorRate = cfg.motors[id];
       // 枠なり進入: 1〜3コースはスロー(助走約110m)、4〜6コースはダッシュ(約190m)
       b.x = i < 3 ? -106 - i * 4 : -182 - (i - 3) * 5;
       b.laneZ = zc(0) + 7 + 5.5 * i;
       b.z = b.laneZ;
-      b.isPlayer = i === playerIndex;
+      b.isPlayer = id === 'P';
       b.lastValid = region(b.x, b.z);
       b.sectorCount = b.lastValid === 0 ? 0 : -1;
       b.curReg = b.lastValid;
@@ -51,8 +86,16 @@ export class Race {
       b.started = false; b.st = null; b.flying = false; b.late = false;
       b.finished = false; b.finishTime = 0; b.place = 0; b.offCourse = false;
       b.lapTimes = []; b.lastLapClock = 0;
-      if (b.isPlayer) b.motor = 1.0;
-      else initAI(b, this.rng, difficulty, i);
+      b.chop = this.env.chop;
+      applyTilt(b, cfg.tilts[i]);
+      b.gripSet *= 1 - cfg.weather.wave * 0.006;
+      if (b.isPlayer) {
+        b.motor = motorFactor(b.motorRate);
+        initAI(b, guideRng, { skill: 1.0, st: 0.12, sashi: 0, lane: i });     // ガイドライン用
+      } else {
+        b.motor = motorFactor(b.motorRate) + D.motor;
+        initAI(b, this.rng, { skill: b.racer.skill * D.skill, st: b.racer.st + D.st, sashi: b.racer.sashi, lane: i });
+      }
       this.boats.push(b);
     }
     this.order = this.boats.slice();
@@ -63,7 +106,7 @@ export class Race {
   // プレイヤーが今から全開にした場合の予想スタートタイミング
   predictST(b) {
     if (b.started) return b.st;
-    return this.clock + timeToCover(START_X - b.x, Math.max(b.vf, 0), b.motor);
+    return this.clock + timeToCover(START_X - b.x, Math.max(b.vf, 0), b, this.env);
   }
 
   update(dtFrame, input) {
@@ -78,17 +121,21 @@ export class Race {
 
     for (const b of boats) {
       if (b.isPlayer) {
+        // 入力はステップごとに記録し、リプレイでは同じ値を流し込む
+        let st = 0, th = 0, br = 0;
+        if (this.replay) { const k = this.stepN * 3; st = (this.replay[k] || 0) / 127; th = (this.replay[k + 1] || 0) / 127; br = (this.replay[k + 2] || 0) / 127; }
+        else if (input) { st = Math.round(input.steer * 127) / 127; th = Math.round(input.throttle * 127) / 127; br = Math.round(input.brake * 127) / 127; }
+        if (this.rec) this.rec.push(Math.round(st * 127), Math.round(th * 127), Math.round(br * 127));
+        updateAI(b, this, dt, false);
         if (b.finished || b.flying) {       // ゴール後・失格後は流す
           b.cmdThrottle = b.flying ? 0 : 0.25; b.cmdSteer = this._cruiseSteer(b); b.cmdBrake = 0;
-        } else if (input) {
-          b.cmdThrottle = input.throttle; b.cmdSteer = input.steer; b.cmdBrake = input.brake;
-        }
+        } else { b.cmdThrottle = th; b.cmdSteer = st; b.cmdBrake = br; }
       } else {
         updateAI(b, this, dt);
         if (b.finished) b.cmdThrottle = Math.min(b.cmdThrottle, 0.45);
       }
       const px = b.x;
-      stepBoat(b, dt);
+      stepBoat(b, dt, this.env);
       const w = collideWalls(b);
       if (w > 2.5) this.events.push({ type: 'wall', boat: b.i, power: w, x: b.x, z: b.z });
       const o = collideObstacles(b);
@@ -96,6 +143,7 @@ export class Race {
       this._progress(b, px);
       this._trail(b, dt);
     }
+    this.stepN++;
     for (let i = 0; i < 6; i++) for (let j = i + 1; j < 6; j++) {
       const c = collideBoats(boats[i], boats[j]);
       if (c && c.power > 0.35) this.events.push({ type: 'hit', a: i, b: j, power: c.power, x: c.x, z: c.z });
@@ -103,8 +151,11 @@ export class Race {
     this._wakes(dt);
     this._ranking();
 
-    if (this.state === 'racing' || this.state === 'flying') {
-      const pl = this.player;
+    const pl = this.player;
+    if (this.mode === 'practice') {
+      // スタート練習: スタートラインを通過したら少し走って終了
+      if (pl && pl.started && this.state !== 'done') { this.endTimer += dt; if (this.endTimer > 2.2) { this.state = 'done'; this.events.push({ type: 'done' }); } }
+    } else if (this.state === 'racing' || this.state === 'flying') {
       if (this.finishCount >= 6) this._end();
       else if (this.finishCount > 0 && (!pl || pl.finished || pl.flying)) {
         this.endTimer += dt;
@@ -170,6 +221,7 @@ export class Race {
       if (b.lap === 0 && reg === 1 && this.turn1.r[b.i] === undefined && b.z < M1.z) {
         this.turn1.r[b.i] = Math.hypot(b.x - M1.x, b.z - M1.z);
         this.turn1.order.push(b.i);
+        if (this.turn1.order.length === 1) this.events.push({ type: 'turn1', boat: b.i });
       }
     }
   }
