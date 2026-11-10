@@ -113,7 +113,7 @@ function startGp() {
 
 function setPaused(p) {
   if (G.state !== 'race') return;
-  G.paused = p; show('pause', p);
+  G.paused = p; show('pause', p); show('btn-restart', S.mode !== 'gp');
   if (p) { com.stop(); input.clear(); }
 }
 

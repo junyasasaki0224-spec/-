@@ -19,6 +19,15 @@ export const QUALITY = {
 };
 const ORDER = ['low', 'medium', 'high'];
 
+// 描画先(フレームバッファ)がこの端末で使えるか
+export function rtOk(renderer, rt) {
+  const gl = renderer.getContext(), prev = renderer.getRenderTarget();
+  renderer.setRenderTarget(rt);
+  const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+  renderer.setRenderTarget(prev);
+  return ok;
+}
+
 export class Stage {
   constructor(canvas) {
     this.canvas = canvas;
@@ -90,7 +99,14 @@ export class Stage {
     if (this.composer) this.composer.dispose();
     if (!q.bloom) { this.composer = null; this.bloom = null; return; }
     const pr = r.getPixelRatio();
-    const rt = new THREE.WebGLRenderTarget(w * pr, h * pr, { type: THREE.HalfFloatType, samples: q.msaa, stencilBuffer: true });
+    // 端末によっては HDR + マルチサンプルの描画先を作れないので、作れる形式まで段階的に落とす
+    let rt = null;
+    for (const [type, samples] of [[THREE.HalfFloatType, q.msaa], [THREE.HalfFloatType, 0], [THREE.UnsignedByteType, 0]]) {
+      rt = new THREE.WebGLRenderTarget(w * pr, h * pr, { type, samples, stencilBuffer: true });
+      if (rtOk(r, rt)) break;
+      rt.dispose(); rt = null;
+    }
+    if (!rt) { this.composer = null; this.bloom = null; return; }
     const c = this.composer = new EffectComposer(r, rt);
     c.setPixelRatio(pr); c.setSize(w, h);
     c.addPass(new RenderPass(this.scene, this.camera));
@@ -105,6 +121,14 @@ export class Stage {
     this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
     r.getDrawingBufferSize(this._size);
     this.reflection.setSize(this._size.x, this._size.y);
+    if (this.reflection.enabled && !rtOk(r, this.reflection.rt)) {
+      // HDR の映り込みが使えない端末: 8bit に切り替える
+      const old = this.reflection.rt;
+      this.reflection.rt = new THREE.WebGLRenderTarget(old.width, old.height, { depthBuffer: true });
+      old.dispose();
+      this.water.uniforms.tRefl.value = this.reflection.rt.texture;
+      if (!rtOk(r, this.reflection.rt)) { this.reflection.enabled = false; this.water.uniforms.uRefl.value = 0; }
+    }
     this._buildComposer(w, h);
     this._applyEnvPost();
   }
