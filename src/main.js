@@ -15,7 +15,7 @@ const show = (id, v) => $(id).classList.toggle('hidden', !v);
 
 // ---------------- 設定と記録(ブラウザに保存) ----------------
 const KEY = 'minato-gp-v2';
-const S = { quality: 'auto', volume: 0.8, voice: true, guide: true, assist: true, shake: true, leverHold: false, tilt: 1, difficulty: 1, env: 'day', lane: 0, mode: 'single', seenHowto: false, rec: { races: 0, wins: 0, bestST: null, bestTime: null, gpWins: 0 } };
+const S = { quality: 'auto', volume: 0.8, voice: true, guide: true, assist: true, shake: true, leverReturn: false, tilt: 1, difficulty: 1, env: 'day', lane: 0, mode: 'single', seenHowto: false, rec: { races: 0, wins: 0, bestST: null, bestTime: null, gpWins: 0 } };
 try { const o = JSON.parse(localStorage.getItem(KEY) || '{}'); Object.assign(S, o, { rec: Object.assign(S.rec, o.rec || {}) }); } catch (e) { /* 保存データなし */ }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* 保存できない環境 */ } };
 const isTouch = matchMedia('(pointer: coarse)').matches;
@@ -80,7 +80,7 @@ function startRace() {
   if (!program) newProgram();
   applyRace(new Race(buildCfg()));
   G.state = 'race'; G.paused = false; G.follow = -1;
-  input.clear();
+  input.clear(true);
   closeOverlays();
   hud.show(true);
   document.body.classList.add('playing');
@@ -135,6 +135,8 @@ function renderTitle() {
   $('wxline').innerHTML = `水面状況　<b>${windLabel(w)}</b>・波高 <b>${w.wave}cm</b>　${wx < -1.5 ? '向かい風で助走が伸びにくい' : wx > 1.5 ? '追い風でスタートが早くなりやすい' : ''}`;
   $('opt-tilt').innerHTML = TILTS.map((t, k) => `<button data-v="${k}" class="${k === S.tilt ? 'sel' : ''}">${t.label}<small>${t.note}</small></button>`).join('');
   $('opt-tilt').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { S.tilt = +b.dataset.v; save(); audio.init(); audio.click(); renderTitle(); }));
+  const pct = (x) => `${x >= 1 ? '+' : '−'}${Math.abs((x - 1) * 100).toFixed(0)}%`, tl = TILTS[S.tilt];
+  $('tilt-info').innerHTML = S.tilt === 1 ? '標準。最高速 約82km/h' : `最高速 <b>約${Math.round(81.9 * Math.sqrt(tl.top))}km/h</b>　出足 <b>${pct(tl.acc)}</b>　旋回グリップ <b>${pct(tl.grip)}</b>`;
   for (const [id, v] of [['opt-diff', S.difficulty], ['opt-env', S.env]]) $(id).querySelectorAll('button').forEach((b) => b.classList.toggle('sel', b.dataset.v === String(v)));
   show('gp-box', gp);
   if (gp) $('gp-box').innerHTML = `<h2>グランプリ得点 <span>1着10点・2着8点・3着6点…　優勝戦の1着が優勝</span></h2>${gpTable()}`;
@@ -385,7 +387,7 @@ function applySettings() {
   stage.autoQuality = S.quality === 'auto';
   if (stage.quality !== q || !stage._qInit) { stage.setQuality(q); stage._qInit = true; }
   audio.setVolume(S.volume); com.volume = S.volume; com.voice = S.voice && !audio.muted;
-  input.holdThrottle = S.leverHold;
+  input.holdThrottle = !S.leverReturn;
 }
 
 function bindUi() {
@@ -417,14 +419,14 @@ function bindUi() {
   const openSettings = () => {
     audio.init(); audio.click();
     $('set-quality').value = S.quality; $('set-volume').value = Math.round(S.volume * 100);
-    $('set-voice').checked = S.voice; $('set-guide').checked = S.guide; $('set-assist').checked = S.assist; $('set-shake').checked = S.shake; $('set-hold').checked = S.leverHold;
+    $('set-voice').checked = S.voice; $('set-guide').checked = S.guide; $('set-assist').checked = S.assist; $('set-shake').checked = S.shake; $('set-hold').checked = S.leverReturn;
     show('settings', true);
   };
   click('btn-settings', openSettings); click('btn-pause-settings', openSettings);
   click('btn-settings-close', () => { audio.click(); show('settings', false); });
   $('set-quality').addEventListener('change', (e) => { S.quality = e.target.value; save(); applySettings(); });
   $('set-volume').addEventListener('input', (e) => { S.volume = e.target.value / 100; save(); applySettings(); });
-  for (const [id, k] of [['set-voice', 'voice'], ['set-guide', 'guide'], ['set-assist', 'assist'], ['set-shake', 'shake'], ['set-hold', 'leverHold']]) {
+  for (const [id, k] of [['set-voice', 'voice'], ['set-guide', 'guide'], ['set-assist', 'assist'], ['set-shake', 'shake'], ['set-hold', 'leverReturn']]) {
     $(id).addEventListener('change', (e) => { S[k] = e.target.checked; save(); applySettings(); });
   }
 }

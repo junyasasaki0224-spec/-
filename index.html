@@ -82,6 +82,7 @@
       <div class="col">
         <h2>チルト角度 <span>モーターの取り付け角度</span></h2>
         <div class="seg" id="opt-tilt"></div>
+        <div id="tilt-info"></div>
         <h2>難易度</h2>
         <div class="seg" id="opt-diff"><button data-v="0">初級</button><button data-v="1">中級</button><button data-v="2">上級</button></div>
         <h2>時間帯</h2>
@@ -109,7 +110,7 @@
         <p>艇どうしはぶつかります。接触するとお互いに弾かれて失速します。</p></div>
       <div class="card"><em>4</em><b>操作</b>
         <p><kbd>↑</kbd>/<kbd>W</kbd> 全開　<kbd>↓</kbd>/<kbd>S</kbd> 減速<br><kbd>←</kbd><kbd>→</kbd>/<kbd>A</kbd><kbd>D</kbd> ハンドル<br><kbd>C</kbd> カメラ　<kbd>M</kbd> 音　<kbd>Esc</kbd> ポーズ　<kbd>R</kbd> やり直し</p>
-        <p>スマホ: 左の<b>ハンドルレバー</b>を左右に倒して操舵、右の<b>スロットルレバー</b>を押し上げると全開、下げる(離す)とレバーが落ちて減速します。ゲームパッドにも対応。</p></div>
+        <p>スマホ: 左の<b>ハンドルレバー</b>を左右に倒して操舵、右の<b>スロットルレバー</b>を押し上げると全開、下げると減速。レバーは離した位置で止まるので、半開などの微調整ができます。ゲームパッドにも対応。</p></div>
     </div>
     <button id="btn-howto-close" class="primary">OK</button>
   </div>
@@ -124,7 +125,7 @@
     <label class="row"><span>走行ガイドライン</span><input id="set-guide" type="checkbox"></label>
     <label class="row"><span>スタートアシスト(予想STバー)</span><input id="set-assist" type="checkbox"></label>
     <label class="row"><span>画面の揺れ</span><input id="set-shake" type="checkbox"></label>
-    <label class="row"><span>スロットルレバーを離した位置で止める</span><input id="set-hold" type="checkbox"></label>
+    <label class="row"><span>スロットルレバーを離すと戻す(握り式)</span><input id="set-hold" type="checkbox"></label>
     <button id="btn-settings-close" class="primary">閉じる</button>
   </div>
 </div>

@@ -33,25 +33,29 @@ export class Input {
       sp.addEventListener('contextmenu', (e) => e.preventDefault());
       this._steerEnd = end;
     }
-    // スロットルレバー: 押し上げるほど開く。離すと戻る(設定で「離した位置で止める」にもできる)
+    // スロットルレバー: 押し上げるほど開き、離してもその位置で止まる(微調整できる)。
+    // つまみを掴んで動かすと指の移動ぶんだけ動き、つまみ以外を押すとその高さへ一気に動く
     const tp = document.getElementById('lv-thr'), grip = document.getElementById('lv-thr-grip'), fill = document.getElementById('lv-thr-fill');
-    this.holdThrottle = false;
+    this.holdThrottle = true;
     if (tp) {
-      let id = null;
-      const show = (v) => {
-        const travel = parseFloat(getComputedStyle(tp).getPropertyValue('--travel')) || 100;
-        grip.style.transform = `translateY(${-v * travel}px)`;
-        fill.style.height = `${8 + v * travel}px`;
-      };
+      let id = null, off = 0;
+      const travel = () => parseFloat(getComputedStyle(tp).getPropertyValue('--travel')) || 100;
+      const show = (v) => { const t = travel(); grip.style.transform = `translateY(${-v * t}px)`; fill.style.height = `${8 + v * t}px`; };
+      const raw = (e) => (tp.getBoundingClientRect().bottom - 34 - e.clientY) / travel();
       const set = (e) => {
-        const r = tp.getBoundingClientRect();
-        const travel = parseFloat(getComputedStyle(tp).getPropertyValue('--travel')) || 100;
-        let v = (r.bottom - 34 - e.clientY) / travel;
-        v = v > 0.93 ? 1 : v < 0.05 ? 0 : v;
+        let v = raw(e) - off;
+        v = v > 0.97 ? 1 : v < 0.03 ? 0 : v;
         this.touch.throttle = v; show(v);
       };
       const end = () => { id = null; tp.classList.remove('on'); if (!this.holdThrottle) { this.touch.throttle = 0; show(0); } };
-      tp.addEventListener('pointerdown', (e) => { e.preventDefault(); id = e.pointerId; try { tp.setPointerCapture(id); } catch (err) { /* noop */ } tp.classList.add('on'); set(e); });
+      tp.addEventListener('pointerdown', (e) => {
+        e.preventDefault(); id = e.pointerId;
+        try { tp.setPointerCapture(id); } catch (err) { /* noop */ }
+        tp.classList.add('on');
+        const d = raw(e) - this.touch.throttle;
+        off = Math.abs(d) < 0.3 ? d : 0;           // つまみの近くなら掴んだ位置を保つ
+        set(e);
+      });
       tp.addEventListener('pointermove', (e) => { if (e.pointerId === id) { e.preventDefault(); set(e); } });
       tp.addEventListener('pointerup', end); tp.addEventListener('pointercancel', end);
       tp.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -59,7 +63,8 @@ export class Input {
     }
   }
 
-  clear() { this.keys.clear(); if (this._steerEnd) this._steerEnd(); if (this._thrReset) this._thrReset(); }
+  // resetThrottle: スロットルレバーも閉じる(レース開始時)。それ以外は「止まる」設定ならレバー位置を保つ
+  clear(resetThrottle = false) { this.keys.clear(); if (this._steerEnd) this._steerEnd(); if (this._thrReset && (resetThrottle || !this.holdThrottle)) this._thrReset(); }
 
   get() {
     const k = this.keys, t = this.touch, s = this.state;

@@ -231,3 +231,5 @@ label.row input[type=range] { flex: 0 0 150px; accent-color: #f5a400; }
 #res-extra .tag { display: inline-block; margin: 2px 4px; padding: 2px 9px; border-radius: 6px; background: rgba(255, 255, 255, 0.1); }
 #res-extra .tag b { color: var(--gold); }
 #settings { z-index: 3; } #howto { z-index: 3; }
+#tilt-info { margin-top: 6px; font-size: 12px; color: #cfdcf3; min-height: 18px; }
+#tilt-info b { color: #fff; }
