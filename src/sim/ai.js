@@ -105,12 +105,16 @@ export function updateAI(b, race, dt, apply = true) {
   // ---- どのマークへ向かうか ----
   const reg = region(b.x, b.z);
   if (b.offCourse && apply) {
-    // 接触などでマークの内側へ押し込まれた場合は周回扱いにして復帰する
+    // 接触などでマークの内側へ押し込まれた場合は、回ったものとして扱って復帰する(AI が立ち往生しないように)
     ai.off += dt;
-    if (ai.off > 0.4 && (reg + 2) % 4 === b.lastValid) { b.sectorCount += 2; b.lastValid = reg; ai.off = 0; }
+    if (ai.off > 0.4 && (b.lastValid === 0 || b.lastValid === 2) && reg === b.lastValid + 1) { b.sectorCount++; b.lastValid = reg; ai.off = 0; }
   } else ai.off = 0;
   const lv = b.lastValid;
-  const want = (lv === 0 && b.x >= 0) || lv === 1 || (lv === 2 && b.x > 0) ? 1 : 2;
+  const target = lv <= 1 ? 1 : 2;       // 次に回る(いま回っている)マーク
+  // 立ち上がってから直線の半ばまでは、回り終えたマークのラインの続き(立ち上がり区間)を追う。
+  // ラインを引き直す時は必ず次のマークへ向ける(回り終えたマークへ戻るラインにしない)
+  const keepPrev = ai.plan && ai.planMark !== target && ((lv === 2 && b.x > 0) || (lv === 0 && b.x < 0));
+  const want = keepPrev ? ai.planMark : target;
   if (want !== ai.planMark || !ai.plan) { ai.refined = false; makePlan(b, want, race.boats); }
   let P = ai.plan;
   const uNow = (b.x - P.M.x) * P.s;
@@ -125,10 +129,15 @@ export function updateAI(b, race, dt, apply = true) {
     if (d < bd) { bd = d; k = i; }
   }
   ai.k = k;
-  if (bd > 30 * 30) { makePlan(b, want, race.boats); return; }
+  if (bd > 30 * 30) { ai.refined = false; makePlan(b, target, race.boats); return; }
   if (!apply && bd > 30) {     // プレイヤーがラインを外れたら、今の位置から引き直す
     ai.replanT = (ai.replanT || 0) - dt;
-    if (ai.replanT <= 0) { ai.replanT = 0.5; ai.refined = uNow > -42; makePlan(b, want, race.boats); return; }
+    if (ai.replanT <= 0) {
+      ai.replanT = 0.5;
+      const M = target === 1 ? M1 : M2, u = (b.x - M.x) * (target === 1 ? 1 : -1);
+      ai.refined = u > -42;
+      makePlan(b, target, race.boats); return;
+    }
   }
   const L = 6.5 + sp * 0.5;
   let j = k, tx = xs[k], tz = zs[k];

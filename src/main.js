@@ -158,6 +158,7 @@ function showResult() {
   let head, sub, p = 'x';
   const stWord = (st) => (st <= 0.1 ? 'トップスタート級！' : st <= 0.2 ? 'ナイススタート' : st <= 0.45 ? 'まずまず' : st <= 1 ? '遅れ気味' : '出遅れ');
   if (pl.flying) { head = 'フライング'; p = 'f'; sub = `スタート時刻より ${(-pl.st).toFixed(2)}秒 早くラインを通過 — ${practice ? '本番なら失格' : '失格（F）'}`; }
+  else if (practice && pl.st === null) { head = '出遅れ'; sub = 'スタートラインを通過できませんでした。助走をつけて、針が0を指す瞬間を狙いましょう'; }
   else if (practice) { head = `ST ${pl.st.toFixed(2)}`; p = pl.st <= 0.2 ? '1' : 'x'; sub = `${stWord(pl.st)}　${race.boats.filter((b) => b.st !== null && b.st >= 0 && b.st < pl.st).length + 1}番目のスタート`; }
   else {
     const place = pl.place || pl.rank;
@@ -382,10 +383,11 @@ function step(dt) {
 }
 
 // ---------------- UI ----------------
+let appliedQuality = null;
 function applySettings() {
-  const q = S.quality === 'auto' ? (isTouch ? 'medium' : 'high') : S.quality;
+  // 画質の設定そのものを変えた時だけ切り替える(自動調整で下がった画質を、他の設定変更で戻さない)
   stage.autoQuality = S.quality === 'auto';
-  if (stage.quality !== q || !stage._qInit) { stage.setQuality(q); stage._qInit = true; }
+  if (appliedQuality !== S.quality) { appliedQuality = S.quality; stage.setQuality(S.quality === 'auto' ? (isTouch ? 'medium' : 'high') : S.quality); }
   audio.setVolume(S.volume); com.volume = S.volume; com.voice = S.voice && !audio.muted;
   input.holdThrottle = !S.leverReturn;
   document.documentElement.style.setProperty('--lv-up', `${S.leverUp}px`);

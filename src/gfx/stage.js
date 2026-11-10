@@ -132,7 +132,8 @@ export class Stage {
       this.water.uniforms.tRefl.value = this.reflection.rt.texture;
       if (!rtOk(r, this.reflection.rt)) { this.reflection.enabled = false; this.water.uniforms.uRefl.value = 0; }
     }
-    this._buildComposer(w, h);
+    if (this.composer) { this.composer.setPixelRatio(r.getPixelRatio()); this.composer.setSize(w, h); }
+    else this._buildComposer(w, h);
     this._applyEnvPost();
   }
 
@@ -233,7 +234,14 @@ export class Stage {
   precompile() {
     const hidden = [];
     this.scene.traverse((o) => { if (!o.visible) { o.visible = true; hidden.push(o); } });
-    try { this.renderer.compile(this.scene, this.camera); if (this.reflection.enabled) this.renderer.compile(this.scene, this.reflection.cam); } catch (e) { /* 非対応 */ }
+    const r = this.renderer, prev = r.getRenderTarget();
+    try {
+      // 実際の描画と同じ描画先(HDR)に向けて作る。描画先が違うとシェーダーの種類も変わるため
+      if (this.composer) r.setRenderTarget(this.composer.renderTarget1);
+      r.compile(this.scene, this.camera);
+      if (this.reflection.enabled) { r.setRenderTarget(this.reflection.rt); r.compile(this.scene, this.reflection.cam); }
+    } catch (e) { /* 非対応 */ }
+    r.setRenderTarget(prev);
     for (const o of hidden) o.visible = false;
     this._compiled = true;
   }

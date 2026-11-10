@@ -242,3 +242,6 @@ label.row input[type=range] { flex: 0 0 150px; accent-color: #f5a400; }
 #settings { z-index: 3; } #howto { z-index: 3; }
 #tilt-info { margin-top: 6px; font-size: 12px; color: #cfdcf3; min-height: 18px; }
 #tilt-info b { color: #fff; }
+#hud.replay #startbox { top: 60px; }
+#hud.replay #ticker { top: 62px; }
+#hud.replay.pre #ticker { top: 176px; }

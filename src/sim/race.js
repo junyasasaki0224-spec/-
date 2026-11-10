@@ -49,7 +49,6 @@ export class Race {
   constructor(cfg, replayInputs = null) {
     this.cfg = cfg;
     this.rng = mulberry32(cfg.seed);
-    const guideRng = mulberry32(cfg.seed ^ 0x9e3779b9);
     this.difficulty = cfg.difficulty;
     this.mode = cfg.mode;
     this.weather = cfg.weather;
@@ -80,7 +79,6 @@ export class Race {
       b.isPlayer = id === 'P';
       b.lastValid = region(b.x, b.z);
       b.sectorCount = b.lastValid === 0 ? 0 : -1;
-      b.curReg = b.lastValid;
       b.sHold = sOf(b.x, b.z, b.lastValid);
       b.R = b.x; b.lap = 0; b.rank = i + 1;
       b.started = false; b.st = null; b.flying = false; b.late = false;
@@ -91,7 +89,7 @@ export class Race {
       b.gripSet *= 1 - cfg.weather.wave * 0.006;
       if (b.isPlayer) {
         b.motor = motorFactor(b.motorRate);
-        initAI(b, guideRng, { skill: 1.0, st: 0.12, sashi: 0, lane: i });     // ガイドライン用
+        initAI(b, () => 0.5, { skill: 1.0, st: 0.12, sashi: 0, lane: i });    // ガイドライン用(乱数なし: 引き直してもラインが揺れない)
       } else {
         b.motor = motorFactor(b.motorRate) + D.motor;
         initAI(b, this.rng, { skill: b.racer.skill * D.skill, st: b.racer.st + D.st, sashi: b.racer.sashi, lane: i });
@@ -154,13 +152,17 @@ export class Race {
     const pl = this.player;
     if (this.mode === 'practice') {
       // スタート練習: スタートラインを通過したら少し走って終了
-      if (pl && pl.started && this.state !== 'done') { this.endTimer += dt; if (this.endTimer > 2.2) { this.state = 'done'; this.events.push({ type: 'done' }); } }
+      if (pl && this.state !== 'done' && (pl.started || this.clock > 8)) {       // 8秒たっても通過しなければ打ち切り
+        this.endTimer += dt;
+        if (this.endTimer > 2.2 || !pl.started) { this.state = 'done'; this.events.push({ type: 'done' }); }
+      }
     } else if (this.state === 'racing' || this.state === 'flying') {
       if (this.finishCount >= 6) this._end();
-      else if (this.finishCount > 0 && (!pl || pl.finished || pl.flying)) {
+      else if (this.finishCount > 0) {
+        // 先頭のゴールから一定時間で打ち切る(自艇がまだ走っている間は長めに待つ)
         this.endTimer += dt;
-        if (this.endTimer > 25) this._end();
-      }
+        if (this.endTimer > (pl && !pl.finished && !pl.flying ? 50 : 25)) this._end();
+      } else if (this.clock > 300) this._end();
     }
   }
 
@@ -192,18 +194,25 @@ export class Race {
       if (b.st < 0) { b.flying = true; this.events.push({ type: 'flying', boat: b.i, st: b.st }); if (b.isPlayer) this.state = 'flying'; }
       else { b.late = b.st > 1.0; this.events.push({ type: 'cross', boat: b.i, st: b.st, late: b.late }); }
     }
-    // 区間の順送り(マークの内側をショートカットすると進まない)
+    // 区間の順送り。区間 L: 0 ホーム / 1 1マーク旋回 / 2 バック / 3 2マーク旋回。
+    // 見るのは「マークの外側を回ったか」だけ: マークの真横の線(x=±150)を、正しい側で越えた時に次の区間へ進む。
+    // 直線の途中で2つのマークを結ぶ線をまたいでも(接触で押されても)区間は変わらない
     const reg = region(b.x, b.z);
-    if (reg !== b.curReg) {
-      const a = b.curReg;
-      if (a === b.lastValid) {
-        if (reg === (a + 1) % 4) { b.lastValid = reg; b.sectorCount++; }
-        else if (reg === (a + 3) % 4) { b.lastValid = reg; b.sectorCount--; }
-      }
-      b.curReg = reg;
+    let L = b.lastValid;
+    if (px < M1.x && b.x >= M1.x) {                 // 1マークの線を奥へ越えた
+      if (L === 0 && b.z > M1.z) { L = 1; b.sectorCount++; } else if (L === 2 && b.z < M1.z) { L = 1; b.sectorCount--; }
+    } else if (px >= M1.x && b.x < M1.x) {          // 1マークの線を手前へ戻った
+      if (L === 1 && b.z < M1.z) { L = 2; b.sectorCount++; } else if (L === 1) { L = 0; b.sectorCount--; }
     }
-    b.offCourse = reg !== b.lastValid;
-    if (!b.offCourse) b.sHold = sOf(b.x, b.z, reg);
+    if (px > M2.x && b.x <= M2.x) {                 // 2マークの線を奥へ越えた
+      if (L === 2 && b.z < M2.z) { L = 3; b.sectorCount++; } else if (L === 0 && b.z > M2.z) { L = 3; b.sectorCount--; }
+    } else if (px <= M2.x && b.x > M2.x) {          // 2マークの線を手前へ戻った
+      if (L === 3 && b.z > M2.z) { L = 0; b.sectorCount++; } else if (L === 3) { L = 2; b.sectorCount--; }
+    }
+    b.lastValid = L;
+    // マークの内側を抜けた(線を正しくない側で越えた)状態
+    b.offCourse = L === 1 ? b.x < M1.x : L === 3 ? b.x > M2.x : (b.x > M1.x || b.x < M2.x);
+    if (!b.offCourse) b.sHold = sOf(b.x, b.z, L);
     const R = Math.floor(b.sectorCount / 4) * LAP_S + b.sHold - 150;
     b.R = b.started ? R : b.x;
     if (b.started && !b.finished && !b.flying) {
