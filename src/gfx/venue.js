@@ -417,7 +417,7 @@ export function createVenue(scene) {
   let screenT = 0;
   return {
     group, buoys, lightPos, drawScreen,
-    setEnv(env) {
+    setEnv(env, wind) {
       for (const [m, k] of glow) m.emissiveIntensity = env.glow * k;
       mFlare.opacity = env.glow * 0.9;
       line.material.opacity = env.night > 0.5 ? 0.3 : 0.4;

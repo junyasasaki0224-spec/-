@@ -10,22 +10,25 @@ export const RACERS = ['青波 隼人', '水城 拓海', '潮見 蓮', '汐崎 �
 // 時間帯ごとの環境設定
 export const ENVS = {
   day: {
-    zenith: 0x2a6fd0, horizon: 0xb9d9f0, fog: 0xbcd6e8, fogD: 0.00075,
-    sunDir: [-0.45, 0.62, -0.64], sunCol: 0xfff0d6, sunInt: 3.1,
-    hemiSky: 0xd4e8ff, hemiGround: 0x7b8478, hemiInt: 1.55,
-    deep: 0x0d4750, shallow: 0x2f8d88, cloud: 0xffffff, night: 0, spray: 0xffffff, glow: 0,
+    zenith: 0x1f5fc4, horizon: 0xb4d3ec, fog: 0xb9d2e6, fogD: 0.00075,
+    sunDir: [-0.45, 0.62, -0.64], sunCol: 0xfff1dc, sunInt: 3.4,
+    hemiSky: 0xcfe2ff, hemiGround: 0x6f7a72, hemiInt: 1.25,
+    deep: 0x06313a, shallow: 0x2a7f78, cloud: 0xffffff, night: 0, spray: 0xffffff, sprayShade: 0xa9bcc8, wake: 0xffffff, glow: 0,
+    exposure: 0.98, bloom: 0.16, bloomTh: 1.0, envInt: 0.9,
   },
   evening: {
-    zenith: 0x35508f, horizon: 0xf6b27a, fog: 0xd9a888, fogD: 0.0009,
-    sunDir: [-0.82, 0.16, -0.55], sunCol: 0xffb060, sunInt: 2.6,
-    hemiSky: 0xc9b6c8, hemiGround: 0x6b5f58, hemiInt: 1.15,
-    deep: 0x12303f, shallow: 0x6c6f78, cloud: 0xffd2b0, night: 0.25, spray: 0xffe6d2, glow: 0.5,
+    zenith: 0x2f4a8a, horizon: 0xf7ad72, fog: 0xd7a384, fogD: 0.0009,
+    sunDir: [-0.82, 0.16, -0.55], sunCol: 0xffa858, sunInt: 3.0,
+    hemiSky: 0xc4b2c8, hemiGround: 0x5f5650, hemiInt: 0.95,
+    deep: 0x0b2532, shallow: 0x5a626e, cloud: 0xffcfa8, night: 0.25, spray: 0xffe9d6, sprayShade: 0xb79a92, wake: 0xe8cfc0, glow: 0.5,
+    exposure: 1.0, bloom: 0.32, bloomTh: 0.92, envInt: 0.8,
   },
   night: {
-    zenith: 0x03060f, horizon: 0x18203c, fog: 0x0d1426, fogD: 0.001,
-    sunDir: [0.05, 0.92, 0.38], sunCol: 0xe4ecff, sunInt: 1.9,
-    hemiSky: 0x8fa4d8, hemiGround: 0x2a3040, hemiInt: 0.75,
-    deep: 0x030f16, shallow: 0x12323c, cloud: 0x2a3350, night: 1, spray: 0xdfe8ff, glow: 1,
+    zenith: 0x02050d, horizon: 0x151c36, fog: 0x0b1222, fogD: 0.001,
+    sunDir: [0.05, 0.92, 0.38], sunCol: 0xe6edff, sunInt: 2.3,
+    hemiSky: 0x8ea2d6, hemiGround: 0x252b3a, hemiInt: 0.7,
+    deep: 0x020b11, shallow: 0x0f2a33, cloud: 0x262f4c, night: 1, spray: 0xdfe8fa, sprayShade: 0x6f7fa0, wake: 0x8a9ab4, glow: 1,
+    exposure: 1.12, bloom: 0.6, bloomTh: 0.8, envInt: 0.45,
   },
 };
 

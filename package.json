@@ -5,8 +5,8 @@
   "description": "3D ボートレース(競艇)ゲーム — Three.js + WebAudio",
   "type": "module",
   "scripts": {
-    "build": "esbuild src/main.js --bundle --minify --format=iife --target=es2020 --outfile=dist/game.js",
-    "dev": "esbuild src/main.js --bundle --format=iife --target=es2020 --outfile=dist/game.js --sourcemap --watch --servedir=.",
+    "build": "esbuild src/main.js --bundle --minify --format=iife --target=es2020 --loader:.glb=binary --loader:.jpg=binary --loader:.png=binary --outfile=dist/game.js",
+    "dev": "esbuild src/main.js --bundle --format=iife --target=es2020 --loader:.glb=binary --loader:.jpg=binary --loader:.png=binary --outfile=dist/game.js --sourcemap --watch --servedir=.",
     "sim": "node tools/sim-test.mjs"
   },
   "devDependencies": {
