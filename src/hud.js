@@ -97,6 +97,7 @@ export class Hud {
     // スタート前: 大時計と起こしの目安
     const pre = !target.started;
     this.startbox.classList.toggle('hidden', !pre);
+    this.el.classList.toggle('pre', pre);
     if (pre) {
       const t = race.clock;
       this._clock(t);

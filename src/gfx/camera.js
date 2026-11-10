@@ -94,6 +94,8 @@ export class CameraRig {
       fov = 52;
     }
     this.init = true;
+    // 縦長の画面では横の視野が狭くなるので、少し広げて艇が大きく映りすぎないようにする
+    if (cam.aspect < 1.2 && mode !== CAM.TV) fov *= 1 + 0.32 * clamp((1.2 - cam.aspect) / 0.7, 0, 1);
     this.fov += (fov - this.fov) * Math.min(1, dt * (mode === CAM.TV ? 3 : 5));
     cam.position.copy(this.pos);
     const player = mode <= CAM.ONBOARD;
