@@ -315,6 +315,7 @@ function handleEvents() {
 
 // ---------------- メインループ ----------------
 let last = performance.now(), focus = null;
+const upd = { race: null, names: null, title: '', cheer: 0, guideBoat: null, guide: false };   // 毎フレーム使い回す
 function frame(now) {
   requestAnimationFrame(frame);
   const raw = (now - last) / 1000, dt = Math.min(0.05, raw);
@@ -352,10 +353,9 @@ function step(dt) {
     if (race.finishCount > 0 && race.state !== 'done') cheer = 1;
     G.cheer = cheer;
 
-    stage.update(dt, G.time, race, {
-      title: race.cfg.title, cheer: cheer > 0.8 ? 1 : 0, names: race.boats.map((b) => b.racer.name),
-      guideBoat: pl, guide: S.guide && live,
-    });
+    if (race !== upd.race) { upd.race = race; upd.names = race.boats.map((b) => b.racer.name); upd.title = race.cfg.title; }
+    upd.cheer = cheer > 0.8 ? 1 : 0; upd.guideBoat = pl; upd.guide = S.guide && live;
+    stage.update(dt, G.time, race, upd);
     for (let i = 0; i < 6; i++) {
       const v = views[i];
       if (v.slapped > 0) { if (race.boats[i] === target && (live || replay)) audio.slap(Math.min(0.3, v.slapped * 0.5)); v.slapped = 0; }
@@ -459,6 +459,7 @@ stage.init().then(() => {
   applySettings();
   newProgram();
   toTitle();
+  stage.precompile();
   show('loading', false);
   if (!S.seenHowto) show('howto', true);
   requestAnimationFrame(frame);

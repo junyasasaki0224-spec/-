@@ -437,7 +437,7 @@ export async function createVenue(scene) {
     scrTex.needsUpdate = true;
   }
 
-  let screenT = 0, env = null;
+  let screenT = 0, screenKey = '', env = null;
   return {
     group, buoys, lightPos, drawScreen,
     setCrowd(f) { for (const m of crowdMeshes) m.count = Math.floor(crowdTotal * f); },
@@ -475,7 +475,12 @@ export async function createVenue(scene) {
         b.l.rotation.x = f; b.r.rotation.x = -f;
       }
       screenT -= dt;
-      if (screenT <= 0) { screenT = 0.4; drawScreen(race, title, names); }
+      if (screenT <= 0) {
+        screenT = 0.5;
+        // 内容が変わった時だけ描き直す(毎回のテクスチャ転送は重い)
+        const key = title + race.state + race.order[0].lap + race.order.map((b) => b.i + (b.st === null ? '' : b.flying ? 'F' : b.st.toFixed(2))).join() + (names ? names.join() : '');
+        if (key !== screenKey) { screenKey = key; drawScreen(race, title, names); }
+      }
     },
   };
 }

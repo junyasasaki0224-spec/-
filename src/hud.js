@@ -65,7 +65,8 @@ export class Hud {
     this._drops(dt);
     if (!target) return;
 
-    this.spd.textContent = Math.round(target.speed * 3.6);
+    const kmh = Math.round(target.speed * 3.6);
+    if (kmh !== this._kmh) { this._kmh = kmh; this.spd.textContent = kmh; }
     this.spdBar.style.width = `${Math.min(100, target.speed / 23.5 * 100)}%`;
     this.thr.style.height = `${target.throttle * 100}%`;
     this.posN.textContent = target.started ? target.rank : '–';
@@ -91,7 +92,7 @@ export class Hud {
         if (ahead && !ahead.flying) g += `<span class="up">前 ${chip(ahead.i)} ${ahead.finished ? 'ゴール' : '+' + ((ahead.R - target.R) / v).toFixed(1) + '秒'}</span>`;
         if (behind && !behind.flying && behind.started) g += `<span class="dn">後 ${chip(behind.i)} -${((target.R - behind.R) / v).toFixed(1)}秒</span>`;
       }
-      this.gap.innerHTML = g;
+      if (g !== this._gapHtml) { this._gapHtml = g; this.gap.innerHTML = g; }
     }
 
     // スタート前: 大時計と起こしの目安
@@ -100,7 +101,8 @@ export class Hud {
     this.el.classList.toggle('pre', pre);
     if (pre) {
       const t = race.clock;
-      this._clock(t);
+      const ck = Math.round(t * 30);
+      if (ck !== this._ck) { this._ck = ck; this._clock(t); }
       this.cd.textContent = t < 0 ? `スタートまで ${(-t).toFixed(1)}` : `+${t.toFixed(2)}`;
       this.cd.classList.toggle('hot', t > -3);
       this.dist.textContent = `スタートラインまで ${Math.max(0, -target.x).toFixed(0)} m`;
@@ -114,7 +116,8 @@ export class Hud {
         this.assistT.className = st < 0 ? 'bad' : st < 0.25 ? 'good' : '';
       }
     }
-    this._minimap(race, target);
+    this._mmT = (this._mmT || 0) + dt;
+    if (this._mmT >= 1 / 20) { this._mmT = 0; this._minimap(race, target); }
   }
 
   _clock(t) {

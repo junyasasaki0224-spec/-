@@ -14,7 +14,11 @@ export const KDRIFT = 0.3;         // 横滑りによる前進抵抗
 export const KWV = 1.3;            // 風見効果の強さ
 export const YAW_MAX = 1.6;        // 最大ヨーレート (rad/s)
 export const YAW_RESP = 7.0;       // 舵の応答
-export const BRAKE = 5.0;
+// 本物の艇にブレーキはない。減速キーは「レバーを一気に落として体重を後ろへ移す」操作で、
+// 艇尾が沈んで少し抵抗が増えるだけ
+export const BRAKE = 1.6;
+// 滑走から外れる速度域(約15〜45km/h)でレバーを落としていると、艇尾が沈んで抵抗が急に増える
+export const HUMP = 2.4;
 export const CIRC = [-1.05, 0, 1.05];   // 艇体を3つの円で近似
 export const CR = 0.68;
 const INERTIA = 1.25;
@@ -57,6 +61,7 @@ export function stepBoat(b, dt, env) {
   const sr = Math.abs(b.cmdSteer) > Math.abs(b.steer) || b.cmdSteer * b.steer < 0 ? 4.5 : 6.5;
   b.steer += clamp(b.cmdSteer - b.steer, -sr * dt, sr * dt);
   b.brake += clamp(b.cmdBrake - b.brake, -6 * dt, 6 * dt);
+  if (b.brake > 0.5) b.throttle = Math.max(0, b.throttle - 9 * dt);      // 減速キーはレバーを素早く落とす
 
   let ch = Math.cos(b.h), sh = Math.sin(b.h);
   const vf0 = b.vx * ch + b.vz * sh;
@@ -79,7 +84,8 @@ export function stepBoat(b, dt, env) {
   const thrust = b.throttle * ACC * b.motor * b.thrustF * tiltMix(b, fs) + IDLE;
   const sgn = vf >= 0 ? 1 : -1;
   let af = thrust - K1 * vf - K2 * vf * Math.abs(vf)
-    - sgn * (KDRIFT * Math.abs(vl) + b.brake * BRAKE * smooth(0, 3, sp));
+    - sgn * (KDRIFT * Math.abs(vl) + b.brake * BRAKE * smooth(0, 3, sp)
+      + HUMP * (1 - smooth(0.15, 0.5, b.throttle)) * smooth(1.5, 4.5, sp) * (1 - smooth(9, 13, sp)));
   if (env) af += WIND_K * (env.wx * ch + env.wz * sh) * smooth(2, 10, sp);
   const G = GRIP * b.gripF * b.gripSet;
   const al = -clamp(KLAT * vl, -G, G);

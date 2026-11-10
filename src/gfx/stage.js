@@ -74,9 +74,11 @@ export class Stage {
   }
 
   setQuality(name) {
+    const prevShadow = this.renderer.shadowMap.enabled;
     this.quality = name; const q = this.q = QUALITY[name];
     const r = this.renderer;
-    r.setPixelRatio(Math.min(window.devicePixelRatio || 1, q.dpr));
+    this.dprMax = Math.min(window.devicePixelRatio || 1, q.dpr); this.dpr = this.dprMax;
+    r.setPixelRatio(this.dpr);
     r.shadowMap.enabled = q.shadow > 0;
     this.sun.castShadow = q.shadow > 0;
     if (q.shadow) {
@@ -88,7 +90,8 @@ export class Stage {
     this.spray.density = q.spray;
     if (this.venue.setCrowd) this.venue.setCrowd(q.crowd);
     if (this.composer) { this.composer.dispose(); this.composer = null; this.bloom = null; }
-    this.scene.traverse((o) => { if (o.material) { const ms = Array.isArray(o.material) ? o.material : [o.material]; for (const m of ms) m.needsUpdate = true; } });
+    // 影の有無が変わった時だけシェーダーを作り直す(作り直しは引っかかりの原因になる)
+    if (prevShadow !== r.shadowMap.enabled || !this._compiled) this.scene.traverse((o) => { if (o.material) { const ms = Array.isArray(o.material) ? o.material : [o.material]; for (const m of ms) m.needsUpdate = true; } });
     this.resize();
     this._applyEnvPost();
     if (this.envRT) this.venue.bakeShadow(r, this.sunDir, q.shadow ? q.shadow * 2 : 0);
@@ -206,14 +209,32 @@ export class Stage {
   }
 
   // 重い端末では画質を自動で下げる
+  // 重い時はまず描画解像度を少しずつ下げ(動的解像度)、それでも足りない時だけ画質段階を下げる。
+  // 軽くなったら解像度を戻す。段階の切り替えは引っかかるので、なるべく起こさない
   adapt(rawDt) {
     if (!this.autoQuality) return null;
-    if (rawDt < 0.5) this._ema += (rawDt - this._ema) * 0.05;
+    if (rawDt < 0.25) this._ema += (rawDt - this._ema) * 0.06;
     this._qT += rawDt;
-    if (this._qT < 3) return null;
+    if (this._qT < 1.5) return null;
     this._qT = 0;
-    const i = ORDER.indexOf(this.quality);
-    if (this._ema > 0.034 && i > 0) { this.setQuality(ORDER[i - 1]); this._ema = 0.02; return this.quality; }
+    const r = this.renderer;
+    if (this._ema > 0.03) {
+      if (this.dpr > 1.0) { this.dpr = Math.max(1.0, this.dpr - 0.25); r.setPixelRatio(this.dpr); this.resize(); this._ema = 0.022; return 'dpr'; }
+      if (this.dpr > 0.75 && this._ema > 0.036) { this.dpr = 0.75; r.setPixelRatio(this.dpr); this.resize(); this._ema = 0.022; return 'dpr'; }
+      const i = ORDER.indexOf(this.quality);
+      if (this._ema > 0.04 && i > 0) { this.setQuality(ORDER[i - 1]); this.dpr = Math.min(this.dprMax, 1); r.setPixelRatio(this.dpr); this.resize(); this._ema = 0.022; return this.quality; }
+    } else if (this._ema < 0.0175 && this.dpr < this.dprMax) {
+      this.dpr = Math.min(this.dprMax, this.dpr + 0.25); r.setPixelRatio(this.dpr); this.resize(); this._ema = 0.02; return 'dpr';
+    }
     return null;
+  }
+
+  // 起動時にすべてのシェーダーを作っておく(初めて表示された時の引っかかりを防ぐ)
+  precompile() {
+    const hidden = [];
+    this.scene.traverse((o) => { if (!o.visible) { o.visible = true; hidden.push(o); } });
+    try { this.renderer.compile(this.scene, this.camera); if (this.reflection.enabled) this.renderer.compile(this.scene, this.reflection.cam); } catch (e) { /* 非対応 */ }
+    for (const o of hidden) o.visible = false;
+    this._compiled = true;
   }
 }
