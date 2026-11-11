@@ -15,7 +15,7 @@ function geos() {
     head: (() => { const g = new THREE.CylinderGeometry(0.065, 0.125, 0.54, 8); g.translate(0, 0.25, 0); return g; })(),
     ear: new THREE.ConeGeometry(0.035, 0.13, 5),
     mane: new THREE.BoxGeometry(0.07, 0.78, 0.035),
-    tail: (() => { const g = new THREE.CylinderGeometry(0.012, 0.06, 0.85, 6); g.translate(0, 0.42, 0); return g; })(),
+    tail: (() => { const g = new THREE.CylinderGeometry(0.03, 0.075, 0.62, 6); g.translate(0, 0.31, 0); return g; })(),
     foreU: cyl(0.085, 0.052, 0.5), foreL: cyl(0.045, 0.036, 0.52),
     hindU: cyl(0.12, 0.06, 0.55), hindL: cyl(0.048, 0.036, 0.52),
     hoof: (() => { const g = new THREE.CylinderGeometry(0.045, 0.06, 0.09, 7); g.translate(0, -0.045, 0); return g; })(),

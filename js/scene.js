@@ -402,7 +402,7 @@ export class Venue {
     }
     // 阪神(春): 桜並木
     if (spring) {
-      for (let u = L + 30; u < tr.lap - 30; u += 13) { const p = tr.point(u, W + 9 + rng() * 5, {}); addTree(p.x, p.z, p.y, 4.5 + rng() * 2, 'cherry'); }
+      for (let u = L + 30; u < tr.lap - 30; u += 13) { const p = tr.point(u, W + 20 + rng() * 8, {}); addTree(p.x, p.z, p.y - 0.5, 4.5 + rng() * 2, 'cherry'); }
       for (let i = 0; i < 40; i++) { const p = tr.point(rng() * tr.lap, -(48 + rng() * 14), {}); addTree(p.x, p.z, infieldY, 4 + rng() * 2, 'cherry'); }
     }
     const nT = list.length;
@@ -423,7 +423,7 @@ export class Venue {
         let c;
         if (tr0.kind === 'cherry') c = S.trees[(rng() * 4) | 0];
         else if (tr0.kind === 'keyaki') c = winter ? 0x7a6850 : S.green[0];
-        else c = spring ? S.green[(rng() * 2) | 0] : S.trees[(rng() * S.trees.length) | 0];
+        else c = spring ? (rng() < 0.4 ? S.trees[(rng() * 4) | 0] : S.green[(rng() * 2) | 0]) : S.trees[(rng() * S.trees.length) | 0];
         leaves.setColorAt(nl++, col.setHex(c).multiplyScalar(0.8 + rng() * 0.3));
       }
     });
@@ -632,17 +632,17 @@ export class Venue {
       const pl = opt.focus || race.player || race.order[0];
       tr.at(pl.s - 1.5, pl.d, g);
       const P = this._v.set(g.x, g.y, g.z), look = this._v2;
-      let pos = new THREE.Vector3(), k = 7;
+      let pos = new THREE.Vector3(), k = 13;
       const mode = opt.cam ?? this.camMode;
       if (mode === 0) { // 後方追尾
-        pos.set(P.x - g.hx * 8.2, P.y + 3.5, P.z - g.hz * 8.2);
+        pos.set(P.x - g.hx * 6.6, P.y + 3.3, P.z - g.hz * 6.6);
         look.set(P.x + g.hx * 7, P.y + 1.5, P.z + g.hz * 7);
       } else if (mode === 1) { // 騎手目線
         pos.set(P.x - g.hx * 0.3, P.y + 2.55, P.z - g.hz * 0.3);
         look.set(P.x + g.hx * 12, P.y + 1.6, P.z + g.hz * 12); k = 14;
       } else if (mode === 2) { // 中継カメラ(外から)
-        tr.at(pl.s + 2, tr.W + 26, g);
-        pos.set(g.x - g.hx * 4, g.y + 6.5, g.z - g.hz * 4);
+        tr.at(pl.s + 2, tr.W + 12, g);
+        pos.set(g.x - g.hx * 5, g.y + 7.5, g.z - g.hz * 5);
         look.set(P.x + g.hx * 3, P.y + 1.2, P.z + g.hz * 3); k = 5;
       } else if (mode === 3) { // 俯瞰
         pos.set(P.x - g.hx * 26, P.y + 24, P.z - g.hz * 26);

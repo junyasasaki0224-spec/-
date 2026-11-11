@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>ターフジョッキー</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="view"></canvas>
+
+<!-- ============ タイトル ============ -->
+<section id="scr-title" class="screen">
+  <div class="title-box">
+    <div class="logo-sub">3D JOCKEY SIMULATION</div>
+    <h1 class="logo">ターフジョッキー</h1>
+    <div class="logo-tag">― 勝負を決めるのは、馬ではなく手綱 ―</div>
+    <div class="career" id="career"></div>
+    <div class="btn-col">
+      <button class="btn primary" id="btn-start">レースを選ぶ</button>
+      <button class="btn" id="btn-how">騎乗マニュアル</button>
+      <button class="btn" id="btn-opt">サウンド設定</button>
+    </div>
+    <div class="fine">※ 馬名・騎手名・レース名は架空です。コース形状は実在の競馬場の諸元を参考にしています。</div>
+  </div>
+</section>
+
+<!-- ============ レース選択 ============ -->
+<section id="scr-select" class="screen hidden">
+  <div class="panel wide">
+    <div class="panel-head"><h2>レース選択</h2><button class="btn small" data-back="title">戻る</button></div>
+    <div id="race-list" class="race-list"></div>
+  </div>
+</section>
+
+<!-- ============ 出馬表 ============ -->
+<section id="scr-entry" class="screen hidden">
+  <div class="panel wide entry">
+    <div class="panel-head">
+      <h2 id="entry-title"></h2>
+      <button class="btn small" data-back="select">戻る</button>
+    </div>
+    <div class="entry-grid">
+      <div class="cond-box">
+        <div id="cond-info"></div>
+        <div class="diff">
+          <span>難易度</span>
+          <label><input type="radio" name="diff" value="0">新人</label>
+          <label><input type="radio" name="diff" value="1" checked>中堅</label>
+          <label><input type="radio" name="diff" value="2">名手</label>
+        </div>
+        <div id="pick-info" class="pick-info">騎乗する馬を出馬表から選んでください。</div>
+        <button class="btn primary" id="btn-go" disabled>この馬で出走する</button>
+      </div>
+      <div class="table-wrap"><table id="entry-table"></table></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 発走前 ============ -->
+<section id="scr-intro" class="screen hidden passthru">
+  <div class="intro-band">
+    <div id="intro-grade" class="intro-grade"></div>
+    <div id="intro-name" class="intro-name"></div>
+    <div id="intro-sub" class="intro-sub"></div>
+  </div>
+  <button class="btn small skip" id="btn-skip">スキップ ▶</button>
+</section>
+
+<!-- ============ レースHUD ============ -->
+<section id="hud" class="hidden">
+  <div class="hud-tl">
+    <div class="hud-rank"><span id="h-rank">-</span><small id="h-n"></small></div>
+    <div class="hud-rem"><small>残り</small><span id="h-rem">-</span><small>m</small></div>
+    <div class="hud-time" id="h-time">0:00.0</div>
+    <div class="hud-loc" id="h-loc"></div>
+  </div>
+  <div class="hud-order" id="h-order"></div>
+  <div class="hud-tr"><canvas id="minimap" width="220" height="150"></canvas><div class="wx" id="h-wx"></div></div>
+  <div class="caption" id="h-cap"></div>
+  <div class="toast" id="h-toast"></div>
+  <div class="gate-msg hidden" id="h-gate"></div>
+
+  <div class="hud-bottom">
+    <div class="gauge-box">
+      <div class="speed"><span id="h-spd">0.0</span><small>km/h</small><em id="h-lap"></em></div>
+      <div class="bar spd"><i id="b-spd"></i><b id="b-guide"></b></div>
+      <div class="row"><label>スタミナ</label><div class="bar sta"><i id="b-sta"></i></div><span id="h-feel" class="feel"></span></div>
+      <div class="row"><label>折り合い</label><div class="bar ar"><i id="b-ar"></i></div><span id="h-ar" class="feel"></span></div>
+      <div class="badges" id="h-badges"></div>
+    </div>
+    <div class="whip-box">
+      <div class="ring" id="h-ring"><i></i></div>
+      <div class="whip-n">ムチ <b id="h-whip">0</b></div>
+      <div class="lead hidden" id="h-lead">手前替え！</div>
+    </div>
+  </div>
+
+  <!-- タッチ操作 -->
+  <div class="touch" id="touch">
+    <div class="t-left">
+      <button data-k="left">◀</button><button data-k="right">▶</button>
+    </div>
+    <div class="t-right">
+      <button data-k="lead" class="t-s">手前</button>
+      <button data-k="up" class="t-up">追う</button>
+      <button data-k="whip" class="t-whip">ムチ</button>
+      <button data-k="down" class="t-s">抑える</button>
+    </div>
+  </div>
+  <div class="hud-btns"><button id="btn-cam">視点</button><button id="btn-pause">Ⅱ</button></div>
+</section>
+
+<!-- ============ 一時停止 ============ -->
+<section id="scr-pause" class="screen hidden dim">
+  <div class="panel">
+    <h2>一時停止</h2>
+    <div class="btn-col">
+      <button class="btn primary" id="btn-resume">レースに戻る</button>
+      <button class="btn" id="btn-retire">レースをやめる</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 結果 ============ -->
+<section id="scr-result" class="screen hidden dim">
+  <div class="panel wide result">
+    <div class="panel-head"><h2 id="res-title"></h2><div id="res-lamp" class="lamp"></div></div>
+    <div class="res-grid">
+      <div>
+        <div id="res-head" class="res-head"></div>
+        <div id="res-review" class="review"></div>
+        <div class="btn-row">
+          <button class="btn primary" id="btn-again">同じ条件で再戦</button>
+          <button class="btn" id="btn-next">レース選択へ</button>
+        </div>
+      </div>
+      <div class="table-wrap"><table id="res-table"></table><div id="res-laps" class="laps"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ マニュアル ============ -->
+<section id="scr-how" class="screen hidden dim">
+  <div class="panel wide how">
+    <div class="panel-head"><h2>騎乗マニュアル</h2><button class="btn small" id="btn-how-close">閉じる</button></div>
+    <div class="how-body">
+      <h3>操作</h3>
+      <table class="keys">
+        <tr><th>↑ / W</th><td>追う(加速)。離すと「持ったまま」で今の速度を維持</td></tr>
+        <tr><th>↓ / S</th><td>抑える(減速)。掛かった馬を力で抑えるとスタミナを余計に消耗</td></tr>
+        <tr><th>← → / A D</th><td>進路を左右へ。内ラチ沿いは最短距離、外は距離ロス</td></tr>
+        <tr><th>SPACE</th><td>ゲートが開いた瞬間に押してスタート / レース中はムチ</td></tr>
+        <tr><th>SHIFT / E</th><td>手前替え(最後の直線に入った直後に)</td></tr>
+        <tr><th>C / P</th><td>視点切替 / 一時停止</td></tr>
+      </table>
+      <p class="note">スマートフォンは画面下のボタンで操作できます。</p>
+      <h3>勝つための技術</h3>
+      <ul>
+        <li><b>スタート</b> ― ゲートが開いた瞬間に反応。早押しは馬があおって出遅れます。</li>
+        <li><b>ペース配分</b> ― スタミナは「速く走るほど加速度的に」減ります。前半に飛ばすと直線で脚が止まり、溜めすぎると届きません。<b>手応え</b>表示とラップを読んでください。</li>
+        <li><b>折り合い</b> ― 気性の激しい馬は序盤やスローペース、1周目スタンド前の歓声で掛かります。<b>前に馬を置いて壁を作る</b>と落ち着きます。</li>
+        <li><b>スリップストリーム</b> ― 他馬の真後ろは風の抵抗が減りスタミナを温存できます。向かい風の日ほど効果大。ただし<b>前が壁</b>になって抜け出せない危険と表裏一体。</li>
+        <li><b>コース取り</b> ― コーナーの外を回ると1頭分(約1m)外につき半周で約3mのロス。速度を上げすぎると遠心力で外に膨れます。開催が進んだ馬場は内が荒れて伸びません。</li>
+        <li><b>坂</b> ― 上り坂は消耗が激しく、下り坂は勝手に速度が上がります。坂の手前で脚を使い切らないこと。</li>
+        <li><b>手前替え</b> ― 直線入口でタイミングよく行うと、疲れていない脚に切り替わりもうひと伸びします。</li>
+        <li><b>ムチ</b> ― 馬の完歩(リングが光る瞬間)に合わせると効果大。使うほど反応は鈍り、早すぎるムチは無駄打ちになります。</li>
+        <li><b>斜行</b> ― 後ろの馬の進路を十分な間隔なく塞ぐと審議の対象。降着になります。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 設定 ============ -->
+<section id="scr-opt" class="screen hidden dim">
+  <div class="panel">
+    <div class="panel-head"><h2>サウンド設定</h2><button class="btn small" id="btn-opt-close">閉じる</button></div>
+    <div class="opts">
+      <label><input type="checkbox" id="o-music" checked> BGM</label>
+      <label><input type="checkbox" id="o-racebgm" checked> レース中のBGM(オフで場内の音のみ)</label>
+      <label><input type="checkbox" id="o-sfx" checked> 効果音・歓声</label>
+      <label><input type="checkbox" id="o-voice" checked> 実況の読み上げ(端末の音声合成)</label>
+    </div>
+  </div>
+</section>
+
+<div id="loading" class="loading hidden"><div><div class="spin"></div><span id="loading-text">準備中…</span></div></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

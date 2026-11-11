@@ -81,7 +81,7 @@ export class Track {
 
   // 走破距離 → ワールド座標
   at(s, d, o) {
-    if (s < this.chute) {
+    if (this.chute > 0 && s < this.chute) {
       o = this.point(this.joinU, d, o);
       const back = this.chute - s;
       o.x -= o.hx * back; o.z -= o.hz * back; o.k = 0; o.slope = 0;
@@ -92,7 +92,7 @@ export class Track {
   uOf(s) { let u = (this.u0 + s) % this.lap; if (u < 0) u += this.lap; return u; }
   // 曲率 (0=直線)
   curvAt(s) {
-    if (s < this.chute) return 0;
+    if (this.chute > 0 && s < this.chute) return 0;
     const u = this.uOf(s);
     return (u < this.L || (u >= this.half && u < this.half + this.L)) ? 0 : 1 / this.R;
   }

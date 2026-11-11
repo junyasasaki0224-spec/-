@@ -16,6 +16,12 @@ const STYLE_F = [0.985, 0.981, 0.976, 0.971];
 const STYLE_EARLY = [1.1, 0.55, 0.0, -0.35];
 const STYLE_KICK = [0, 520, 620, 680];
 
+// 有酸素速度からの超過 ex[m/s] に対する毎秒のスタミナ消費
+function burn(ex) {
+  if (ex <= 0) return BASE;
+  const hi = ex - 3.2;
+  return BASE + K * ex * Math.sqrt(ex) + (hi > 0 ? 0.6 * hi * hi : 0);
+}
 function derive(h) {
   const c = h.cond.k;
   return {
@@ -70,10 +76,10 @@ export class Race {
         ahead: null, aheadGap: 1e9, blocked: 0, fight: 0, penNow: 0, penAvg: GO_PEN[this.going] * (1.5 - h.mud * 0.01) - 0.05,
         vCap: p.vTop, started: false, startDelay: 0, fin: false, ft: Infinity, rank: i + 1,
         whipN: 0, whipT: 0, whipQ: 0, whipCd: 0, whipAnim: 0, leadQ: 0, leadDone: false, pushing: 0,
-        dist: 0, t600: 0, last3f: 0, duel: false, kick: false, spent: false,
+        dist: 0, debt: 0, bumpCd: 0, t600: 0, last3f: 0, duel: false, kick: false, spent: false,
         ai: { lane: 0, tLane: this.rng() * 0.2, target: 0, bias: h.bias * biasMul, nextWhip: 0, leadAt: (this.rng() - 0.3) * 120 * (1.3 - h.jskill), yielded: false },
         // 騎乗内容の記録 (プレイヤー評価用)
-        m: { arSum: 0, arT: 0, draftT: 0, cruiseT: 0, emptyRem: -1, bumps: 0, foul: 0, victim: -1, whipGood: 0, blockedT: 0, startDelay: 0, startKind: '', leadKind: '', eFin: 0 },
+        m: { arSum: 0, arT: 0, draftT: 0, cruiseT: 0, emptyRem: -1, bumps: 0, foul: 0, victim: -1, whipGood: 0, blockedT: 0, ang: 0, startDelay: 0, startKind: '', leadKind: '', eFin: 0 },
       };
     });
     this.order = this.runners.slice();
@@ -130,7 +136,7 @@ export class Race {
   }
   drain(r, v) {
     const ex = v - (r.p.vAer - r.penNow);
-    return BASE + (ex > 0 ? K * ex * Math.sqrt(ex) : 0);
+    return burn(ex);
   }
   // 残りスタミナをちょうど使い切る一定速度
   vEven(r, rem, E) {
@@ -140,7 +146,7 @@ export class Race {
     let lo = va - 1.5, hi = r.p.vTop + 0.6;
     for (let i = 0; i < 13; i++) {
       const v = (lo + hi) / 2, ex = v - va;
-      if ((BASE + (ex > 0 ? K * ex * Math.sqrt(ex) : 0)) * rem / v > E) hi = v; else lo = v;
+      if (burn(ex) * rem / v > E) hi = v; else lo = v;
     }
     return lo;
   }
@@ -152,7 +158,7 @@ export class Race {
     if (r.whipT > 0) v *= 1 + 0.011 * r.whipQ;
     if (r.leadQ > 0) v *= 1 + 0.004 * r.leadQ;
     if (r.duel) v *= 1 + h.gut * 0.00011;
-    if (r.E <= 0) v = Math.min(v, p.vAer + 0.6 - r.penNow + (h.gut - 50) * 0.008);
+    if (r.E <= 0) v = Math.min(v, p.vAer + 0.6 - r.penNow + (h.gut - 50) * 0.008 - Math.min(3, r.debt * 0.14));
     return v;
   }
 
@@ -399,16 +405,18 @@ export class Race {
               const want = j.d + side * LANE_W;
               if (Math.abs(r.lat) > 0.7 && Math.abs(r.d - j.d) >= LANE_W - 0.02 && (r.lat > 0) !== (side > 0)) {
                 // 接触
-                r.v -= 0.12; j.v -= 0.08; j.ar = Math.min(1, j.ar + 0.06 * j.p.hot); r.ar = Math.min(1, r.ar + 0.08 * r.p.hot);
+                if (r.bumpCd <= 0) {
+                r.bumpCd = 0.9; r.v -= 0.12; j.v -= 0.08; j.ar = Math.min(1, j.ar + 0.06 * j.p.hot); r.ar = Math.min(1, r.ar + 0.08 * r.p.hot);
                 if (r.isPlayer) { r.m.bumps++; this.events.push({ type: 'bump', i: j.i }); }
+                }
                 r.lat = 0;
               }
               nd = Math.abs(want - nd) < 0.5 ? want : nd + clamp(want - nd, -2.5 * dt, 2.5 * dt);
             }
-          } else if (r.isPlayer && ds >= LEN && ds < LEN + 2.0 && Math.abs(r.lat) > 0.4) {
+          } else if (r.isPlayer && ds >= LEN && ds < LEN + 1.5 && Math.abs(r.lat) > 0.4) {
             // 斜行: 後続の進路に十分な間隔なく入った
-            if (Math.abs(r.d - j.d) >= LANE_W && Math.abs(nd - j.d) < LANE_W && j.v > r.v - 0.3 && !j.fin) {
-              const sev = (LEN + 2.0 - ds) / 2.0 * (rem(D, r) < 600 ? 2 : 1) * (1 + Math.max(0, j.v - r.v));
+            if (Math.abs(r.d - j.d) >= LANE_W && Math.abs(nd - j.d) < LANE_W && j.v > r.v - 0.1 && !j.fin) {
+              const sev = (LEN + 1.5 - ds) / 1.5 * (rem(D, r) < 600 ? 2 : 1) * (1 + Math.max(0, j.v - r.v));
               r.m.foul += sev; r.m.victim = j.i;
               j.v = Math.min(j.v, r.v - 0.35); j.ar = Math.min(1, j.ar + 0.1);
               this.events.push({ type: 'foul', i: j.i, sev });
@@ -421,6 +429,7 @@ export class Race {
       const vm = (v0 + r.v) * 0.5;
       r.s += vm * dt / (1 + r.d * r.k);
       r.dist += vm * dt;
+      if (r.isPlayer && !r.fin) r.m.ang += vm * dt * r.k / (1 + r.d * r.k);
       r.phase += dt * (0.9 + r.v * 0.085);
       if (r.whipT > 0) r.whipT -= dt;
       if (r.whipCd > 0) r.whipCd -= dt;
@@ -428,6 +437,8 @@ export class Race {
       // スタミナ
       if (!r.fin) {
         r.E -= (this.drain(r, vm) + (a > 0 ? 0.035 * a * vm : 0)) * dt;
+        if (r.E <= 0) r.debt += dt;
+        if (r.bumpCd > 0) r.bumpCd -= dt;
         if (r.E <= 0) { r.E = 0; if (!r.spent) { r.spent = true; if (r.m.emptyRem < 0) r.m.emptyRem = D - r.s; if (r.isPlayer) this.events.push({ type: 'empty', rem: D - r.s }); } }
         else if (r.E > 3) r.spent = false;
         const pn = this.pen(r, Math.max(r.v, 8)) - (r.slope > 0 ? r.slope * 62 * (1.35 - r.h.pow * 0.007) : r.slope * 22);
