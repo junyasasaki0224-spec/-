@@ -535,10 +535,12 @@ function audioFrame() {
   const effort = clamp((p.v - 13) / 6, 0, 1) * 0.5 + (p.pushing ? 0.3 : 0) + (p.E < 15 ? 0.3 : 0);
   sound.update({
     crowd: (race.state === 'gate' ? 0.75 : 0.3 + build * 0.3) * (0.5 + nearStand * 0.5) + hot * 0.25,
-    roar: hot * (0.45 + nearStand * 0.55) * (1 + (race.order.length > 1 && race.order[0].s - race.order[1].s < 2.5 ? 0.35 : 0)) + build * 0.12 * nearStand,
+    // レース中は場内の歓声が途切れず続き、ゴールに近づくほど高まる (スタンドから遠い所では遠鳴り)
+    roar: (race.state === 'run' && !race.finishOrder.length ? (0.24 + build * 0.36) * (0.55 + 0.45 * nearStand) : 0)
+      + hot * (0.45 + nearStand * 0.55) * (1 + (race.order.length > 1 && race.order[0].s - race.order[1].s < 2.5 ? 0.35 : 0)),
     wind: clamp(p.v / 19, 0, 1), rain: cond.weather >= 2 ? (cond.weather === 3 ? 1 : 0.5) : 0,
     rumble: 0, speed: p.fin && p.v < 6 ? 0 : p.v, phase: p.phase, wet: cond.going >= 2, effort, near,
-    echo: nearStand === 1 ? 1 : 0, gate: race.state === 'gate',
+    echo: nearStand === 1 ? 1 : 0, gate: race.state === 'gate', standPan: -tr.t * 0.5 * (nearStand === 1 ? 1 : 0.3), // 歓声はスタンドのある側から
   });
 }
 function frame(now) {
