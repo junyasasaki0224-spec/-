@@ -1,4 +1,5 @@
 :root {
+  color-scheme: dark;
   --gold: #e8c66a; --gold2: #b8923a; --ink: #0c1420; --panel: rgba(12, 20, 32, 0.86); --line: rgba(255, 255, 255, 0.14);
   --txt: #eef2f6; --sub: #9fb0c2; --good: #6fe08a; --warn: #ffb347; --bad: #ff6b5b;
 }
@@ -165,6 +166,7 @@ body.is-touch .touch { display: block; }
 body.is-touch .hud-bottom { bottom: auto; top: 10px; left: 50%; transform: translateX(-50%) scale(0.82); transform-origin: top center; }
 body.is-touch .caption { top: 118px; bottom: auto; max-width: 70vw; font-size: 12px; }
 body.is-touch .hud-order { display: none; }
+body.is-touch .toast { top: 46%; font-size: 20px; }
 body.is-touch .hud-tl { transform: scale(0.82); transform-origin: top left; }
 body.is-touch .hud-tr { transform: scale(0.82); transform-origin: top right; }
 body.is-touch .hud-btns { top: 118px; }
