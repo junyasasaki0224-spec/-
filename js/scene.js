@@ -5,14 +5,13 @@
 // ============================================================
 import * as THREE from '../vendor/three.module.min.js';
 import { mulberry32, clamp, lerp, WAKU_COLORS, WAKU_TEXT, GOING, WEATHER } from './data.js';
-import { Horse3D, loadHorseModel } from './horse3d.js';
-import { GLTFLoader } from '../vendor/GLTFLoader.js';
+import { Horse3D, loadHorseModel, loadGLB } from './horse3d.js';
 
 // Blenderで生成したモデル(馬・騎手・樹木)の読み込み
 const TREES = {};
 export async function loadAssets() {
   await loadHorseModel();
-  const gltf = await new GLTFLoader().loadAsync(new URL('../assets/trees.glb', import.meta.url).href);
+  const gltf = await loadGLB('trees');
   gltf.scene.traverse((o) => {
     if (!o.isMesh) return;
     const g = o.geometry; g.userData.shared = true;

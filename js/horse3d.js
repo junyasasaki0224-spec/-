@@ -8,10 +8,23 @@ import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import * as SkeletonUtils from '../vendor/SkeletonUtils.js';
 import { WAKU_COLORS, WAKU_TEXT, clamp, mulberry32 } from './data.js';
 
+// assets/<name>.glb を読む。.glb を配信できないホスティングでは base64 テキスト版 (<name>.b64.txt) にフォールバック
+export async function loadGLB(name) {
+  const base = new URL('../assets/' + name, import.meta.url).href;
+  let buf = null;
+  try { const r = await fetch(base + '.glb'); if (r.ok) buf = await r.arrayBuffer(); } catch (e) { /* フォールバックへ */ }
+  if (!buf || new Uint8Array(buf, 0, 4).join() !== '103,108,84,70') { // 先頭が "glTF" でなければ別形式を試す
+    const r = await fetch(base + '.b64.txt'); if (!r.ok) throw new Error(name + ' を読み込めません');
+    const bin = atob((await r.text()).trim()), u8 = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    buf = u8.buffer;
+  }
+  return new Promise((res, rej) => new GLTFLoader().parse(buf, '', res, rej));
+}
 let TEMPLATE = null;
 export async function loadHorseModel() {
   if (TEMPLATE) return;
-  const gltf = await new GLTFLoader().loadAsync(new URL('../assets/horse.glb', import.meta.url).href);
+  const gltf = await loadGLB('horse');
   TEMPLATE = gltf.scene;
   TEMPLATE.updateMatrixWorld(true);
 }
