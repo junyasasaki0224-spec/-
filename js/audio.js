@@ -8,6 +8,8 @@
 // ============================================================
 import { synthHoof, synthBreath, synthTack, GALLOP_BEATS, GALLOP_ACCENT, GALLOP_RATE } from './hoof.js';
 import { synthCrowd, CROWD_SR } from './crowd.js';
+import { synthPhrase, SHOUTS, CHATS } from './voice.js';
+const VOICE_SR = 22050;
 const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
 
 export class Sound {
@@ -106,9 +108,13 @@ export class Sound {
     this.crowdPan = c.createStereoPanner ? c.createStereoPanner() : c.createGain(); this.crowdPan.connect(this.crowdBus);
     this.crowdLoops = {};
     for (const k of ['murmur', 'roar']) { const g = c.createGain(); g.gain.value = 0; g.connect(this.crowdPan); this.crowdLoops[k] = { g, src: null }; }
-    this.voice = { swell: [], gasp: [] };
+    this.voice = { swell: [], gasp: [], shout: [], chat: [] };
     const jobs = [['murmur', [11, 23], 8], ['roar', [31, 43], 8], ['swell', [51, 63], 6], ['gasp', [91, 97], 2.5], ['swell', [71, 83], 6]];
+    // 一人ひとりの掛け声 (男女・声の高さを変えて) と話し声
+    SHOUTS.forEach(([ph], i) => { for (let v = 0; v < 2; v++) jobs.push(['shout', [1000 + i * 7 + v], 0, ph, { female: (i + v) % 3 === 2, effort: 0.85 + ((i * 3 + v) % 4) * 0.05 }]); });
+    CHATS.forEach(([ph], i) => { for (let v = 0; v < 2; v++) jobs.push(['chat', [2000 + i * 7 + v], 0, ph, { female: (i + v) % 2 === 0, effort: 0.15 + v * 0.1 }]); });
     const done = (kind, chans) => {
+      if (kind === 'shout' || kind === 'chat') { const b = c.createBuffer(1, chans[0].length, VOICE_SR); b.getChannelData(0).set(chans[0]); this.voice[kind].push(b); return; }
       const b = c.createBuffer(chans.length, chans[0].length, CROWD_SR);
       chans.forEach((ch, i) => b.getChannelData(i).set(ch));
       if (kind === 'murmur' || kind === 'roar') {
@@ -119,13 +125,13 @@ export class Sound {
     let worker = null;
     try { worker = new Worker(new URL('./sfx-worker.js', import.meta.url), { type: 'module' }); } catch (e) { worker = null; }
     const fallback = () => { // 裏のスレッドが使えない環境: 少しずつメインで作る
-      for (const [kind, seeds, dur] of jobs) if (!this.crowdDone[kind + seeds[0]]) this.bankJobs.push([null, () => { done(kind, seeds.map((sd) => synthCrowd(CROWD_SR, sd, kind, dur))); this.crowdDone[kind + seeds[0]] = 1; return null; }]);
+      for (const [kind, seeds, dur, phrase, opt] of jobs) if (!this.crowdDone[kind + seeds[0]]) this.bankJobs.push([null, () => { done(kind, phrase ? [synthPhrase(VOICE_SR, seeds[0], phrase, opt)] : seeds.map((sd) => synthCrowd(CROWD_SR, sd, kind, dur))); this.crowdDone[kind + seeds[0]] = 1; return null; }]);
     };
     this.crowdDone = {};
     if (worker) {
       worker.onmessage = (e) => { const [kind, seeds] = jobs[e.data.id]; done(kind, e.data.chans); this.crowdDone[kind + seeds[0]] = 1; };
       worker.onerror = () => { worker.terminate(); fallback(); };
-      jobs.forEach(([kind, seeds, dur], id) => worker.postMessage({ id, sr: CROWD_SR, kind, seeds, dur }));
+      jobs.forEach(([kind, seeds, dur, phrase, opt], id) => worker.postMessage(phrase ? { id, type: 'phrase', sr: VOICE_SR, seed: seeds[0], phrase, opt } : { id, sr: CROWD_SR, kind, seeds, dur }));
     } else fallback();
   }
   // ファンファーレ専用の経路 (スキップ時にまとめて止められるように)
@@ -327,6 +333,18 @@ export class Sound {
       sr.connect(fl); fl.connect(g); g.connect(this.crowdBus); sr.start(t); sr.stop(t + 1.8);
     }
   }
+  // 観客ひとりの掛け声: 近い人ははっきり、遠い人はこもって小さく。スタンドの方向に散らばる
+  shout(t, list = this.voice && this.voice.shout, level = 1, out) {
+    if (!list || !list.length) return;
+    const c = this.ctx, near = Math.random() < 0.22, d = near ? 0 : Math.random();
+    const src = c.createBufferSource(); src.buffer = list[(Math.random() * list.length) | 0]; src.playbackRate.value = 0.93 + Math.random() * 0.14;
+    const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = near ? 7000 : 4200 - d * 2600;
+    const g = c.createGain(); g.gain.value = level * (near ? 0.85 + Math.random() * 0.3 : 0.22 + (1 - d) * 0.45);
+    src.connect(f); f.connect(g);
+    let node = g;
+    if (c.createStereoPanner) { const p = c.createStereoPanner(); p.pan.value = Math.max(-1, Math.min(1, this.standPan * 1.2 + (Math.random() - 0.5) * 1.1)); g.connect(p); node = p; }
+    node.connect(out || this.crowdBus); src.start(Math.max(c.currentTime, t));
+  }
   // 声の素材を鳴らす。dur が素材より短いときは途中で引かせる
   playVoice(list, t, vol, dur, out = this.crowdPan) {
     const c = this.ctx, src = c.createBufferSource(), g = c.createGain();
@@ -345,7 +363,8 @@ export class Sound {
   cheerAt(t, amount, dur, out) {
     if (!this.ctx || amount <= 0) return;
     if (this.voice && this.voice.swell.length) { // 観客の声で沸く + 手拍子と指笛
-      this.playVoice(this.voice.swell, t, 1.5 * amount, dur, out);
+      this.playVoice(this.voice.swell, t, 1.3 * amount, dur, out);
+      for (let i = 0; i < 2 + 4 * amount; i++) this.shout(t + Math.random() * Math.min(1.8, dur * 0.5), this.voice.shout, 1, out);   // あちこちで叫ぶ
       for (let i = 0; i < 10 * amount; i++) this.clap(t + 0.3 + Math.random() * dur * 0.7, 0.05 + Math.random() * 0.06, out || this.crowdBus);
       for (let i = 0; i < 3 * amount; i++) { const f0 = 1700 + Math.random() * 600; this.tone('sine', f0, f0 * 1.45, t + 0.4 + Math.random() * dur * 0.6, 0.35, 0.04, out || this.crowdBus); }
       return;
@@ -366,13 +385,19 @@ export class Sound {
     if (!this.ctx || this.ctx.state !== 'running') return;
     const t = this.ctx.currentTime, a = this.amb, on = this.sfxOn ? 1 : 0, set = (n, v) => n.g.gain.setTargetAtTime(v * on, t, 0.3);
     const rr = Math.min(1.5, o.roar);
+    const dtA = Math.min(0.25, Math.max(0, t - (this.lastUpdT ?? t))); // 前回の更新からの時間
     const voiced = this.crowdLoops && this.crowdLoops.roar.src ? 1 : 0, nk = voiced ? 0.3 : 1;
     set(a.murmur, (o.crowd * 0.5 + rr * 0.1) * nk); set(a.crowd, (o.crowd * 0.32 + rr * 0.34) * nk); set(a.roar, rr * 0.46 * nk);
     if (this.crowdLoops) {
       this.crowdLoops.murmur.g.gain.setTargetAtTime(on * Math.min(1.3, o.crowd * 1.4) * (1 - Math.min(0.6, rr * 0.5)), t, 0.4);
-      this.crowdLoops.roar.g.gain.setTargetAtTime(on * Math.min(2.2, rr * 1.8 + Math.max(0, o.crowd - 0.45) * 0.7), t, 0.35);
+      this.crowdLoops.roar.g.gain.setTargetAtTime(on * Math.min(1.8, rr * 1.4 + Math.max(0, o.crowd - 0.45) * 0.6), t, 0.35);
       this.hoofBus.gain.setTargetAtTime(this.vol.sfx * (1 - 0.18 * Math.min(1, rr)), t, 0.4); // 大歓声の中では蹄音を少し引く
       if (this.crowdPan.pan) this.crowdPan.pan.setTargetAtTime(o.standPan || 0, t, 0.6);
+      this.standPan = o.standPan || 0;
+      // 掛け声: レース中は歓声に合わせて増え、直線では次々に上がる。発走前やゲート前は話し声
+      const sRate = rr > 0.05 ? 0.5 + 4.5 * Math.min(1.4, rr) : 0, cRate = rr < 0.3 ? 1.6 * o.crowd : 0;
+      if (dtA > 0 && Math.random() < sRate * dtA) this.shout(t + Math.random() * 0.05, this.voice.shout, 0.85 + 0.25 * Math.min(1, rr));
+      if (dtA > 0 && Math.random() < cRate * dtA) this.shout(t + Math.random() * 0.05, this.voice.chat, 0.55);
     }
     set(a.wind, o.wind * 0.2); set(a.rain, o.rain * 0.16);
     a.wind.f.frequency.setTargetAtTime(280 + o.wind * 560, t, 0.3);
@@ -384,7 +409,6 @@ export class Sound {
       if (Math.random() < 0.12) { const f0 = 1600 + Math.random() * 700; this.tone('sine', f0, f0 * 1.4, t, 0.3, 0.03 * o.roar, this.crowdBus); }
     }
     // ---- 馬の音: フレームの間に来た着地を、正確な時刻に並べ直して鳴らす ----
-    const dtA = Math.min(0.25, Math.max(0, t - (this.lastUpdT ?? t))); this.lastUpdT = t;
     const LAT = 0.035, bank = this.bank;
     const hits = (lp, ph, beats, cb) => {
       if (!(ph > lp) || ph - lp > 1.5) return;               // 巻き戻り・長い中断のあとは鳴らさず同期し直す
@@ -419,6 +443,7 @@ export class Sound {
       if (h.dist < 4 && h.v > 8) hits(lp, h.phase, [0.42], (i, tt) => this.playBuf(bank.breath, tt, 0.09, h.side, 0.9 + (h.id % 5) * 0.04));
     }
     set(a.rumble, Math.min(0.75, Math.sqrt(energy) * 0.55));
+    this.lastUpdT = t;
     // ゲートの中: 落ち着かない馬が扉を蹴る・足踏みする・鼻を鳴らす
     if (o.gate && dtA > 0) {
       if (Math.random() < dtA * 1.6) this.playBuf(bank.dry, t + 0.01, 0.12 + Math.random() * 0.12, (Math.random() - 0.5) * 1.6, 1.1, 2500);
