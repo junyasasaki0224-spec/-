@@ -1,0 +1,8 @@
+{
+  "name": "Minato Grand Prix",
+  "tree": {
+    "$className": "DataModel",
+    "ServerScriptService": { "Race": { "$path": "src/Race.server.lua" } },
+    "StarterPlayer": { "StarterPlayerScripts": { "Controls": { "$path": "src/Controls.client.lua" } } }
+  }
+}
