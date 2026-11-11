@@ -5,7 +5,8 @@
 // ============================================================
 import * as THREE from '../vendor/three.module.min.js';
 import { mulberry32, clamp, lerp, WAKU_COLORS, WAKU_TEXT, GOING, WEATHER } from './data.js';
-import { Horse3D } from './horse3d.js';
+import { Horse3D, loadHorseModel } from './horse3d.js';
+export { loadHorseModel };
 
 const SEASON = {
   spring: { turfA: '#4f9a3c', turfB: '#5dab48', grass: 0x5a9a45, trees: [0xf4b6cc, 0xf7c6d8, 0xf1a7c2, 0xf9d3e0], green: [0x5c9a48, 0x4d8a3e], hill: 0x7ea088, crowd: [0xe8e8e8, 0xf2c0d0, 0x8fb8e8, 0xf0e0a0, 0x444444, 0xd05050] },
@@ -69,6 +70,8 @@ export class Venue {
     this.canvas = canvas;
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.camera = new THREE.PerspectiveCamera(56, 1, 0.3, 16000);
     this.scene = new THREE.Scene();
     this.camPos = new THREE.Vector3(); this.camLook = new THREE.Vector3();
@@ -88,6 +91,7 @@ export class Venue {
       if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose();
       if (o.material) for (const m of Array.isArray(o.material) ? o.material : [o.material]) { if (m.map) m.map.dispose(); m.dispose(); }
     });
+    if (this.envRT) { this.envRT.dispose(); this.envRT = null; }
     this.scene = new THREE.Scene(); this.horses = [];
   }
 
@@ -121,6 +125,19 @@ export class Venue {
     sc.fog = new THREE.Fog(hor.clone().lerp(top, 0.08), 200, dusk ? 5200 : sky.fog);
     A(new THREE.HemisphereLight(dusk ? 0xffd6b0 : 0xffffff, new THREE.Color(S.grass).multiplyScalar(0.6), dusk ? 1.5 : sky.hemi));
     const sun = A(new THREE.DirectionalLight(dusk ? 0xffa860 : sky.sun, dusk ? 2.6 : sky.sunI)); sun.position.copy(sunDir).multiplyScalar(100);
+    // 影: 注目馬の周囲だけを高解像度で落とす
+    sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+    const scam = sun.shadow.camera; scam.left = -34; scam.right = 34; scam.top = 34; scam.bottom = -34; scam.near = 5; scam.far = 320;
+    sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.04;
+    A(sun.target); this.sun = sun;
+    // 空を環境マップにして毛艶・勝負服・ゴーグルに映り込ませる
+    {
+      const pm = new THREE.PMREMGenerator(this.renderer), es = new THREE.Scene();
+      es.add(new THREE.Mesh(new THREE.SphereGeometry(100, 24, 12), skyMat));
+      const gd = new THREE.Mesh(new THREE.CircleGeometry(100, 24), new THREE.MeshBasicMaterial({ color: new THREE.Color(S.grass).multiplyScalar(0.55) }));
+      gd.rotation.x = -Math.PI / 2; gd.position.y = -0.5; es.add(gd);
+      this.envRT = pm.fromScene(es, 0, 0.1, 500); sc.environment = this.envRT.texture; pm.dispose();
+    }
 
     // 雲
     const cloudTex = ctex(128, 64, (x, w, h) => {
@@ -162,10 +179,10 @@ export class Venue {
     }, [1, 1]);
     turfTex.wrapT = THREE.ClampToEdgeWrapping;
     const turfSec = []; for (let j = 0; j <= 6; j++) turfSec.push([-0.5 + ((W + 1) * j) / 6, 0, j / 6]);
-    A(new THREE.Mesh(ribbon(tr, turfSec, { step: 4, uvLen: 44 }), lam(0xffffff, { map: turfTex })));
+    A(new THREE.Mesh(ribbon(tr, turfSec, { step: 4, uvLen: 44 }), lam(0xffffff, { map: turfTex }))).receiveShadow = true;
     const grassM = lam(new THREE.Color(S.grass).multiplyScalar(wet));
     const DI = 9, DO = 33; // 内側ダートコース
-    A(new THREE.Mesh(ribbon(tr, [[-DI, 0], [-0.5, 0]], { step: 6 }), grassM));
+    A(new THREE.Mesh(ribbon(tr, [[-DI, 0], [-0.5, 0]], { step: 6 }), grassM)).receiveShadow = true;
     const dirtTex = ctex(128, 128, (x, w, h) => {
       x.fillStyle = cond.going >= 2 ? '#8f7654' : '#c8a978'; x.fillRect(0, 0, w, h);
       for (let i = 0; i < 1800; i++) { x.fillStyle = `rgba(${rng() < 0.5 ? '90,60,30' : '240,220,180'},${0.05 + rng() * 0.1})`; x.fillRect(rng() * w, rng() * h, 2, 2); }
@@ -617,8 +634,12 @@ export class Venue {
     // 馬
     for (let i = 0; i < race.runners.length; i++) {
       const r = race.runners[i];
-      tr.at(r.s - 1.5, r.d, g); g.tsign = tr.t;
+      tr.at(r.s - 1.62, r.d, g); g.tsign = tr.t;
       this.horses[i].update(r, g, dt);
+    }
+    if (this.sun) {
+      const fg = (opt.focus || race.player || race.order[0]).geo;
+      this.sun.target.position.set(fg.x, fg.y, fg.z); this.sun.position.copy(this.sunDir).multiplyScalar(150).add(this.sun.target.position);
     }
     // ゲート
     if (this.gate) {
@@ -635,7 +656,8 @@ export class Venue {
       let pos = new THREE.Vector3(), k = 13;
       const mode = opt.cam ?? this.camMode;
       if (mode === 0) { // 後方追尾
-        pos.set(P.x - g.hx * 6.6, P.y + 3.3, P.z - g.hz * 6.6);
+        const back = race.state === 'gate' ? 10.5 : 6.6, up = race.state === 'gate' ? 5.2 : 3.3; // ゲート内は引いた位置から
+        pos.set(P.x - g.hx * back, P.y + up, P.z - g.hz * back);
         look.set(P.x + g.hx * 7, P.y + 1.5, P.z + g.hz * 7);
       } else if (mode === 1) { // 騎手目線
         pos.set(P.x - g.hx * 0.3, P.y + 2.55, P.z - g.hz * 0.3);

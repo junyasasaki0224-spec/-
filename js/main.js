@@ -3,7 +3,7 @@
 // ============================================================
 import { RACES, COURSES, makeField, makeConditions, STYLES, GOING, WEATHER, WAKU_COLORS, WAKU_TEXT, gradeOf, fmtTime, marginText, clamp } from './data.js';
 import { Race } from './sim.js';
-import { Venue } from './scene.js';
+import { Venue, loadHorseModel } from './scene.js';
 import { Sound } from './audio.js';
 
 for (const r of RACES) r.courseObj = COURSES[r.course];
@@ -569,7 +569,8 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && (G.
 
 // ---- 起動 ----
 renderCareer();
-startAttract();
 show('title');
-requestAnimationFrame(frame);
+loading(true, '馬と騎手のモデルを読み込んでいます…');
+loadHorseModel().then(() => { loading(false); startAttract(); requestAnimationFrame(frame); })
+  .catch((e) => { $('loading-text').textContent = 'モデルの読み込みに失敗しました: ' + e.message; });
 window.__game = { G, venue, sound, keys, edge }; // デバッグ・自動テスト用
