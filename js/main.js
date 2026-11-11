@@ -16,7 +16,7 @@ if (isTouch) document.body.classList.add('is-touch');
 const G = {
   mode: 'attract', def: null, horses: null, cond: null, seed: 0, pick: -1, diff: 1,
   race: null, acc: 0, paused: false, introT: 0, introDur: 9, gateT: 0, finT: 0,
-  coachOn: true, capT: 0, lastSay: -10, toastT: 0, hudT: 0, flags: {}, pSplitAt: 0, pSplitT: 0, pLap: 0, feel: null, orderT: 0,
+  coachOn: true, toastT: 0, hudT: 0, flags: {}, pSplitAt: 0, pSplitT: 0, pLap: 0, feel: null, orderT: 0,
 };
 const keys = { up: false, down: false, left: false, right: false };
 const edge = { whip: false, lead: false, go: false };
@@ -160,7 +160,7 @@ function startRace() {
     G.race = new Race({ course: def.courseObj, dist: def.dist, horses: G.horses, cond: G.cond, seed: (Math.random() * 1e9) | 0, playerIdx: G.pick, difficulty: G.diff });
     venue.build(def, G.race, G.cond);
     venue.camMode = 0;
-    G.mode = 'intro'; G.introT = 0; G.acc = 0; G.flags = {}; G.capT = 0; G.lastSay = -10; G.pSplitAt = 200; G.pSplitT = 0; G.pLap = 0; G.paused = false;
+    G.mode = 'intro'; G.introT = 0; G.acc = 0; G.flags = {}; G.pSplitAt = 200; G.pSplitT = 0; G.pLap = 0; G.paused = false;
     G.introDur = Math.max(8.5, sound.fanfare());
     $('intro-grade').textContent = `${def.courseObj.name}  ${def.grade}`;
     $('intro-name').textContent = def.name;
@@ -168,9 +168,8 @@ function startRace() {
     buildMinimap();
     $('h-n').textContent = '/' + def.n;
     $('h-wx').textContent = `${WEATHER[G.cond.weather]}・${GOING[G.cond.going]}　${windText(G.cond)}`;
-    $('h-cap').classList.remove('on'); $('h-toast').classList.remove('on');
+    $('h-toast').classList.remove('on');
     loading(false); show('intro');
-    sound.say(`${def.courseObj.name}、${def.name}。芝${def.dist}メートル、${def.n}頭で争われます。`, true);
   }, 60);
 }
 function toGate() {
@@ -185,14 +184,7 @@ function toGate() {
 }
 
 // ---- 実況 ----
-function say(text, urgent) {
-  const t = performance.now() / 1000;
-  if (!urgent && t - G.lastSay < 2.6) return false;
-  G.lastSay = t; G.capT = 4.2;
-  const c = $('h-cap'); c.textContent = '🎙 ' + text; c.classList.add('on');
-  sound.say(text, urgent);
-  return true;
-}
+function say() { return true; } // 実況(字幕・読み上げ)は廃止。展開は歓声で表現する
 function toast(text, cls) {
   const t = $('h-toast'); t.textContent = text; t.className = 'toast on ' + (cls || ''); G.toastT = 1.5;
 }
@@ -532,20 +524,21 @@ function audioFrame() {
   const nearStand = u >= 0 && u < tr.L ? 1 : 0.22;       // スタンド前は歓声が近い
   const hot = race.state === 'run' && rem < tr.straight + 120 && race.finishOrder.length < 4 ? 1 : 0;
   const build = race.state === 'run' ? clamp(1 - rem / (tr.straight + 500), 0, 1) : 0;   // 直線に向けて徐々に高まる
-  // 周囲の馬: 近い順に5頭まで
+  // 周囲の馬: 近い順に12頭まで (馬群の足音・息づかい)
   const near = [];
   for (const r of race.runners) {
     if (r === p || !r.started) continue;
     const ds = r.s - p.s, dd = r.d - p.d, dist = Math.hypot(ds, dd);
-    if (dist < 16) near.push({ id: r.i, phase: r.phase, dist, side: clamp((dd * (tr.t < 0 ? 1 : -1)) / 4, -1, 1), v: r.v });
+    if (dist < 45) near.push({ id: r.i, phase: r.phase, dist, side: clamp((dd * (tr.t < 0 ? 1 : -1)) / 5, -0.9, 0.9), v: r.fin && r.v < 6 ? 0 : r.v });
   }
-  near.sort((a, b) => a.dist - b.dist); near.length = Math.min(near.length, 5);
+  near.sort((a, b) => a.dist - b.dist); near.length = Math.min(near.length, 12);
   const effort = clamp((p.v - 13) / 6, 0, 1) * 0.5 + (p.pushing ? 0.3 : 0) + (p.E < 15 ? 0.3 : 0);
   sound.update({
     crowd: (race.state === 'gate' ? 0.75 : 0.3 + build * 0.3) * (0.5 + nearStand * 0.5) + hot * 0.25,
     roar: hot * (0.45 + nearStand * 0.55) * (1 + (race.order.length > 1 && race.order[0].s - race.order[1].s < 2.5 ? 0.35 : 0)) + build * 0.12 * nearStand,
     wind: clamp(p.v / 19, 0, 1), rain: cond.weather >= 2 ? (cond.weather === 3 ? 1 : 0.5) : 0,
-    rumble: clamp(near.length / 5, 0, 1) * clamp(p.v / 15, 0, 1), speed: p.fin && p.v < 6 ? 0 : p.v, phase: p.phase, wet: cond.going >= 2, effort, near,
+    rumble: 0, speed: p.fin && p.v < 6 ? 0 : p.v, phase: p.phase, wet: cond.going >= 2, effort, near,
+    echo: nearStand === 1 ? 1 : 0, gate: race.state === 'gate',
   });
 }
 function frame(now) {
@@ -553,7 +546,6 @@ function frame(now) {
   const rawDt = Math.min(1, (now - last) / 1000), dt = Math.min(0.1, rawDt); last = now;
   if (G.paused || !G.race) return;
   const race = G.race;
-  if (G.capT > 0) { G.capT -= dt; if (G.capT <= 0) $('h-cap').classList.remove('on'); }
   if (G.toastT > 0) { G.toastT -= dt; if (G.toastT <= 0) $('h-toast').classList.remove('on'); }
   switch (G.mode) {
     case 'attract': {

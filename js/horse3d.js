@@ -7,6 +7,7 @@ import * as THREE from '../vendor/three.module.min.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import * as SkeletonUtils from '../vendor/SkeletonUtils.js';
 import { WAKU_COLORS, WAKU_TEXT, clamp, mulberry32 } from './data.js';
+import { GALLOP_BEATS } from './hoof.js';
 
 // assets/<name>.glb を読む。.glb を配信できないホスティングでは base64 テキスト版 (<name>.b64.txt) にフォールバック
 export async function loadGLB(name) {
@@ -50,7 +51,7 @@ const H_HIP = [[0, 32], [0.11, 5], [0.22, -30], [0.36, -28], [0.55, 5], [0.78, 4
 const H_FOLD = [[0, 12], [0.1, 22], [0.22, 2], [0.4, 62], [0.58, 88], [0.8, 48], [0.94, 15], [1, 12]];
 const H_FET = [[0, 5], [0.1, 35], [0.2, 12], [0.32, -45], [0.6, -45], [0.88, -8], [1, 5]];
 // 着地順 (右手前): 左後 → 右後 → 左前 → 右前 → 空中期
-const OFF = { HL: 0.0, HR: 0.09, FL: 0.37, FR: 0.48 };
+const OFF = { HL: GALLOP_BEATS[0], HR: GALLOP_BEATS[1], FL: GALLOP_BEATS[2], FR: GALLOP_BEATS[3] }; // 蹄音と同じ位相
 
 const numTexCache = {};
 function numTex(num, waku) {
@@ -179,13 +180,13 @@ export class Horse3D {
       }
     }
     // 体幹: 空中期に背を丸め、後肢の蹴りで伸びる
-    const pitch = amp * 3.2 * Math.sin(s2 * (ph - 0.3)) + geo.slope * 57.3;
+    const pitch = amp * 3.2 * Math.sin(s2 * (ph - 0.2)) + geo.slope * 57.3;
     this.rot('hips', pitch);
-    this.rot('spine', amp * 3.5 * Math.sin(s2 * (ph - 0.62)));
-    this.rot('chest', amp * 2.0 * Math.sin(s2 * (ph - 0.62)));
-    this.bones.hips.position.y = this.hipsY.y + amp * 0.055 * Math.sin(s2 * (ph - 0.62));
+    this.rot('spine', amp * 3.5 * Math.sin(s2 * (ph - 0.52)));
+    this.rot('chest', amp * 2.0 * Math.sin(s2 * (ph - 0.52)));
+    this.bones.hips.position.y = this.hipsY.y + amp * 0.055 * Math.sin(s2 * (ph - 0.52));
     // 頸は前へ伸ばし、完歩に合わせて上下する
-    const push = r.pushing ? 1 : 0, nod = Math.sin(s2 * (ph - 0.42));
+    const push = r.pushing ? 1 : 0, nod = Math.sin(s2 * (ph - 0.32));
     this.rot('neck1', -amp * 17 - amp * 5 * nod - push * 3);
     this.rot('neck2', -amp * 7 - amp * 3 * nod);
     this.rot('head', amp * 9 + amp * 3 * nod);
@@ -193,7 +194,7 @@ export class Horse3D {
     this.rot('tail2', -amp * 20 + amp * 8 * Math.sin(s2 * ph + 2.2));
     this.rot('tail3', amp * 6 + amp * 14 * Math.sin(s2 * ph + 3.3));
     // 騎手: 追う動作とムチ
-    const pump = push * Math.sin(s2 * (ph - 0.42));
+    const pump = push * Math.sin(s2 * (ph - 0.32));
     this.rot('jtorso', -push * 5 - amp * 1.5 * nod);
     this.rot('jhead', push * 4);
     const w = r.whipAnim > 0 ? Math.sin((r.whipAnim / 0.5) * Math.PI) : 0;

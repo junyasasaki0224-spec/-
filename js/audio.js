@@ -6,8 +6,8 @@
 //   ・実況: ブラウザの音声合成
 //  ホールの残響(畳み込みリバーブ)とリミッターを通して出力する
 // ============================================================
+import { synthHoof, synthBreath, synthTack, GALLOP_BEATS, GALLOP_ACCENT, GALLOP_RATE } from './hoof.js';
 const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
-const BEATS = [0, 0.09, 0.37, 0.48]; // 襲歩の着地 (アニメーションと同じ位相)
 
 export class Sound {
   constructor() {
@@ -75,9 +75,26 @@ export class Sound {
     // 歓声は帯域の違う層を重ね、ゆっくり揺らす
     this.amb = {
       murmur: layer('bandpass', 520, 0.45, this.crowdBus), crowd: layer('bandpass', 1100, 0.5, this.crowdBus), roar: layer('bandpass', 2300, 0.6, this.crowdBus),
-      wind: layer('bandpass', 420, 0.8, this.sfx), rain: layer('highpass', 3600, 0.3, this.sfx), rumble: layer('bandpass', 190, 0.6, this.sfx),
+      wind: layer('bandpass', 420, 0.8, this.sfx), rain: layer('highpass', 3600, 0.3, this.sfx), rumble: layer('lowpass', 150, 0.7, this.sfx),
     };
     for (const k of ['murmur', 'crowd', 'roar']) { const l = c.createOscillator(), lg = c.createGain(); l.frequency.value = 0.13 + Math.random() * 0.2; lg.gain.value = this.amb[k].f.frequency.value * 0.18; l.connect(lg); lg.connect(this.amb[k].f.frequency); l.start(); }
+    // 蹄音専用のバス: 粒を揃えるコンプレッサー + スタンドからの反響 (スタンド前で強くなる)
+    const hc = c.createDynamicsCompressor(); hc.threshold.value = -20; hc.knee.value = 10; hc.ratio.value = 4; hc.attack.value = 0.004; hc.release.value = 0.12;
+    this.hoofBus = c.createGain(); this.hoofBus.gain.value = this.vol.sfx; this.hoofBus.connect(hc);
+    const hm = c.createGain(); hm.gain.value = 1.35; hc.connect(hm); hm.connect(this.master);
+    const dl = c.createDelay(0.3); dl.delayTime.value = 0.105; const dlf = c.createBiquadFilter(); dlf.type = 'lowpass'; dlf.frequency.value = 2000;
+    this.echoG = c.createGain(); this.echoG.gain.value = 0; hm.connect(dl); dl.connect(dlf); dlf.connect(this.echoG); this.echoG.connect(this.master);
+    { const rs = c.createGain(); rs.gain.value = 0.05; hm.connect(rs); rs.connect(this.rev); }
+    // 蹄音・呼吸・馬具の音を合成して貯めておく (画面が固まらないよう少しずつ)
+    const sr = c.sampleRate, toBuf = (arr) => { const b = c.createBuffer(1, arr.length, sr); b.getChannelData(0).set(arr); return b; };
+    this.bank = { dry: [], wet: [], breath: [], inhale: [], tack: [] };
+    this.bankJobs = [];
+    for (let k = 0; k < 6; k++) this.bankJobs.push(['dry', () => synthHoof(sr, 101 + k, false)]);
+    for (let k = 0; k < 3; k++) this.bankJobs.push(['breath', () => synthBreath(sr, 301 + k)]);
+    for (let k = 0; k < 2; k++) this.bankJobs.push(['inhale', () => synthBreath(sr, 401 + k, true)]);
+    for (let k = 0; k < 3; k++) this.bankJobs.push(['tack', () => synthTack(sr, 501 + k)]);
+    for (let k = 0; k < 6; k++) this.bankJobs.push(['wet', () => synthHoof(sr, 201 + k, true)]);
+    this.toBuf = toBuf;
     this.newFan();
     this.timer = setInterval(() => this.tick(), 50);
   }
@@ -94,7 +111,7 @@ export class Sound {
     const t = this.ctx.currentTime;
     if (kind === 'master') this.master.gain.setTargetAtTime(v, t, 0.05);
     if (kind === 'music') this.music.gain.setTargetAtTime(this.musicOn ? v * (this.musicScale || 1) : 0, t, 0.05);
-    if (kind === 'sfx') { this.sfx.gain.setTargetAtTime(v, t, 0.05); this.crowdBus.gain.setTargetAtTime(v, t, 0.05); }
+    if (kind === 'sfx') { this.sfx.gain.setTargetAtTime(v, t, 0.05); this.crowdBus.gain.setTargetAtTime(v, t, 0.05); this.hoofBus.gain.setTargetAtTime(v, t, 0.05); }
   }
   setMusic(on) { this.musicOn = on; if (this.ctx) this.music.gain.setTargetAtTime(on ? this.vol.music * (this.musicScale || 1) : 0, this.ctx.currentTime, 0.1); }
 
@@ -174,6 +191,7 @@ export class Sound {
   stop() { this.song = null; this.pending = null; if (this.ctx) { this.musicScale = 1; this.music.gain.setTargetAtTime(this.musicOn ? this.vol.music : 0, this.ctx.currentTime, 0.3); } }
   tick() {
     const c = this.ctx; if (!c) return;
+    if (this.bankJobs.length) { const [k, fn] = this.bankJobs.shift(); this.bank[k].push(this.toBuf(fn())); }
     if (this.pending && c.state === 'running') { const p = this.pending; this.pending = null; this.play(p); }
     if (!this.song) return;
     const s = this.song, sd = 60 / s.bpm / 4;
@@ -256,15 +274,19 @@ export class Sound {
   buzz() { if (!this.ctx) return; const t = this.ctx.currentTime; this.tone('sawtooth', 120, 100, t, 0.28, 0.22, this.ui); this.tone('sawtooth', 127, 106, t, 0.28, 0.22, this.ui); }
   bump() { if (!this.ctx) return; const t = this.ctx.currentTime; this.nz(t, 0.14, 'lowpass', 300, 1.0, this.sfx); this.tone('sine', 110, 55, t, 0.16, 0.7, this.sfx); this.snort(t + 0.05, 0.3); }
   whoosh() { if (!this.ctx) return; const t = this.ctx.currentTime, g = this.nz(t, 0.4, 'bandpass', 900, 0.001, this.sfx, 1.2); g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(0.001, t); g.gain.exponentialRampToValueAtTime(0.4, t + 0.14); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.4); }
-  snort(t, vol) { this.nz(t, 0.13, 'bandpass', 620 + Math.random() * 200, vol, this.sfx, 0.9); this.nz(t, 0.08, 'highpass', 2600, vol * 0.35, this.sfx); }
-  hoof(vol, pan, wet) {
-    const t = this.ctx.currentTime + Math.random() * 0.006, out = pan ? this.pan(pan) : this.sfx, f = (wet ? 96 : 122) + Math.random() * 26;
-    this.tone('triangle', f * 1.7, f * 0.75, t, 0.075, vol, out);                              // 胴鳴り (小さなスピーカーでも聞こえる帯域)
-    this.tone('sine', f * 0.72, f * 0.4, t, 0.1, vol * 0.85, out);                              // 地面に響く低音
-    this.nz(t, 0.055, 'bandpass', 430 + Math.random() * 260, vol * 1.15, out, 0.9);             // 芝を叩く音
-    this.nz(t, 0.018, 'bandpass', 1700 + Math.random() * 700, vol * 0.55, out, 1.4);            // 着地の瞬間
-    if (wet) this.nz(t, 0.11, 'highpass', 2300, vol * 0.5, out);                                // 道悪の水しぶき
+  // 貯めておいた音を鳴らす (再生速度で音程の個体差、距離に応じて高域を落とし、左右に定位)
+  playBuf(list, t, vol, pan = 0, rate = 1, lpHz = 0, out = this.hoofBus) {
+    if (!list || !list.length || vol <= 0.002) return;
+    const c = this.ctx, src = c.createBufferSource(); src.buffer = list[(Math.random() * list.length) | 0];
+    src.playbackRate.value = rate * (0.95 + Math.random() * 0.1);
+    let node = src;
+    if (lpHz) { const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = lpHz; node.connect(f); node = f; }
+    const g = c.createGain(); g.gain.value = vol; node.connect(g); node = g;
+    if (pan && c.createStereoPanner) { const p = c.createStereoPanner(); p.pan.value = Math.max(-1, Math.min(1, pan)); node.connect(p); node = p; }
+    node.connect(out); src.start(Math.max(c.currentTime, t));
   }
+  snort(t, vol) { this.playBuf(this.bank && this.bank.breath, t, vol, 0, 0.85); }
+  hoof(vol, pan, wet) { this.playBuf(this.bank && (wet && this.bank.wet.length ? this.bank.wet : this.bank.dry), this.ctx.currentTime, vol, pan); }
   // どよめき: 低めの声のうねり
   gasp(amount = 1) {
     if (!this.ctx) return; const t = this.ctx.currentTime + 0.02;
@@ -298,31 +320,59 @@ export class Sound {
     const t = this.ctx.currentTime, a = this.amb, on = this.sfxOn ? 1 : 0, set = (n, v) => n.g.gain.setTargetAtTime(v * on, t, 0.3);
     const rr = Math.min(1.5, o.roar);
     set(a.murmur, o.crowd * 0.5 + rr * 0.1); set(a.crowd, o.crowd * 0.32 + rr * 0.34); set(a.roar, rr * 0.46);
-    set(a.wind, o.wind * 0.2); set(a.rain, o.rain * 0.16); set(a.rumble, o.rumble * 0.55);
+    set(a.wind, o.wind * 0.2); set(a.rain, o.rain * 0.16);
     a.wind.f.frequency.setTargetAtTime(280 + o.wind * 560, t, 0.3);
-    if (!on) { this.lastPh = o.phase; return; }
+    if (!on) { this.lastPh = o.phase; this.lastUpdT = t; set(a.rumble, 0); this.echoG.gain.setTargetAtTime(0, t, 0.2); return; }
     // 直線の大歓声: 手拍子や指笛が散発的に混じる
     if (o.roar > 0.45 && t > this.nextCrowdFx) {
       this.nextCrowdFx = t + 0.25 + Math.random() * 0.5;
       this.clap(t + Math.random() * 0.2, 0.05 + o.roar * 0.07);
       if (Math.random() < 0.12) { const f0 = 1600 + Math.random() * 700; this.tone('sine', f0, f0 * 1.4, t, 0.3, 0.03 * o.roar, this.crowdBus); }
     }
-    const crossed = (lp, ph, b) => (lp < b && ph >= b) || (lp > ph && (b > lp || b <= ph));
-    if (o.speed > 3) {
-      const ph = o.phase % 1, lp = this.lastPh % 1, v = 0.85 + Math.min(0.35, o.speed * 0.02);
-      for (let i = 0; i < 4; i++) if (crossed(lp, ph, BEATS[i])) this.hoof(v * (i > 1 ? 1 : 0.85), (i % 2 ? 0.18 : -0.18), o.wet);
-      if (crossed(lp, ph, 0.68) && o.effort > 0.15) this.snort(t, 0.1 + o.effort * 0.3);   // 完歩ごとに息を吐く
+    // ---- 馬の音: フレームの間に来た着地を、正確な時刻に並べ直して鳴らす ----
+    const dtA = Math.min(0.25, Math.max(0, t - (this.lastUpdT ?? t))); this.lastUpdT = t;
+    const LAT = 0.035, bank = this.bank;
+    const hits = (lp, ph, beats, cb) => {
+      if (!(ph > lp) || ph - lp > 1.5) return;               // 巻き戻り・長い中断のあとは鳴らさず同期し直す
+      const span = ph - lp;
+      for (let k = Math.floor(lp); k <= Math.floor(ph); k++) for (let i = 0; i < beats.length; i++) {
+        const x = k + beats[i];
+        if (x > lp && x <= ph) cb(i, Math.max(t + 0.004, t + LAT - (1 - (x - lp) / span) * dtA));
+      }
+    };
+    const hoofs = o.wet && bank.wet.length ? bank.wet : bank.dry;
+    this.echoG.gain.setTargetAtTime((o.echo || 0) * 0.34 * on, t, 0.4);
+    // 自分の馬
+    if (o.speed > 2) {
+      const sp = Math.min(1, o.speed / 16), v = 0.42 + 0.58 * sp;
+      hits(this.lastPh, o.phase, GALLOP_BEATS, (i, tt) => this.playBuf(hoofs, tt, v * GALLOP_ACCENT[i], i % 2 ? 0.1 : -0.1, GALLOP_RATE[i]));
+      if (o.speed > 8) {
+        const ef = Math.min(1, o.effort || 0);
+        hits(this.lastPh, o.phase, [0.42], (i, tt) => this.playBuf(bank.breath, tt, 0.16 + ef * 0.36, 0, 0.92));          // 呼気 (完歩ごと)
+        hits(this.lastPh, o.phase, [0.76], (i, tt) => this.playBuf(bank.inhale, tt, 0.07 + ef * 0.14, 0));               // 吸気
+        hits(this.lastPh, o.phase, [0.3], (i, tt) => { if (Math.random() < 0.45) this.playBuf(bank.tack, tt, 0.06 + Math.random() * 0.05, (Math.random() - 0.5) * 0.4); });
+      }
     }
     this.lastPh = o.phase;
-    // 周囲の馬の蹄音: 距離で減衰し、左右の位置に定位する
+    // 周囲の馬: 距離で減衰・高域が落ち、左右の位置に定位する。全体のうなりも足音の量から決める
+    let energy = 0;
     if (o.near) for (const h of o.near) {
-      const lp = (this.nearPh[h.id] ?? h.phase) % 1, ph = h.phase % 1; this.nearPh[h.id] = h.phase;
-      if (h.v < 3) continue;
-      const v = 0.75 / (1 + h.dist * 0.2);
-      for (let i = 0; i < 4; i++) if (crossed(lp, ph, BEATS[i])) this.hoof(v, h.side, o.wet);
+      const lp = this.nearPh[h.id] ?? h.phase; this.nearPh[h.id] = h.phase;
+      if (h.v < 2) continue;
+      const v = (0.6 / Math.pow(1 + h.dist * 0.25, 1.5)) * (0.4 + 0.6 * Math.min(1, h.v / 16)), lpHz = 7000 / (1 + h.dist * 0.12);
+      energy += v * v * 9.4;
+      hits(lp, h.phase, GALLOP_BEATS, (i, tt) => this.playBuf(hoofs, tt + Math.random() * 0.004, v * GALLOP_ACCENT[i], h.side, GALLOP_RATE[i], lpHz));
+      if (h.dist < 4 && h.v > 8) hits(lp, h.phase, [0.42], (i, tt) => this.playBuf(bank.breath, tt, 0.09, h.side, 0.9 + (h.id % 5) * 0.04));
+    }
+    set(a.rumble, Math.min(0.75, Math.sqrt(energy) * 0.55));
+    // ゲートの中: 落ち着かない馬が扉を蹴る・足踏みする・鼻を鳴らす
+    if (o.gate && dtA > 0) {
+      if (Math.random() < dtA * 1.6) this.playBuf(bank.dry, t + 0.01, 0.12 + Math.random() * 0.12, (Math.random() - 0.5) * 1.6, 1.1, 2500);
+      if (Math.random() < dtA * 0.35) this.playBuf(bank.tack, t + 0.01, 0.12 + Math.random() * 0.1, (Math.random() - 0.5) * 1.6, 0.32 + Math.random() * 0.1);
+      if (Math.random() < dtA * 0.5) this.playBuf(bank.breath, t + 0.01, 0.1 + Math.random() * 0.08, (Math.random() - 0.5) * 1.6, 0.8);
     }
   }
-  silence() { this.update({ crowd: 0, roar: 0, wind: 0, rain: 0, rumble: 0, speed: 0, phase: 0, effort: 0 }); }
+  silence() { this.update({ crowd: 0, roar: 0, wind: 0, rain: 0, rumble: 0, speed: 0, phase: this.lastPh, effort: 0, echo: 0 }); }
 
   // ---- 実況 (ブラウザの音声合成) ----
   say(text, urgent) {
