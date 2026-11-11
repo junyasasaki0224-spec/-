@@ -131,7 +131,7 @@ function renderEntry() {
 }
 $('entry-table').addEventListener('click', (e) => {
   const tr = e.target.closest('tr[data-i]'); if (!tr || !G.horses[0].odds) return;
-  G.pick = +tr.dataset.i; sound.click(); renderEntry();
+  G.pick = +tr.dataset.i; sound.select(); renderEntry();
   const h = G.horses[G.pick];
   const adv = [
     'ハナを切って自分のリズムで。単騎で行ければ折り合いも楽。',
@@ -180,7 +180,7 @@ function toGate() {
   gm.innerHTML = `<div class="sig red">待て</div><div class="g1">信号が<span style="color:#6fe08a">緑</span>に変わった瞬間に ${kbd('go')}</div><div class="g2">赤のうちに押すと、馬があおって出遅れます</div>`;
   setWhipLabel('スタート');
   say('各馬ゲートに収まりました。', true);
-  sound.stop();
+  sound.stop(); sound.cutFanfare();
   edge.go = edge.whip = edge.lead = false;
 }
 
@@ -224,7 +224,7 @@ function handleEvents() {
         sound.whip(e.q > 1.2);
         if (e.dead) toast('もう脚が残っていない…', 'bad'); else if (e.q > 1.2) toast('ナイスムチ！', 'good');
         break;
-      case 'lead': toast(e.q === 0 ? '手前替えが早い！外に膨れた' : `手前替え: ${e.kind}`, e.q >= 1 ? 'good' : e.q >= 0.6 ? '' : 'warn'); if (e.q >= 0.6) sound.chime(); break;
+      case 'lead': toast(e.q === 0 ? '手前替えが早い！外に膨れた' : `手前替え: ${e.kind}`, e.q >= 1 ? 'good' : e.q >= 0.6 ? '' : 'warn'); if (e.q >= 0.6) { sound.whoosh(); sound.chime(); } break;
       case 'bump': toast('接触！', 'bad'); sound.bump(); break;
       case 'foul': toast('斜行！ 後続の進路を塞いだ', 'bad'); sound.buzz(); break;
       case 'empty': if (e.rem > 40) toast('脚が上がった…', 'bad'); break;
@@ -240,7 +240,7 @@ function handleEvents() {
         break;
       case 'finish': {
         const r = race.runners[e.i];
-        if (e.pos === 1) { say(`${nm(r)}、先頭でゴールイン！`, true); sound.intensity = 0; }
+        if (e.pos === 1) { say(`${nm(r)}、先頭でゴールイン！`, true); sound.intensity = 0; sound.stop(); sound.cheer(1, 6); }
         if (r.isPlayer) {
           toast(e.pos === 1 ? '1着でゴール！' : `${e.pos}着入線`, e.pos <= 3 ? 'good' : '');
           G.mode = 'finish'; G.finT = 0; sound.jingle(e.pos === 1); venue.camMode = 2;
@@ -491,7 +491,7 @@ function showResult() {
     fo.map((r, i) => `<tr class="${r.isPlayer ? 'me' : ''}"><td>${i + 1}</td><td>${wakuTag(r.h)}</td><td class="nm">${r.h.name}</td><td>${r.isPlayer ? 'あなた' : r.h.jockey}</td>
       <td>${fmtTime(r.ft)}</td><td>${i === 0 ? '' : marginText(Math.abs(r.ft - fo[i - 1].ft) * 17)}</td><td>${r.last3f.toFixed(1)}</td><td>${STYLES[r.h.style]}</td><td>${r.h.pop}</td></tr>`).join('') + '</tbody>';
   $('res-laps').innerHTML = `ラップ: ${race.splits.map((s) => s.toFixed(1)).join(' - ')}${G.flags.pace ? `　(${G.flags.pace})` : ''}<br>勝ち馬 ${win.h.name}（${STYLES[win.h.style]}・${win.h.pop}番人気） ${fmtTime(win.ft)}`;
-  sound.silence(); sound.intensity = 0; sound.play('menu');
+  sound.silence(); sound.intensity = 0; sound.play(pos === 1 ? 'title' : 'paddock');
   $('h-coach').classList.add('hidden');
   G.mode = 'result'; show('result');
 }
@@ -512,17 +512,36 @@ function stepSim(dt, withInput) {
   if (n >= 5) G.acc = 0;
 }
 function audioFrame() {
-  const race = G.race, p = race.player || race.order[0], tr = race.track;
+  const race = G.race, tr = race.track, cond = race.cfg.cond;
+  if (G.mode === 'attract' || G.mode === 'result') { // タイトル・結果画面: 場内のざわめきだけ
+    sound.update({ crowd: 0.16, roar: 0, wind: 0, rain: cond.weather >= 2 ? 0.3 : 0, rumble: 0, speed: 0, phase: 0, effort: 0 });
+    return;
+  }
+  const p = race.player || race.order[0];
   const rem = race.D - race.order[0].s;
   const u = p.s >= tr.chute ? tr.uOf(p.s) : -1;
-  const nearStand = u >= 0 && u < tr.L ? 1 : 0.25;
-  const hot = race.state === 'run' && rem < tr.straight + 100 && race.finishOrder.length < 4 ? 1 : 0;
-  let near = 0; for (const r of race.runners) if (r !== p && Math.abs(r.s - p.s) < 12) near++;
-  sound.update({ crowd: G.mode === 'attract' ? 0.12 : 0.25 + nearStand * 0.35 + hot * 0.3, roar: G.mode === 'attract' ? 0 : hot * (0.4 + nearStand * 0.6), wind: clamp(p.v / 19, 0, 1), rain: G.cond.weather >= 2 ? (G.cond.weather === 3 ? 1 : 0.5) : 0, rumble: G.mode === 'attract' ? 0 : clamp(near / 8, 0, 1) * clamp(p.v / 15, 0, 1), speed: G.mode === 'attract' ? 0 : p.v, phase: p.phase, wet: G.cond.going >= 2 });
+  const nearStand = u >= 0 && u < tr.L ? 1 : 0.22;       // スタンド前は歓声が近い
+  const hot = race.state === 'run' && rem < tr.straight + 120 && race.finishOrder.length < 4 ? 1 : 0;
+  const build = race.state === 'run' ? clamp(1 - rem / (tr.straight + 500), 0, 1) : 0;   // 直線に向けて徐々に高まる
+  // 周囲の馬: 近い順に5頭まで
+  const near = [];
+  for (const r of race.runners) {
+    if (r === p || !r.started) continue;
+    const ds = r.s - p.s, dd = r.d - p.d, dist = Math.hypot(ds, dd);
+    if (dist < 16) near.push({ id: r.i, phase: r.phase, dist, side: clamp((dd * (tr.t < 0 ? 1 : -1)) / 4, -1, 1), v: r.v });
+  }
+  near.sort((a, b) => a.dist - b.dist); near.length = Math.min(near.length, 5);
+  const effort = clamp((p.v - 13) / 6, 0, 1) * 0.5 + (p.pushing ? 0.3 : 0) + (p.E < 15 ? 0.3 : 0);
+  sound.update({
+    crowd: (race.state === 'gate' ? 0.75 : 0.3 + build * 0.3) * (0.5 + nearStand * 0.5) + hot * 0.25,
+    roar: hot * (0.45 + nearStand * 0.55) + build * 0.12 * nearStand,
+    wind: clamp(p.v / 19, 0, 1), rain: cond.weather >= 2 ? (cond.weather === 3 ? 1 : 0.5) : 0,
+    rumble: clamp(near.length / 5, 0, 1) * clamp(p.v / 15, 0, 1), speed: p.fin && p.v < 6 ? 0 : p.v, phase: p.phase, wet: cond.going >= 2, effort, near,
+  });
 }
 function frame(now) {
   requestAnimationFrame(frame);
-  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  const rawDt = Math.min(1, (now - last) / 1000), dt = Math.min(0.1, rawDt); last = now;
   if (G.paused || !G.race) return;
   const race = G.race;
   if (G.capT > 0) { G.capT -= dt; if (G.capT <= 0) $('h-cap').classList.remove('on'); }
@@ -532,15 +551,15 @@ function frame(now) {
       stepSim(dt, false); race.events.length = 0;
       G.attractT += dt; if (G.attractT > 9) { G.attractT = 0; G.attractCam = G.attractCam === 2 ? 3 : G.attractCam === 3 ? 0 : 2; venue.snap = true; }
       const focus = race.order[Math.min(2, race.order.length - 1)];
-      venue.frame(dt, { cam: G.attractCam, focus });
+      venue.frame(dt, { cam: G.attractCam, focus }); audioFrame();
       if (race.state === 'done' || race.finishOrder.length > 3) startAttract();
       break;
     }
     case 'result':
-      venue.frame(dt, { cam: 4, focus: race.order[0] });
+      venue.frame(dt, { cam: 4, focus: race.order[0] }); audioFrame();
       break;
     case 'intro':
-      G.introT += dt;
+      G.introT += rawDt; // ファンファーレ(実時間)と映像を合わせる
       venue.introCam(G.introT, G.introDur);
       venue.frame(dt, { intro: true });
       if (G.introT >= G.introDur) toGate();
@@ -606,19 +625,30 @@ for (const b of document.querySelectorAll('#touch button')) {
 function cycleCam() { venue.camMode = (venue.camMode + 1) % 4; toast(['後方視点', '騎手視点', '中継カメラ', '俯瞰視点'][venue.camMode]); }
 function togglePause() {
   G.paused = !G.paused; overlay('pause', G.paused);
-  if (G.paused) { sound.silence(); sound.hush(); if (sound.ctx) sound.ctx.suspend(); } else { if (sound.ctx) sound.ctx.resume(); last = performance.now(); }
+  if (G.paused) { sound.silence(); sound.hush(); if (sound.ctx) sound.ctx.suspend(); } else { sound.unlock(); last = performance.now(); }
 }
 function toTitle() {
   if (sound.ctx) sound.ctx.resume();
   G.paused = false; overlay('pause', false); sound.hush(); sound.silence(); sound.intensity = 0;
-  startAttract(); show('title'); sound.play('menu');
+  startAttract(); show('title'); sound.play('title');
 }
 
 // ---- ボタン ----
-const firstGesture = () => { sound.init(); if (G.mode === 'attract' || G.mode === 'result') sound.play('menu'); };
-window.addEventListener('pointerdown', firstGesture, { once: true });
-window.addEventListener('keydown', firstGesture, { once: true });
-$('btn-start').onclick = () => { sound.init(); sound.click(); sound.play('menu'); renderRaces(); show('select'); };
+// ブラウザは操作なしに音を出せないため、あらゆる操作のたびに音声の起動を試みる
+function soundStatus() {
+  const el = $('snd-status'); if (!el) return;
+  el.textContent = sound.running ? '🔊 サウンド ON（聞こえない場合は端末の音量を上げてください）' : '🔇 画面をタップ / クリックするとサウンドが始まります';
+  el.classList.toggle('on', sound.running);
+}
+const gesture = () => {
+  const was = sound.running; sound.unlock();
+  if (!G.paused && !sound.song && !sound.pending && G.mode === 'attract') sound.play('title');
+  if (!was) setTimeout(soundStatus, 250);
+};
+for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) window.addEventListener(ev, gesture, true);
+sound.play('title'); // 起動後、最初の操作で鳴り始める
+setInterval(soundStatus, 1500);
+$('btn-start').onclick = () => { sound.unlock(); sound.select(); sound.play('paddock'); renderRaces(); show('select'); };
 $('btn-how').onclick = () => { sound.click(); overlay('how', true); };
 $('btn-how-close').onclick = () => overlay('how', false);
 $('btn-opt').onclick = () => { sound.init(); overlay('opt', true); };
@@ -626,6 +656,8 @@ $('btn-opt-close').onclick = () => overlay('opt', false);
 $('o-music').onchange = (e) => { sound.init(); sound.setMusic(e.target.checked); };
 $('o-racebgm').onchange = (e) => { sound.raceBgm = e.target.checked; };
 $('o-sfx').onchange = (e) => { sound.sfxOn = e.target.checked; };
+for (const k of ['master', 'music', 'sfx']) $('v-' + k).oninput = (e) => { sound.unlock(); sound.setVolume(k, +e.target.value / 100); };
+$('btn-sndtest').onclick = () => { sound.unlock(); sound.confirm(); setTimeout(() => sound.cheer(0.8, 2.5), 300); setTimeout(soundStatus, 300); };
 $('o-coach').onchange = (e) => { G.coachOn = e.target.checked; };
 {
   let q = isTouch ? 1 : 2;
@@ -634,15 +666,15 @@ $('o-coach').onchange = (e) => { G.coachOn = e.target.checked; };
   $('o-quality').onchange = (e) => { venue.setQuality(+e.target.value); try { localStorage.setItem('turfjockey.quality', e.target.value); } catch (er) { /* noop */ } };
 }
 $('o-voice').onchange = (e) => { sound.voiceOn = e.target.checked; if (!e.target.checked) sound.hush(); };
-for (const b of document.querySelectorAll('[data-back]')) b.onclick = () => { sound.click(); G.oddsToken = 0; show(b.dataset.back); };
-$('btn-go').onclick = () => { sound.init(); startRace(); };
+for (const b of document.querySelectorAll('[data-back]')) b.onclick = () => { sound.click(); G.oddsToken = 0; if (b.dataset.back === 'title') sound.play('title'); show(b.dataset.back); };
+$('btn-go').onclick = () => { sound.unlock(); sound.confirm(); startRace(); };
 $('btn-skip').onclick = () => { if (G.mode === 'intro') toGate(); };
 $('btn-cam').onclick = cycleCam;
 $('btn-pause').onclick = togglePause;
 $('btn-resume').onclick = togglePause;
 $('btn-retire').onclick = toTitle;
 $('btn-again').onclick = () => { sound.click(); show('none'); startRace(); };
-$('btn-next').onclick = () => { sound.click(); startAttract(); renderRaces(); show('select'); };
+$('btn-next').onclick = () => { sound.click(); sound.play('paddock'); startAttract(); renderRaces(); show('select'); };
 window.addEventListener('resize', () => venue.resize());
 document.addEventListener('visibilitychange', () => { if (document.hidden && (G.mode === 'race' || G.mode === 'gate') && !G.paused) togglePause(); });
 

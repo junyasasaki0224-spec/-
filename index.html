@@ -16,6 +16,7 @@
     <h1 class="logo">ターフジョッキー</h1>
     <div class="logo-tag">― 勝負を決めるのは、馬ではなく手綱 ―</div>
     <div class="career" id="career"></div>
+    <div class="snd-status" id="snd-status">🔇 画面をタップ / クリックするとサウンドが始まります</div>
     <div class="btn-col">
       <button class="btn primary" id="btn-start">レースを選ぶ</button>
       <button class="btn" id="btn-how">騎乗マニュアル</button>
@@ -188,6 +189,10 @@
   <div class="panel">
     <div class="panel-head"><h2>設定</h2><button class="btn small" id="btn-opt-close">閉じる</button></div>
     <div class="opts">
+      <label class="vol">全体の音量 <input type="range" id="v-master" min="0" max="100" value="90"></label>
+      <label class="vol">BGMの音量 <input type="range" id="v-music" min="0" max="100" value="80"></label>
+      <label class="vol">効果音・歓声の音量 <input type="range" id="v-sfx" min="0" max="100" value="100"></label>
+      <button class="btn small" id="btn-sndtest">🔊 テスト音を鳴らす</button>
       <label><input type="checkbox" id="o-music" checked> BGM</label>
       <label><input type="checkbox" id="o-racebgm" checked> レース中のBGM(オフで場内の音のみ)</label>
       <label><input type="checkbox" id="o-sfx" checked> 効果音・歓声</label>

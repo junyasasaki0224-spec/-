@@ -218,3 +218,7 @@ body.is-touch .t-right button { white-space: nowrap; }
 body.is-touch .t-whip { font-size: 13px !important; }
 @media (orientation: portrait) { body.is-touch .gate-msg { bottom: auto; top: 40%; transform: translate(-50%, -50%) scale(0.85); transform-origin: center; } }
 select { font: inherit; background: #16253a; color: var(--txt); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; } .opts small { color: var(--sub); }
+
+.snd-status { font-size: 12.5px; color: #ffd79a; margin-bottom: 10px; text-shadow: 0 1px 4px #000; font-weight: 700; }
+.snd-status.on { color: #a6f5bd; font-weight: 600; }
+.opts .vol { display: flex; align-items: center; justify-content: space-between; gap: 12px; } .opts .vol input { flex: 1; max-width: 200px; transform: none; margin: 0; }
