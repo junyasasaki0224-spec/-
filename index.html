@@ -19,7 +19,7 @@
     <div class="btn-col">
       <button class="btn primary" id="btn-start">レースを選ぶ</button>
       <button class="btn" id="btn-how">騎乗マニュアル</button>
-      <button class="btn" id="btn-opt">サウンド設定</button>
+      <button class="btn" id="btn-opt">設定(音・画質)</button>
     </div>
     <div class="fine">※ 馬名・騎手名・レース名は架空です。コース形状は実在の競馬場の諸元を参考にしています。</div>
   </div>
@@ -186,13 +186,14 @@
 <!-- ============ 設定 ============ -->
 <section id="scr-opt" class="screen hidden dim">
   <div class="panel">
-    <div class="panel-head"><h2>サウンド設定</h2><button class="btn small" id="btn-opt-close">閉じる</button></div>
+    <div class="panel-head"><h2>設定</h2><button class="btn small" id="btn-opt-close">閉じる</button></div>
     <div class="opts">
       <label><input type="checkbox" id="o-music" checked> BGM</label>
       <label><input type="checkbox" id="o-racebgm" checked> レース中のBGM(オフで場内の音のみ)</label>
       <label><input type="checkbox" id="o-sfx" checked> 効果音・歓声</label>
       <label><input type="checkbox" id="o-voice" checked> 実況の読み上げ(端末の音声合成)</label>
       <label><input type="checkbox" id="o-coach" checked> 騎乗アドバイス(次に押すキーの案内)を表示</label>
+      <label>画質 <select id="o-quality"><option value="2">高(影あり・高精細)</option><option value="1">標準</option><option value="0">軽量(影なし・スマホ向け)</option></select> <small>次のレースから反映</small></label>
     </div>
   </div>
 </section>

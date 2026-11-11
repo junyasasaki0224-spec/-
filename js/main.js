@@ -627,6 +627,12 @@ $('o-music').onchange = (e) => { sound.init(); sound.setMusic(e.target.checked);
 $('o-racebgm').onchange = (e) => { sound.raceBgm = e.target.checked; };
 $('o-sfx').onchange = (e) => { sound.sfxOn = e.target.checked; };
 $('o-coach').onchange = (e) => { G.coachOn = e.target.checked; };
+{
+  let q = isTouch ? 1 : 2;
+  try { const sv = localStorage.getItem('turfjockey.quality'); if (sv !== null) q = +sv; } catch (e) { /* noop */ }
+  venue.setQuality(q); $('o-quality').value = String(q);
+  $('o-quality').onchange = (e) => { venue.setQuality(+e.target.value); try { localStorage.setItem('turfjockey.quality', e.target.value); } catch (er) { /* noop */ } };
+}
 $('o-voice').onchange = (e) => { sound.voiceOn = e.target.checked; if (!e.target.checked) sound.hush(); };
 for (const b of document.querySelectorAll('[data-back]')) b.onclick = () => { sound.click(); G.oddsToken = 0; show(b.dataset.back); };
 $('btn-go').onclick = () => { sound.init(); startRace(); };

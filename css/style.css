@@ -217,3 +217,4 @@ body.is-touch .gate-msg .sig { width: 70px; height: 70px; font-size: 21px; margi
 body.is-touch .t-right button { white-space: nowrap; }
 body.is-touch .t-whip { font-size: 13px !important; }
 @media (orientation: portrait) { body.is-touch .gate-msg { bottom: auto; top: 40%; transform: translate(-50%, -50%) scale(0.85); transform-origin: center; } }
+select { font: inherit; background: #16253a; color: var(--txt); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; } .opts small { color: var(--sub); }

@@ -66,7 +66,15 @@ ES Modules を使っているため、`index.html` を直接開くのではな�
 pip install bpy scikit-image
 python tools/blender/build_models.py assets/horse.glb [確認用レンダリングの出力先]
 python tools/blender/build_trees.py assets/trees.glb   # 広葉樹・桜・針葉樹
+python tools/blender/build_stand.py assets/stand.glb   # スタンド1スパン(AO焼き込み)
 ```
+
+### スタンドと周辺
+
+- スタンドは幅10mの1スパンを Blender で作り(階段状の客席、ガラスのカーテンウォールと方立、スラブ、片持ち大屋根の主梁・母屋、柱、照明、通路口)、Cycles でアンビエントオクルージョンを頂点に焼き込んでいます。ゲーム側でスパンを並べて各場の長さ・高さに合わせます
+- 客席は段ごとに観客の列を立て、直線では歓声に合わせて波打ちます。エプロンの立ち見客は人型
+- 太陽がスタンドの背後にあるときは、屋根の高さから計算した影がコースに落ちます
+- 場外は道路と街区のある市街地、マンション・オフィス・戸建てを配置
 
 ## サウンド
 
@@ -85,7 +93,7 @@ js/scene.js     競馬場の3D描画 (Three.js)
 js/horse3d.js   馬と騎手(glTF)の読み込み・襲歩アニメーション
 js/audio.js     BGM・効果音・実況
 js/main.js      進行・入力・HUD
-assets/         Blenderで生成した馬・騎手・樹木モデル
+assets/         Blenderで生成した馬・騎手・樹木・スタンドのモデル
 tools/          Nodeでの検証 (npm run simtest) / tools/blender モデル生成
 vendor/         three.js と glTFローダー (MIT)
 ```

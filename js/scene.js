@@ -22,7 +22,19 @@ export async function loadAssets() {
     }
     TREES[o.name] = g;
   });
+  // スタンド1スパン: 焼き込んだAO(UV.x)を頂点カラーに
+  const sg = await loadGLB('stand');
+  sg.scene.traverse((o) => {
+    if (!o.isMesh) return;
+    const g = o.geometry; g.userData.shared = true;
+    const uv = g.attributes.uv, c = new Float32Array(uv.count * 3);
+    for (let i = 0; i < uv.count; i++) { const a = 0.16 + 0.84 * Math.pow(uv.getX(i), 0.75); c[i * 3] = c[i * 3 + 1] = c[i * 3 + 2] = a; }
+    g.setAttribute('color', new THREE.BufferAttribute(c, 3));
+    STAND.push({ g, name: o.material.name });
+  });
 }
+const STAND = [];
+const SEAT_COL = { tokyo: 0x2f7d5b, nakayama: 0x2d5fa6, kyoto: 0x35639a, hanshin: 0x2a8a70 };
 
 const SEASON = {
   spring: { turfA: '#4f9a3c', turfB: '#5dab48', grass: 0x5a9a45, trees: [0xf4b6cc, 0xf7c6d8, 0xf1a7c2, 0xf9d3e0], green: [0x5c9a48, 0x4d8a3e], hill: 0x7ea088, crowd: [0xe8e8e8, 0xf2c0d0, 0x8fb8e8, 0xf0e0a0, 0x444444, 0xd05050] },
@@ -85,6 +97,7 @@ export class Venue {
   constructor(canvas) {
     this.canvas = canvas;
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    this.quality = 2; // 0:軽量 1:標準 2:高
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -112,6 +125,12 @@ export class Venue {
   }
 
   // ------------------------------------------------------------
+  setQuality(q) {
+    this.quality = q;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, [1, 1.5, 2][q]));
+    this.renderer.shadowMap.enabled = q > 0;
+    this.resize();
+  }
   build(def, race, cond) {
     this.dispose();
     const sc = this.scene, tr = race.track, t = tr.t, W = tr.W, L = tr.L, R = tr.R;
@@ -139,10 +158,10 @@ export class Venue {
     });
     const dome = A(new THREE.Mesh(new THREE.SphereGeometry(13000, 24, 12), skyMat)); dome.position.copy(this.center);
     sc.fog = new THREE.Fog(hor.clone().lerp(top, 0.08), 200, dusk ? 5200 : sky.fog);
-    A(new THREE.HemisphereLight(dusk ? 0xffd6b0 : 0xffffff, new THREE.Color(S.grass).multiplyScalar(0.6), dusk ? 1.5 : sky.hemi));
+    A(new THREE.HemisphereLight(dusk ? 0xffd6b0 : 0xffffff, new THREE.Color(S.grass).lerp(new THREE.Color(0x8c8a84), 0.65).multiplyScalar(0.62), dusk ? 1.5 : sky.hemi));
     const sun = A(new THREE.DirectionalLight(dusk ? 0xffa860 : sky.sun, dusk ? 2.6 : sky.sunI)); sun.position.copy(sunDir).multiplyScalar(100);
     // 影: 注目馬の周囲だけを高解像度で落とす
-    sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+    sun.castShadow = this.quality > 0; sun.shadow.mapSize.set(this.quality > 1 ? 2048 : 1024, this.quality > 1 ? 2048 : 1024);
     const scam = sun.shadow.camera; scam.left = -34; scam.right = 34; scam.top = 34; scam.bottom = -34; scam.near = 5; scam.far = 320;
     sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.04;
     A(sun.target); this.sun = sun;
@@ -175,7 +194,29 @@ export class Venue {
     }
 
     // ---- 地面・コース ----
-    const gnd = A(new THREE.Mesh(new THREE.CircleGeometry(12000, 48), lam(new THREE.Color(S.grass).multiplyScalar(0.8 * wet))));
+    const townTex = ctex(1024, 1024, (x, w, h) => {
+      x.fillStyle = '#8b9086'; x.fillRect(0, 0, w, h);
+      const roofs = ['#59636e', '#6d7780', '#7b5a48', '#8c6a55', '#4a4f55', '#a39c90', '#3f5266', '#9aa0a4'];
+      const B = 146; // 1街区 = 約60m
+      for (let by = 0; by < 7; by++) for (let bx = 0; bx < 7; bx++) {
+        const x0 = bx * B + 12, y0 = by * B + 12, r = rng();
+        if (r < 0.1) { x.fillStyle = hex(S.grass); x.fillRect(x0, y0, B - 24, B - 24); continue; }             // 公園・畑
+        if (r < 0.18) { x.fillStyle = '#74777a'; x.fillRect(x0, y0, B - 24, B - 24); x.fillStyle = '#d8d8d8'; for (let k = 0; k < 9; k++) x.fillRect(x0 + 6 + k * 13, y0 + 8, 1, B - 40); continue; }   // 駐車場
+        for (let k = 0; k < 16; k++) {
+          const rw = 18 + rng() * 22, rh = 16 + rng() * 20, rx = x0 + rng() * (B - 24 - rw), ry = y0 + rng() * (B - 24 - rh);
+          x.fillStyle = 'rgba(0,0,0,0.25)'; x.fillRect(rx + 3, ry + 3, rw, rh);
+          x.fillStyle = roofs[(rng() * roofs.length) | 0]; x.fillRect(rx, ry, rw, rh);
+          x.fillStyle = 'rgba(255,255,255,0.12)'; x.fillRect(rx, ry, rw, rh / 2);
+        }
+      }
+      x.fillStyle = '#5b5e62';
+      for (let k = 0; k <= 7; k++) { x.fillRect(k * B - 8, 0, 16, h); x.fillRect(0, k * B - 8, w, 16); }   // 道路
+      x.fillStyle = 'rgba(255,255,255,0.5)';
+      for (let k = 0; k <= 7; k++) for (let q2 = 0; q2 < w; q2 += 22) { x.fillRect(k * B - 1, q2, 2, 10); x.fillRect(q2, k * B - 1, 10, 2); }
+      if (wet < 1) { x.fillStyle = `rgba(10,20,30,${(1 - wet) * 0.8})`; x.fillRect(0, 0, w, h); }
+    }, [57, 57]);
+    townTex.anisotropy = 8;
+    const gnd = A(new THREE.Mesh(new THREE.CircleGeometry(12000, 48), lam(dusk ? 0xd0b8a0 : 0xffffff, { map: townTex })));
     gnd.rotation.x = -Math.PI / 2; gnd.position.set(this.center.x, groundY - 0.05, this.center.z);
 
     const rough = cond.rough;
@@ -207,7 +248,7 @@ export class Venue {
     }, [1, 1]);
     A(new THREE.Mesh(ribbon(tr, [[-DO, 0], [-DI, 0]], { step: 6, uvLen: 12 }), lam(0xffffff, { map: dirtTex })));
     A(new THREE.Mesh(ribbon(tr, [[-R, 0], [-R * 0.6, 0], [-DO, 0]], { step: 8, yFn: (d, y, j) => (j === 2 ? y : infieldY) }), grassM));
-    A(new THREE.Mesh(ribbon(tr, [[W + 0.5, 0], [W + 17, 0], [W + 48, 0]], { step: 8, yFn: (d, y, j) => (j === 2 ? groundY : y) }), grassM));
+    A(new THREE.Mesh(ribbon(tr, [[W + 0.5, 0], [W + 17, 0], [W + 48, 0], [W + 205, 0]], { step: 8, yFn: (d, y, j) => (j >= 2 ? groundY + 0.04 : y) }), grassM));
     // ポケット(引き込み線)
     if (tr.chute > 0) {
       const p0 = tr.point(tr.joinU, 0, {}), len = tr.chute + 22;
@@ -308,7 +349,7 @@ export class Venue {
       for (let i = 0; i < n; i++) this.pPos[i * 3 + 1] = -100;
       const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(this.pPos, 3));
       const col = cond.going >= 2 ? 0x5a4a32 : new THREE.Color(S.turfA).multiplyScalar(0.55);
-      this.parts = A(new THREE.Points(g, new THREE.PointsMaterial({ color: col, size: 0.13, sizeAttenuation: true })));
+      this.parts = A(new THREE.Points(g, new THREE.PointsMaterial({ color: col, size: 0.075, sizeAttenuation: true })));
       this.parts.frustumCulled = false;
     }
     this.introT = 0;
@@ -317,93 +358,151 @@ export class Venue {
 
   // ------------------------------------------------------------
   buildStand(def, tr, S, rng, dusk, groundY) {
-    const sc = this.scene, t = tr.t, W = tr.W, st = def.courseObj.stand;
-    const len = st.len, H = st.h;
+    const sc = this.scene, t = tr.t, W = tr.W, st = def.courseObj.stand, id = def.course;
+    const nBay = Math.round(st.len / 10), len = nBay * 10, H = st.h, sy = H / 40, hl = len / 2;
     const lam = (color, extra) => new THREE.MeshLambertMaterial({ color, ...extra });
     const g = new THREE.Group();
     const xC = tr.straight - len / 2 + 95;
-    let baseY = 1e9; for (let x = xC - len / 2; x <= xC + len / 2; x += 10) baseY = Math.min(baseY, tr.elevAt(x - tr.straight));
+    let baseY = 1e9; for (let x = xC - hl; x <= xC + hl; x += 10) baseY = Math.min(baseY, tr.elevAt(x - tr.straight));
     g.position.set(xC, baseY - 0.2, -t * (W + 17)); if (t > 0) g.rotation.y = Math.PI;
-    this.standX0 = xC - len / 2; this.standX1 = xC + len / 2;
-    // 観客席テクスチャ
-    const crowdTex = (dens) => ctex(256, 128, (x, w, h) => {
-      x.fillStyle = '#3a3d44'; x.fillRect(0, 0, w, h);
-      for (let r = 0; r < 16; r++) for (let c = 0; c < 64; c++) {
-        if (rng() > dens) { x.fillStyle = '#5b6d86'; x.fillRect(c * 4, r * 8 + 2, 3, 4); continue; }
-        x.fillStyle = hex(S.crowd[(rng() * S.crowd.length) | 0]); x.fillRect(c * 4, r * 8 + 2, 3, 5);
-        x.fillStyle = '#e8c8a8'; x.fillRect(c * 4 + 1, r * 8, 2, 2);
-      }
-    }, [len / 16, 1]);
-    const glassTex = ctex(128, 128, (x, w, h) => {
-      const gr = x.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, dusk ? '#f3c08a' : '#a9cde8'); gr.addColorStop(1, dusk ? '#7a6f7c' : '#5d86a8');
-      x.fillStyle = gr; x.fillRect(0, 0, w, h);
-      x.strokeStyle = '#e9edf0'; x.lineWidth = 3;
-      for (let i = 0; i <= 4; i++) { x.beginPath(); x.moveTo(i * 32, 0); x.lineTo(i * 32, h); x.stroke(); x.beginPath(); x.moveTo(0, i * 32); x.lineTo(w, i * 32); x.stroke(); }
-      if (dusk) for (let i = 0; i < 16; i++) if (rng() < 0.5) { x.fillStyle = 'rgba(255,230,160,0.8)'; x.fillRect((i % 4) * 32 + 4, ((i / 4) | 0) * 32 + 4, 24, 24); }
-    }, [len / 14, H / 26]);
-    const conc = lam(0xd8d6cf), dark = lam(0x4a4e55), roofM = lam(0xeceef0), steel = lam(0x9aa3ad);
-    const hl = len / 2;
-    // 1階スタンド(立ち見の傾斜)
-    g.add(new THREE.Mesh(quadGeo([-hl, 0.4, 0], [hl, 0.4, 0], [-hl, 7.5, 18], [hl, 7.5, 18]), lam(0xffffff, { map: crowdTex(0.92), side: THREE.DoubleSide })));
-    const frontWall = new THREE.Mesh(new THREE.BoxGeometry(len, 1.2, 0.4), conc); frontWall.position.set(0, 0.6, -0.1); g.add(frontWall);
-    // 本体
-    const body = new THREE.Mesh(new THREE.BoxGeometry(len, H * 0.62, 34), conc); body.position.set(0, H * 0.31, 35); g.add(body);
-    const glass = new THREE.Mesh(new THREE.PlaneGeometry(len - 4, H * 0.62 - 9), lam(0xffffff, { map: glassTex, emissive: dusk ? 0x403020 : 0x000000 })); glass.rotation.y = Math.PI; glass.position.set(0, 8 + (H * 0.62 - 9) / 2, 17.9); g.add(glass);
-    // 上層スタンド
-    const y0 = H * 0.5, y1 = H * 0.84;
-    g.add(new THREE.Mesh(quadGeo([-hl, y0, 10], [hl, y0, 10], [-hl, y1, 31], [hl, y1, 31]), lam(0xffffff, { map: crowdTex(0.8), side: THREE.DoubleSide })));
-    const lip = new THREE.Mesh(new THREE.BoxGeometry(len, 2.2, 1.2), conc); lip.position.set(0, y0 - 0.6, 9.6); g.add(lip);
-    const back = new THREE.Mesh(new THREE.BoxGeometry(len, H * 0.42, 12), conc); back.position.set(0, H * 0.62 + H * 0.19, 38); g.add(back);
-    const box = new THREE.Mesh(new THREE.PlaneGeometry(len - 6, 3.2), lam(0x9fc4dd, { emissive: dusk ? 0x554020 : 0x000000 })); box.rotation.y = Math.PI; box.position.set(0, y1 + 2.6, 31.9); g.add(box);
-    // 大屋根
-    const roof = new THREE.Mesh(new THREE.BoxGeometry(len + 18, 1.6, 56), roofM); roof.position.set(0, H + 3.5, 17); roof.rotation.x = 0.07; g.add(roof);
-    const under = new THREE.Mesh(new THREE.BoxGeometry(len + 14, 0.5, 52), dark); under.position.set(0, H + 2.4, 17); under.rotation.x = 0.07; g.add(under);
-    // 看板
-    const sign = new THREE.Mesh(new THREE.PlaneGeometry(64, 5), new THREE.MeshBasicMaterial({ map: ctex(512, 40, (x, w, h) => { x.fillStyle = '#17324f'; x.fillRect(0, 0, w, h); x.fillStyle = '#f4f1e6'; x.font = 'bold 26px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(st.name + ' STAND  ' + def.courseObj.short.toUpperCase(), w / 2, h / 2 + 1); }) }));
-    sign.rotation.y = Math.PI; sign.position.set(0, H + 5.8, -10.6); g.add(sign);
-    // 支柱・マスト
-    const tall = def.course === 'tokyo';
-    for (let i = 0; i <= 8; i++) {
-      const x = -hl + (len * i) / 8;
-      const col = new THREE.Mesh(new THREE.BoxGeometry(2.2, tall ? H + 26 : H + 6, 2.2), steel); col.position.set(x, (tall ? H + 26 : H + 6) / 2, 45); g.add(col);
-      if (tall) {
-        const cab = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 60, 4), steel);
-        cab.position.set(x, H + 15.5, 19); cab.rotation.x = -1.13; g.add(cab);
-      }
+    this.standX0 = xC - hl; this.standX1 = xC + hl;
+    const lit = dusk || this.cond.weather >= 2; // 照明が点く条件
+
+    // ---- Blender製スパンを並べる ----
+    const vc = { vertexColors: true };
+    const mats = {
+      step: lam(0xb4b3ad, vc), seat: lam(SEAT_COL[id], vc), concrete: lam(0xdcd8d0, vc), floor: lam(0x8e8e8a, vc), dark: lam(0x0c0c10, vc),
+      slab: lam(0xf3f1ec, vc), soffit: lam(0x9a9ca0, vc), roof_top: lam(0xf5f5f2, vc), roof_under: lam(0xcdd0d4, vc), steel: lam(0xf0f1f3, vc),
+      mullion: lam(0xaeb4bb, vc), lamp_body: lam(0x3c3e42, vc),
+      glass: new THREE.MeshStandardMaterial({ color: dusk ? 0xb09a80 : 0x86a9c4, metalness: 0.9, roughness: 0.06, envMapIntensity: 1.25, vertexColors: true, emissive: lit ? 0x5a4020 : 0x000000 }),
+      glassrail: new THREE.MeshStandardMaterial({ color: 0xcfe6ee, metalness: 0.5, roughness: 0.08, transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide }),
+      light: new THREE.MeshBasicMaterial({ color: lit ? 0xfff4d0 : 0xdedcd2 }),
+    };
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), sv = new THREE.Vector3(1, sy, 1);
+    for (const part of STAND) {
+      const im = new THREE.InstancedMesh(part.g, mats[part.name] || lam(0x999999, vc), nBay + (part.name === 'steel' || part.name === 'concrete' ? 1 : 0));
+      for (let i = 0; i < im.count; i++) { m4.compose(v.set(-hl + 5 + i * 10, 0, 0), q, sv); im.setMatrixAt(i, m4); }
+      im.frustumCulled = false; g.add(im);
     }
-    for (const s of [-1, 1]) { const ew = new THREE.Mesh(new THREE.BoxGeometry(3, H * 0.9, 44), conc); ew.position.set(s * (hl + 1.5), H * 0.45, 24); g.add(ew); }
-    // 照明塔
+    // 妻側(両端)の階段棟
+    const conc = lam(0xd6d2ca), steel = lam(0x9aa3ad);
+    const sideTex = ctex(64, 64, (x) => {
+      x.fillStyle = '#d8d4cc'; x.fillRect(0, 0, 64, 64); x.fillStyle = lit ? '#e9c98a' : '#51677c'; x.fillRect(4, 14, 56, 26);
+      x.fillStyle = 'rgba(255,255,255,0.18)'; x.fillRect(4, 14, 56, 8); x.fillStyle = '#b9bdc2'; for (let i = 0; i <= 4; i++) x.fillRect(4 + i * 13.4, 14, 2, 26);
+      x.fillStyle = 'rgba(0,0,0,0.12)'; x.fillRect(0, 60, 64, 4);
+    }, [7, 9]);
+    const sideM = lam(0xffffff, { map: sideTex });
     for (const s of [-1, 1]) {
-      const tw = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.0, H + 22, 6), steel); tw.position.set(s * (hl + 26), (H + 22) / 2, 20); g.add(tw);
-      const lp = new THREE.Mesh(new THREE.BoxGeometry(9, 5, 1), lam(0xe8e8e0, { emissive: dusk ? 0xfff0c0 : 0x222222 })); lp.position.set(s * (hl + 26), H + 23, 19.4); g.add(lp);
+      const ew = new THREE.Mesh(new THREE.BoxGeometry(7, 37.5 * sy, 46), [sideM, sideM, conc, conc, conc, sideM]); ew.position.set(s * (hl + 3.5), 18.75 * sy, 23); g.add(ew);
+      const rf = new THREE.Mesh(new THREE.BoxGeometry(9, 0.6, 50), mats.roof_top); rf.position.set(s * (hl + 4.5), 39.6 * sy, 19.5); rf.rotation.x = 0.052; g.add(rf);
+    }
+    // 屋根鼻先の看板と、上層スタンド鼻先の横断幕
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(70, 4.2), new THREE.MeshBasicMaterial({ map: ctex(1024, 64, (x, w, h) => { x.fillStyle = '#17324f'; x.fillRect(0, 0, w, h); x.fillStyle = '#f4f1e6'; x.font = 'bold 44px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(st.name + ' STAND   ' + def.courseObj.name, w / 2, h / 2 + 2); }) }));
+    sign.rotation.y = Math.PI; sign.position.set(0, 43.6 * sy, -5.1); g.add(sign);
+    const bn = Math.max(2, Math.round(len / 60));
+    const banner = new THREE.Mesh(new THREE.PlaneGeometry(len - 8, 1.5 * sy), new THREE.MeshLambertMaterial({ map: ctex(1024, 48, (x, w, h) => {
+      x.fillStyle = '#123f2c'; x.fillRect(0, 0, w, h); x.fillStyle = '#e8c66a'; x.fillRect(0, 0, w, 3); x.fillRect(0, h - 3, w, 3);
+      x.font = 'bold 30px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(`${def.grade}  ${def.name}`, w / 2, h / 2 + 1);
+    }, [bn, 1]) }));
+    banner.rotation.y = Math.PI; banner.position.set(0, 20.4 * sy, 10.44); g.add(banner);
+    // 東京: 屋根を吊るマストとケーブル / 各場: 照明塔
+    const tall = id === 'tokyo';
+    for (let i = 0; i <= 8 && tall; i++) {
+      const x = -hl + (len * i) / 8;
+      const col = new THREE.Mesh(new THREE.BoxGeometry(1.6, H + 24, 1.6), steel); col.position.set(x, (H + 24) / 2, 47); g.add(col);
+      const cab = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 58, 4), steel); cab.position.set(x, H + 13.5, 20.5); cab.rotation.x = -1.12; g.add(cab);
+    }
+    for (const s of [-1, 1]) {
+      const tw = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.0, H + 22, 6), steel); tw.position.set(s * (hl + 30), (H + 22) / 2, 20); g.add(tw);
+      const lp = new THREE.Mesh(new THREE.BoxGeometry(9, 5, 1), lam(0xe8e8e0, { emissive: lit ? 0xfff0c0 : 0x222222 })); lp.position.set(s * (hl + 30), H + 23, 19.4); g.add(lp);
+    }
+
+    // ---- 客席の観客: 段ごとに人の列を立てる (段差で奥行きと視差が出る) ----
+    const crowdTex = ctex(2048, 256, (x, w, h) => {
+      x.clearRect(0, 0, w, h);
+      for (let row = 0; row < 2; row++) for (let i = 0; i < 52; i++) {
+        if (rng() > (row ? 0.82 : 0.95)) continue;
+        const cx = i * 39.4 + 20 + (rng() - 0.5) * 8, by = row * 128 + 128, tall2 = 0.86 + rng() * 0.22;
+        const hy = by - 92 * tall2, col = hex(S.crowd[(rng() * S.crowd.length) | 0]);
+        x.fillStyle = col; x.beginPath(); x.roundRect(cx - 14, hy + 12, 28, by - hy, 9); x.fill();
+        if (rng() < 0.16) { x.fillRect(cx - 17, hy - 12, 6, 30); x.fillRect(cx + 11, hy - 14, 6, 32); }   // 腕を上げる
+        if (rng() < 0.08) { x.fillStyle = '#e9e6da'; x.fillRect(cx - 9, hy + 26, 18, 22); }            // 新聞
+        x.fillStyle = ['#e2b594', '#d6a685', '#eac3a4'][(rng() * 3) | 0]; x.beginPath(); x.arc(cx, hy + 2, 10.5, 0, 6.3); x.fill();
+        x.fillStyle = rng() < 0.2 ? hex(S.crowd[(rng() * S.crowd.length) | 0]) : ['#1a1512', '#2b2019', '#3a3a3c', '#4a3526'][(rng() * 4) | 0];
+        x.beginPath(); x.arc(cx, hy - 1, 11, Math.PI * 0.96, Math.PI * 2.04); x.fill();
+      }
+    });
+    crowdTex.wrapS = THREE.RepeatWrapping;
+    const rows = [];
+    for (let i = 0; i < 22; i++) rows.push({ d: 0.6 + i * 0.68 + 0.38, y: (0.6 + 0.34 * (i + 1)) * sy, h: 1.3, sh: i * 0.68 + 0.6 > 9.5 ? 0.5 : 0.92, v: 0 });
+    for (let i = 0; i < 24; i++) rows.push({ d: 10.5 + i * 0.79 + 0.45, y: (20.0 + 0.5 * (i + 1)) * sy, h: 1.15, sh: 0.62 - i * 0.008, v: 0.5 });
+    this.crowdRows = [];
+    for (let k = 0; k < 3; k++) {
+      const pos = [], uv = [], colr = [], idx = [];
+      rows.forEach((r, ri) => {
+        if (ri % 3 !== k) return;
+        const b = pos.length / 3, u0 = rng() * 7, u1 = u0 + (len - 2) / 26;
+        pos.push(-hl + 1, r.y, r.d, hl - 1, r.y, r.d, -hl + 1, r.y + r.h, r.d, hl - 1, r.y + r.h, r.d);
+        uv.push(u0, 1 - r.v - 0.5, u1, 1 - r.v - 0.5, u0, 1 - r.v, u1, 1 - r.v);
+        for (let n = 0; n < 4; n++) colr.push(r.sh, r.sh, r.sh);
+        idx.push(b, b + 2, b + 1, b + 1, b + 2, b + 3);
+      });
+      const cg = new THREE.BufferGeometry();
+      cg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); cg.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      cg.setAttribute('color', new THREE.Float32BufferAttribute(colr, 3)); cg.setIndex(idx);
+      const cm = new THREE.Mesh(cg, new THREE.MeshBasicMaterial({ map: crowdTex, alphaTest: 0.5, side: THREE.DoubleSide, vertexColors: true, color: dusk ? 0xc8a890 : this.cond.weather >= 2 ? 0x9a9ea2 : 0xd8d8d8 }));
+      cm.frustumCulled = false; g.add(cm); this.crowdRows.push(cm);
     }
     sc.add(g);
 
-    // エプロン(コンクリート)と立ち見の観客
+    // ---- スタンドの影: 屋根の高さと太陽の向きから、コース上に落ちる影の帯 ----
+    {
+      const sd = this.sunDir, sideK = -t * sd.z;       // >0 なら太陽はスタンドの背後
+      if (sideK > 0.05 && this.cond.weather <= 1) {
+        const reach = (41 * sy / sd.y) * sideK;        // 屋根鼻先の影が届く距離
+        const dEdge = W + 17 - 5 - reach, skew = (41 * sy / sd.y) * sd.x;
+        const d0 = Math.max(-45, dEdge), a0 = this.standX0 - 8 - skew, a1 = this.standX1 + 8 - skew;
+        if (d0 < W + 16) {
+          const sm = new THREE.Mesh(ribbon(tr, [[d0, 0.06], [W + 16.9, 0.06]], { u0: Math.max(-200, a0), u1: Math.min(tr.L + 60, a1), step: 8 }), new THREE.MeshBasicMaterial({ color: dusk ? 0x1a1420 : 0x0a1420, transparent: true, opacity: dusk ? 0.34 : 0.38, depthWrite: false, side: THREE.DoubleSide }));
+          sm.renderOrder = 3; sc.add(sm);
+        }
+      }
+    }
+
+    // ---- エプロン(コンクリート)と立ち見の観客 ----
     const a0 = this.standX0 - 60, a1 = this.standX1 + 40;
     sc.add(new THREE.Mesh(ribbon(tr, [[W + 1.4, 0.03], [W + 17.2, 0.03]], { u0: a0, u1: a1, step: 10 }), lam(0xb9b6ae)));
-    const n = 2600, per = n / 3;
-    const pg = (() => { // 胴体 + 頭 + 上げた腕 を1つのジオメトリに
-      const parts = [new THREE.BoxGeometry(0.44, 0.62, 0.26).translate(0, 1.12, 0), new THREE.BoxGeometry(0.36, 0.82, 0.24).translate(0, 0.41, 0),
-        new THREE.SphereGeometry(0.115, 6, 5).translate(0, 1.58, 0)];
-      const g = new THREE.BufferGeometry(), pos = [], nor = [];
-      for (const q of parts) { const n = q.toNonIndexed(); pos.push(...n.attributes.position.array); nor.push(...n.attributes.normal.array); }
-      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
-      return g;
-    })();
+    // 人型: 服(個体ごとに色付け) と 頭・髪・脚(固定色) を別メッシュにする
+    const merge = (list) => {
+      const gg = new THREE.BufferGeometry(), pos = [], nor = [], cl = [], c = new THREE.Color();
+      for (const [geo, hexc] of list) {
+        const nn = geo.toNonIndexed(); pos.push(...nn.attributes.position.array); nor.push(...nn.attributes.normal.array);
+        c.setHex(hexc); for (let k = 0; k < nn.attributes.position.count; k++) cl.push(c.r, c.g, c.b);
+      }
+      gg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); gg.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+      gg.setAttribute('color', new THREE.Float32BufferAttribute(cl, 3));
+      return gg;
+    };
+    const torso = new THREE.CylinderGeometry(0.18, 0.15, 0.6, 6, 1, true); torso.scale(1, 1, 0.62); torso.translate(0, 1.14, 0);
+    const armG = (sx) => { const a = new THREE.CylinderGeometry(0.048, 0.04, 0.56, 4, 1, true); a.rotateZ(sx * 0.12); a.translate(sx * 0.225, 1.1, 0); return a; };
+    const legG = (sx) => new THREE.BoxGeometry(0.13, 0.84, 0.15).translate(sx * 0.085, 0.42, 0);
+    const bodyG = merge([[torso, 0xffffff], [armG(-1), 0xffffff], [armG(1), 0xffffff]]);
+    const restG = merge([[new THREE.SphereGeometry(0.105, 6, 4).translate(0, 1.6, 0), 0xdcae8c], [new THREE.SphereGeometry(0.112, 6, 2, 0, 6.3, 0, 1.45).translate(0, 1.615, -0.012), 0x1c1613],
+      [legG(-1), 0x2b2f3a], [legG(1), 0x2b2f3a]]);
     this.crowd = [];
-    const col = new THREE.Color(), m4 = new THREE.Matrix4(), p = {};
+    const col = new THREE.Color(), p = {}, n = [600, 1200, 1700][this.quality], per = (n / 3) | 0;
     for (let k = 0; k < 3; k++) {
-      const im = new THREE.InstancedMesh(pg, lam(0xffffff), per);
+      const im = new THREE.InstancedMesh(bodyG, lam(0xffffff, { vertexColors: true }), per), im2 = new THREE.InstancedMesh(restG, lam(0xffffff, { vertexColors: true }), per);
       for (let i = 0; i < per; i++) {
-        // ゴール前ほど密
         const fx = rng(), x = fx < 0.55 ? tr.straight + (rng() - 0.62) * 170 : a0 + rng() * (a1 - a0);
         const d = W + 1.9 + 14.6 * Math.pow(rng(), 1.7);
         tr.point(clamp(x, a0, a1), d, p);
-        m4.makeTranslation(p.x, p.y + 0.03, p.z); im.setMatrixAt(i, m4);
+        q.setFromAxisAngle(v.set(0, 1, 0), (t > 0 ? Math.PI : 0) + (rng() - 0.5) * 0.9);   // コースの方を向く
+        const hgt = 0.92 + rng() * 0.16;
+        m4.compose(v.set(p.x, p.y + 0.03, p.z), q, sv.set(hgt, hgt, hgt)); im.setMatrixAt(i, m4); im2.setMatrixAt(i, m4);
         col.setHex(S.crowd[(rng() * S.crowd.length) | 0]).multiplyScalar(0.75 + rng() * 0.35); im.setColorAt(i, col);
       }
-      im.instanceColor.needsUpdate = true; sc.add(im); this.crowd.push(im);
+      im.instanceColor.needsUpdate = true; im.add(im2); sc.add(im); this.crowd.push(im);
     }
     this.cheer = 0;
   }
@@ -467,26 +566,88 @@ export class Venue {
       lm.instanceColor.needsUpdate = true; sc.add(tm, lm);
     }
 
-    // 周辺の街並み
-    const urban = { tokyo: 230, nakayama: 300, kyoto: 120, hanshin: 260 }[id];
-    const winTex = ctex(64, 64, (x) => {
-      x.fillStyle = '#c9c6bd'; x.fillRect(0, 0, 64, 64);
-      for (let r = 0; r < 8; r++) for (let c = 0; c < 4; c++) { x.fillStyle = dusk && rng() < 0.45 ? '#ffe9a8' : '#6f8194'; x.fillRect(c * 16 + 3, r * 8 + 2, 10, 4); }
+    // 周辺の街並み: マンション(バルコニー) / オフィス(ガラス) / 低層の店舗・住宅
+    const facade = (kind) => ctex(256, 256, (x, w, h) => {
+      const F = 4, Bn = 4, fh = h / F, bw = w / Bn;
+      x.fillStyle = kind === 'office' ? '#8f9aa5' : '#e2ddd2'; x.fillRect(0, 0, w, h);
+      for (let f = 0; f < F; f++) for (let b = 0; b < Bn; b++) {
+        const x0 = b * bw, y0 = f * fh, on = dusk && rng() < 0.5;
+        if (kind === 'mansion') {
+          x.fillStyle = on ? '#ffe2a0' : ['#3f4c5a', '#56606b', '#2f3944'][(rng() * 3) | 0]; x.fillRect(x0 + 5, y0 + 8, bw - 10, fh * 0.5);   // 掃き出し窓
+          if (!on && rng() < 0.5) { x.fillStyle = 'rgba(230,225,210,0.75)'; x.fillRect(x0 + 5, y0 + 8, (bw - 10) * (0.3 + rng() * 0.5), fh * 0.5); }   // カーテン
+          x.fillStyle = '#f4f1ea'; x.fillRect(x0, y0 + fh * 0.6, bw, fh * 0.34);           // バルコニーの手すり壁
+          x.fillStyle = 'rgba(0,0,0,0.28)'; x.fillRect(x0, y0 + fh * 0.94, bw, fh * 0.06); // 影
+          x.fillStyle = 'rgba(0,0,0,0.18)'; x.fillRect(x0, y0, 2, fh);                     // 戸境
+          if (rng() < 0.3) { x.fillStyle = '#c9c9c4'; x.fillRect(x0 + bw - 16, y0 + fh * 0.44, 10, 9); }   // 室外機
+        } else if (kind === 'office') {
+          x.fillStyle = on ? '#ffe9b8' : ['#3d566e', '#46627c', '#35495d'][(rng() * 3) | 0]; x.fillRect(x0 + 2, y0 + 4, bw - 4, fh - 14);
+          x.fillStyle = 'rgba(255,255,255,0.13)'; x.fillRect(x0 + 2, y0 + 4, bw - 4, (fh - 14) * 0.35);
+          x.fillStyle = '#c4c9ce'; x.fillRect(x0, y0 + fh - 10, bw, 10);
+        } else {
+          x.fillStyle = on ? '#ffe2a0' : '#4a5560'; x.fillRect(x0 + 10, y0 + 14, bw - 26, fh * 0.42);
+          x.fillStyle = 'rgba(0,0,0,0.2)'; x.fillRect(x0, y0 + fh - 4, bw, 4);
+          if (f === F - 1) { x.fillStyle = ['#b23a2e', '#2f6fb0', '#e0a020', '#2e8a55'][(rng() * 4) | 0]; x.fillRect(x0 + 3, y0 + fh * 0.62, bw - 6, fh * 0.26); }   // 看板
+        }
+      }
     }, [1, 1]);
-    const bG = new THREE.BoxGeometry(1, 1, 1); bG.translate(0, 0.5, 0);
-    const blds = new THREE.InstancedMesh(bG, lam(0xffffff, { map: winTex }), urban);
-    let nb = 0;
-    for (let i = 0; i < urban * 4 && nb < urban; i++) {
+    const bSpec = { mansion: [[7, 8], [11, 9], [14, 7]], office: [[5, 6], [9, 7], [17, 6]], low: [[2, 5], [3, 6]] };
+    const roofM = lam(0x8d8f8c);
+    const bList = [];
+    const urban = { tokyo: 260, nakayama: 320, kyoto: 150, hanshin: 290 }[id];
+    for (let i = 0; i < urban * 5 && bList.length < urban; i++) {
       const x = -R - 1300 + rng() * (L + 2 * R + 2600), z = cz + (rng() - 0.5) * (2 * R + 2600);
       const d = dOf(x, z);
       if (d < W + 190 || (inStandZone(x, z) && d < W + 260)) continue;
-      const far = clamp((d - 200) / 900, 0, 1);
-      const h = 8 + rng() * rng() * (id === 'kyoto' ? 22 : 55) * (0.5 + far), w = 14 + rng() * 26, dp = 12 + rng() * 22;
-      q.setFromAxisAngle(v.set(0, 1, 0), rng() * 0.5);
-      m4.compose(v.set(x, groundY, z), q, sv.set(w, h, dp)); blds.setMatrixAt(nb, m4);
-      blds.setColorAt(nb++, col.setHSL(0.08 + rng() * 0.08, 0.06 + rng() * 0.1, 0.62 + rng() * 0.25));
+      const r0 = rng(), kind = r0 < (id === 'kyoto' ? 0.3 : 0.5) ? 'mansion' : r0 < (id === 'kyoto' ? 0.4 : 0.68) ? 'office' : 'low';
+      const cls = (rng() * rng() * bSpec[kind].length * (id === 'kyoto' ? 0.7 : 1)) | 0;
+      bList.push({ x, z, kind, cls, rot: ((rng() * 4) | 0) * Math.PI / 2 + (rng() - 0.5) * 0.3 });
     }
-    blds.count = nb; if (blds.instanceColor) blds.instanceColor.needsUpdate = true; sc.add(blds);
+    const topG = new THREE.BoxGeometry(1, 1, 1); topG.translate(0, 0.5, 0);
+    const tops = new THREE.InstancedMesh(topG, lam(0xb5b3ad), bList.length); let nTop = 0;
+    for (const kind in bSpec) {
+      const tex = facade(kind);
+      bSpec[kind].forEach(([fl, bays], cls) => {
+        const arr = bList.filter((b) => b.kind === kind && b.cls === cls); if (!arr.length) return;
+        const geo = new THREE.BoxGeometry(1, 1, 1); geo.translate(0, 0.5, 0);
+        const uv = geo.attributes.uv; for (let k = 0; k < uv.count; k++) uv.setXY(k, uv.getX(k) * bays / 4, uv.getY(k) * fl / 4);
+        const side = lam(0xffffff, { map: tex });
+        const im = new THREE.InstancedMesh(geo, [side, side, roofM, roofM, side, side], arr.length);
+        arr.forEach((b, k) => {
+          const h = fl * (kind === 'office' ? 3.8 : 3.0), w = bays * (kind === 'office' ? 4.2 : 3.4) * (0.85 + rng() * 0.3), dp = (kind === 'low' ? 9 : 12) + rng() * 8;
+          q.setFromAxisAngle(v.set(0, 1, 0), b.rot);
+          m4.compose(v.set(b.x, groundY, b.z), q, sv.set(w, h, dp)); im.setMatrixAt(k, m4);
+          if (kind === 'mansion') col.setHSL(0.07 + rng() * 0.06, 0.1 + rng() * 0.25, 0.72 + rng() * 0.22);
+          else if (kind === 'office') col.setHSL(0.55 + rng() * 0.1, 0.05 + rng() * 0.15, 0.8 + rng() * 0.18);
+          else col.setHSL(0.06 + rng() * 0.1, 0.1 + rng() * 0.2, 0.78 + rng() * 0.2);
+          im.setColorAt(k, col);
+          if (kind !== 'low') { // 屋上の塔屋・設備
+            m4.compose(v.set(b.x, groundY + h, b.z), q, sv.set(w * (0.2 + rng() * 0.2), 2.4 + rng() * 2.5, dp * (0.3 + rng() * 0.3))); tops.setMatrixAt(nTop++, m4);
+          }
+        });
+        im.instanceColor.needsUpdate = true; sc.add(im);
+      });
+    }
+    tops.count = nTop; sc.add(tops);
+    {
+      const wallG = new THREE.BoxGeometry(1, 0.62, 1); wallG.translate(0, 0.31, 0);
+      const rg = new THREE.BufferGeometry(), y0 = 0.6, y1 = 1.0, e = 0.56; // 切妻屋根
+      rg.setAttribute('position', new THREE.Float32BufferAttribute([-e, y0, e, e, y0, e, e, y1, 0, -e, y0, e, e, y1, 0, -e, y1, 0, e, y0, -e, -e, y0, -e, -e, y1, 0, e, y0, -e, -e, y1, 0, e, y1, 0,
+        -e, y0, -e, -e, y0, e, -e, y1, 0, e, y0, e, e, y0, -e, e, y1, 0], 3)); rg.computeVertexNormals();
+      const nH = id === 'kyoto' ? 520 : 760;
+      const walls = new THREE.InstancedMesh(wallG, lam(0xffffff), nH), roofsI = new THREE.InstancedMesh(rg, lam(0xffffff), nH);
+      let k = 0;
+      for (let i = 0; i < nH * 6 && k < nH; i++) {
+        const x = -R - 900 + rng() * (L + 2 * R + 1800), z = cz + (rng() - 0.5) * (2 * R + 1800);
+        const d = dOf(x, z);
+        if (d < W + 215 || (inStandZone(x, z) && d < W + 280)) continue;
+        q.setFromAxisAngle(v.set(0, 1, 0), ((rng() * 2) | 0) * Math.PI / 2 + (rng() - 0.5) * 0.2);
+        m4.compose(v.set(x, groundY, z), q, sv.set(8 + rng() * 5, 7 + rng() * 2.5, 7 + rng() * 3)); walls.setMatrixAt(k, m4); roofsI.setMatrixAt(k, m4);
+        walls.setColorAt(k, col.setHSL(0.08 + rng() * 0.06, 0.08 + rng() * 0.2, 0.74 + rng() * 0.2));
+        roofsI.setColorAt(k, col.setHex([0x4d5863, 0x6a4e40, 0x3c4046, 0x7a7f84, 0x35506a][(rng() * 5) | 0]));
+        k++;
+      }
+      walls.count = roofsI.count = k; walls.instanceColor.needsUpdate = roofsI.instanceColor.needsUpdate = true; sc.add(walls, roofsI);
+    }
 
     // 遠景の山並み (霞ませた色・フォグ無効)
     const haze = (c, k) => new THREE.Color(c).lerp(hor, k);
@@ -675,15 +836,15 @@ export class Venue {
       const mode = opt.cam ?? this.camMode;
       if (mode === 0) { // 後方追尾
         const gk = race.state === 'gate' ? 1 : clamp(1 - pl.s / 26, 0, 1); // 発走直後はゲートの上を越えるまで引いた高い位置から
-        const back = 6.6 + gk * 3.9, up = 3.3 + gk * 1.9;
+        const back = 5.9 + gk * 4.6, up = 2.85 + gk * 2.35;
         pos.set(P.x - g.hx * back, P.y + up, P.z - g.hz * back);
         look.set(P.x + g.hx * 7, P.y + 1.5, P.z + g.hz * 7);
       } else if (mode === 1) { // 騎手目線
         pos.set(P.x - g.hx * 0.3, P.y + 2.55, P.z - g.hz * 0.3);
         look.set(P.x + g.hx * 12, P.y + 1.6, P.z + g.hz * 12); k = 14;
       } else if (mode === 2) { // 中継カメラ(外から)
-        tr.at(pl.s + 2, tr.W + 12, g);
-        pos.set(g.x - g.hx * 5, g.y + 7.5, g.z - g.hz * 5);
+        tr.at(pl.s + 2, tr.W + 8, g);
+        pos.set(g.x - g.hx * 5, g.y + 8.5, g.z - g.hz * 5);
         look.set(P.x + g.hx * 3, P.y + 1.2, P.z + g.hz * 3); k = 5;
       } else if (mode === 3) { // 俯瞰
         pos.set(P.x - g.hx * 26, P.y + 24, P.z - g.hz * 26);
@@ -699,15 +860,28 @@ export class Venue {
       this.snap = false;
       cam.position.copy(this.camPos);
       // 走行の振動
-      if (mode <= 1 && pl.v > 5) cam.position.y += Math.sin(pl.phase * Math.PI * 2) * (mode === 1 ? 0.07 : 0.025);
+      const spd = clamp((pl.v - 12) / 7, 0, 1);
+      if (mode <= 1 && pl.v > 5) {
+        const tt = this.time, sh = (mode === 1 ? 0.035 : 0.016) * (0.4 + spd);
+        cam.position.y += Math.sin(pl.phase * Math.PI * 2) * (mode === 1 ? 0.08 : 0.035) + Math.sin(tt * 31) * sh;
+        cam.position.x += Math.sin(tt * 23 + 1.7) * sh; cam.position.z += Math.sin(tt * 27 + 0.6) * sh;
+      }
       cam.lookAt(this.camLook);
+      if (mode <= 1) cam.rotateZ(-clamp(pl.v * pl.v * g.k * 0.012, 0, 0.07) * tr.t - clamp(pl.lat * 0.012, -0.03, 0.03) * tr.t);
+      // スピードが乗るほど画角が広がり、追い出すとさらに引き込まれる
+      const baseFov = cam.aspect < 1 ? 68 : 56, fovT = baseFov + (mode <= 1 ? spd * 8 + (pl.pushing ? 3 : 0) : 0);
+      this.fov = (this.fov || baseFov) + (fovT - (this.fov || baseFov)) * Math.min(1, dt * 2.5);
+      if (Math.abs(cam.fov - this.fov) > 0.05) { cam.fov = this.fov; cam.updateProjectionMatrix(); }
     }
     // 観客: 直線で盛り上がる
     if (this.crowd) {
       const lead = race.order[0];
       const hot = race.state === 'run' && lead.s > race.D - tr.straight - 150 && race.finishOrder.length < 3 ? 1 : 0;
       this.cheer += (hot - this.cheer) * Math.min(1, dt * 1.5);
-      for (let k = 0; k < 3; k++) this.crowd[k].position.y = Math.abs(Math.sin(this.time * (6 + k * 0.7) + k * 2.1)) * (0.04 + this.cheer * 0.28);
+      for (let k = 0; k < 3; k++) {
+        this.crowd[k].position.y = Math.abs(Math.sin(this.time * (6 + k * 0.7) + k * 2.1)) * (0.04 + this.cheer * 0.28);
+        if (this.crowdRows) this.crowdRows[k].position.y = Math.abs(Math.sin(this.time * (5.2 + k * 0.9) + k * 1.7)) * (0.015 + this.cheer * 0.16);
+      }
     }
     if (this.swans) for (const s of this.swans) {
       const u = s.userData; u.a += u.sp * dt;
