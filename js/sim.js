@@ -360,6 +360,7 @@ export class Race {
         }
         if (this.t >= r.startDelay) {
           r.started = true; r.waitPress = false;
+          if (r.isPlayer && r.m.startKind === '好スタート') r.v = 3.2; // 好スタートは一完歩ぶん速く出る
           if (r.isPlayer) { r.m.startDelay = r.startDelay; if (!r.m.startKind) r.m.startKind = '出遅れ'; this.events.push({ type: 'pstart', kind: r.m.startKind, delay: r.startDelay }); }
           else if (r.startDelay > 0.45) this.events.push({ type: 'late', i: r.i });
         } else { r.cmdA = 0; r.cmdLat = 0; continue; }

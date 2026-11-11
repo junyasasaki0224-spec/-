@@ -163,10 +163,12 @@ export class Venue {
     gnd.rotation.x = -Math.PI / 2; gnd.position.set(this.center.x, groundY - 0.05, this.center.z);
 
     const rough = cond.rough;
-    const turfTex = ctex(256, 256, (x, w, h) => {
+    const turfTex = ctex(1024, 1024, (x, w, h) => {
       for (let i = 0; i < 2; i++) { x.fillStyle = i ? S.turfB : S.turfA; x.fillRect((i * w) / 2, 0, w / 2, h); }
       // 芝目のノイズ
-      for (let i = 0; i < 5000; i++) { x.fillStyle = `rgba(${rng() < 0.5 ? '0,30,0' : '200,230,140'},${0.04 + rng() * 0.06})`; x.fillRect(rng() * w, rng() * h, 1 + rng() * 2, 1 + rng() * 3); }
+      // 刈り目のむら(大きな濃淡) + 芝の葉(細かい筋)
+      for (let i = 0; i < 260; i++) { const r = 30 + rng() * 90, cx = rng() * w, cy = rng() * h, g = x.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, `rgba(${rng() < 0.5 ? '10,50,10' : '190,220,120'},0.10)`); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(cx - r, cy - r, r * 2, r * 2); }
+      for (let i = 0; i < 70000; i++) { x.fillStyle = `rgba(${rng() < 0.55 ? '0,35,0' : '205,235,140'},${0.05 + rng() * 0.09})`; x.fillRect(rng() * w, rng() * h, 1 + rng() * 5, 1); }
       // 内側の荒れ (開催後半ほど傷む)。v=0が内ラチ
       if (rough > 0.05) {
         const band = (7 / W) * h;
@@ -365,7 +367,14 @@ export class Venue {
     const a0 = this.standX0 - 60, a1 = this.standX1 + 40;
     sc.add(new THREE.Mesh(ribbon(tr, [[W + 1.4, 0.03], [W + 17.2, 0.03]], { u0: a0, u1: a1, step: 10 }), lam(0xb9b6ae)));
     const n = 2600, per = n / 3;
-    const pg = new THREE.BoxGeometry(0.46, 1.62, 0.3); pg.translate(0, 0.81, 0);
+    const pg = (() => { // 胴体 + 頭 + 上げた腕 を1つのジオメトリに
+      const parts = [new THREE.BoxGeometry(0.44, 0.62, 0.26).translate(0, 1.12, 0), new THREE.BoxGeometry(0.36, 0.82, 0.24).translate(0, 0.41, 0),
+        new THREE.SphereGeometry(0.115, 6, 5).translate(0, 1.58, 0)];
+      const g = new THREE.BufferGeometry(), pos = [], nor = [];
+      for (const q of parts) { const n = q.toNonIndexed(); pos.push(...n.attributes.position.array); nor.push(...n.attributes.normal.array); }
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+      return g;
+    })();
     this.crowd = [];
     const col = new THREE.Color(), m4 = new THREE.Matrix4(), p = {};
     for (let k = 0; k < 3; k++) {
@@ -656,7 +665,8 @@ export class Venue {
       let pos = new THREE.Vector3(), k = 13;
       const mode = opt.cam ?? this.camMode;
       if (mode === 0) { // 後方追尾
-        const back = race.state === 'gate' ? 10.5 : 6.6, up = race.state === 'gate' ? 5.2 : 3.3; // ゲート内は引いた位置から
+        const gk = race.state === 'gate' ? 1 : clamp(1 - pl.s / 26, 0, 1); // 発走直後はゲートの上を越えるまで引いた高い位置から
+        const back = 6.6 + gk * 3.9, up = 3.3 + gk * 1.9;
         pos.set(P.x - g.hx * back, P.y + up, P.z - g.hz * back);
         look.set(P.x + g.hx * 7, P.y + 1.5, P.z + g.hz * 7);
       } else if (mode === 1) { // 騎手目線

@@ -16,10 +16,13 @@ if (isTouch) document.body.classList.add('is-touch');
 const G = {
   mode: 'attract', def: null, horses: null, cond: null, seed: 0, pick: -1, diff: 1,
   race: null, acc: 0, paused: false, introT: 0, introDur: 9, gateT: 0, finT: 0,
-  capT: 0, lastSay: -10, toastT: 0, hudT: 0, flags: {}, pSplitAt: 0, pSplitT: 0, pLap: 0, feel: null, orderT: 0,
+  coachOn: true, capT: 0, lastSay: -10, toastT: 0, hudT: 0, flags: {}, pSplitAt: 0, pSplitT: 0, pLap: 0, feel: null, orderT: 0,
 };
 const keys = { up: false, down: false, left: false, right: false };
 const edge = { whip: false, lead: false, go: false };
+
+const KL = isTouch ? { up: '追う', down: '抑える', lr: '◀ ▶', left: '◀', right: '▶', whip: 'ムチ', lead: '手前', go: 'スタート' } : { up: '↑', down: '↓', lr: '← →', left: '←', right: '→', whip: 'SPACE', lead: 'SHIFT', go: 'SPACE' };
+const kbd = (k) => `<kbd>${KL[k]}</kbd>`;
 
 // ---- 保存データ ----
 const SAVE_KEY = 'turfjockey.v1';
@@ -174,7 +177,8 @@ function toGate() {
   G.mode = 'gate'; G.gateT = 2.2 + Math.random() * 2.4; venue.snap = true;
   show('none');
   const gm = $('h-gate'); gm.classList.remove('hidden', 'go');
-  gm.innerHTML = `ゲートイン完了<small>ゲートが開いた瞬間に ${isTouch ? '「ムチ」ボタン' : 'SPACE'} ！(早押しは出遅れ)</small>`;
+  gm.innerHTML = `<div class="sig red">待て</div><div class="g1">信号が<span style="color:#6fe08a">緑</span>に変わった瞬間に ${kbd('go')}</div><div class="g2">赤のうちに押すと、馬があおって出遅れます</div>`;
+  setWhipLabel('スタート');
   say('各馬ゲートに収まりました。', true);
   sound.stop();
   edge.go = edge.whip = edge.lead = false;
@@ -198,9 +202,21 @@ function handleEvents() {
   const race = G.race, ev = race.events, pl = race.player;
   for (const e of ev) {
     switch (e.type) {
-      case 'false': toast('まだ開いていない！', 'bad'); sound.buzz(); break;
+      case 'false': {
+        const sg = document.querySelector('#h-gate .sig'); if (sg) { sg.className = 'sig bad'; sg.textContent = '早い！'; }
+        toast('まだ赤信号！ あおって出遅れる', 'bad'); sound.buzz(); break;
+      }
       case 'pstart':
-        toast(e.kind + (e.delay < 0.7 && e.kind !== 'あおって出遅れ' ? ` (${e.delay.toFixed(2)}秒)` : ''), e.kind === '好スタート' ? 'good' : e.kind === '五分' ? '' : 'bad');
+        {
+          const good = e.kind === '好スタート', ok = e.kind === '五分';
+          const rb = $('rb-i'); if (rb) rb.style.left = clamp(e.delay / 0.8, 0, 1) * 100 + '%';
+          const sg = document.querySelector('#h-gate .sig');
+          if (sg && e.kind !== 'あおって出遅れ') { sg.className = 'sig ' + (good || ok ? 'done' : 'bad'); sg.textContent = e.kind; }
+          const g1 = document.querySelector('#h-gate .g1');
+          if (g1 && e.kind !== 'あおって出遅れ') g1.innerHTML = `反応 ${e.delay.toFixed(2)}秒 ${good ? '― 一歩前へ！' : ''}　続けて ${kbd('up')} 長押しでダッシュ`;
+          G.gateMsgT = 1.6; setWhipLabel('ムチ');
+          if (good) sound.chime(92);
+        }
         if (e.kind.includes('出遅れ')) say(`${nm(pl)}、出遅れました！`, true);
         break;
       case 'late': if (!G.flags.late) { G.flags.late = 1; say(`${nm(race.runners[e.i])}は出遅れ。`); } break;
@@ -371,6 +387,57 @@ function updateHud(dt) {
   drawMinimap();
 }
 
+// ---- 騎乗アドバイス: 状況に応じて「次に押すキー」を示す ----
+function setWhipLabel(t) {
+  const b = document.querySelector('#touch .t-whip'); if (b) b.textContent = t;
+  $('k-whip-l').textContent = t;
+}
+function coachAdvice() {
+  const race = G.race, p = race.player, tr = race.track, n = race.runners.length;
+  if (G.mode === 'gate') return { k: ['whip'], t: '', c: 'hidden' };
+  if (G.mode !== 'race') return null;
+  if (!p.started) return { k: ['whip'], t: '', c: 'hidden' };
+  const rem = race.D - p.s, f = G.feel || race.feel(p), st = p.h.style;
+  const inKey = tr.t < 0 ? 'left' : 'right', outKey = tr.t < 0 ? 'right' : 'left';
+  if (p.E <= 0 && rem > 30) return { k: [], t: '脚が上がった…。次はもう少し我慢してから追い出そう', c: 'warn' };
+  // スタートダッシュ
+  if (p.s < 320 && race.t < 26) {
+    const band = [[1, 1], [2, 5], [Math.round(n * 0.35), Math.round(n * 0.65)], [Math.round(n * 0.6), n]][st];
+    if (p.rank > band[1]) return { k: ['up'], t: `スタートダッシュ: ${kbd('up')} 長押しで ${band[0] === band[1] ? '先頭' : band[0] + '〜' + band[1] + '番手'}(${STYLES[st]})へ`, c: 'act' };
+    if (p.v > f.ve + 0.5) return { k: [], t: `位置は取れた。${kbd('up')} を離すと今の速度のまま走る(持ったまま)`, c: '' };
+    if (p.rank < band[0] && st >= 2) return { k: ['down'], t: `前に行きすぎ。${kbd('down')} で控えて脚を溜める`, c: 'warn' };
+    return { k: [], t: 'いい位置。何も押さなければ速度は維持される', c: '' };
+  }
+  if (p.blocked > 0.3) return { k: ['lr'], t: `前が壁！ ${kbd('lr')} で空いた進路へ(斜め後ろの馬に注意)`, c: 'warn' };
+  if (rem > 700) {
+    if (p.ar > 0.45) return p.cover ? { k: [], t: '掛かり気味。前の馬の真後ろのまま我慢させる', c: 'warn' } : { k: ['lr'], t: `掛かっている！ ${kbd('lr')} で前の馬の真後ろに入れて落ち着かせる`, c: 'warn' };
+    if (f.ratio < 0.86) return { k: ['down'], t: `ペースが速い。${kbd('down')} で金色の印(適正ペース)まで落とす`, c: 'warn' };
+    if (f.ratio > 1.55 && p.v < f.ve - 0.35) return { k: ['up'], t: `余力十分。${kbd('up')} で金色の印まで上げてよい`, c: '' };
+    if (p.k > 0 && p.d > 6) return { k: ['lr'], t: `外を回って距離ロス。${kbd(inKey)} で内へ`, c: 'warn' };
+    if (!p.cover && p.rank > 1 && (p.head > 2 || p.ar > 0.3)) return { k: ['lr'], t: `${kbd('lr')} で前の馬の真後ろへ。風除けになりスタミナを温存`, c: '' };
+    return { k: [], t: '折り合って追走中。金色の印より速くしないこと', c: '' };
+  }
+  const ls = p.s - tr.straightStartS;
+  if (!p.leadDone && ls > -45 && ls < 160) return { k: ['lead'], t: `直線入口！ ${kbd('lead')} で手前替え`, c: 'act' };
+  if (rem < 430 || f.ratio > 1.05) {
+    if (race.roughAt(p.d) > 0.35 && ls > 0) return { k: ['up', 'lr'], t: `${kbd('up')} で追いながら ${kbd(outKey)} で荒れていない外へ`, c: 'act' };
+    return rem < 380 ? { k: ['up', 'whip'], t: `追え！ ${kbd('up')} 長押し ＋ リングが光る瞬間に ${kbd('whip')}`, c: 'act' } : { k: ['up'], t: `スパート！ ${kbd('up')} 長押し`, c: 'act' };
+  }
+  return { k: [], t: 'まだ我慢。追い出しは残り400mあたりから', c: '' };
+}
+function updateCoach(dt) {
+  G.coachT = (G.coachT || 0) - dt; if (G.coachT > 0) return; G.coachT = 0.25;
+  const el = $('h-coach'), a = G.coachOn && G.diff < 2 ? coachAdvice() : null;
+  for (const s of document.querySelectorAll('#h-keys span[data-k]')) s.classList.toggle('hint', !!a && a.k.includes(s.dataset.k));
+  for (const b of document.querySelectorAll('#touch button')) {
+    const k = b.dataset.k, kk = k === 'left' || k === 'right' ? 'lr' : k;
+    b.classList.toggle('hint', !!a && a.k.includes(kk));
+  }
+  if (!a) { el.classList.add('hidden'); return; }
+  if (a.t !== G.coachTxt) { G.coachTxt = a.t; $('h-coach-t').innerHTML = '💡 ' + a.t; }
+  el.className = 'coach ' + a.c;
+}
+
 // ---- 結果 ----
 function showResult() {
   const race = G.race, def = G.def, p = race.player;
@@ -425,6 +492,7 @@ function showResult() {
       <td>${fmtTime(r.ft)}</td><td>${i === 0 ? '' : marginText(Math.abs(r.ft - fo[i - 1].ft) * 17)}</td><td>${r.last3f.toFixed(1)}</td><td>${STYLES[r.h.style]}</td><td>${r.h.pop}</td></tr>`).join('') + '</tbody>';
   $('res-laps').innerHTML = `ラップ: ${race.splits.map((s) => s.toFixed(1)).join(' - ')}${G.flags.pace ? `　(${G.flags.pace})` : ''}<br>勝ち馬 ${win.h.name}（${STYLES[win.h.style]}・${win.h.pop}番人気） ${fmtTime(win.ft)}`;
   sound.silence(); sound.intensity = 0; sound.play('menu');
+  $('h-coach').classList.add('hidden');
   G.mode = 'result'; show('result');
 }
 
@@ -483,10 +551,12 @@ function frame(now) {
       G.gateT -= dt;
       if (G.gateT <= 0) {
         race.openGate(); sound.gate(); G.mode = 'race'; G.acc = 0;
-        const gm = $('h-gate'); gm.textContent = 'スタート！'; gm.classList.add('go'); G.gateMsgT = 0.9;
+        const gm = $('h-gate'); G.gateMsgT = 0;
+        if (race.falseStart) gm.innerHTML = '<div class="sig bad">あおった</div><div class="g1">早押しで出遅れ…</div><div class="g2">次は緑を見てから押す</div>';
+        else gm.innerHTML = `<div class="sig green">GO!</div><div class="g1">今だ！ ${kbd('go')}</div><div class="rbar"><i id="rb-i"></i></div><div class="rbar-l"><span>好スタート</span><span>五分</span><span>出遅れ</span></div>`;
         if (sound.raceBgm) { sound.intensity = 0; sound.play('race'); }
       }
-      updateHud(dt); audioFrame();
+      updateHud(dt); audioFrame(); updateCoach(dt);
       venue.frame(dt);
       break;
     case 'race':
@@ -495,6 +565,8 @@ function frame(now) {
       handleEvents();
       if (G.mode === 'race') commentary();
       if (G.gateMsgT > 0) { G.gateMsgT -= dt; if (G.gateMsgT <= 0) $('h-gate').classList.add('hidden'); }
+      else if (race.player.waitPress) { const rb = $('rb-i'); if (rb) rb.style.left = clamp(race.t / 0.8, 0, 1) * 100 + '%'; }
+      updateCoach(dt);
       {
         const rem = race.D - race.player.s;
         sound.intensity = rem < race.track.straight + 80 ? 2 : race.t > 14 ? 1 : 0;
@@ -509,7 +581,7 @@ function frame(now) {
 // ---- 入力 ----
 const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right' };
 function press(k) {
-  if (k === 'whip') { edge.whip = true; edge.go = true; }
+  if (k === 'whip') { const pl = G.race && G.race.player; if (pl && pl.started) edge.whip = true; else edge.go = true; } // 発走前はスタート、発走後はムチ
   else if (k === 'lead') edge.lead = true;
   else { keys[k] = true; if (k === 'up' && isTouch) edge.go = true; }
 }
@@ -554,6 +626,7 @@ $('btn-opt-close').onclick = () => overlay('opt', false);
 $('o-music').onchange = (e) => { sound.init(); sound.setMusic(e.target.checked); };
 $('o-racebgm').onchange = (e) => { sound.raceBgm = e.target.checked; };
 $('o-sfx').onchange = (e) => { sound.sfxOn = e.target.checked; };
+$('o-coach').onchange = (e) => { G.coachOn = e.target.checked; };
 $('o-voice').onchange = (e) => { sound.voiceOn = e.target.checked; if (!e.target.checked) sound.hush(); };
 for (const b of document.querySelectorAll('[data-back]')) b.onclick = () => { sound.click(); G.oddsToken = 0; show(b.dataset.back); };
 $('btn-go').onclick = () => { sound.init(); startRace(); };

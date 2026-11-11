@@ -22,6 +22,9 @@ ES Modules を使っているため、`index.html` を直接開くのではな�
 | 手前替え(直線入口) | SHIFT / E | 手前 |
 | 視点切替 / 一時停止 | C / P | 画面右上 |
 
+発走は画面中央の信号が赤「待て」から緑「GO!」に変わった瞬間に SPACE(タッチは「スタート」)。
+レース中は「騎乗アドバイス」が状況に応じて次に押すキーを示します(設定でオフ、難易度「名手」では非表示)。
+
 ## 再現している駆け引き
 
 - **スタミナとペース配分** — 有酸素速度を超えた分だけ加速度的に消耗。前半の貯金は直線の失速で倍返しになる。使い切ると時間とともにさらに脚が止まる
@@ -50,6 +53,20 @@ ES Modules を使っているため、`index.html` を直接開くのではな�
 
 天候(晴/曇/小雨/雨)・馬場・風・開催週はレースごとに変化し、出走馬とオッズ(AI同士の模擬レースから算出)も毎回生成されます。
 
+## 馬と騎手のモデル (Blender)
+
+馬・騎手・馬具は Blender の Python API で生成しています (`tools/blender/build_models.py` → `assets/horse.glb`)。
+
+- 胴・肩・後躯・四肢の筋肉と関節、腱、頭部を解剖学的な塊として配置し、滑らかに融合して表面を抽出
+- Blender でスムージング・ポリゴン削減・スムーズシェーディング、骨格(馬27本 + 騎手12本)とスキンウェイトを設定
+- 頭絡・手綱・競走鞍・ゼッケン、前傾姿勢の騎手(ヘルメット・ゴーグル・勝負服・長靴)を同じ骨格にバインド
+- ゲーム側では骨を直接動かし、着地順(左後→右後→左前→右前→空中期)と手前に従う襲歩を再生。毛色ごとの四肢の黒み、流星・白い脚は個体ごとに変化
+
+```bash
+pip install bpy scikit-image
+python tools/blender/build_models.py assets/horse.glb [確認用レンダリングの出力先]
+```
+
 ## サウンド
 
 音源ファイルは使わず、すべて Web Audio でその場合成しています(楽曲はオリジナル)。
@@ -64,9 +81,10 @@ js/data.js      競馬場・レース・出走馬生成
 js/track.js     コース形状と高低差
 js/sim.js       レース物理とAI騎手 (DOM非依存)
 js/scene.js     競馬場の3D描画 (Three.js)
-js/horse3d.js   馬と騎手のモデル・襲歩アニメーション
+js/horse3d.js   馬と騎手(glTF)の読み込み・襲歩アニメーション
 js/audio.js     BGM・効果音・実況
 js/main.js      進行・入力・HUD
-tools/          Nodeでの検証 (npm run simtest)
-vendor/         three.js (MIT)
+assets/         Blenderで生成した馬・騎手モデル
+tools/          Nodeでの検証 (npm run simtest) / tools/blender モデル生成
+vendor/         three.js と glTFローダー (MIT)
 ```

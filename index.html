@@ -63,6 +63,12 @@
     <div id="intro-grade" class="intro-grade"></div>
     <div id="intro-name" class="intro-name"></div>
     <div id="intro-sub" class="intro-sub"></div>
+    <div class="flow">
+      <div><b>① スタート</b><span>信号が<em>緑</em>になった瞬間 <kbd class="k-whip">SPACE</kbd></span></div>
+      <div><b>② ダッシュ</b><span><kbd class="k-up">↑</kbd> 長押しで位置を取る</span></div>
+      <div><b>③ 道中</b><span>離すと速度維持 / <kbd class="k-down">↓</kbd> 抑える / <kbd class="k-lr">← →</kbd> 進路</span></div>
+      <div><b>④ 直線</b><span><kbd class="k-lead">SHIFT</kbd> 手前替え → <kbd class="k-up">↑</kbd> 追う + <kbd class="k-whip">SPACE</kbd> ムチ</span></div>
+    </div>
   </div>
   <button class="btn small skip" id="btn-skip">スキップ ▶</button>
 </section>
@@ -80,6 +86,11 @@
   <div class="caption" id="h-cap"></div>
   <div class="toast" id="h-toast"></div>
   <div class="gate-msg hidden" id="h-gate"></div>
+  <div class="coach hidden" id="h-coach"><span class="ck" id="h-coach-k"></span><span id="h-coach-t"></span></div>
+  <div class="keys-bar" id="h-keys">
+    <span data-k="up"><kbd>↑</kbd>追う</span><span data-k="down"><kbd>↓</kbd>抑える</span><span data-k="lr"><kbd>←→</kbd>進路</span>
+    <span data-k="whip"><kbd>SPACE</kbd><i id="k-whip-l">ムチ</i></span><span data-k="lead"><kbd>SHIFT</kbd>手前替え</span><span><kbd>C</kbd>視点</span>
+  </div>
 
   <div class="hud-bottom">
     <div class="gauge-box">
@@ -150,14 +161,15 @@
         <tr><th>↑ / W</th><td>追う(加速)。離すと「持ったまま」で今の速度を維持</td></tr>
         <tr><th>↓ / S</th><td>抑える(減速)。掛かった馬を力で抑えるとスタミナを余計に消耗</td></tr>
         <tr><th>← → / A D</th><td>進路を左右へ。内ラチ沿いは最短距離、外は距離ロス</td></tr>
-        <tr><th>SPACE</th><td>ゲートが開いた瞬間に押してスタート / レース中はムチ</td></tr>
+        <tr><th>SPACE</th><td>発走: 信号が赤「待て」から緑「GO!」に変わった瞬間に押す / レース中はムチ</td></tr>
         <tr><th>SHIFT / E</th><td>手前替え(最後の直線に入った直後に)</td></tr>
         <tr><th>C / P</th><td>視点切替 / 一時停止</td></tr>
       </table>
       <p class="note">スマートフォンは画面下のボタンで操作できます。</p>
       <h3>勝つための技術</h3>
       <ul>
-        <li><b>スタート</b> ― ゲートが開いた瞬間に反応。早押しは馬があおって出遅れます。</li>
+        <li><b>スタート</b> ― 画面中央の信号が緑「GO!」になった瞬間に SPACE。0.16秒以内なら好スタートで一歩前に出られます。赤のうちに押すと馬があおって出遅れます。</li>
+        <li><b>スタートダッシュ</b> ― 出たら ↑ を押し続けて加速し、脚質に合った位置(逃げ=先頭、先行=2〜5番手、差し=中団、追込=後方)を取ります。位置が取れたら ↑ を離すと、その速度のまま走ります(持ったまま)。画面の「騎乗アドバイス」が次に押すキーを教えます。</li>
         <li><b>ペース配分</b> ― スタミナは「速く走るほど加速度的に」減ります。前半に飛ばすと直線で脚が止まり、溜めすぎると届きません。<b>手応え</b>表示とラップを読んでください。</li>
         <li><b>折り合い</b> ― 気性の激しい馬は序盤やスローペース、1周目スタンド前の歓声で掛かります。<b>前に馬を置いて壁を作る</b>と落ち着きます。</li>
         <li><b>スリップストリーム</b> ― 他馬の真後ろは風の抵抗が減りスタミナを温存できます。向かい風の日ほど効果大。ただし<b>前が壁</b>になって抜け出せない危険と表裏一体。</li>
@@ -180,6 +192,7 @@
       <label><input type="checkbox" id="o-racebgm" checked> レース中のBGM(オフで場内の音のみ)</label>
       <label><input type="checkbox" id="o-sfx" checked> 効果音・歓声</label>
       <label><input type="checkbox" id="o-voice" checked> 実況の読み上げ(端末の音声合成)</label>
+      <label><input type="checkbox" id="o-coach" checked> 騎乗アドバイス(次に押すキーの案内)を表示</label>
     </div>
   </div>
 </section>
