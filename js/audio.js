@@ -11,7 +11,7 @@ const BEATS = [0, 0.09, 0.37, 0.48]; // 襲歩の着地 (アニメーション�
 
 export class Sound {
   constructor() {
-    this.ctx = null; this.musicOn = true; this.sfxOn = true; this.voiceOn = true; this.raceBgm = true;
+    this.ctx = null; this.musicOn = true; this.sfxOn = true; this.voiceOn = false; this.raceBgm = true; // 実況の読み上げは廃止 (歓声で展開を表現する)
     this.vol = { master: 0.9, music: 0.8, sfx: 1.0 };
     this.song = null; this.step = 0; this.timer = null; this.intensity = 0;
     this.lastPh = 0; this.nearPh = {}; this.swell = 0; this.nextCrowdFx = 0; this.clapUntil = 0;
@@ -56,7 +56,12 @@ export class Sound {
     this.rev = c.createConvolver(); this.rev.buffer = ir;
     const revOut = c.createGain(); revOut.gain.value = 0.9; this.rev.connect(revOut); revOut.connect(this.master);
     const bus = (g, send) => { const b = c.createGain(); b.gain.value = g; b.connect(this.master); if (send) { const s = c.createGain(); s.gain.value = send; b.connect(s); s.connect(this.rev); } return b; };
-    this.music = bus(this.vol.music, 0.3); this.sfx = bus(this.vol.sfx, 0.06); this.crowdBus = bus(this.vol.sfx, 0.22); this.ui = bus(0.8, 0.05);
+    this.music = bus(this.vol.music, 0.3);
+    // 効果音(蹄音など)は瞬間的なピークが大きいので専用のコンプレッサーで整えてから混ぜる
+    const sc = c.createDynamicsCompressor(); sc.threshold.value = -16; sc.knee.value = 6; sc.ratio.value = 6; sc.attack.value = 0.001; sc.release.value = 0.07;
+    const scOut = c.createGain(); scOut.gain.value = 1.25; sc.connect(scOut); scOut.connect(this.master);
+    this.sfx = c.createGain(); this.sfx.gain.value = this.vol.sfx; this.sfx.connect(sc);
+    { const sd = c.createGain(); sd.gain.value = 0.05; this.sfx.connect(sd); sd.connect(this.rev); } this.crowdBus = bus(this.vol.sfx, 0.22); this.ui = bus(0.8, 0.05);
     // ノイズ素材
     const nl = c.sampleRate * 3, nb = c.createBuffer(1, nl, c.sampleRate), nd = nb.getChannelData(0);
     for (let i = 0; i < nl; i++) nd[i] = Math.random() * 2 - 1;
@@ -70,7 +75,7 @@ export class Sound {
     // 歓声は帯域の違う層を重ね、ゆっくり揺らす
     this.amb = {
       murmur: layer('bandpass', 520, 0.45, this.crowdBus), crowd: layer('bandpass', 1100, 0.5, this.crowdBus), roar: layer('bandpass', 2300, 0.6, this.crowdBus),
-      wind: layer('bandpass', 420, 0.8, this.sfx), rain: layer('highpass', 3600, 0.3, this.sfx), rumble: layer('lowpass', 105, 0.7, this.sfx),
+      wind: layer('bandpass', 420, 0.8, this.sfx), rain: layer('highpass', 3600, 0.3, this.sfx), rumble: layer('bandpass', 190, 0.6, this.sfx),
     };
     for (const k of ['murmur', 'crowd', 'roar']) { const l = c.createOscillator(), lg = c.createGain(); l.frequency.value = 0.13 + Math.random() * 0.2; lg.gain.value = this.amb[k].f.frequency.value * 0.18; l.connect(lg); lg.connect(this.amb[k].f.frequency); l.start(); }
     this.newFan();
@@ -253,10 +258,26 @@ export class Sound {
   whoosh() { if (!this.ctx) return; const t = this.ctx.currentTime, g = this.nz(t, 0.4, 'bandpass', 900, 0.001, this.sfx, 1.2); g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(0.001, t); g.gain.exponentialRampToValueAtTime(0.4, t + 0.14); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.4); }
   snort(t, vol) { this.nz(t, 0.13, 'bandpass', 620 + Math.random() * 200, vol, this.sfx, 0.9); this.nz(t, 0.08, 'highpass', 2600, vol * 0.35, this.sfx); }
   hoof(vol, pan, wet) {
-    const t = this.ctx.currentTime + Math.random() * 0.006, out = pan ? this.pan(pan) : this.sfx, f = (wet ? 64 : 84) + Math.random() * 16;
-    this.tone('sine', f, f * 0.52, t, 0.085, vol, out);
-    this.nz(t, 0.045, 'lowpass', 520 + Math.random() * 240, vol * 0.75, out);
-    if (wet) this.nz(t, 0.09, 'highpass', 2400, vol * 0.4, out); else this.nz(t, 0.02, 'bandpass', 1900, vol * 0.2, out, 1.5);
+    const t = this.ctx.currentTime + Math.random() * 0.006, out = pan ? this.pan(pan) : this.sfx, f = (wet ? 96 : 122) + Math.random() * 26;
+    this.tone('triangle', f * 1.7, f * 0.75, t, 0.075, vol, out);                              // 胴鳴り (小さなスピーカーでも聞こえる帯域)
+    this.tone('sine', f * 0.72, f * 0.4, t, 0.1, vol * 0.85, out);                              // 地面に響く低音
+    this.nz(t, 0.055, 'bandpass', 430 + Math.random() * 260, vol * 1.15, out, 0.9);             // 芝を叩く音
+    this.nz(t, 0.018, 'bandpass', 1700 + Math.random() * 700, vol * 0.55, out, 1.4);            // 着地の瞬間
+    if (wet) this.nz(t, 0.11, 'highpass', 2300, vol * 0.5, out);                                // 道悪の水しぶき
+  }
+  // どよめき: 低めの声のうねり
+  gasp(amount = 1) {
+    if (!this.ctx) return; const t = this.ctx.currentTime + 0.02;
+    for (const [fq, k] of [[430, 0.5], [760, 0.32]]) {
+      const g = this.ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(k * amount, t + 0.3); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.7);
+      const sr = this.ctx.createBufferSource(); sr.buffer = this.noise; sr.loop = true; const fl = this.ctx.createBiquadFilter(); fl.type = 'bandpass'; fl.frequency.setValueAtTime(fq * 1.25, t); fl.frequency.exponentialRampToValueAtTime(fq * 0.8, t + 1.5); fl.Q.value = 0.8;
+      sr.connect(fl); fl.connect(g); g.connect(this.crowdBus); sr.start(t); sr.stop(t + 1.8);
+    }
+  }
+  // 拍手: 入線後に場内から湧く
+  applause(dur = 6, amount = 1) {
+    if (!this.ctx) return; const t = this.ctx.currentTime + 0.05, n = Math.floor(dur * 34 * amount);
+    for (let i = 0; i < n; i++) { const x = Math.random(), tt = t + x * dur; this.clap(tt, (0.05 + Math.random() * 0.07) * amount * (1 - x * 0.7)); }
   }
   // 歓声の盛り上がりを時刻指定で起こす
   cheerAt(t, amount, dur, out = this.crowdBus) {
@@ -275,7 +296,8 @@ export class Sound {
   update(o) {
     if (!this.ctx || this.ctx.state !== 'running') return;
     const t = this.ctx.currentTime, a = this.amb, on = this.sfxOn ? 1 : 0, set = (n, v) => n.g.gain.setTargetAtTime(v * on, t, 0.3);
-    set(a.murmur, o.crowd * 0.5); set(a.crowd, o.crowd * 0.32 + o.roar * 0.3); set(a.roar, o.roar * 0.42);
+    const rr = Math.min(1.5, o.roar);
+    set(a.murmur, o.crowd * 0.5 + rr * 0.1); set(a.crowd, o.crowd * 0.32 + rr * 0.34); set(a.roar, rr * 0.46);
     set(a.wind, o.wind * 0.2); set(a.rain, o.rain * 0.16); set(a.rumble, o.rumble * 0.55);
     a.wind.f.frequency.setTargetAtTime(280 + o.wind * 560, t, 0.3);
     if (!on) { this.lastPh = o.phase; return; }
@@ -287,7 +309,7 @@ export class Sound {
     }
     const crossed = (lp, ph, b) => (lp < b && ph >= b) || (lp > ph && (b > lp || b <= ph));
     if (o.speed > 3) {
-      const ph = o.phase % 1, lp = this.lastPh % 1, v = 0.5 + Math.min(0.25, o.speed * 0.014);
+      const ph = o.phase % 1, lp = this.lastPh % 1, v = 0.85 + Math.min(0.35, o.speed * 0.02);
       for (let i = 0; i < 4; i++) if (crossed(lp, ph, BEATS[i])) this.hoof(v * (i > 1 ? 1 : 0.85), (i % 2 ? 0.18 : -0.18), o.wet);
       if (crossed(lp, ph, 0.68) && o.effort > 0.15) this.snort(t, 0.1 + o.effort * 0.3);   // 完歩ごとに息を吐く
     }
@@ -296,7 +318,7 @@ export class Sound {
     if (o.near) for (const h of o.near) {
       const lp = (this.nearPh[h.id] ?? h.phase) % 1, ph = h.phase % 1; this.nearPh[h.id] = h.phase;
       if (h.v < 3) continue;
-      const v = 0.42 / (1 + h.dist * 0.22);
+      const v = 0.75 / (1 + h.dist * 0.2);
       for (let i = 0; i < 4; i++) if (crossed(lp, ph, BEATS[i])) this.hoof(v, h.side, o.wet);
     }
   }

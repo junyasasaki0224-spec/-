@@ -217,9 +217,10 @@ function handleEvents() {
           G.gateMsgT = 1.6; setWhipLabel('ムチ');
           if (good) sound.chime(92);
         }
+        if (e.kind.includes('出遅れ')) sound.gasp(1);
         if (e.kind.includes('出遅れ')) say(`${nm(pl)}、出遅れました！`, true);
         break;
-      case 'late': if (!G.flags.late) { G.flags.late = 1; say(`${nm(race.runners[e.i])}は出遅れ。`); } break;
+      case 'late': if (!G.flags.late) { G.flags.late = 1; sound.gasp(0.7); say(`${nm(race.runners[e.i])}は出遅れ。`); } break;
       case 'whip':
         sound.whip(e.q > 1.2);
         if (e.dead) toast('もう脚が残っていない…', 'bad'); else if (e.q > 1.2) toast('ナイスムチ！', 'good');
@@ -240,7 +241,7 @@ function handleEvents() {
         break;
       case 'finish': {
         const r = race.runners[e.i];
-        if (e.pos === 1) { say(`${nm(r)}、先頭でゴールイン！`, true); sound.intensity = 0; sound.stop(); sound.cheer(1, 6); }
+        if (e.pos === 1) { say(`${nm(r)}、先頭でゴールイン！`, true); sound.intensity = 0; sound.stop(); sound.cheer(1.25, 7); setTimeout(() => sound.applause(7, 1), 2600); }
         if (r.isPlayer) {
           toast(e.pos === 1 ? '1着でゴール！' : `${e.pos}着入線`, e.pos <= 3 ? 'good' : '');
           G.mode = 'finish'; G.finT = 0; sound.jingle(e.pos === 1); venue.camMode = 2;
@@ -270,18 +271,26 @@ function commentary() {
     const lead = gap < 0.6 ? 'わずかに' : gap > 3 ? `${Math.round(gap)}馬身ほど離して` : `${Math.max(1, Math.round(gap))}馬身のリードで`;
     if (say(`先頭は${nm(o[0])}、${lead}。2番手に${o[1].h.name}、続いて${o[2].h.name}。${pl.rank > 3 ? `${pl.h.name}は現在${pl.rank}番手。` : ''}`)) F.sumT = race.t;
   }
-  if (!F.c4 && rem < tr.straight + 260 && rem > tr.straight) { F.c4 = 1; say('第4コーナーをカーブ、各馬が動き出した！', true); }
+  // 1周目のスタンド前通過: 目の前を馬群が駆け抜けて沸く
+  if (!F.pass1 && rem > tr.straight + 500 && ld.s >= tr.chute && tr.uOf(ld.s) > tr.straight - 120 && tr.uOf(ld.s) < tr.straight + 40 && race.t > 8) { F.pass1 = 1; sound.cheer(0.7, 5); }
+  // 直線で先頭が入れ替わるたびに、どよめきと歓声
+  if (F.str && rem > 0 && ld.i !== F.ldI && race.t - (F.ldT || 0) > 1.6) { F.ldI = ld.i; F.ldT = race.t; sound.gasp(0.8); sound.cheer(0.8, 2.6); }
+  // 自分の馬が直線で順位を上げると沸く
+  if (F.str && rem > 0 && pl && !pl.fin) { if (F.plRank && pl.rank < F.plRank && pl.rank <= 5 && race.t - (F.upT || 0) > 1.2) { F.upT = race.t; sound.cheer(0.5 + (6 - pl.rank) * 0.1, 2.2); } F.plRank = pl.rank; }
+  if (!F.c4 && rem < tr.straight + 260 && rem > tr.straight) { F.c4 = 1; sound.cheer(0.55, 3.5); say('第4コーナーをカーブ、各馬が動き出した！', true); }
   if (!F.str && rem <= tr.straight) {
+    sound.cheer(1.0, 5); F.ldI = ld.i; F.ldT = race.t;
     F.str = 1;
     const fl = { tokyo: '525メートルの長い直線！', nakayama: '中山の直線は短いぞ！', kyoto: '坂を下って平坦の直線！', hanshin: '最後に急坂が待つ阪神の直線！' }[G.def.course];
     say(`さあ最後の直線！${fl}先頭は${ld.h.name}！`, true);
   }
   if (!F.r200 && rem <= 200 && rem > 0) {
+    sound.cheer(1.1, 4.5);
     F.r200 = 1; const o = race.order;
     const ch = o[1].s > o[0].s - 3 ? `${o[1].h.name}が並びかける！` : o[1].v > o[0].v + 0.25 ? `${o[1].h.name}が迫る！` : 'リードを保っている！';
     say(`残り200！先頭は${o[0].h.name}！${ch}`, true);
   }
-  if (F.r200 && !F.r50 && rem <= 60 && rem > 0) { F.r50 = 1; say(`${race.order[0].h.name}か、${race.order[1].h.name}か！`, true); }
+  if (F.r200 && !F.r50 && rem <= 60 && rem > 0) { F.r50 = 1; if (race.order[0].s - race.order[1].s < 3) sound.cheer(1.3, 3.5); say(`${race.order[0].h.name}か、${race.order[1].h.name}か！`, true); }
 }
 
 // ---- ミニマップ ----
@@ -534,7 +543,7 @@ function audioFrame() {
   const effort = clamp((p.v - 13) / 6, 0, 1) * 0.5 + (p.pushing ? 0.3 : 0) + (p.E < 15 ? 0.3 : 0);
   sound.update({
     crowd: (race.state === 'gate' ? 0.75 : 0.3 + build * 0.3) * (0.5 + nearStand * 0.5) + hot * 0.25,
-    roar: hot * (0.45 + nearStand * 0.55) + build * 0.12 * nearStand,
+    roar: hot * (0.45 + nearStand * 0.55) * (1 + (race.order.length > 1 && race.order[0].s - race.order[1].s < 2.5 ? 0.35 : 0)) + build * 0.12 * nearStand,
     wind: clamp(p.v / 19, 0, 1), rain: cond.weather >= 2 ? (cond.weather === 3 ? 1 : 0.5) : 0,
     rumble: clamp(near.length / 5, 0, 1) * clamp(p.v / 15, 0, 1), speed: p.fin && p.v < 6 ? 0 : p.v, phase: p.phase, wet: cond.going >= 2, effort, near,
   });
@@ -665,7 +674,6 @@ $('o-coach').onchange = (e) => { G.coachOn = e.target.checked; };
   venue.setQuality(q); $('o-quality').value = String(q);
   $('o-quality').onchange = (e) => { venue.setQuality(+e.target.value); try { localStorage.setItem('turfjockey.quality', e.target.value); } catch (er) { /* noop */ } };
 }
-$('o-voice').onchange = (e) => { sound.voiceOn = e.target.checked; if (!e.target.checked) sound.hush(); };
 for (const b of document.querySelectorAll('[data-back]')) b.onclick = () => { sound.click(); G.oddsToken = 0; if (b.dataset.back === 'title') sound.play('title'); show(b.dataset.back); };
 $('btn-go').onclick = () => { sound.unlock(); sound.confirm(); startRace(); };
 $('btn-skip').onclick = () => { if (G.mode === 'intro') toGate(); };
