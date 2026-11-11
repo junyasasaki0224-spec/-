@@ -65,6 +65,7 @@ ES Modules を使っているため、`index.html` を直接開くのではな�
 ```bash
 pip install bpy scikit-image
 python tools/blender/build_models.py assets/horse.glb [確認用レンダリングの出力先]
+python tools/blender/build_trees.py assets/trees.glb   # 広葉樹・桜・針葉樹
 ```
 
 ## サウンド
@@ -84,7 +85,7 @@ js/scene.js     競馬場の3D描画 (Three.js)
 js/horse3d.js   馬と騎手(glTF)の読み込み・襲歩アニメーション
 js/audio.js     BGM・効果音・実況
 js/main.js      進行・入力・HUD
-assets/         Blenderで生成した馬・騎手モデル
+assets/         Blenderで生成した馬・騎手・樹木モデル
 tools/          Nodeでの検証 (npm run simtest) / tools/blender モデル生成
 vendor/         three.js と glTFローダー (MIT)
 ```

@@ -482,4 +482,5 @@ def render_preview(outdir):
     bpy.data.objects.remove(g); bpy.data.objects.remove(sun); bpy.data.objects.remove(cam)
 
 
-build()
+if __name__ == '__main__':
+    build()

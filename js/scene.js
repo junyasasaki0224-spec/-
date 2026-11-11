@@ -6,7 +6,24 @@
 import * as THREE from '../vendor/three.module.min.js';
 import { mulberry32, clamp, lerp, WAKU_COLORS, WAKU_TEXT, GOING, WEATHER } from './data.js';
 import { Horse3D, loadHorseModel } from './horse3d.js';
-export { loadHorseModel };
+import { GLTFLoader } from '../vendor/GLTFLoader.js';
+
+// Blenderで生成したモデル(馬・騎手・樹木)の読み込み
+const TREES = {};
+export async function loadAssets() {
+  await loadHorseModel();
+  const gltf = await new GLTFLoader().loadAsync(new URL('../assets/trees.glb', import.meta.url).href);
+  gltf.scene.traverse((o) => {
+    if (!o.isMesh) return;
+    const g = o.geometry; g.userData.shared = true;
+    if (o.name.endsWith('_leaf')) { // 葉の明暗(UV.x)を頂点カラーに
+      const uv = g.attributes.uv, c = new Float32Array(uv.count * 3);
+      for (let i = 0; i < uv.count; i++) { const sh = uv.getX(i); c[i * 3] = c[i * 3 + 1] = c[i * 3 + 2] = sh * sh; }
+      g.setAttribute('color', new THREE.BufferAttribute(c, 3));
+    }
+    TREES[o.name] = g;
+  });
+}
 
 const SEASON = {
   spring: { turfA: '#4f9a3c', turfB: '#5dab48', grass: 0x5a9a45, trees: [0xf4b6cc, 0xf7c6d8, 0xf1a7c2, 0xf9d3e0], green: [0x5c9a48, 0x4d8a3e], hill: 0x7ea088, crowd: [0xe8e8e8, 0xf2c0d0, 0x8fb8e8, 0xf0e0a0, 0x444444, 0xd05050] },
@@ -401,8 +418,6 @@ export class Venue {
     const inStandZone = (x, z) => (-t * z > 0) && x > this.standX0 - 110 && x < this.standX1 + 90;
 
     // 樹木
-    const trunkG = new THREE.CylinderGeometry(0.22, 0.32, 1, 5); trunkG.translate(0, 0.5, 0);
-    const leafG = new THREE.IcosahedronGeometry(1, 1), coneG = new THREE.ConeGeometry(1, 2.4, 7); coneG.translate(0, 1.2, 0);
     const list = [];
     const addTree = (x, z, y, s, kind) => list.push({ x, z, y, s, kind });
     const winter = def.season === 'winter', spring = def.season === 'spring';
@@ -431,32 +446,27 @@ export class Venue {
       for (let u = L + 30; u < tr.lap - 30; u += 13) { const p = tr.point(u, W + 20 + rng() * 8, {}); addTree(p.x, p.z, p.y - 0.5, 4.5 + rng() * 2, 'cherry'); }
       for (let i = 0; i < 40; i++) { const p = tr.point(rng() * tr.lap, -(48 + rng() * 14), {}); addTree(p.x, p.z, infieldY, 4 + rng() * 2, 'cherry'); }
     }
-    const nT = list.length;
-    const trunks = new THREE.InstancedMesh(trunkG, lam(0x5a4634), nT);
-    const leaves = new THREE.InstancedMesh(leafG, lam(0xffffff), nT);
-    const cones = new THREE.InstancedMesh(coneG, lam(0xffffff), nT);
     const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), sv = new THREE.Vector3(), col = new THREE.Color();
-    let nl = 0, nc = 0;
-    list.forEach((tr0, i) => {
-      const s = tr0.s, th = s * (tr0.kind === 'conifer' ? 0.35 : 0.55);
-      m4.compose(v.set(tr0.x, tr0.y, tr0.z), q, sv.set(s * 0.22, th, s * 0.22)); trunks.setMatrixAt(i, m4);
-      if (tr0.kind === 'conifer') {
-        m4.compose(v.set(tr0.x, tr0.y + th * 0.6, tr0.z), q, sv.set(s * 0.36, s * 0.42, s * 0.36)); cones.setMatrixAt(nc, m4);
-        cones.setColorAt(nc++, col.setHex(S.green[(rng() * 2) | 0]).multiplyScalar(0.65 + rng() * 0.2));
-      } else {
-        const bare = winter && tr0.kind !== 'keyaki' ? 0.6 : 1;
-        m4.compose(v.set(tr0.x, tr0.y + th + s * 0.28, tr0.z), q, sv.set(s * 0.5 * bare, s * 0.42 * bare, s * 0.5 * bare)); leaves.setMatrixAt(nl, m4);
+    const kinds = { broad: [], cherry: [], conifer: [] };
+    for (const t0 of list) kinds[t0.kind === 'conifer' ? 'conifer' : t0.kind === 'cherry' ? 'cherry' : 'broad'].push(t0);
+    for (const kn in kinds) {
+      const arr = kinds[kn]; if (!arr.length) continue;
+      const tm = new THREE.InstancedMesh(TREES[kn + '_trunk'], lam(0x4a3828), arr.length);
+      const lm = new THREE.InstancedMesh(TREES[kn + '_leaf'], lam(0xffffff, { vertexColors: true }), arr.length);
+      arr.forEach((t0, i) => {
+        const k = t0.s * (kn === 'conifer' ? 1.2 : 1.3);
+        q.setFromAxisAngle(v.set(0, 1, 0), rng() * 6.28);
+        m4.compose(v.set(t0.x, t0.y - 0.15, t0.z), q, sv.set(k * (0.9 + rng() * 0.25), k * (0.9 + rng() * 0.2), k * (0.9 + rng() * 0.25)));
+        tm.setMatrixAt(i, m4); lm.setMatrixAt(i, m4);
         let c;
-        if (tr0.kind === 'cherry') c = S.trees[(rng() * 4) | 0];
-        else if (tr0.kind === 'keyaki') c = winter ? 0x7a6850 : S.green[0];
+        if (kn === 'conifer') c = S.green[(rng() * 2) | 0];
+        else if (t0.kind === 'cherry') c = S.trees[(rng() * 4) | 0];
+        else if (t0.kind === 'keyaki') c = winter ? 0x7a6850 : S.green[0];
         else c = spring ? (rng() < 0.4 ? S.trees[(rng() * 4) | 0] : S.green[(rng() * 2) | 0]) : S.trees[(rng() * S.trees.length) | 0];
-        leaves.setColorAt(nl++, col.setHex(c).multiplyScalar(0.8 + rng() * 0.3));
-      }
-    });
-    leaves.count = nl; cones.count = nc;
-    if (leaves.instanceColor) leaves.instanceColor.needsUpdate = true;
-    if (cones.instanceColor) cones.instanceColor.needsUpdate = true;
-    sc.add(trunks, leaves, cones);
+        lm.setColorAt(i, col.setHex(c).multiplyScalar((kn === 'conifer' ? 0.8 : 1.0) + rng() * 0.3));
+      });
+      lm.instanceColor.needsUpdate = true; sc.add(tm, lm);
+    }
 
     // 周辺の街並み
     const urban = { tokyo: 230, nakayama: 300, kyoto: 120, hanshin: 260 }[id];
