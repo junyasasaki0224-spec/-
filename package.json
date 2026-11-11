@@ -1,0 +1,11 @@
+{
+  "name": "turf-master",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "3D競馬ジョッキーシミュレーション",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "simtest": "node tools/simtest.mjs"
+  }
+}
