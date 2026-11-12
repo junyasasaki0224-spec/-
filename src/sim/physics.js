@@ -9,7 +9,7 @@ export const K1 = 0.08;
 export const K2 = (ACC - K1 * VMAX) / (VMAX * VMAX);
 export const IDLE = 0.08;          // アイドリングでのわずかな前進
 export const KLAT = 9.0;           // 横滑り減衰
-export const GRIP = 13.5;          // 横グリップ限界 (m/s^2)
+export const GRIP = 15.5;          // 横グリップ限界 (m/s^2)
 export const KDRIFT = 0.3;         // 横滑りによる前進抵抗
 export const KWV = 1.3;            // 風見効果の強さ
 export const YAW_MAX = 1.6;        // 最大ヨーレート (rad/s)
@@ -19,6 +19,8 @@ export const YAW_RESP = 7.0;       // 舵の応答
 export const BRAKE = 1.6;
 // 滑走から外れる速度域(約15〜45km/h)でレバーを落としていると、艇尾が沈んで抵抗が急に増える
 export const HUMP = 2.4;
+// レバーを全部落とした時に残るハンドルの効き(1 = 推力に関係なく効く)
+export const THRUST_STEER_MIN = 0.5;
 export const CIRC = [-1.05, 0, 1.05];   // 艇体を3つの円で近似
 export const CR = 0.68;
 const INERTIA = 1.25;
@@ -67,9 +69,11 @@ export function stepBoat(b, dt, env) {
   const vf0 = b.vx * ch + b.vz * sh;
   const sp = Math.abs(vf0);
 
-  // ヨー: 速度があるほど舵が効く。極低速ではプロペラ推力で向きを変える
+  // ヨー: 船外機はプロペラの推力の向きを変えて曲がるので、レバーを落とすとハンドルが効きにくい。
+  // レバーを握ったまま切るほど小さく回れる(モンキーターン)。全部落とすと外へ流れる
   const hull = smooth(0.5, 6, sp);
-  const auth = hull * (1 - 0.24 * Math.min(1, sp / VMAX)) + 0.3 * b.throttle * (1 - hull);
+  const prop = THRUST_STEER_MIN + (1 - THRUST_STEER_MIN) * smooth(0, 0.6, b.throttle);
+  const auth = hull * (1 - 0.24 * Math.min(1, sp / VMAX)) * prop + 0.3 * b.throttle * (1 - hull);
   // 風見効果: 艇が進行方向から大きく振れると、水の抵抗で向きが戻される(スピンしすぎない)
   const vl0 = -b.vx * Math.sin(b.h) + b.vz * ch;
   const wT = -b.steer * YAW_MAX * auth * (0.75 + 0.25 * b.gripF) + KWV * vl0 / Math.max(sp, 4) * hull;

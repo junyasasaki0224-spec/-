@@ -1,10 +1,13 @@
 // AI レーサー。スタートは大時計を見て起こしタイミングを合わせ、
 // レース中はターンマークごとに「進入 → 旋回円 → 立ち上がり」の走行ラインを組み立てて追従する。
 import { PI, clamp, wrapAngle, sm, lerp, M1, M2, BOUNDS, region } from './course.js';
-import { timeToCover } from './physics.js';
+import { timeToCover, GRIP } from './physics.js';
 
 const ST_LAG = 0.15;   // レバー操作の遅れぶん早めに起こす
-const MAKURI_LEAD = 2.2;   // 内の艇の前を横切るのに必要なリード(m)。艇の長さの約3/4
+const MAKURI_LEAD = 2.2;
+const GRIP_USE = 0.86;   // 横グリップの限界の何割まで使って回るか
+const ARC_THR = 0.55;     // 旋回中に保つレバーの開き
+const TURN_IN = 9;       // 旋回円に入る何m手前でレバーを握り直すか   // 内の艇の前を横切るのに必要なリード(m)。艇の長さの約3/4
 
 // cfg: { skill, st(狙うスタートタイミング), sashi(差しを狙う確率), lane }
 export function initAI(b, rng, cfg) {
@@ -74,7 +77,7 @@ function makePlan(b, mark, boats) {
   // 立ち上がり: 外へ流れながらバック(ホーム)ストレッチへ
   const vEnd = dC - rho;
   for (let u = ux - 5; u > -175; u -= 5) push(u, lerp(vEnd, -Math.max(exit, -vEnd), sm((ux - u) / 60)));
-  ai.plan = { xs, zs, kT, ux, s, M, vArc: Math.sqrt(11.6 * ai.skill * b.gripSet * rho) };
+  ai.plan = { xs, zs, kT, ux, s, M, vArc: Math.sqrt(GRIP_USE * GRIP * ai.skill * b.gripSet * rho) };
   ai.planMark = mark;
   // 最も近い点から追従を始める
   let best = 1e9, k = 0;
@@ -190,7 +193,7 @@ export function updateAI(b, race, dt, apply = true) {
   // ---- スロットル ----
   // 旋回に必要な横Gから目標速度を決め、超えていればレバーを落とす
   const kappa = 2 * Math.sin(Math.min(Math.abs(err), PI / 2)) / dist;
-  const aLim = 11.6 * ai.skill * b.gripF * b.gripSet;
+  const aLim = GRIP_USE * GRIP * ai.skill * b.gripF * b.gripSet;
   const vT = Math.max(9.5, Math.sqrt(aLim / Math.max(kappa, 1e-4)));
   let thr = clamp(0.55 + (vT - sp) * 0.45, 0.1, 1);
   // ターン進入前の減速(少しオーバースピード気味に入って艇を流す)
@@ -198,7 +201,7 @@ export function updateAI(b, race, dt, apply = true) {
   if (dT > 0 && dT < 60) {
     let vIn = P.vArc * 1.16;
     if (ai.firstTurn && ai.sashi) vIn *= 0.93;      // 差しは一呼吸おいて内を突く
-    if (sp * sp - vIn * vIn > 2 * 6.2 * dT) thr = 0.05;
+    if (sp * sp - vIn * vIn > 2 * 6.2 * dT) thr = dT > TURN_IN ? 0.05 : ARC_THR;   // 切り込む直前にはレバーを握り直す(落としたままだとハンドルが効かない)
   }
   // 前を横切られたら(まくられたら)レバーを落として譲る。突っ込むと接触して両方失速する
   if (reg === 0 || reg === 2) {
@@ -209,6 +212,8 @@ export function updateAI(b, race, dt, apply = true) {
       if (ahead > 0.3 && ahead < 6 && Math.abs(side) < 2.3) thr = Math.min(thr, 0.25 + 0.1 * ahead);
     }
   }
+  // 旋回中はレバーを握ったまま回る(モンキーターン)
+  if (k >= P.kT - 1 && k <= P.kT + 12) thr = Math.max(thr, ARC_THR);
   // 壁などに引っかかった時の復帰
   if (sp < 1.5) { ai.stuck += dt; if (ai.stuck > 1.2) thr = 1; } else ai.stuck = 0;
   if (apply) { b.cmdSteer = steer; b.cmdThrottle = thr; b.cmdBrake = 0; }
