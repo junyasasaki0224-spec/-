@@ -37,6 +37,12 @@
       },
       "RoomService": {
         "$path": "src/RoomService.lua"
+      },
+      "MatchPolicy": {
+        "$path": "src/MatchPolicy.lua"
+      },
+      "MatchQueue": {
+        "$path": "src/MatchQueue.lua"
       }
     },
     "StarterPlayer": {

@@ -1,0 +1,62 @@
+local policy=require("../src/MatchPolicy")
+local function candidate(rating,session) return {rating=rating,session=session} end
+local six={}
+for n=1,6 do six[tostring(n)]=candidate(1500,"s"..n) end
+local state=policy.update(nil,100,six,{},"group-a")
+for n=1,6 do assert(state.players[tostring(n)].match=="group-a","six players match atomically") end
+local after=policy.update(state,101,six,{},"group-b")
+for n=1,6 do assert(after.players[tostring(n)].match=="group-a","already matched cannot be matched again") end
+assert(policy.accept(state,101,1,"server-a")==nil,"no server assigned yet")
+local assigned=policy.assign(state,"group-a","access-a","server-a")
+for n=1,6 do assert(assigned.players[tostring(n)].access=="access-a" and assigned.players[tostring(n)].privateId=="server-a","whole group gets the reserved server") end
+assert(policy.assign(assigned,"group-a","access-b","server-b")==nil,"a group is assigned only once")
+assert(policy.accept(assigned,101,1,"server-b")==nil,"wrong server rejected")
+local consumed=policy.accept(assigned,101,1,"server-a")
+assert(consumed and consumed.players["1"].used,"participant accepted")
+assert(policy.accept(consumed,101,1,"server-a")==nil,"ticket cannot be replayed")
+assert(policy.accept(assigned,220,1,"server-a")==nil,"expired match rejected")
+local released=policy.release(state,"group-a",102)
+for n=1,6 do assert(not released.players[tostring(n)].match and released.players[tostring(n)].joined==100,"failed reservation returns players to the queue with their wait time") end
+local stale=policy.update(state,100+policy.ASSIGN_TTL,{},{},"unused")
+assert(stale.players["1"] and stale.players["1"].match=="unused","group without a server is released after the grace period and may be regrouped")
+local staleSolo=policy.update(nil,100,{["9"]=candidate(1500,"s9")},{},"x")
+staleSolo=policy.update(staleSolo,120,{["9"]=candidate(1500,"s9")},{},"x")
+staleSolo=policy.update(staleSolo,130,{["9"]=candidate(1500,"s9")},{},"solo9")
+assert(staleSolo.players["9"].match=="solo9")
+staleSolo=policy.update(staleSolo,131+policy.ASSIGN_TTL,{["9"]=candidate(1500,"s9")},{},"retry")
+assert(staleSolo.players["9"].match=="retry","stale solo match is retried, not stuck")
+local kept=policy.update(assigned,100+policy.ASSIGN_TTL,{},{},"unused")
+assert(kept.players["1"].match=="group-a","assigned group is kept")
+local single=policy.update(nil,100,{["1"]=candidate(1500,"s1")},{},"unused")
+assert(not single.players["1"].match,"must wait initially")
+single=policy.update(single,120,{["1"]=candidate(1500,"s1")},{},"unused")
+single=policy.update(single,129,{["1"]=candidate(1500,"s1")},{},"unused")
+assert(not single.players["1"].match,"must wait at least 30 seconds")
+single=policy.update(single,130,{["1"]=candidate(1500,"s1")},{},"solo")
+assert(single.players["1"].match=="solo","solo starts with AI after 30 seconds")
+local pair=policy.update(nil,100,{["1"]=candidate(1500,"s1"),["2"]=candidate(1750,"s2")},{},"unused")
+pair=policy.update(pair,120,{["1"]=candidate(1500,"s1"),["2"]=candidate(1750,"s2")},{},"unused")
+assert(not pair.players["1"].match,"wait until race deadline")
+pair=policy.update(pair,130,{["1"]=candidate(1500,"s1"),["2"]=candidate(1750,"s2")},{},"pair")
+assert(pair.players["1"].match=="pair" and pair.players["2"].match=="pair","range expands after 20 seconds")
+local cancel=policy.update(nil,100,{["1"]=candidate(1500,"s1")},{},"unused")
+cancel=policy.update(cancel,101,{}, {["1"]="wrong"},"unused")
+assert(cancel.players["1"],"another session cannot cancel")
+cancel=policy.update(cancel,102,{}, {["1"]="s1"},"unused")
+assert(not cancel.players["1"],"owner can cancel")
+local expired=policy.update(nil,100,{["1"]=candidate(1500,"s1")},{},"unused")
+expired=policy.update(expired,126,{}, {},"unused")
+assert(not expired.players["1"],"disconnected waiter expires")
+local tooFar=policy.update(nil,100,{["1"]=candidate(1500,"s1"),["2"]=candidate(2100,"s2")},{},"unused")
+tooFar=policy.update(tooFar,120,{["1"]=candidate(1500,"s1"),["2"]=candidate(2100,"s2")},{},"unused")
+tooFar=policy.update(tooFar,130,{["1"]=candidate(1500,"s1"),["2"]=candidate(2100,"s2")},{},"first")
+assert(tooFar.players["1"].match=="first" and not tooFar.players["2"].match,"distant opponent stays in queue")
+local protected=policy.update(consumed,102,{}, {["1"]="s1"},"unused")
+assert(protected.players["1"].used,"a consumed ticket cannot be canceled")
+local many={}
+for n=1,61 do many[tostring(n)]=candidate(1500,"s"..n) end
+local capped=policy.update(nil,100,many,{},"one")
+local count=0
+for _ in pairs(capped.players) do count += 1 end
+assert(count==60,"queue capacity is bounded")
+print("match policy checks passed")

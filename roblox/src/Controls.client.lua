@@ -163,7 +163,7 @@ task.spawn(function()
     -- The folder can arrive before its attributes replicate.
     while gui.Parent and world:GetAttribute("RoomMode") == nil do task.wait(0.2) end
     if not gui.Parent or not world:GetAttribute("RoomMode") then return end
-    while gui.Parent and not roomCode do
+    while gui.Parent and world:GetAttribute("RoomMode") and not roomCode do
         local ok, result = pcall(roomInfo.InvokeServer,roomInfo)
         if ok and type(result) == "string" then roomCode=result; updateRoom(); break end
         task.wait(1)
@@ -180,6 +180,27 @@ inviteRoom.Activated:Connect(function()
     local shown = pcall(SocialService.PromptGameInvite,SocialService,player,options)
     if not shown then roomTitle.Text="招待できません。合言葉を伝えてください" end
 end)
+
+local rankedPanel = Instance.new("TextButton")
+rankedPanel.Size = UDim2.fromOffset(210,42)
+rankedPanel.Position = UDim2.new(0.5,-105,0,4)
+rankedPanel.BackgroundColor3 = Color3.fromRGB(85,65,32)
+rankedPanel.TextColor3 = Color3.new(1,1,1)
+rankedPanel.Font = Enum.Font.GothamBold
+rankedPanel.TextSize = 14
+rankedPanel.Visible = false
+rankedPanel.Parent = gui
+local function updateRanked()
+    local phase=world:GetAttribute("RankedPhase")
+    rankedPanel.Visible = phase == "waiting" or phase == "finished"
+    rankedPanel.Text = phase == "finished" and "終了：ロビーに戻る" or "ランク戦：参加者を待っています"
+end
+world:GetAttributeChangedSignal("RankedPhase"):Connect(updateRanked)
+updateRanked()
+rankedPanel.Activated:Connect(function()
+    if world:GetAttribute("RankedPhase") == "finished" then roomRemote:FireServer("return") end
+end)
+roomRemote.OnClientEvent:Connect(function(message) rankedPanel.Text=message end)
 
 local status = label("Status","みなとグランプリ",UDim2.fromOffset(180,75),UDim2.fromOffset(12,12),16)
 local tiltButton = Instance.new("TextButton")

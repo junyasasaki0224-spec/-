@@ -4,15 +4,20 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
 local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
 local collision = require(script.Parent:WaitForChild("BoatCollision"))
 local RaceAI = require(script.Parent:WaitForChild("RaceAI"))
 local createRoster = require(script.Parent:WaitForChild("RaceRoster"))
 local stepBoat = require(ReplicatedStorage:WaitForChild("BoatPhysics"))
 local PlayerStats = require(script.Parent:WaitForChild("PlayerStats"))
 local RoomService = require(script.Parent:WaitForChild("RoomService"))
+local MatchQueue = require(script.Parent:WaitForChild("MatchQueue"))
 local isRoom = game.PrivateServerId ~= "" and game.PrivateServerOwnerId == 0
 local roomMembers, roomHost, roomCode = {}, nil, nil
 local roomWaiting = isRoom
+local roomKind, rankedStartAt, rankedStarted = nil, nil, false
+local rankedLobbyPlace = nil
+local returning = {}
 local roomRemote = Instance.new("RemoteEvent")
 roomRemote.Name = "MinatoRoomRace"
 roomRemote.Parent = ReplicatedStorage
@@ -116,6 +121,21 @@ local function preparePlayer(player)
     task.spawn(function()
         local join = player:GetJoinData()
         local data = join and join.TeleportData
+        if type(data) == "table" and data.mode == "ranked" then
+            if rankedStarted or (roomKind and roomKind ~= "ranked") or not MatchQueue.accept(player.UserId,game.PrivateServerId)
+                or rankedStarted or (roomKind and roomKind ~= "ranked") then
+                if player.Parent == Players then player:Kick("ランク戦に入れません。ロビーから入り直してください") end
+                return
+            end
+            if player.Parent ~= Players then return end
+            roomKind="ranked"
+            if type(join.SourcePlaceId)=="number" and join.SourcePlaceId>0 then rankedLobbyPlace=rankedLobbyPlace or join.SourcePlaceId end
+            roomMembers[player]=true
+            rankedStartAt=rankedStartAt or os.clock()+20
+            world:SetAttribute("RoomMode",false)
+            world:SetAttribute("RankedPhase","waiting")
+            return
+        end
         local code = type(data) == "table" and data.mode == "room" and data.code or nil
         local owner
         if code then
@@ -134,10 +154,11 @@ local function preparePlayer(player)
             end
         end
         if player.Parent ~= Players then return end
-        if not owner or (roomCode and roomCode ~= code) or (roomHost and roomHost ~= owner) then
+        if not owner or (roomKind and roomKind ~= "room") or (roomCode and roomCode ~= code) or (roomHost and roomHost ~= owner) then
             player:Kick("部屋に入れません。ロビーから入り直してください")
             return
         end
+        roomKind = "room"
         roomHost, roomCode = owner, code
         roomMembers[player] = true
         world:SetAttribute("RoomHost", owner)
@@ -281,19 +302,38 @@ saveResults = function()
         end
     end
     if #results > 0 then
-        -- Current entry point is practice. Ranked matchmaking will supply a trusted mode later.
-        PlayerStats.recordRace(raceId,results,false)
+        -- The mode was established only after server-side admission.
+        PlayerStats.recordRace(raceId,results,roomKind=="ranked")
     end
 end
 roomRemote.OnServerEvent:Connect(function(player, action)
-    if not isRoom or action ~= "start" or not roomWaiting or not roomMembers[player] or player.UserId ~= roomHost then return end
+    if action == "return" and roomKind == "ranked" and world:GetAttribute("RankedPhase") == "finished"
+        and roomMembers[player] and rankedLobbyPlace and not returning[player] then
+        returning[player]=true
+        task.spawn(function()
+            local ok=pcall(TeleportService.TeleportAsync,TeleportService,rankedLobbyPlace,{player})
+            if not ok and player.Parent == Players then roomRemote:FireClient(player,"ロビーへ戻れません。もう一度お試しください") end
+            returning[player]=nil
+        end)
+        return
+    end
+    if not isRoom or roomKind ~= "room" or action ~= "start" or not roomWaiting or not roomMembers[player] or player.UserId ~= roomHost then return end
     roomWaiting = false
     world:SetAttribute("RoomWaiting", false)
     elapsed = -14
     raceClock = elapsed
 end)
 local function step()
-    if roomWaiting then return end
+    if roomWaiting then
+        if roomKind == "ranked" and not rankedStarted and rankedStartAt and os.clock() >= rankedStartAt then
+            rankedStarted = true
+            roomWaiting = false
+            elapsed = -14
+            raceClock = elapsed
+            world:SetAttribute("RoomWaiting",false)
+            world:SetAttribute("RankedPhase","racing")
+        else return end
+    end
     elapsed += dt
     raceClock = elapsed
     if not assigned and elapsed >= -14 then
@@ -374,6 +414,12 @@ local function step()
     end
     if (finishTime and elapsed-finishTime > 45) or elapsed > 240 then
         saveResults()
+        if roomKind == "ranked" then
+            roomWaiting=true
+            world:SetAttribute("RoomWaiting",true)
+            world:SetAttribute("RankedPhase","finished")
+            return
+        end
         reset(); elapsed=-31; raceClock=elapsed; finishTime=nil; finishCount=0; assigned=false
         raceId = HttpService:GenerateGUID(false)
         resultsSaved = false

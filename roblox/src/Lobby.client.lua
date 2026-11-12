@@ -4,6 +4,7 @@ local player = Players.LocalPlayer
 local remote = ReplicatedStorage:WaitForChild("MinatoLeaderboard")
 local practice = ReplicatedStorage:WaitForChild("MinatoPractice")
 local roomRemote = ReplicatedStorage:WaitForChild("MinatoRoomLobby")
+local rankedRemote = ReplicatedStorage:WaitForChild("MinatoRankedLobby")
 
 local gui = Instance.new("ScreenGui")
 gui.Name="MinatoLobby"
@@ -69,7 +70,7 @@ layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     list.CanvasSize=UDim2.fromOffset(0,layout.AbsoluteContentSize.Y)
 end)
 local play=Instance.new("TextButton")
-play.Size=UDim2.new(1,-24,0,40)
+play.Size=UDim2.new(0.5,-16,0,40)
 play.Position=UDim2.new(0,12,1,-48)
 play.BackgroundColor3=Color3.fromRGB(35,122,137)
 play.TextColor3=Color3.new(1,1,1)
@@ -112,6 +113,23 @@ roomButton("部屋を作る",0.32,"create")
 roomButton("部屋に入る",0.66,"join")
 local roomMessage=text(panel,"合言葉でフレンドと対戦",UDim2.new(0,12,1,-126),UDim2.new(1,-24,0,25),13)
 roomRemote.OnClientEvent:Connect(function(message) roomMessage.Text=message end)
+local ranked=Instance.new("TextButton")
+ranked.Size=UDim2.new(0.5,-16,0,40)
+ranked.Position=UDim2.new(0.5,4,1,-48)
+ranked.BackgroundColor3=Color3.fromRGB(132,92,32)
+ranked.TextColor3=Color3.new(1,1,1)
+ranked.TextSize=16
+ranked.Font=Enum.Font.GothamBold
+ranked.Text="ランク戦"
+ranked.Parent=panel
+local waiting=false
+ranked.Activated:Connect(function() rankedRemote:FireServer(waiting and "cancel" or "join") end)
+rankedRemote.OnClientEvent:Connect(function(message,isWaiting)
+    waiting=isWaiting==true
+    ranked.Text=waiting and "待機をやめる" or "ランク戦"
+    roomMessage.Text=message
+end)
+
 
 local data
 local function valueText(kind,value)
