@@ -1,6 +1,10 @@
 -- Racing line and pursuit adapted from the browser simulation's ai.js.
 local AI = {}
 local pi = math.pi
+local GRIP = 15.5
+local GRIP_USE = 0.86
+local ARC_THR = 0.55
+local TURN_IN = 9
 local function clamp(x,a,b) return math.max(a,math.min(b,x)) end
 local function smooth(t) t=clamp(t,0,1); return t*t*(3-2*t) end
 local function lerp(a,b,t) return a+(b-a)*t end
@@ -55,10 +59,11 @@ local function makePlan(b, mark, boats)
         local steps=math.max(2,math.ceil(length/5))
         for i=0,steps-1 do local t=i/steps; push(u0+length*t,lerp(v0,approach,smooth(t/0.75))) end
     end
+    local turnStart = #xs+1
     for i=0,14 do local th=pi*i/14; push(ux+rho*math.sin(th),center+rho*math.cos(th)) end
     local vEnd=center-rho
     for u=ux-5,-175,-5 do push(u,lerp(vEnd,-math.max(exit,-vEnd),smooth((ux-u)/60))) end
-    ai.plan={xs=xs,zs=zs,ux=ux,sign=sign,mx=mx,vArc=math.sqrt(11.6*ai.skill*(b.gripSet or 1)*rho)}
+    ai.plan={xs=xs,zs=zs,turnStart=turnStart,ux=ux,sign=sign,mx=mx,vArc=math.sqrt(GRIP_USE*GRIP*ai.skill*(b.gripSet or 1)*rho)}
     ai.planMark=mark
     local best=math.huge
     for i=1,#xs do
@@ -159,13 +164,13 @@ function AI.update(b, boats, clock, dt)
     local noise=math.sin(ai.wob*2.3+ai.lane)*0.03*(1.15-ai.skill*0.6)
     local steer=clamp(-(err+noise)*3.2,-1,1)
     local curvature=2*math.sin(math.min(math.abs(err),pi/2))/dist
-    local targetSpeed=math.max(9.5,math.sqrt(11.6*ai.skill*(b.gripF or 1)*(b.gripSet or 1)/math.max(curvature,0.0001)))
+    local targetSpeed=math.max(9.5,math.sqrt(GRIP_USE*GRIP*ai.skill*(b.gripF or 1)*(b.gripSet or 1)/math.max(curvature,0.0001)))
     local throttle=clamp(0.55+(targetSpeed-b.speed)*0.45,0.1,1)
     local dTurn=plan.ux-uNow
     if dTurn>0 and dTurn<60 then
         local entry=plan.vArc*1.16
         if ai.firstTurn and ai.sashi then entry=entry*0.93 end
-        if b.speed*b.speed-entry*entry>2*6.2*dTurn then throttle=0.05 end
+        if b.speed*b.speed-entry*entry>2*6.2*dTurn then throttle=dTurn>TURN_IN and 0.05 or ARC_THR end
     end
     for _,other in ipairs(boats) do
         if other~=b then
@@ -174,6 +179,7 @@ function AI.update(b, boats, clock, dt)
             if ahead>0.3 and ahead<6 and math.abs(side)<3.2 then throttle=math.min(throttle,0.25+0.1*ahead) end
         end
     end
+    if k >= plan.turnStart-1 and k <= plan.turnStart+12 then throttle=math.max(throttle,ARC_THR) end
     if b.speed<1.5 then ai.stuck=ai.stuck+dt; if ai.stuck>1.2 then throttle=1 end else ai.stuck=0 end
     return throttle,steer
 end
