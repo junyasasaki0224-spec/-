@@ -29,6 +29,18 @@
 
 GPT の使用上限に達したら、オーナーが Claude に「続きをやって」と伝える。Claude は `TASKS.md` の続きから作業する。GPT が戻ってきたら、また最新の ZIP から始める。
 
+## ブラウザ版(`src/`、`index.html`、`style.css`)を触るときの約束
+
+- `dist/game.js` は編集もビルドもしなくてよい(取り込む時に Claude がビルドし、公開ページも Claude が更新する)。ただし手元で遊んで確かめたい時は `npm install` → `npm run build` → `index.html` を開けばよい
+- `src/sim/`(物理・AI・レース進行)を変えたら、必ず次を実行して、結果を WORKLOG に書く
+  - `npm run sim` を60レース以上(`node tools/sim-test.mjs 60 1`)。最後の行のコース別の1着数と決まり手
+  - `node tools/guide-bot.mjs`(ガイドどおりに走るプレイヤーの成績)
+  - `node tools/turn-test.mjs`(ターンの回り方の比較)
+  - 実行できなかったものは「未確認」と書く
+- `src/sim/` では `Math.random()` を使わない(リプレイが再現できなくなる。HANDOFF 4章)
+- 物理を変えたら、Roblox 版(`roblox/src/`)にも同じ変更が必要かを WORKLOG の「次にやるべきこと」に書く
+- 画面の文言は日本語。スマホの縦・横で画面の中央をふさがない
+
 ## GPT へのお願い
 
 - 最初に `WORKFLOW.md` → `TASKS.md` → `HANDOFF.md` の順に読む
