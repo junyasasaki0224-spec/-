@@ -14,6 +14,19 @@
 - 作った人(GPT)は、自分で確かめられる範囲を確かめてから返す。確かめられなかった所は、正直に「未確認」と書く
 - **仕上げは Claude が担当する。** GPT の成果が理想どおりでなくても構わない。Claude が受け取った後、不具合の修正、デザイン・言葉づかいの調整、テストの追加をして仕上げる。直した点は WORKLOG に書き、GPT が次に同じ間違いをしないようにする
 
+## 分担と Claude の使用量(オーナーの方針)
+
+Claude の使用量が多くなると GPT を使う意味が薄れる。**量の多い作業は GPT が担当し、Claude は確認と、壊れると困る所の仕上げに絞る。**
+
+- **GPT**: 作る、テストを書く、自分で見直す、説明書・TASKS・WORKLOG の更新、デザインの調整(オーナーの画面写真をもとに)。返す前に「GPT の見直し項目」を全部確かめる
+- **Claude**: 受け取ったら `sh tools/check-all.sh` を1回回す。問題がなければ短く確認して取り込む。詳しく読むのは、テストで落ちた所と、壊れると困る所(Roblox の仕組みの使い方、保存・データ・課金・安全まわり)だけ。大きな作り直しが必要な時は、自分で直さず GPT に差し戻す
+
+### GPT の見直し項目(返す前に必ず)
+- Roblox の API(サービス名・関数名・項目名・引数)を、公式リファレンス(create.roblox.com/docs/reference)で1つずつ確かめた。推測で書いていない
+- 手元で回せるテストを回した(ブラウザ版: `npm run build`、`node tools/sim-test.mjs 60 1`、`node tools/guide-bot.mjs`。Roblox 版は Luau が使えれば `sh tools/check-all.sh`)。回せなかったものは WORKLOG に「未確認」
+- 新しい仕組みには、Roblox なしで回せる単体テスト(`roblox/tests/*.spec.luau`)を足した
+- 改行は LF。BASE.txt を入れた。WORKLOG のいちばん上に報告を書いた
+
 ## 情報の置き場所(ここだけが正本)
 
 - コード: GitHub `junyasasaki0224-spec/-` のブランチ `claude/vigilant-hopper-gs3igi`

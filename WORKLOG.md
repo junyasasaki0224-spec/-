@@ -1,5 +1,9 @@
 # 作業記録(新しいものを上に)
 
+## 2026-11-12 Claude: Claude の使用量を減らす分担に変更
+- 変えたこと: WORKFLOW に「分担と Claude の使用量」と「GPT の見直し項目」を追加(オーナーの方針: 量の多い作業は GPT、Claude は確認と危ない所の仕上げ)。確認を1回で済ませる `tools/check-all.sh` を追加
+- 確認したこと: `tools/check-all.sh` が全項目を回して「すべて OK」を出すこと
+
 ## 2026-11-12 Claude: GPT の T10(ランク戦)を確認・修正して取り込み
 - 変えたこと: GPT の ZIP を `tools/handoff.py intake` で合体(土台 b90c7ad、衝突なし。今回は改行も LF だった)。**ランク戦が動かない不具合を修正**:
   - 原因: ロビーは組が決まった人を、その場で作った識別番号(GUID)を会場の番号として `TeleportOptions.ReservedServerId` に入れて移動させていた。Roblox で予約サーバーへ移すには `ReserveServerAsync` で得た入場用の鍵を `ReservedServerAccessCode` に入れる必要がある(`ReservedServerId` という項目もない)。会場側も「識別番号 = 会場の番号」で参加者を確かめていたため、全員が入場を断られる作りだった
