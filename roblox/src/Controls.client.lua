@@ -7,20 +7,25 @@ local remote = ReplicatedStorage:WaitForChild("MinatoInput")
 local snapshotRemote = ReplicatedStorage:WaitForChild("MinatoSnapshots")
 local setupRemote = ReplicatedStorage:WaitForChild("MinatoSetup")
 local stepBoat = require(ReplicatedStorage:WaitForChild("BoatPhysics"))
+local reconcile = require(ReplicatedStorage:WaitForChild("Reconciliation"))
+local audioConfig = require(ReplicatedStorage:WaitForChild("AudioConfig"))
 local world = workspace:WaitForChild("Minato")
-local boat = world:WaitForChild("Boat1")
+local templates = ReplicatedStorage:WaitForChild("MinatoTemplates")
+local boat = templates:WaitForChild("Boat1")
+local STUDS_PER_METRE = 3.5
+local BOAT_SCALE = STUDS_PER_METRE * (2.9 / 7)
 local camera = workspace.CurrentCamera
 local renderBoats, wakes, latest = {}, {}, {}
 for i = 1, 6 do
-    local original = world:WaitForChild("Boat"..i)
+    local original = templates:WaitForChild("Boat"..i)
     local visual = original:Clone()
     visual.Name = "VisualBoat"..i
     visual.Parent = workspace
     local first = Instance.new("Attachment")
-    first.Position = Vector3.new(-1,0,3)
+    first.Position = Vector3.new(-1,0,3)*BOAT_SCALE
     first.Parent = visual.PrimaryPart
     local second = Instance.new("Attachment")
-    second.Position = Vector3.new(1,0,3)
+    second.Position = Vector3.new(1,0,3)*BOAT_SCALE
     second.Parent = visual.PrimaryPart
     local trail = Instance.new("Trail")
     trail.Attachment0,trail.Attachment1 = first,second
@@ -34,41 +39,46 @@ for i = 1, 6 do
     spray.Texture = "rbxasset://textures/particles/smoke_main.dds"
     spray.Color = ColorSequence.new(Color3.fromRGB(226,244,246))
     spray.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0,0.4),NumberSequenceKeypoint.new(1,1)})
-    spray.Size = NumberSequence.new({NumberSequenceKeypoint.new(0,0.7),NumberSequenceKeypoint.new(1,2.5)})
+    spray.Size = NumberSequence.new({NumberSequenceKeypoint.new(0,0.7*STUDS_PER_METRE),NumberSequenceKeypoint.new(1,2.5*STUDS_PER_METRE)})
     spray.Lifetime = NumberRange.new(0.35,0.7)
-    spray.Speed = NumberRange.new(1,3)
+    spray.Speed = NumberRange.new(STUDS_PER_METRE,3*STUDS_PER_METRE)
     spray.Rate = 0
     spray.Parent = first
-    wakes[i] = {trail=trail,spray=spray}
-    for _, descendant in ipairs(original:GetDescendants()) do
-        if descendant:IsA("BasePart") then descendant.LocalTransparencyModifier = 1 end
+    local engine
+    if audioConfig.engineAssetId ~= "" then
+        engine = Instance.new("Sound")
+        engine.SoundId = audioConfig.engineAssetId
+        engine.Looped = true
+        engine.Volume = 0
+        engine.RollOffMaxDistance = 80*STUDS_PER_METRE
+        engine.Parent = visual.PrimaryPart
+        engine:Play()
     end
+    wakes[i] = {trail=trail,spray=spray,engine=engine}
     renderBoats[i] = visual
 end
 local predicted, predictedNumber, running = nil, 0, false
 local predictionAccumulator = 0
-local function angleDifference(a,b) return (a-b+math.pi)%(2*math.pi)-math.pi end
-snapshotRemote.OnClientEvent:Connect(function(states, active)
+local inputSequence, currentSequence = 0, 0
+local sentThrottle, sentSteer = 0,0
+local pendingSteps = {}
+local predictionRace = nil
+snapshotRemote.OnClientEvent:Connect(function(states, active, acknowledged, raceNumber)
     latest, running = states, active
     local number = player:GetAttribute("MinatoBoat") or 0
     local state = states[number]
-    if not active or not state then predicted=nil; predictedNumber=0; return end
-    if predictedNumber ~= number or not predicted then
-        predicted = {x=state[1],z=state[2],h=state[3],vx=state[4],vz=state[5],w=state[6],throttle=state[7],steer=state[8]}
-        predictedNumber = number
-        predictionAccumulator = 0
-    else
-        local dx, dz = state[1]-predicted.x, state[2]-predicted.z
-        local correction = dx*dx+dz*dz > 100 and 1 or 0.2
-        predicted.x += dx*correction
-        predicted.z += dz*correction
-        predicted.h += angleDifference(state[3],predicted.h)*correction
-        predicted.vx += (state[4]-predicted.vx)*correction
-        predicted.vz += (state[5]-predicted.vz)*correction
-        predicted.w += (state[6]-predicted.w)*correction
+    if not active or not state then
+        predicted=nil; predictedNumber=0; pendingSteps={}; currentSequence=0; predictionRace=raceNumber
+        sentThrottle,sentSteer=0,0
+        return
     end
-    predicted.accF,predicted.topF,predicted.gripSet,predicted.gripF = state[9],state[10],state[11],state[12]
-    predicted.thrustF,predicted.windX,predicted.windZ,predicted.motor = state[13],state[14],state[15],state[16]
+    if predictedNumber ~= number or predictionRace ~= raceNumber then
+        pendingSteps={}
+        predictedNumber = number
+        predictionRace = raceNumber
+        predictionAccumulator = 0
+    end
+    predicted,pendingSteps = reconcile(state,pendingSteps,acknowledged,stepBoat)
 end)
 
 local gui = Instance.new("ScreenGui")
@@ -90,11 +100,11 @@ local function label(name, text, size, position, textSize)
     corner.Parent = item
     return item
 end
-local status = label("Status","みなとグランプリ",UDim2.fromOffset(245,75),UDim2.fromOffset(18,18),20)
+local status = label("Status","みなとグランプリ",UDim2.fromOffset(180,75),UDim2.fromOffset(12,12),16)
 local tiltButton = Instance.new("TextButton")
 tiltButton.Name = "Tilt"
-tiltButton.Size = UDim2.fromOffset(140,40)
-tiltButton.Position = UDim2.new(1,-158,0,18)
+tiltButton.Size = UDim2.fromOffset(112,40)
+tiltButton.Position = UDim2.new(1,-124,0,12)
 tiltButton.BackgroundColor3 = Color3.fromRGB(15,32,43)
 tiltButton.TextColor3 = Color3.new(1,1,1)
 tiltButton.Font,tiltButton.TextSize = Enum.Font.GothamBold,16
@@ -103,9 +113,24 @@ local tiltCorner = Instance.new("UICorner")
 tiltCorner.CornerRadius = UDim.new(0,8)
 tiltCorner.Parent = tiltButton
 local tiltNames = {"-0.5°","0°","+1.5°","+3.0°"}
+local clockFace = Instance.new("Frame")
+clockFace.Size = UDim2.fromOffset(64,64)
+clockFace.Position = UDim2.new(1,-88,0,60)
+clockFace.BackgroundColor3 = Color3.fromRGB(237,239,230)
+clockFace.Parent = gui
+local faceCorner = Instance.new("UICorner")
+faceCorner.CornerRadius = UDim.new(1,0)
+faceCorner.Parent = clockFace
+local hand = Instance.new("Frame")
+hand.Size = UDim2.fromOffset(3,27)
+hand.Position = UDim2.new(0.5,0,0.5,0)
+hand.AnchorPoint = Vector2.new(0.5,1)
+hand.BackgroundColor3 = Color3.fromRGB(209,54,45)
+hand.Parent = clockFace
+local clockText = label("Clock","",UDim2.fromOffset(82,24),UDim2.new(1,-97,0,128),14)
 tiltButton.Activated:Connect(function()
     if (world:GetAttribute("Time") or 0)<0 and (player:GetAttribute("MinatoBoat") or 0)>0 then
-        setupRemote:FireServer(((boat:GetAttribute("Tilt") or 2)%4)+1)
+        setupRemote:FireServer(((boat:GetAttribute("Tilt") or 2)%4)+1,predictionRace)
     end
 end)
 local help = label("Help","W / S でスロットル　A / D で旋回",UDim2.fromOffset(310,34),UDim2.new(0.5,-155,1,-45),14)
@@ -184,7 +209,7 @@ local function held(key) return UserInputService:IsKeyDown(key) end
 local nextSend = 0
 RunService.RenderStepped:Connect(function(dt)
     local boatNumber = player:GetAttribute("MinatoBoat") or 0
-    boat = world:FindFirstChild("Boat"..math.max(boatNumber,1)) or boat
+    boat = templates:FindFirstChild("Boat"..math.max(boatNumber,1)) or boat
     local left = held(Enum.KeyCode.A) or held(Enum.KeyCode.Left)
     local right = held(Enum.KeyCode.D) or held(Enum.KeyCode.Right)
     local up = held(Enum.KeyCode.W) or held(Enum.KeyCode.Up)
@@ -195,11 +220,24 @@ RunService.RenderStepped:Connect(function(dt)
     end
     local throttle = controls.throttle
     local steer = left and 1 or (right and -1 or controls.steer)
+    nextSend += dt
+    if nextSend >= 0.05 and boatNumber > 0 and running and predictionRace then
+        nextSend = 0
+        inputSequence += 1
+        currentSequence = inputSequence
+        sentThrottle,sentSteer = throttle,steer
+        remote:FireServer(sentThrottle,sentSteer,currentSequence,predictionRace)
+    end
     if running and predicted and predictedNumber == boatNumber then
-        if boat:GetAttribute("Finished") or boat:GetAttribute("Flying") then throttle=0; steer=0 end
+        local localThrottle,localSteer=sentThrottle,sentSteer
+        if boat:GetAttribute("Finished") or boat:GetAttribute("Flying") then localThrottle=0; localSteer=0 end
         predictionAccumulator = math.min(predictionAccumulator + dt,0.1)
         while predictionAccumulator >= 1/120 do
-            stepBoat(predicted, throttle, steer, 1/120)
+            stepBoat(predicted, localThrottle, localSteer, 1/120)
+            if currentSequence > 0 then
+                pendingSteps[#pendingSteps+1] = {sequence=currentSequence,throttle=localThrottle,steer=localSteer}
+                if #pendingSteps > 1200 then table.remove(pendingSteps,1) end
+            end
             predictionAccumulator -= 1/120
         end
     end
@@ -211,20 +249,27 @@ RunService.RenderStepped:Connect(function(dt)
             local speed = math.sqrt(state[4]*state[4]+state[5]*state[5])
             wakes[i].trail.Enabled = speed > 3
             wakes[i].spray.Rate = math.clamp((speed-5)*3,0,45)
-            local pos = Vector3.new(x,0.5,z)
+            if wakes[i].engine then
+                wakes[i].engine.Volume = 0.12 + 0.38*math.clamp(speed/22.6,0,1)
+                wakes[i].engine.PlaybackSpeed = 0.75 + 0.9*math.clamp(speed/22.6,0,1)
+            end
+            local pos = Vector3.new(x,0.5,z)*STUDS_PER_METRE
             local destination = CFrame.lookAt(pos,pos+Vector3.new(math.cos(h),0,math.sin(h))) * CFrame.Angles(0,0,math.clamp(-w*0.12,-0.18,0.18))
             local current = visual:GetPivot()
-            if (current.Position-destination.Position).Magnitude > 30 then visual:PivotTo(destination)
+            if (current.Position-destination.Position).Magnitude > 30*STUDS_PER_METRE then visual:PivotTo(destination)
             else visual:PivotTo(current:Lerp(destination,1-math.exp(-12*dt))) end
         end
     end
     local visibleBoat = renderBoats[math.max(boatNumber,1)]
     local cf = visibleBoat:GetPivot()
     camera.CameraType = Enum.CameraType.Scriptable
-    local desired = cf.Position - cf.LookVector*15 + Vector3.new(0,7,0)
-    local target = CFrame.lookAt(desired,cf.Position+cf.LookVector*15+Vector3.new(0,1,0))
+    local desired = cf.Position - cf.LookVector*(15*STUDS_PER_METRE) + Vector3.new(0,7*STUDS_PER_METRE,0)
+    local target = CFrame.lookAt(desired,cf.Position+cf.LookVector*(15*STUDS_PER_METRE)+Vector3.new(0,STUDS_PER_METRE,0))
     camera.CFrame = camera.CFrame:Lerp(target,1-math.exp(-5*dt))
     local time = world:GetAttribute("Time") or -8
+    hand.Rotation = (time*30)%360
+    local startTime = boat:GetAttribute("StartTime")
+    clockText.Text = startTime and string.format("ST %.2f",startTime) or string.format("%.1f 秒",time)
     local speed = boat:GetAttribute("Speed") or 0
     local lap = boat:GetAttribute("Lap") or 1
     local rank = boat:GetAttribute("Rank") or 1
@@ -236,9 +281,4 @@ RunService.RenderStepped:Connect(function(dt)
     if boatNumber == 0 and time >= -14 then message="観戦中・次のレースから参加\n"..message end
     if boatNumber > 0 then message=boatNumber.."号艇　"..rank.."位\n"..message end
     status.Text = "みなとグランプリ\n"..message
-    nextSend += dt
-    if nextSend >= 0.1 then
-        nextSend = 0
-        if boatNumber > 0 then remote:FireServer(throttle,steer) end
-    end
 end)

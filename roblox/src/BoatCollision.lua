@@ -1,13 +1,13 @@
 -- Three overlapping circles approximate each hull in the horizontal plane.
-local offsets = {-1.95, 0, 1.95}
-local radius = 1.55
+local offsets = {-1.05, 0, 1.05}
+local radius = 0.68
 local diameter = radius * 2
-local inertia = 4.0
-local restitution = 0.2
+local inertia = 1.25
+local restitution = 0.25
 
 local function collide(a, b)
     local dx, dz = b.x - a.x, b.z - a.z
-    if dx * dx + dz * dz > 49 then return end
+    if dx * dx + dz * dz > 18 then return end
 
     local ax, az = math.cos(a.h), math.sin(a.h)
     local bx, bz = math.cos(b.h), math.sin(b.h)
@@ -56,11 +56,12 @@ local function collide(a, b)
     local friction = math.max(-0.35 * impulse, math.min(0.35 * impulse, -tangentSpeed * 0.25))
     a.vx, a.vz = a.vx - friction * tx, a.vz - friction * tz
     b.vx, b.vz = b.vx + friction * tx, b.vz + friction * tz
+    return impulse
 end
 
 local obstacles = {
-    {x = 150, z = 8, radius = 1.5, softness = 0.55},
-    {x = -150, z = 0, radius = 1.5, softness = 0.55},
+    {x = 150, z = 8, radius = 0.8, softness = 0.55},
+    {x = -150, z = 0, radius = 0.8, softness = 0.55},
     {x = 0, z = 4, radius = 0.6, softness = 1},
 }
 

@@ -10,11 +10,12 @@ local function rand(ai)
     ai.seed = (1664525*ai.seed+1013904223)%4294967296
     return ai.seed/4294967296
 end
-function AI.init(boat, lane, seed)
+function AI.init(boat, lane, seed, racer)
     local ai = {lane=lane,seed=seed,skill=1,going=false,firstTurn=true,planMark=0,refined=false,effLane=lane,makuri=0,k=1,dodge=0,wob=0,stuck=0}
-    ai.skill = 0.985+0.03*rand(ai)
-    ai.stTarget = math.max(0.02,0.16+(rand(ai)-0.4)*0.17)
-    ai.sashi = lane > 0 and rand(ai) < 0.4
+    racer = racer or {skill=1,st=0.12,sashi=0.4}
+    ai.skill = racer.skill*0.955*(0.985+0.03*rand(ai))
+    ai.stTarget = math.max(0.02,racer.st+0.04+(rand(ai)-0.4)*0.17)
+    ai.sashi = lane > 0 and rand(ai) < racer.sashi
     boat.ai = ai
 end
 local function countInside(b, boats, markZ)
@@ -65,10 +66,13 @@ local function makePlan(b, mark, boats)
         if d<best then best=d; ai.k=i end
     end
 end
-local function timeToCover(distanceLeft, velocity)
+local function timeToCover(distanceLeft, velocity, boat)
     local t,d=0,0
     while d<distanceLeft and t<30 do
-        velocity=velocity+(7.08-0.08*velocity-0.01014*velocity*velocity)*0.02
+        local ratio=math.min(1.2,velocity/22.6)
+        local mix=(boat.accF or 1)+((boat.topF or 1)-(boat.accF or 1))*smooth((ratio-0.4)/0.575)
+        local wind=0.045*(boat.windX or 0)*smooth((velocity-2)/8)
+        velocity=velocity+(7*(boat.motor or 1)*mix+0.08-0.08*velocity-0.01014*velocity*velocity+wind)*0.02
         d=d+velocity*0.02
         t=t+0.02
     end
@@ -82,7 +86,7 @@ function AI.update(b, boats, clock, dt)
         local steer=clamp(-(heading-b.h)*3,-1,1)
         local remain=-clock+ai.stTarget-0.15
         local vf=b.vx*math.cos(b.h)+b.vz*math.sin(b.h)
-        local arrival=timeToCover(math.max(-b.x,0),math.max(vf,0))
+        local arrival=timeToCover(math.max(-b.x,0),math.max(vf,0),b)
         if not ai.going and arrival>=remain then ai.going=true end
         local throttle=0
         if ai.going then throttle=arrival<remain-0.04 and 0.5 or 1 end
