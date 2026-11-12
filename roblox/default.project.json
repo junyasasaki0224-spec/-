@@ -3,19 +3,48 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
-      "BoatPhysics": { "$path": "src/BoatPhysics.lua" },
-      "Reconciliation": { "$path": "src/Reconciliation.lua" },
-      "AudioConfig": { "$path": "src/AudioConfig.lua" }
+      "BoatPhysics": {
+        "$path": "src/BoatPhysics.lua"
+      },
+      "Reconciliation": {
+        "$path": "src/Reconciliation.lua"
+      },
+      "AudioConfig": {
+        "$path": "src/AudioConfig.lua"
+      }
     },
     "ServerScriptService": {
-      "Race": { "$path": "src/Race.server.lua" },
-      "BoatCollision": { "$path": "src/BoatCollision.lua" },
-      "RaceAI": { "$path": "src/RaceAI.lua" },
-      "RaceRoster": { "$path": "src/RaceRoster.lua" },
-      "Rating": { "$path": "src/Rating.lua" },
-      "PlayerStats": { "$path": "src/PlayerStats.lua" },
-      "ResultRules": { "$path": "src/ResultRules.lua" }
+      "Race": {
+        "$path": "src/Race.server.lua"
+      },
+      "BoatCollision": {
+        "$path": "src/BoatCollision.lua"
+      },
+      "RaceAI": {
+        "$path": "src/RaceAI.lua"
+      },
+      "RaceRoster": {
+        "$path": "src/RaceRoster.lua"
+      },
+      "Rating": {
+        "$path": "src/Rating.lua"
+      },
+      "PlayerStats": {
+        "$path": "src/PlayerStats.lua"
+      },
+      "ResultRules": {
+        "$path": "src/ResultRules.lua"
+      },
+      "RoomService": {
+        "$path": "src/RoomService.lua"
+      }
     },
-    "StarterPlayer": { "StarterPlayerScripts": { "Controls": { "$path": "src/Controls.client.lua" } } }
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Controls": {
+          "$path": "src/Controls.client.lua"
+        }
+      }
+    }
   }
 }
