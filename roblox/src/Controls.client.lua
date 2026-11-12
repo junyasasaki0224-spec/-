@@ -2,10 +2,13 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local SocialService = game:GetService("SocialService")
 local player = Players.LocalPlayer
 local remote = ReplicatedStorage:WaitForChild("MinatoInput")
 local snapshotRemote = ReplicatedStorage:WaitForChild("MinatoSnapshots")
 local setupRemote = ReplicatedStorage:WaitForChild("MinatoSetup")
+local roomRemote = ReplicatedStorage:WaitForChild("MinatoRoomRace")
+local roomInfo = ReplicatedStorage:WaitForChild("MinatoRoomInfo")
 local stepBoat = require(ReplicatedStorage:WaitForChild("BoatPhysics"))
 local reconcile = require(ReplicatedStorage:WaitForChild("Reconciliation"))
 local audioConfig = require(ReplicatedStorage:WaitForChild("AudioConfig"))
@@ -116,6 +119,68 @@ local function label(name, text, size, position, textSize)
     corner.Parent = item
     return item
 end
+local roomPanel = Instance.new("Frame")
+roomPanel.Name = "Room"
+roomPanel.Size = UDim2.fromOffset(210,70)
+roomPanel.Position = UDim2.new(0.5,-105,0,4)
+roomPanel.BackgroundTransparency = 1
+roomPanel.Visible = false
+roomPanel.Parent = gui
+local roomTitle = Instance.new("TextLabel")
+roomTitle.Size = UDim2.new(1,0,0,28)
+roomTitle.BackgroundColor3 = Color3.fromRGB(15,32,43)
+roomTitle.TextColor3 = Color3.new(1,1,1)
+roomTitle.Font = Enum.Font.GothamBold
+roomTitle.TextSize = 14
+roomTitle.Parent = roomPanel
+local function roomButton(caption,x)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(0.5,-2,0,32)
+    button.Position = UDim2.new(x,0,0,31)
+    button.BackgroundColor3 = Color3.fromRGB(35,122,137)
+    button.TextColor3 = Color3.new(1,1,1)
+    button.Font = Enum.Font.GothamBold
+    button.TextSize = 14
+    button.Text = caption
+    button.Parent = roomPanel
+    return button
+end
+local startRoom = roomButton("レース開始",0)
+local inviteRoom = roomButton("友達を招待",0.5)
+local roomCode
+local function updateRoom()
+    local mode = world:GetAttribute("RoomMode")
+    local code = roomCode
+    roomPanel.Visible = mode == true and type(code) == "string"
+    roomTitle.Text = "合言葉 "..(code or "")..(world:GetAttribute("RoomWaiting") and "　待機中" or "")
+    startRoom.Visible = world:GetAttribute("RoomWaiting") == true and world:GetAttribute("RoomHost") == player.UserId
+end
+for _, name in ipairs({"RoomMode","RoomWaiting","RoomHost"}) do
+    world:GetAttributeChangedSignal(name):Connect(updateRoom)
+end
+updateRoom()
+task.spawn(function()
+    -- The folder can arrive before its attributes replicate.
+    while gui.Parent and world:GetAttribute("RoomMode") == nil do task.wait(0.2) end
+    if not gui.Parent or not world:GetAttribute("RoomMode") then return end
+    while gui.Parent and not roomCode do
+        local ok, result = pcall(roomInfo.InvokeServer,roomInfo)
+        if ok and type(result) == "string" then roomCode=result; updateRoom(); break end
+        task.wait(1)
+    end
+end)
+startRoom.Activated:Connect(function() roomRemote:FireServer("start") end)
+inviteRoom.Activated:Connect(function()
+    local code = roomCode
+    if type(code) ~= "string" then return end
+    local ok, canInvite = pcall(SocialService.CanSendGameInviteAsync,SocialService,player)
+    if not ok or not canInvite then roomTitle.Text="招待できません。合言葉を伝えてください"; return end
+    local options = Instance.new("ExperienceInviteOptions")
+    options.LaunchData = code
+    local shown = pcall(SocialService.PromptGameInvite,SocialService,player,options)
+    if not shown then roomTitle.Text="招待できません。合言葉を伝えてください" end
+end)
+
 local status = label("Status","みなとグランプリ",UDim2.fromOffset(180,75),UDim2.fromOffset(12,12),16)
 local tiltButton = Instance.new("TextButton")
 tiltButton.Name = "Tilt"

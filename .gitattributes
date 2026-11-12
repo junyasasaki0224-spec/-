@@ -1,0 +1,6 @@
+# 改行は LF にそろえる(Windows で編集しても CRLF が混ざらないように)
+* text=auto eol=lf
+*.glb binary
+*.wav binary
+*.png binary
+*.zip binary

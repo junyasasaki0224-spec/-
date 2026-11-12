@@ -3,6 +3,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TeleportService = game:GetService("TeleportService")
 local Stats = require(script.Parent:WaitForChild("PlayerStats"))
 local config = require(script.Parent:WaitForChild("LobbyConfig"))
+local PAGE_SIZE = 50
+local MAX_PAGES = 5
 
 local remote = Instance.new("RemoteFunction")
 remote.Name = "MinatoLeaderboard"
@@ -28,9 +30,9 @@ practice.OnServerEvent:Connect(function(player)
 end)
 
 local boards = {
-    rating={entries={},ranks={},ready=false,busy=false,lastStarted=-60},
-    wins={entries={},ranks={},ready=false,busy=false,lastStarted=-60},
-    bestTime={entries={},ranks={},ready=false,busy=false,lastStarted=-60},
+    rating={entries={},ranks={},below={},ready=false,busy=false,lastStarted=-60},
+    wins={entries={},ranks={},below={},ready=false,busy=false,lastStarted=-60},
+    bestTime={entries={},ranks={},below={},ready=false,busy=false,lastStarted=-60},
 }
 local profiles, names, lastRequest = {}, {}, {}
 local nameQueue, queuedNames = {}, {}
@@ -68,12 +70,15 @@ local function refresh(kind)
         local profile = profiles[player.UserId]
         if profile and (kind ~= "bestTime" or profile.bestTime) then wanted[player.UserId]=true end
     end
-    local ok,pages = pcall(function() return Stats.ordered[kind]:GetSortedAsync(kind=="bestTime",50) end)
+    local ok,pages = pcall(function() return Stats.ordered[kind]:GetSortedAsync(kind=="bestTime",PAGE_SIZE) end)
     if not ok then board.busy=false; board.error=true; return end
     local results,ranks,index = {},{},0
+    local pageCount,lastValue = 0,nil
     repeat
+        pageCount += 1
         for _, entry in ipairs(pages:GetCurrentPage()) do
             index += 1
+            lastValue = entry.value
             local id=tonumber(entry.key)
             if id then
                 if index <= 50 then
@@ -85,6 +90,7 @@ local function refresh(kind)
         end
         if index <= 50 then
             board.entries=results
+            board.below={}
             board.ready=true
             board.error=false
         end
@@ -93,6 +99,21 @@ local function refresh(kind)
             if not Players:GetPlayerByUserId(id) then wanted[id]=nil end
         end
         if not next(wanted) or pages.IsFinished then break end
+        if pageCount >= MAX_PAGES then
+            local below = {}
+            for id in pairs(wanted) do
+                if Players:GetPlayerByUserId(id) then
+                    local found,score = pcall(function() return Stats.ordered[kind]:GetAsync(tostring(id)) end)
+                    if found and type(score)=="number" and lastValue and
+                        ((kind=="bestTime" and score>=lastValue) or (kind~="bestTime" and score<=lastValue)) then
+                        below[id]=index+1
+                    end
+                    task.wait(0.1)
+                end
+            end
+            board.below=below
+            break
+        end
         task.wait(1)
         ok = pcall(function() pages:AdvanceToNextPageAsync() end)
         if not ok then board.error=true; break end
@@ -141,7 +162,7 @@ remote.OnServerInvoke = function(player)
         for i,entry in ipairs(board.entries) do
             entries[i]={userId=entry.userId,name=names[entry.userId],value=entry.value}
         end
-        response.boards[kind]={entries=entries,rank=board.ranks[player.UserId],ready=board.ready,busy=board.busy,error=board.error}
+        response.boards[kind]={entries=entries,rank=board.ranks[player.UserId],below=board.below[player.UserId],ready=board.ready,busy=board.busy,error=board.error}
     end
     return response
 end

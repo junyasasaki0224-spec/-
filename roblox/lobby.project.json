@@ -3,15 +3,33 @@
   "tree": {
     "$className": "DataModel",
     "ServerScriptService": {
-      "Leaderboard": { "$path": "src/Leaderboard.server.lua" },
-      "LobbyConfig": { "$path": "src/LobbyConfig.lua" },
-      "Rating": { "$path": "src/Rating.lua" },
-      "PlayerStats": { "$path": "src/PlayerStats.lua" },
-      "ResultRules": { "$path": "src/ResultRules.lua" }
+      "Leaderboard": {
+        "$path": "src/Leaderboard.server.lua"
+      },
+      "LobbyConfig": {
+        "$path": "src/LobbyConfig.lua"
+      },
+      "Rating": {
+        "$path": "src/Rating.lua"
+      },
+      "PlayerStats": {
+        "$path": "src/PlayerStats.lua"
+      },
+      "ResultRules": {
+        "$path": "src/ResultRules.lua"
+      },
+      "RoomService": {
+        "$path": "src/RoomService.lua"
+      },
+      "RoomLobby": {
+        "$path": "src/RoomLobby.server.lua"
+      }
     },
     "StarterPlayer": {
       "StarterPlayerScripts": {
-        "Lobby": { "$path": "src/Lobby.client.lua" }
+        "Lobby": {
+          "$path": "src/Lobby.client.lua"
+        }
       }
     }
   }

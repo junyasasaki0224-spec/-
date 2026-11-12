@@ -3,6 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 local remote = ReplicatedStorage:WaitForChild("MinatoLeaderboard")
 local practice = ReplicatedStorage:WaitForChild("MinatoPractice")
+local roomRemote = ReplicatedStorage:WaitForChild("MinatoRoomLobby")
 
 local gui = Instance.new("ScreenGui")
 gui.Name="MinatoLobby"
@@ -56,7 +57,7 @@ end
 local own=text(panel,"順位を読み込み中",UDim2.new(0,12,0,130),UDim2.new(1,-24,0,30),14)
 local list=Instance.new("ScrollingFrame")
 list.Position=UDim2.new(0,8,0,164)
-list.Size=UDim2.new(1,-16,1,-222)
+list.Size=UDim2.new(1,-16,1,-312)
 list.BackgroundTransparency=1
 list.ScrollBarThickness=6
 list.CanvasSize=UDim2.new()
@@ -78,6 +79,39 @@ play.Text="練習レースへ"
 play.Parent=panel
 play.Activated:Connect(function() practice:FireServer() end)
 practice.OnClientEvent:Connect(function(message) play.Text=message; task.delay(4,function() if play.Parent then play.Text="練習レースへ" end end) end)
+
+local roomRow=Instance.new("Frame")
+roomRow.Size=UDim2.new(1,-24,0,38)
+roomRow.Position=UDim2.new(0,12,1,-96)
+roomRow.BackgroundTransparency=1
+roomRow.Parent=panel
+local codeBox=Instance.new("TextBox")
+codeBox.Size=UDim2.new(0.32,-4,1,0)
+codeBox.PlaceholderText="合言葉６文字"
+codeBox.Text=player:GetAttribute("MinatoInviteCode") or ""
+codeBox.ClearTextOnFocus=false
+codeBox.TextSize=14
+codeBox.Font=Enum.Font.Gotham
+codeBox.Parent=roomRow
+player:GetAttributeChangedSignal("MinatoInviteCode"):Connect(function()
+    codeBox.Text=player:GetAttribute("MinatoInviteCode") or ""
+end)
+local function roomButton(caption,x,action)
+    local button=Instance.new("TextButton")
+    button.Size=UDim2.new(0.34,-4,1,0)
+    button.Position=UDim2.new(x,2,0,0)
+    button.BackgroundColor3=Color3.fromRGB(49,89,103)
+    button.TextColor3=Color3.new(1,1,1)
+    button.Font=Enum.Font.GothamBold
+    button.TextSize=14
+    button.Text=caption
+    button.Parent=roomRow
+    button.Activated:Connect(function() roomRemote:FireServer(action,codeBox.Text) end)
+end
+roomButton("部屋を作る",0.32,"create")
+roomButton("部屋に入る",0.66,"join")
+local roomMessage=text(panel,"合言葉でフレンドと対戦",UDim2.new(0,12,1,-126),UDim2.new(1,-24,0,25),13)
+roomRemote.OnClientEvent:Connect(function(message) roomMessage.Text=message end)
 
 local data
 local function valueText(kind,value)
@@ -108,6 +142,7 @@ local function render()
     if selected=="bestTime" and score==nil then own.Text="あなたの順位・ベストタイムは未記録です"
     elseif not profile then own.Text="あなたの順位を取得できません"
     elseif board.rank then own.Text="あなたの順位 "..board.rank.."位　"..valueText(selected,score)
+    elseif board.below then own.Text="あなたの順位 "..board.below.."位以下　"..valueText(selected,score)
     elseif board.error then own.Text="あなたの順位を取得できません"
     elseif board.busy then own.Text="あなたの順位を集計中"
     else own.Text="あなたの順位は更新待ち" end

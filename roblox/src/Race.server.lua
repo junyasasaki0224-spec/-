@@ -9,6 +9,20 @@ local RaceAI = require(script.Parent:WaitForChild("RaceAI"))
 local createRoster = require(script.Parent:WaitForChild("RaceRoster"))
 local stepBoat = require(ReplicatedStorage:WaitForChild("BoatPhysics"))
 local PlayerStats = require(script.Parent:WaitForChild("PlayerStats"))
+local RoomService = require(script.Parent:WaitForChild("RoomService"))
+local isRoom = game.PrivateServerId ~= "" and game.PrivateServerOwnerId == 0
+local roomMembers, roomHost, roomCode = {}, nil, nil
+local roomWaiting = isRoom
+local roomRemote = Instance.new("RemoteEvent")
+roomRemote.Name = "MinatoRoomRace"
+roomRemote.Parent = ReplicatedStorage
+local roomInfo = Instance.new("RemoteFunction")
+roomInfo.Name = "MinatoRoomInfo"
+roomInfo.Parent = ReplicatedStorage
+roomInfo.OnServerInvoke = function(player)
+    if roomMembers[player] then return roomCode end
+    return nil
+end
 
 local input = Instance.new("RemoteEvent")
 input.Name = "MinatoInput"
@@ -22,6 +36,8 @@ setup.Parent = ReplicatedStorage
 local world = Instance.new("Folder")
 world.Name = "Minato"
 world.Parent = workspace
+world:SetAttribute("RoomMode", isRoom)
+world:SetAttribute("RoomWaiting", roomWaiting)
 
 local STUDS_PER_METRE = 3.5
 local BOAT_SCALE = STUDS_PER_METRE * (2.9 / 7)
@@ -96,10 +112,41 @@ local nextFirst = 1
 local saveResults
 local function preparePlayer(player)
     player:SetAttribute("MinatoBoat", 0)
+    if not isRoom then return end
+    task.spawn(function()
+        local join = player:GetJoinData()
+        local data = join and join.TeleportData
+        local code = type(data) == "table" and data.mode == "room" and data.code or nil
+        local owner
+        if code then
+            owner = RoomService.accept(code,player.UserId,game.PrivateServerId)
+        else
+            -- Invitations may arrive directly in this server; launch data can be delayed.
+            for _ = 1, 10 do
+                if player.Parent ~= Players then return end
+                local incoming = player:GetJoinData().LaunchData
+                if type(incoming) == "string" and #incoming == 6 then
+                    code = incoming
+                    owner = RoomService.acceptInvite(code,game.PrivateServerId)
+                    break
+                end
+                task.wait(1)
+            end
+        end
+        if player.Parent ~= Players then return end
+        if not owner or (roomCode and roomCode ~= code) or (roomHost and roomHost ~= owner) then
+            player:Kick("部屋に入れません。ロビーから入り直してください")
+            return
+        end
+        roomHost, roomCode = owner, code
+        roomMembers[player] = true
+        world:SetAttribute("RoomHost", owner)
+    end)
 end
 Players.PlayerAdded:Connect(preparePlayer)
 Players.PlayerRemoving:Connect(function(player)
     commands[player] = nil
+    roomMembers[player] = nil
     for _, boat in ipairs(boats) do
         if boat.player == player then
             if not boat.finished then boat.humanLeft = true end
@@ -116,7 +163,10 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 for _, player in ipairs(Players:GetPlayers()) do preparePlayer(player) end
 local function assignPlayers()
-    local players = Players:GetPlayers()
+    local players = {}
+    for _, player in ipairs(Players:GetPlayers()) do
+        if not isRoom or roomMembers[player] then table.insert(players,player) end
+    end
     table.sort(players, function(a,b) return a.UserId < b.UserId end)
     commands = {}
     for _, player in ipairs(players) do player:SetAttribute("MinatoBoat", 0) end
@@ -235,7 +285,15 @@ saveResults = function()
         PlayerStats.recordRace(raceId,results,false)
     end
 end
+roomRemote.OnServerEvent:Connect(function(player, action)
+    if not isRoom or action ~= "start" or not roomWaiting or not roomMembers[player] or player.UserId ~= roomHost then return end
+    roomWaiting = false
+    world:SetAttribute("RoomWaiting", false)
+    elapsed = -14
+    raceClock = elapsed
+end)
 local function step()
+    if roomWaiting then return end
     elapsed += dt
     raceClock = elapsed
     if not assigned and elapsed >= -14 then
@@ -319,6 +377,10 @@ local function step()
         reset(); elapsed=-31; raceClock=elapsed; finishTime=nil; finishCount=0; assigned=false
         raceId = HttpService:GenerateGUID(false)
         resultsSaved = false
+        if isRoom then
+            roomWaiting = true
+            world:SetAttribute("RoomWaiting", true)
+        end
     end
 end
 game:BindToClose(function()
