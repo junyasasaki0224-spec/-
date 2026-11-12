@@ -86,7 +86,7 @@
         <div class="seg" id="opt-diff"><button data-v="0">初級</button><button data-v="1">中級</button><button data-v="2">上級</button></div>
         <h2>時間帯</h2>
         <div class="seg" id="opt-env"><button data-v="day">デイ</button><button data-v="evening">薄暮</button><button data-v="night">ナイター</button></div>
-        <button id="btn-start" class="primary">出 走</button>
+        <div class="stick" id="start-bar"><button id="btn-start" class="primary">出 走</button></div>
         <div class="btns sub"><button id="btn-howto">遊び方</button><button id="btn-settings">設定</button></div>
         <div id="records"></div>
       </div>
@@ -111,7 +111,7 @@
         <p><kbd>↑</kbd>/<kbd>W</kbd> 全開　<kbd>↓</kbd>/<kbd>S</kbd> 減速<br><kbd>←</kbd><kbd>→</kbd>/<kbd>A</kbd><kbd>D</kbd> ハンドル<br><kbd>C</kbd> カメラ　<kbd>M</kbd> 音　<kbd>Esc</kbd> ポーズ　<kbd>R</kbd> やり直し</p>
         <p>スマホ: 左の<b>ハンドルレバー</b>を左右に倒して操舵、右の<b>スロットルレバー</b>を押し上げると全開、下げると減速。レバーは離した位置で止まるので、半開などの微調整ができます。ゲームパッドにも対応。</p></div>
     </div>
-    <button id="btn-howto-close" class="primary">OK</button>
+    <div class="stick"><button id="btn-howto-close" class="primary">OK</button></div>
   </div>
 </div>
 
@@ -136,8 +136,7 @@
     <div id="res-sub"></div>
     <table id="res-table"></table>
     <div id="res-extra"></div>
-    <div class="btns"><button id="btn-next" class="primary">もう一度走る</button></div>
-    <div class="btns sub"><button id="btn-replay">リプレイを見る</button><button id="btn-title">タイトルへ</button></div>
+    <div class="stick btns" id="res-btns"><button id="btn-next" class="primary">もう一度走る</button><button id="btn-replay">リプレイを見る</button><button id="btn-title">タイトルへ</button></div>
   </div>
 </div>
 

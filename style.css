@@ -245,3 +245,33 @@ label.row input[type=range] { flex: 0 0 150px; accent-color: #f5a400; }
 #hud.replay #startbox { top: 60px; }
 #hud.replay #ticker { top: 62px; }
 #hud.replay.pre #ticker { top: 176px; }
+
+/* ---------- 主ボタンを常に見える位置に(スマホで画面の外に出ないように) ---------- */
+.stick { position: sticky; bottom: -24px; z-index: 1; margin: 0 -6px -24px; padding: 12px 6px 24px; background: linear-gradient(180deg, rgba(9, 24, 50, 0), rgba(9, 24, 50, 0.97) 34%); }
+.stick button.primary { margin-top: 0; }
+#start-bar { position: static; margin: 14px 0 0; padding: 0; background: none; }   /* 広い画面では普通に並べる */
+#res-btns { flex-wrap: wrap; margin-top: 6px; }
+#res-btns .primary { flex: 1 0 100%; }
+#res-btns button:not(.primary) { padding: 9px; font-size: 14px; }
+body:has(#result:not(.hidden)) #touch { display: none; }
+.tabs button b { white-space: nowrap; font-size: clamp(11px, 3.3vw, 16px); }
+@media (max-width: 760px) {
+  .cols { gap: 0; } .cols > .col { display: contents; }   /* 縦持ち: 出走ボタンを全体の下端に貼り付ける */
+  .tabs button { padding: 11px 2px; }
+  #start-bar { position: sticky; bottom: -16px; margin: 0 -6px; padding: 12px 6px 16px; background: linear-gradient(180deg, rgba(9, 24, 50, 0), rgba(9, 24, 50, 0.97) 34%); }
+  #start-bar + .btns.sub { margin-top: 0; }
+}
+/* 横持ちのスマホ: 題名を小さくして、出走ボタンを右上に置く */
+@media (max-height: 520px) and (min-width: 761px) {
+  #title .panel { position: relative; padding-top: 14px; }
+  #title .logo { text-align: left; margin-bottom: 8px; padding-right: 260px; }
+  #title .logo small { font-size: 10px; }
+  #title .logo h1 { font-size: 30px; }
+  #start-bar { position: absolute; top: 14px; bottom: auto; right: 26px; width: 240px; margin: 0; padding: 0; background: none; }
+  #start-bar .primary { padding: 10px; font-size: 20px; }
+  #res-head { font-size: 44px; } #res-head[data-p="f"] { font-size: 34px; }
+  #res-sub { margin: 4px 0 8px; }
+  #res-table td { padding: 4px; }
+  #res-btns { flex-wrap: nowrap; } #res-btns .primary { flex: 1.4 1 0; padding: 10px; font-size: 16px; letter-spacing: 0.04em; }
+  h3 { margin-bottom: 8px; font-size: 20px; }
+}
