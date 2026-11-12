@@ -11,7 +11,10 @@
       "Race": { "$path": "src/Race.server.lua" },
       "BoatCollision": { "$path": "src/BoatCollision.lua" },
       "RaceAI": { "$path": "src/RaceAI.lua" },
-      "RaceRoster": { "$path": "src/RaceRoster.lua" }
+      "RaceRoster": { "$path": "src/RaceRoster.lua" },
+      "Rating": { "$path": "src/Rating.lua" },
+      "PlayerStats": { "$path": "src/PlayerStats.lua" },
+      "ResultRules": { "$path": "src/ResultRules.lua" }
     },
     "StarterPlayer": { "StarterPlayerScripts": { "Controls": { "$path": "src/Controls.client.lua" } } }
   }

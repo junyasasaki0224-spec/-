@@ -3,10 +3,12 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
+local HttpService = game:GetService("HttpService")
 local collision = require(script.Parent:WaitForChild("BoatCollision"))
 local RaceAI = require(script.Parent:WaitForChild("RaceAI"))
 local createRoster = require(script.Parent:WaitForChild("RaceRoster"))
 local stepBoat = require(ReplicatedStorage:WaitForChild("BoatPhysics"))
+local PlayerStats = require(script.Parent:WaitForChild("PlayerStats"))
 
 local input = Instance.new("RemoteEvent")
 input.Name = "MinatoInput"
@@ -91,6 +93,7 @@ local function applyTilt(boat, index)
     boat.gripSet=tilt.grip*(1-wave*0.006)
 end
 local nextFirst = 1
+local saveResults
 local function preparePlayer(player)
     player:SetAttribute("MinatoBoat", 0)
 end
@@ -98,7 +101,17 @@ Players.PlayerAdded:Connect(preparePlayer)
 Players.PlayerRemoving:Connect(function(player)
     commands[player] = nil
     for _, boat in ipairs(boats) do
-        if boat.player == player then boat.player = nil end
+        if boat.player == player then
+            if not boat.finished then boat.humanLeft = true end
+            boat.player = nil
+        end
+    end
+    if raceClock >= 0 and saveResults then
+        local remaining = false
+        for _, other in ipairs(Players:GetPlayers()) do
+            if other ~= player then remaining = true; break end
+        end
+        if not remaining then saveResults() end
     end
 end)
 for _, player in ipairs(Players:GetPlayers()) do preparePlayer(player) end
@@ -111,6 +124,8 @@ local function assignPlayers()
         local player = nil
         if i <= #players then player = players[((nextFirst+i-2) % #players)+1] end
         boat.player = player
+        boat.humanUserId = player and player.UserId or nil
+        boat.humanLeft = false
         if player then
             commands[player] = {throttle=0, steer=0, last=0, sequence=0, applied=0}
             player:SetAttribute("MinatoBoat", i)
@@ -139,6 +154,31 @@ setup.OnServerEvent:Connect(function(player, index, round)
     end
 end)
 
+local function progress(b)
+    local cp = b.checkpoint
+    if cp == 0 then return b.lap*720 + math.clamp(b.x+150,0,300) end
+    if cp == 1 or cp == 2 then
+        local angle = math.atan2(b.x-150,b.z-8)
+        return b.lap*720 + 300 + 60*math.clamp(angle,0,math.pi)/math.pi
+    end
+    if cp == 3 then return b.lap*720 + 360 + math.clamp(150-b.x,0,300) end
+    local angle = math.atan2(-(b.x+150),-b.z)
+    return b.lap*720 + 660 + 60*math.clamp(angle,0,math.pi)/math.pi
+end
+local function orderBoats()
+    local order = table.clone(boats)
+    table.sort(order,function(a,b)
+        local outA,outB = a.flying or a.humanLeft, b.flying or b.humanLeft
+        if outA ~= outB then return not outA end
+        if a.finished ~= b.finished then return a.finished end
+        if a.finished and b.finished then return a.place < b.place end
+        local ap,bp = progress(a),progress(b)
+        if ap == bp then return a.model.Name < b.model.Name end
+        return ap > bp
+    end)
+    return order
+end
+
 local function reset()
     raceNumber += 1
     wave = ((raceNumber*7)%16)/10
@@ -155,6 +195,7 @@ local function reset()
         b.throttle,b.steer,b.lap,b.checkpoint,b.finished,b.speed = 0,0,0,0,false,0
         b.started,b.flying,b.place,b.startTime = false,false,0,nil
         b.player = nil
+        b.humanUserId,b.humanLeft,b.finishTime = nil,false,nil
         b.windX,b.windZ = math.cos(windAngle)*wind,math.sin(windAngle)*wind
         b.motor,b.gripF,b.thrustF,b.inWake = racers[i].motor,1,1,0
         b.model:SetAttribute("Racer",racers[i].racer.name)
@@ -170,8 +211,30 @@ local elapsed = -31
 local finishTime = nil
 local finishCount = 0
 local assigned = false
+local raceId = HttpService:GenerateGUID(false)
+local resultsSaved = false
 local accumulator = 0
 local dt = 1/120
+saveResults = function()
+    if resultsSaved or not assigned then return end
+    resultsSaved = true
+    local results = {}
+    for position, boat in ipairs(orderBoats()) do
+        if boat.humanUserId then
+            local disqualified = boat.flying or boat.humanLeft
+            table.insert(results,{
+                userId=boat.humanUserId,
+                place=disqualified and 7 or position,
+                won=not disqualified and boat.finished and boat.place==1,
+                time=not disqualified and boat.finished and boat.finishTime or nil,
+            })
+        end
+    end
+    if #results > 0 then
+        -- Current entry point is practice. Ranked matchmaking will supply a trusted mode later.
+        PlayerStats.recordRace(raceId,results,false)
+    end
+end
 local function step()
     elapsed += dt
     raceClock = elapsed
@@ -220,6 +283,7 @@ local function step()
         if b.checkpoint == 5 and previousX < -150 and b.x >= -150 and b.z > 0 then b.checkpoint=0; b.lap += 1 end
         if not b.finished and not b.flying and b.lap >= 3 and previousX < 0 and b.x >= 0 and b.z > 4 then
             b.finished=true
+            b.finishTime = math.max(0.001,elapsed-(b.startTime or 0))
             finishCount += 1
             b.place = finishCount
             finishTime=finishTime or elapsed
@@ -251,21 +315,17 @@ local function step()
         boat.thrustF = 1-0.05*boat.inWake
     end
     if (finishTime and elapsed-finishTime > 45) or elapsed > 240 then
+        saveResults()
         reset(); elapsed=-31; raceClock=elapsed; finishTime=nil; finishCount=0; assigned=false
+        raceId = HttpService:GenerateGUID(false)
+        resultsSaved = false
     end
 end
+game:BindToClose(function()
+    if raceClock >= 0 then saveResults() end
+    PlayerStats.waitForPending(25)
+end)
 local snapshotTimer = 0
-local function progress(b)
-    local cp = b.checkpoint
-    if cp == 0 then return b.lap*720 + math.clamp(b.x+150,0,300) end
-    if cp == 1 or cp == 2 then
-        local angle = math.atan2(b.x-150,b.z-8)
-        return b.lap*720 + 300 + 60*math.clamp(angle,0,math.pi)/math.pi
-    end
-    if cp == 3 then return b.lap*720 + 360 + math.clamp(150-b.x,0,300) end
-    local angle = math.atan2(-(b.x+150),-b.z)
-    return b.lap*720 + 660 + 60*math.clamp(angle,0,math.pi)/math.pi
-end
 RunService.Heartbeat:Connect(function(frame)
     accumulator = math.min(accumulator+frame,0.25)
     while accumulator >= dt do step(); accumulator -= dt end
@@ -278,15 +338,7 @@ RunService.Heartbeat:Connect(function(frame)
         b.model:SetAttribute("Tilt",b.tilt)
         b.model:SetAttribute("StartTime",b.startTime)
     end
-    local order = table.clone(boats)
-    table.sort(order,function(a,b)
-        if a.flying ~= b.flying then return not a.flying end
-        if a.finished ~= b.finished then return a.finished end
-        if a.finished and b.finished then return a.place < b.place end
-        local ap,bp = progress(a),progress(b)
-        if ap == bp then return a.model.Name < b.model.Name end
-        return ap > bp
-    end)
+    local order = orderBoats()
     for rank,b in ipairs(order) do b.model:SetAttribute("Rank",rank) end
     world:SetAttribute("Time",math.floor(elapsed*10)/10)
     snapshotTimer += frame
