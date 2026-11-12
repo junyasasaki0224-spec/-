@@ -176,6 +176,16 @@ export class Spray {
           b.vx * 0.45 + rx * side * (2.5 + 7.5 * R()) * pw, (2.2 + 6.8 * R()) * pw, b.vz * 0.45 + rz * side * (2.5 + 7.5 * R()) * pw,
           0.5 + 0.7 * R(), 0.24 + 0.5 * R(), 0.42 + 0.38 * R(), 1.6, 1.1);
       }
+      // 艇尾から外側・後ろへ扇形に噴き上がる水の壁(プロペラが水をかき出す)
+      // カメラのすぐ前(自艇の追尾視点)ではしぶきで艇が隠れないよう控えめにする
+      n = cnt(420 * ti * (0.3 + 0.7 * b.throttle) * (0.4 + 0.6 * f) * (near > 0.97 ? 0.3 : 1));
+      for (let i = 0; i < n; i++) {
+        const fan = R(), pw = (0.55 + 0.45 * R()) * ti, sp2 = 5 + 9 * R();
+        const ox = -ch * (0.55 - 0.45 * fan) + rx * side * (0.35 + 0.75 * fan), oz = -sh * (0.55 - 0.45 * fan) + rz * side * (0.35 + 0.75 * fan);
+        this.emit(b.x - ch * 1.7 + rx * side * 0.3, 0.15, b.z - sh * 1.7 + rz * side * 0.3,
+          b.vx * 0.3 + ox * sp2 * pw, (2.5 + 5 * R()) * pw, b.vz * 0.3 + oz * sp2 * pw,
+          0.7 + 0.8 * R(), 0.3 + 0.55 * R(), 0.5 + 0.35 * R(), 1.8, 0.9);
+      }
       n = cnt(9 * ti);
       for (let i = 0; i < n; i++) {
         this.emit(b.x + rx * side * (0.8 + R()), 0.4 + R() * 0.8, b.z + rz * side * (0.8 + R()),

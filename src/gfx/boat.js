@@ -133,6 +133,7 @@ export class BoatView {
 
     scene.add(root);
     this.slapped = 0;
+    this.yawX = 0;
     this.roll = 0; this.pitch = 0; this.lean = 0; this.stand = 0;
     this.poundT = Math.random(); this.poundV = 0; this.poundY = 0;
     this._q = new THREE.Quaternion(); this._e = new THREE.Euler();
@@ -146,13 +147,16 @@ export class BoatView {
   update(b, dt, time) {
     const sp = b.speed, f = clamp(sp / VMAX, 0, 1);
     this.root.position.set(b.x, 0, b.z);
-    this.root.rotation.y = -b.h;
+    // 旋回中は、艇首が進む向きより内側を向いて外へ滑りながら回る(見た目だけ角度を足す)
+    const tiv = clamp(Math.abs(b.w) * sp / 12, 0, 1);
+    this.yawX += ((b.w < 0 ? -1 : 1) * tiv * 0.2 - this.yawX) * Math.min(1, dt * 5);
+    this.root.rotation.y = -(b.h + this.yawX);
     // ロール(旋回内側へ傾く) + 衝突の揺れ
-    const rollT = clamp(b.w * b.vf * 0.024, -0.36, 0.36) + b.bump * b.bumpSide * 0.3 * Math.sin(time * 28);
+    const rollT = clamp(b.w * b.vf * 0.034, -0.56, 0.56) + b.bump * b.bumpSide * 0.3 * Math.sin(time * 28);
     this.roll += (rollT - this.roll) * Math.min(1, dt * 7);
     // ピッチ: 滑走に入ると艇首が上がる。加速でさらに上がる
     const plane = clamp((sp - 2) / 8, 0, 1);
-    const pitchT = 0.01 + 0.07 * plane - 0.028 * f + clamp(b.af, -6, 6) * 0.006;
+    const pitchT = 0.01 + 0.07 * plane - 0.028 * f + clamp(b.af, -6, 6) * 0.006 + 0.05 * tiv;   // 旋回中は艇首が上がる
     this.pitch += (pitchT - this.pitch) * Math.min(1, dt * 5);
     // 艇底が波を叩く上下動
     this.poundT -= dt * (1.5 + 7 * f);
@@ -170,11 +174,11 @@ export class BoatView {
     // レーサー: 旋回で腰を浮かせて内側へ体重を移す(モンキーターン)
     const ti = clamp(Math.abs(b.w) * sp / 14, 0, 1);
     this.stand += (ti - this.stand) * Math.min(1, dt * 6);
-    const leanT = clamp(b.w * 0.55, -0.6, 0.6);
+    const leanT = clamp(b.w * 0.75, -0.85, 0.85);
     this.lean += (leanT - this.lean) * Math.min(1, dt * 6);
-    this._e.set(this.lean * 0.8, 0, this.stand * 0.2 - f * 0.05);
+    this._e.set(this.lean * 0.95, 0, this.stand * 0.28 - f * 0.05);
     this.upper.quaternion.copy(this.upperQ).multiply(this._q.setFromEuler(this._e));
-    this.upper.position.set(this.upperP.x - this.stand * 0.04, this.upperP.y + this.stand * 0.1, this.upperP.z + this.lean * 0.14);
+    this.upper.position.set(this.upperP.x - this.stand * 0.04, this.upperP.y + this.stand * 0.16, this.upperP.z + this.lean * 0.2);
     this.motor.rotation.y = -b.steer * 0.42;
     this._e.set(0, b.steer * 1.5, 0);
     this.wheel.quaternion.copy(this.wheelQ).multiply(this._q.setFromEuler(this._e));
