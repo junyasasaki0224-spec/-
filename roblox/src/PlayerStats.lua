@@ -127,21 +127,30 @@ local function queueResult(result, raceId, change)
 end
 
 function Stats.recordRace(raceId, participants, ranked)
-    local eligible = {}
-    if ranked then
-        for _, result in ipairs(participants) do
-            local profile, err = Stats.load(result.userId)
-            if not profile then
-                -- Do not calculate a partial rating against unknown opponents.
-                return false,err
+    -- Loading every opponent can yield or fail; retry without blocking Heartbeat.
+    pending += 1
+    task.spawn(function()
+        local eligible = {}
+        if ranked then
+            while true do
+                eligible = {}
+                local complete = true
+                for _, result in ipairs(participants) do
+                    local profile = Stats.load(result.userId)
+                    if not profile then complete=false; break end
+                    eligible[#eligible+1] = {rating=profile.rating,place=result.place}
+                end
+                if complete then break end
+                warn("Minato ranked ratings unavailable; retrying")
+                task.wait(20)
             end
-            eligible[#eligible+1] = {rating=profile.rating,place=result.place}
         end
-    end
-    local changes = ranked and calculateRating(eligible) or {}
-    for i, result in ipairs(participants) do
-        queueResult(result,raceId,changes[i] or 0)
-    end
+        local changes = ranked and calculateRating(eligible) or {}
+        for i, result in ipairs(participants) do
+            queueResult(result,raceId,changes[i] or 0)
+        end
+        pending -= 1
+    end)
     return true
 end
 

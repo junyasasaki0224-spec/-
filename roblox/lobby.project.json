@@ -21,6 +21,15 @@
       "RoomService": {
         "$path": "src/RoomService.lua"
       },
+      "MatchPolicy": {
+        "$path": "src/MatchPolicy.lua"
+      },
+      "MatchQueue": {
+        "$path": "src/MatchQueue.lua"
+      },
+      "MatchLobby": {
+        "$path": "src/MatchLobby.server.lua"
+      },
       "RoomLobby": {
         "$path": "src/RoomLobby.server.lua"
       }
