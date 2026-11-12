@@ -2,7 +2,12 @@
   "name": "Minato Grand Prix",
   "tree": {
     "$className": "DataModel",
-    "ServerScriptService": { "Race": { "$path": "src/Race.server.lua" } },
+    "ReplicatedStorage": { "BoatPhysics": { "$path": "src/BoatPhysics.lua" } },
+    "ServerScriptService": {
+      "Race": { "$path": "src/Race.server.lua" },
+      "BoatCollision": { "$path": "src/BoatCollision.lua" },
+      "RaceAI": { "$path": "src/RaceAI.lua" }
+    },
     "StarterPlayer": { "StarterPlayerScripts": { "Controls": { "$path": "src/Controls.client.lua" } } }
   }
 }
