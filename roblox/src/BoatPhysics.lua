@@ -1,4 +1,6 @@
 -- Shared motion model for server simulation and client-side presentation.
+local THRUST_STEER_MIN = 0.5
+local GRIP = 15.5
 local function smooth(a, b, x)
     local t = math.clamp((x-a)/(b-a),0,1)
     return t*t*(3-2*t)
@@ -11,7 +13,8 @@ local function step(b, throttle, steer, dt)
     local vf,vl = b.vx*ch+b.vz*sh,-b.vx*sh+b.vz*ch
     local sp = math.abs(vf)
     local hull = smooth(0.5,6,sp)
-    local auth = hull*(1-0.24*math.min(1,sp/22.6))+0.3*b.throttle*(1-hull)
+    local prop = THRUST_STEER_MIN+(1-THRUST_STEER_MIN)*smooth(0,0.6,b.throttle)
+    local auth = hull*(1-0.24*math.min(1,sp/22.6))*prop+0.3*b.throttle*(1-hull)
     local yaw = -b.steer*1.6*auth*(0.75+0.25*(b.gripF or 1)) + 1.3*vl/math.max(sp,4)*hull
     b.w += (yaw-b.w)*(1-math.exp(-7*dt))
     b.h += b.w*dt
@@ -23,7 +26,7 @@ local function step(b, throttle, steer, dt)
     local af = b.throttle*7*(b.motor or 1)*(b.thrustF or 1)*mix+0.08-0.08*vf-0.01014*vf*math.abs(vf)-direction*(0.3*math.abs(vl)+hump)
     af += 0.045*((b.windX or 0)*ch+(b.windZ or 0)*sh)*smooth(2,10,sp)
     vf += af*dt
-    local grip = 13.5*(b.gripF or 1)*(b.gripSet or 1)
+    local grip = GRIP*(b.gripF or 1)*(b.gripSet or 1)
     vl -= math.clamp(9*vl,-grip,grip)*dt
     b.vx,b.vz = vf*ch-vl*sh,vf*sh+vl*ch
     b.x,b.z = b.x+b.vx*dt,b.z+b.vz*dt

@@ -15,7 +15,7 @@ local boat = templates:WaitForChild("Boat1")
 local STUDS_PER_METRE = 3.5
 local BOAT_SCALE = STUDS_PER_METRE * (2.9 / 7)
 local camera = workspace.CurrentCamera
-local renderBoats, wakes, latest = {}, {}, {}
+local renderBoats, wakes, motion, latest = {}, {}, {}, {}
 for i = 1, 6 do
     local original = templates:WaitForChild("Boat"..i)
     local visual = original:Clone()
@@ -44,6 +44,21 @@ for i = 1, 6 do
     spray.Speed = NumberRange.new(STUDS_PER_METRE,3*STUDS_PER_METRE)
     spray.Rate = 0
     spray.Parent = first
+    local fanAnchor = Instance.new("Attachment")
+    fanAnchor.Position = Vector3.new(0,0.15,3.3)*BOAT_SCALE
+    fanAnchor.Parent = visual.PrimaryPart
+    local fan = Instance.new("ParticleEmitter")
+    fan.Texture = "rbxasset://textures/particles/smoke_main.dds"
+    fan.Color = ColorSequence.new(Color3.fromRGB(233,248,250))
+    fan.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0,0.45),NumberSequenceKeypoint.new(1,1)})
+    fan.Size = NumberSequence.new({NumberSequenceKeypoint.new(0,0.3*STUDS_PER_METRE),NumberSequenceKeypoint.new(1,1.5*STUDS_PER_METRE)})
+    fan.Lifetime = NumberRange.new(0.7,1.2)
+    fan.Speed = NumberRange.new(5*STUDS_PER_METRE,12*STUDS_PER_METRE)
+    fan.Acceleration = Vector3.new(0,-9.8*STUDS_PER_METRE,0)
+    fan.EmissionDirection = Enum.NormalId.Front
+    fan.SpreadAngle = Vector2.new(18,35)
+    fan.Rate = 0
+    fan.Parent = fanAnchor
     local engine
     if audioConfig.engineAssetId ~= "" then
         engine = Instance.new("Sound")
@@ -54,7 +69,8 @@ for i = 1, 6 do
         engine.Parent = visual.PrimaryPart
         engine:Play()
     end
-    wakes[i] = {trail=trail,spray=spray,engine=engine}
+    wakes[i] = {trail=trail,spray=spray,fan=fan,fanAnchor=fanAnchor,engine=engine}
+    motion[i] = {roll=0,yaw=0,pitch=0}
     renderBoats[i] = visual
 end
 local predicted, predictedNumber, running = nil, 0, false
@@ -244,17 +260,36 @@ RunService.RenderStepped:Connect(function(dt)
     for i, visual in ipairs(renderBoats) do
         local state = latest[i]
         if state then
-            local x,z,h,w = state[1],state[2],state[3],state[6]
-            if i == boatNumber and predicted then x,z,h,w = predicted.x,predicted.z,predicted.h,predicted.w end
-            local speed = math.sqrt(state[4]*state[4]+state[5]*state[5])
+            local x,z,h,w,vx,vz,th = state[1],state[2],state[3],state[6],state[4],state[5],state[7]
+            if i == boatNumber and predicted then
+                x,z,h,w,vx,vz,th = predicted.x,predicted.z,predicted.h,predicted.w,predicted.vx,predicted.vz,predicted.throttle
+            end
+            local speed = math.sqrt(vx*vx+vz*vz)
+            local forwardSpeed = vx*math.cos(h)+vz*math.sin(h)
+            local lateralSpeed = -vx*math.sin(h)+vz*math.cos(h)
+            local turnIntensity = math.clamp(math.abs(w)*speed/12,0,1)
+            local sprayIntensity = math.clamp(math.abs(lateralSpeed)/5+math.abs(w)*speed/28,0,1)
+            local view = motion[i]
+            local turnSign = w < 0 and -1 or 1
+            view.yaw += (turnSign*turnIntensity*0.2-view.yaw)*(1-math.exp(-5*dt))
+            view.roll += (math.clamp(-w*forwardSpeed*0.034,-0.56,0.56)-view.roll)*(1-math.exp(-7*dt))
+            local plane = math.clamp((speed-2)/8,0,1)
+            local pitch = 0.01+0.07*plane-0.028*math.clamp(speed/22.6,0,1)+0.05*turnIntensity
+            view.pitch += (pitch-view.pitch)*(1-math.exp(-5*dt))
             wakes[i].trail.Enabled = speed > 3
             wakes[i].spray.Rate = math.clamp((speed-5)*3,0,45)
+            local side = math.abs(lateralSpeed)>0.1 and (lateralSpeed>0 and 1 or -1) or -turnSign
+            local fanDirection = Vector3.new(side*0.85,0.6,0.55)
+            wakes[i].fanAnchor.CFrame = CFrame.lookAt(wakes[i].fanAnchor.Position,wakes[i].fanAnchor.Position+fanDirection)
+            local visibility = i == boatNumber and 0.3 or 1
+            wakes[i].fan.Rate = math.min(140,420*sprayIntensity*(0.3+0.7*th)*(0.4+0.6*math.clamp(speed/22.6,0,1)))*visibility
             if wakes[i].engine then
                 wakes[i].engine.Volume = 0.12 + 0.38*math.clamp(speed/22.6,0,1)
                 wakes[i].engine.PlaybackSpeed = 0.75 + 0.9*math.clamp(speed/22.6,0,1)
             end
             local pos = Vector3.new(x,0.5,z)*STUDS_PER_METRE
-            local destination = CFrame.lookAt(pos,pos+Vector3.new(math.cos(h),0,math.sin(h))) * CFrame.Angles(0,0,math.clamp(-w*0.12,-0.18,0.18))
+            local destination = CFrame.lookAt(pos,pos+Vector3.new(math.cos(h),0,math.sin(h)))
+                * CFrame.Angles(0,-view.yaw,0) * CFrame.Angles(view.pitch,0,view.roll)
             local current = visual:GetPivot()
             if (current.Position-destination.Position).Magnitude > 30*STUDS_PER_METRE then visual:PivotTo(destination)
             else visual:PivotTo(current:Lerp(destination,1-math.exp(-12*dt))) end
@@ -263,8 +298,9 @@ RunService.RenderStepped:Connect(function(dt)
     local visibleBoat = renderBoats[math.max(boatNumber,1)]
     local cf = visibleBoat:GetPivot()
     camera.CameraType = Enum.CameraType.Scriptable
-    local desired = cf.Position - cf.LookVector*(15*STUDS_PER_METRE) + Vector3.new(0,7*STUDS_PER_METRE,0)
-    local target = CFrame.lookAt(desired,cf.Position+cf.LookVector*(15*STUDS_PER_METRE)+Vector3.new(0,STUDS_PER_METRE,0))
+    local forward = Vector3.new(cf.LookVector.X,0,cf.LookVector.Z).Unit
+    local desired = cf.Position - forward*(15*STUDS_PER_METRE) + Vector3.new(0,7*STUDS_PER_METRE,0)
+    local target = CFrame.lookAt(desired,cf.Position+forward*(15*STUDS_PER_METRE)+Vector3.new(0,STUDS_PER_METRE,0))
     camera.CFrame = camera.CFrame:Lerp(target,1-math.exp(-5*dt))
     local time = world:GetAttribute("Time") or -8
     hand.Rotation = (time*30)%360
