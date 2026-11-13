@@ -170,6 +170,15 @@ export class BoatView {
     const bob = Math.sin(time * 1.7 + this.num) * 0.02 * (1 - f);
     this.tilt.position.y = -0.065 + bob + Math.max(this.poundY, -0.05) + 0.085 * plane;
     this.tilt.rotation.set(this.roll, 0, this.pitch + this.poundY * 0.35);
+    // 沈没: 横倒しになりながら艇尾から沈み、数秒で水面から消える
+    if (b.sunk) {
+      const t = b.sinkT, a0 = Math.min(1, t / 1.2), e = a0 * a0 * (3 - 2 * a0);
+      this.tilt.rotation.x += e * 1.2 * (this.roll < 0 ? -1 : 1);
+      this.tilt.rotation.z += e * 0.4;
+      this.tilt.position.y -= 0.3 * e + Math.max(0, t - 2.5) * 0.26;
+    }
+    const gone = b.sunk && b.sinkT > 8;
+    if (this.root.visible === gone) { this.root.visible = !gone; this.shBody.visible = !gone; this.shUpper.visible = !gone; }
 
     // レーサー: 旋回で腰を浮かせて内側へ体重を移す(モンキーターン)
     const ti = clamp(Math.abs(b.w) * sp / 14, 0, 1);

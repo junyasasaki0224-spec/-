@@ -1,7 +1,7 @@
 // ボートの運動モデル。水面上の2D剛体(位置・向き・速度・角速度)として扱う。
 // 前後方向は推力と水の抵抗、横方向は「限界のあるグリップ」で、
 // 限界を超えると艇が外へ流れる(慣性ドリフト)。
-import { clamp, BOUNDS, M1, M2, POLE, BUOY_R } from './course.js';
+import { clamp, BOUNDS, M1, M2, POLE, BUOY_R, MARK_UNITS } from './course.js';
 
 export const VMAX = 22.6;          // 約 81 km/h
 export const ACC = 7.0;            // 全開時の推力加速度
@@ -181,6 +181,10 @@ const OBST = [
   { x: M2.x, z: M2.z, r: BUOY_R, id: 2, soft: 0.55 },
   { x: POLE.x, z: POLE.z, r: POLE.r, id: 0, soft: 1 },
 ];
+for (const u of MARK_UNITS) for (const k of [-1, 0, 1]) OBST.push({ x: u.x + u.dx * k, z: u.z + u.dz * k, r: 1.0, id: u.id, soft: 1 });
+// 沈没になる当たりの強さ(ぶつかる向きの速さ m/s)。これより弱いのは「こすった」扱いで弾かれるだけ
+export const SINK_V = 2.0;        // ターンマーク・マーク横の消波装置・センターポール(時速約7km)
+export const SINK_WALL_V = 7.0;   // 外周の消波装置(時速約25km。浅い角度でこすっただけでは沈まない)
 export function collideObstacles(b) {
   let hit = null;
   const ch = Math.cos(b.h), sh = Math.sin(b.h);
@@ -195,7 +199,7 @@ export function collideObstacles(b) {
         b.x += nx * pen * o.soft; b.z += nz * pen * o.soft;
         const vn = b.vx * nx + b.vz * nz;
         if (vn < 0) {
-          const k = (o.id === 0 ? 1.2 : 0.6) * vn;   // ブイは浮いているので弾かれにくい
+          const k = (o.id === 1 || o.id === 2 ? 0.6 : 1.2) * vn;   // ブイは浮いているので弾かれにくい
           b.vx -= k * nx; b.vz -= k * nz;
           b.w += (CIRC[i] * (ch * nz - sh * nx)) * (-vn) * 0.25;
           b.vx *= 0.985; b.vz *= 0.985;

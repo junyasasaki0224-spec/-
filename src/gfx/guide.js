@@ -40,7 +40,7 @@ export class Guide {
 
   update(b, time, on) {
     const ai = b && b.ai, P = ai && ai.plan;
-    if (!on || !P || !b.started || b.finished || b.flying) { this.mesh.visible = false; return; }
+    if (!on || !P || !b.started || b.finished || b.out) { this.mesh.visible = false; return; }
     this.mesh.visible = true;
     this.uniforms.uTime.value = time;
     const { pos, uv, col } = this, xs = P.xs, zs = P.zs, M = xs.length;

@@ -3,7 +3,7 @@ import {
   clamp, M1, M2, START_X, LAP_S, LAPS, zc, region, sOf,
 } from './course.js';
 import {
-  makeBoat, stepBoat, collideBoats, collideWalls, collideObstacles, timeToCover, applyTilt,
+  makeBoat, stepBoat, collideBoats, collideWalls, collideObstacles, timeToCover, applyTilt, SINK_V, SINK_WALL_V,
 } from './physics.js';
 import { initAI, updateAI } from './ai.js';
 import { ROSTER, PLAYER, DIFFS, motorFactor, randomWeather } from './roster.js';
@@ -82,6 +82,7 @@ export class Race {
       b.sHold = sOf(b.x, b.z, b.lastValid);
       b.R = b.x; b.lap = 0; b.rank = i + 1;
       b.started = false; b.st = null; b.flying = false; b.late = false;
+      b.sunk = false; b.sinkT = 0; b.out = false;   // out: 失格(フライングか沈没)
       b.finished = false; b.finishTime = 0; b.place = 0; b.offCourse = false;
       b.lapTimes = []; b.lastLapClock = 0;
       b.chop = this.env.chop;
@@ -125,24 +126,37 @@ export class Race {
         else if (input) { st = Math.round(input.steer * 127) / 127; th = Math.round(input.throttle * 127) / 127; br = Math.round(input.brake * 127) / 127; }
         if (this.rec) this.rec.push(Math.round(st * 127), Math.round(th * 127), Math.round(br * 127));
         updateAI(b, this, dt, false);
-        if (b.finished || b.flying) {       // ゴール後・失格後は流す
-          b.cmdThrottle = b.flying ? 0 : 0.25; b.cmdSteer = this._cruiseSteer(b); b.cmdBrake = 0;
+        if (b.finished || b.out) {       // ゴール後・失格後は流す
+          b.cmdThrottle = b.out ? 0 : 0.25; b.cmdSteer = this._cruiseSteer(b); b.cmdBrake = 0;
         } else { b.cmdThrottle = th; b.cmdSteer = st; b.cmdBrake = br; }
       } else {
         updateAI(b, this, dt);
         if (b.finished) b.cmdThrottle = Math.min(b.cmdThrottle, 0.45);
       }
       const px = b.x;
+      if (b.sunk) {            // 沈んだ艇: 止まって沈んでいく。ほかの艇や障害物には当たらない
+        b.sinkT += dt; b.cmdThrottle = 0; b.cmdSteer = 0; b.cmdBrake = 0;
+        stepBoat(b, dt, this.env);
+        const k = Math.exp(-2.2 * dt); b.vx *= k; b.vz *= k; b.w *= k;
+        collideWalls(b);
+        continue;
+      }
       stepBoat(b, dt, this.env);
       const w = collideWalls(b);
       if (w > 2.5) this.events.push({ type: 'wall', boat: b.i, power: w, x: b.x, z: b.z });
       const o = collideObstacles(b);
       if (o && o.power > 1) this.events.push({ type: 'buoy', boat: b.i, id: o.id, power: o.power, nx: o.nx, nz: o.nz });
+      // 強くぶつかったら沈没(失格)。ゴール後の艇は対象外
+      if (!b.finished && !b.out) {
+        if (o && o.power >= SINK_V) this._sink(b, o.id === 0 ? 'pole' : o.id >= 3 ? 'unit' : 'mark', o.power);
+        else if (w >= SINK_WALL_V) this._sink(b, 'wall', w);
+      }
       this._progress(b, px);
       this._trail(b, dt);
     }
     this.stepN++;
     for (let i = 0; i < 6; i++) for (let j = i + 1; j < 6; j++) {
+      if (boats[i].sunk || boats[j].sunk) continue;
       const c = collideBoats(boats[i], boats[j]);
       if (c && c.power > 0.35) this.events.push({ type: 'hit', a: i, b: j, power: c.power, x: c.x, z: c.z });
     }
@@ -157,19 +171,25 @@ export class Race {
         if (this.endTimer > 2.2 || !pl.started) { this.state = 'done'; this.events.push({ type: 'done' }); }
       }
     } else if (this.state === 'racing' || this.state === 'flying') {
-      if (this.finishCount >= 6) this._end();
+      if (this.finishCount + boats.filter((b) => b.out).length >= 6) this._end();
       else if (this.finishCount > 0) {
         // 先頭のゴールから一定時間で打ち切る(自艇がまだ走っている間は長めに待つ)
         this.endTimer += dt;
-        if (this.endTimer > (pl && !pl.finished && !pl.flying ? 50 : 25)) this._end();
+        if (this.endTimer > (pl && !pl.finished && !pl.out ? 50 : 25)) this._end();
       } else if (this.clock > 300) this._end();
     }
+  }
+
+  _sink(b, cause, power) {
+    b.sunk = true; b.out = true; b.sinkT = 0; b.sinkCause = cause;
+    this.events.push({ type: 'sink', boat: b.i, cause, power, x: b.x, z: b.z });
+    if (b.isPlayer && this.state !== 'done' && this.mode !== 'practice') this.state = 'flying';   // 自艇の失格(レースは続く)
   }
 
   _end() {
     if (this.state === 'done') return;
     // 未ゴール艇は現在の位置関係で着順を確定
-    for (const b of this.order) if (!b.finished && !b.flying) { b.finished = true; b.place = ++this.finishCount; b.finishTime = 0; }
+    for (const b of this.order) if (!b.finished && !b.out) { b.finished = true; b.place = ++this.finishCount; b.finishTime = 0; }
     this.state = 'done';
     this.events.push({ type: 'done' });
   }
@@ -191,7 +211,7 @@ export class Race {
       const f = (START_X - px) / Math.max(b.x - px, 1e-6);
       b.st = this.clock - DT * (1 - f);
       b.started = true; b.lastLapClock = b.st;
-      if (b.st < 0) { b.flying = true; this.events.push({ type: 'flying', boat: b.i, st: b.st }); if (b.isPlayer) this.state = 'flying'; }
+      if (b.st < 0) { b.flying = true; b.out = true; this.events.push({ type: 'flying', boat: b.i, st: b.st }); if (b.isPlayer) this.state = 'flying'; }
       else { b.late = b.st > 1.0; this.events.push({ type: 'cross', boat: b.i, st: b.st, late: b.late }); }
     }
     // 区間の順送り。区間 L: 0 ホーム / 1 1マーク旋回 / 2 バック / 3 2マーク旋回。
@@ -215,7 +235,7 @@ export class Race {
     if (!b.offCourse) b.sHold = sOf(b.x, b.z, L);
     const R = Math.floor(b.sectorCount / 4) * LAP_S + b.sHold - 150;
     b.R = b.started ? R : b.x;
-    if (b.started && !b.finished && !b.flying) {
+    if (b.started && !b.finished && !b.out) {
       const lap = Math.floor(b.R / LAP_S);
       if (lap > b.lap) {
         b.lap = lap;
@@ -290,7 +310,7 @@ export class Race {
 
   _ranking() {
     this.order.sort((a, b) => {
-      if (a.flying !== b.flying) return a.flying ? 1 : -1;
+      if (a.out !== b.out) return a.out ? 1 : -1;
       if (a.finished && b.finished) return a.place - b.place;
       if (a.finished !== b.finished) return a.finished ? -1 : 1;
       return b.R - a.R;

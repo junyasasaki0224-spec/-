@@ -12,6 +12,12 @@ export const M2 = { x: -150, z: 0 };   // 2マーク
 export const BOUNDS = { minX: -262, maxX: 252, minZ: -78, maxZ: 58 }; // 消波装置の内側
 export const POLE = { x: 0, z: 4, r: 0.6 };   // センターポール
 export const BUOY_R = 0.8;
+// ターンマーク横の消波装置(緩衝器付き・全長4m・全幅2m)。マークのすぐ内側(もう一方のマーク側)に浮かべてある
+const _ml = Math.hypot(M1.x - M2.x, M1.z - M2.z), _mx = (M2.x - M1.x) / _ml, _mz = (M2.z - M1.z) / _ml;
+export const MARK_UNITS = [
+  { id: 3, x: M1.x + _mx * 3.3, z: M1.z + _mz * 3.3, dx: _mx, dz: _mz, len: 4, wid: 2 },
+  { id: 4, x: M2.x - _mx * 3.3, z: M2.z - _mz * 3.3, dx: -_mx, dz: -_mz, len: 4, wid: 2 },
+];
 export const START_X = 0;
 export const ARC_S = 60;      // ターン区間に割り当てる進行度
 export const LAP_S = 720;     // 1周ぶんの進行度

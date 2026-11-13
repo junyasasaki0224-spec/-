@@ -6,7 +6,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import venueGlb from '../../assets/models/venue.glb';
 import { loadGLB } from './boat.js';
 import { canvasTex, JP_FONT, BOAT_COLORS, BOAT_CSS, BOAT_TEXT_CSS } from './common.js';
-import { M1, M2, BOUNDS } from '../sim/course.js';
+import { M1, M2, BOUNDS, MARK_UNITS } from '../sim/course.js';
 
 const QUAY = 1.6;
 const L = (color, o = {}) => new THREE.MeshLambertMaterial({ color, ...o });
@@ -280,6 +280,30 @@ export async function createVenue(scene) {
     buoys[id] = { g, tx: 0, tz: 0, vx: 0, vz: 0 };
   }
 
+  // ================= ターンマーク横の消波装置(緩衝器付き・4m×2m) =================
+  const unitTex = canvasTex(512, 96, (c, w, h) => {
+    c.fillStyle = '#f3f4f0'; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#1d5fb4'; c.fillRect(0, h * 0.74, w, h * 0.16);
+    c.fillStyle = '#12355f'; c.font = `900 50px ${JP_FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('MINATO', w / 2, h * 0.38);
+  });
+  const units = [];
+  {
+    const mSide = new THREE.MeshStandardMaterial({ map: unitTex, roughness: 0.55 }), mTop = new THREE.MeshStandardMaterial({ color: 0xecede8, roughness: 0.65 });
+    const mRail = new THREE.MeshStandardMaterial({ color: 0xf6f6f2, roughness: 0.4, metalness: 0.2 }), mPad = new THREE.MeshStandardMaterial({ color: 0x22262c, roughness: 0.9 });
+    for (const u of MARK_UNITS) {
+      const g = new THREE.Group();
+      const add = (geo, mat, x, y, z) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
+      add(new THREE.BoxGeometry(u.len, 0.62, u.wid), [mTop, mTop, mTop, mTop, mSide, mSide], 0, 0.17, 0);
+      for (const sx of [-1, 1]) add(new THREE.CylinderGeometry(0.2, 0.2, u.wid * 0.9, 10), mPad, sx * (u.len / 2 + 0.12), 0.2, 0).rotation.x = Math.PI / 2;   // 緩衝器
+      for (const sz of [-1, 1]) {      // 上の手すり(ガードレール状)
+        add(new THREE.BoxGeometry(u.len - 0.3, 0.07, 0.07), mRail, 0, 0.92, sz * (u.wid / 2 - 0.12));
+        for (const px of [-1, 0, 1]) add(new THREE.BoxGeometry(0.07, 0.46, 0.07), mRail, px * (u.len / 2 - 0.2), 0.7, sz * (u.wid / 2 - 0.12));
+      }
+      g.position.set(u.x, 0, u.z); g.rotation.y = -Math.atan2(u.dz, u.dx);
+      group.add(g); units.push(g);
+    }
+  }
+
   // ================= 対岸: 大型映像装置・広告看板 =================
   const scr = document.createElement('canvas'); scr.width = 768; scr.height = 288;
   const scrTex = new THREE.CanvasTexture(scr); scrTex.colorSpace = THREE.SRGBColorSpace;
@@ -458,6 +482,7 @@ export async function createVenue(scene) {
       hand12.rotation.z = -(t / 12) * Math.PI * 2;
       hand60.rotation.z = -(t / 60) * Math.PI * 2;
       hand12.visible = t < 1.5;
+      for (let i = 0; i < units.length; i++) { const g = units[i]; g.position.y = Math.sin(time * 1.4 + i * 2.1) * 0.04; g.rotation.z = Math.sin(time * 1.1 + i) * 0.015; }
       for (const id in buoys) {
         const b = buoys[id];
         b.vx += (-b.tx * 30 - b.vx * 2.2) * dt; b.vz += (-b.tz * 30 - b.vz * 2.2) * dt;

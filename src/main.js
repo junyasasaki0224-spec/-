@@ -157,7 +157,8 @@ function showResult() {
   G.replayData = { cfg: race.cfg, inputs: Int8Array.from(race.rec) };
   let head, sub, p = 'x';
   const stWord = (st) => (st <= 0.1 ? 'トップスタート級！' : st <= 0.2 ? 'ナイススタート' : st <= 0.45 ? 'まずまず' : st <= 1 ? '遅れ気味' : '出遅れ');
-  if (pl.flying) { head = 'フライング'; p = 'f'; sub = `スタート時刻より ${(-pl.st).toFixed(2)}秒 早くラインを通過 — ${practice ? '本番なら失格' : '失格（F）'}`; }
+  if (pl.sunk) { head = '沈没'; p = 'f'; sub = `${SINK_WORD[pl.sinkCause]}に衝突 — ${practice ? '本番なら失格' : '失格'}`; }
+  else if (pl.flying) { head = 'フライング'; p = 'f'; sub = `スタート時刻より ${(-pl.st).toFixed(2)}秒 早くラインを通過 — ${practice ? '本番なら失格' : '失格（F）'}`; }
   else if (practice && pl.st === null) { head = '出遅れ'; sub = 'スタートラインを通過できませんでした。助走をつけて、針が0を指す瞬間を狙いましょう'; }
   else if (practice) { head = `ST ${pl.st.toFixed(2)}`; p = pl.st <= 0.2 ? '1' : 'x'; sub = `${stWord(pl.st)}　${race.boats.filter((b) => b.st !== null && b.st >= 0 && b.st < pl.st).length + 1}番目のスタート`; }
   else {
@@ -183,13 +184,13 @@ function showResult() {
   if (gp) {
     const g = G.gp, h = {};
     race.order.forEach((b, k) => {
-      const id = b.isPlayer ? 'P' : b.racer.id, place = b.flying ? 0 : k + 1;
+      const id = b.isPlayer ? 'P' : b.racer.id, place = b.out ? 0 : k + 1;
       h[id] = place; if (place) { g.pts[id] += POINTS[k]; g.best[id] = Math.min(g.best[id], place); }
     });
     g.hist.push(h);
     last = g.round === 2;
     if (last) {
-      if (!pl.flying && (pl.place || pl.rank) === 1) { head = '優勝！'; p = '1'; sub = 'みなとグランプリ制覇！ おめでとうございます'; rec.gpWins++; }
+      if (!pl.out && (pl.place || pl.rank) === 1) { head = '優勝！'; p = '1'; sub = 'みなとグランプリ制覇！ おめでとうございます'; rec.gpWins++; }
       else sub = `優勝は ${race.order[0].num}号艇 ${race.order[0].racer.name}`;
     }
     extra += `<h2>グランプリ得点</h2>${gpTable()}`;
@@ -205,11 +206,13 @@ function showResult() {
   if (last && p === '1') audio.finishJingle(true);
 }
 
+const SINK_WORD = { mark: 'ターンマーク', unit: 'ターンマーク横の消波装置', pole: 'センターポール', wall: '外周の消波装置' };
+
 function renderResultTable() {
   const race = G.race, practice = race.mode === 'practice';
   const rows = practice ? race.boats.slice().sort((a, b) => (a.st === null ? 9 : a.st < 0 ? 8 : a.st) - (b.st === null ? 9 : b.st < 0 ? 8 : b.st)) : race.order;
   $('res-table').innerHTML = `<tr><th>${practice ? 'ST順' : '着'}</th><th>艇</th><th>選手</th>${practice ? '' : '<th>タイム</th>'}<th>ST</th></tr>` + rows.map((b, k) =>
-    `<tr class="${b.isPlayer ? 'me' : ''}"><td>${b.flying ? 'F' : practice || b.finished ? k + 1 : '…'}</td><td>${chip(b.i)}</td><td>${b.racer.name}</td>${practice ? '' : `<td>${b.flying ? '失格' : b.finished ? fmtTime(b.finishTime) : '航走中'}</td>`}<td>${b.st === null ? '—' : (b.st < 0 ? 'F' : '') + Math.abs(b.st).toFixed(2)}</td></tr>`).join('');
+    `<tr class="${b.isPlayer ? 'me' : ''}"><td>${b.sunk ? '沈' : b.flying ? 'F' : practice || b.finished ? k + 1 : '…'}</td><td>${chip(b.i)}</td><td>${b.racer.name}</td>${practice ? '' : `<td>${b.sunk ? '沈没' : b.flying ? '失格' : b.finished ? fmtTime(b.finishTime) : '航走中'}</td>`}<td>${b.st === null ? '—' : (b.st < 0 ? 'F' : '') + Math.abs(b.st).toFixed(2)}</td></tr>`).join('');
 }
 
 function nextAfterResult() {
@@ -256,6 +259,15 @@ function handleEvents() {
         if (audible) com.say(`${label(e.boat)}、フライング！`, 3, live ? 2 : 0);
         if (pl && e.boat === pl.i) { audio.buzzer(); hud.message('フライング！', 'スタート時刻より早くラインを通過', 3.5, 'bad'); G.resultT = 3.2; }
         break;
+      case 'sink': {
+        const b = race.boats[e.boat];
+        stage.spray.burst(e.x, e.z, 9, b.vx, b.vz);
+        const d = Math.hypot(e.x - camera.position.x, e.z - camera.position.z);
+        if (audible) { audio.hit(Math.min(8, e.power * 0.6), 1 / (1 + (d / 25) ** 2)); com.say(`${label(e.boat)}、${SINK_WORD[e.cause]}に接触！ 沈没、失格です`, 3.5, live ? 2 : 0); }
+        if (watch && e.boat === watch.i) rig.bump(1);
+        if (pl && e.boat === pl.i) { audio.buzzer(); hud.message('沈没', `${SINK_WORD[e.cause]}に衝突 — 失格`, 3.5, 'bad'); if (race.mode !== 'practice') G.resultT = 3.6; }
+        break;
+      }
       case 'turn1':
         if (audible && race.mode !== 'practice') com.say(`1周1マーク、${label(e.boat)}が先に回る！`, 3, live ? 2 : 0);
         break;
@@ -285,7 +297,7 @@ function handleEvents() {
         stage.venue.hitBuoy(e.id, e.nx, e.nz, e.power);
         stage.spray.burst(b.x, b.z, e.power * 0.4, b.vx, b.vz);
         if (audible) audio.buoy(e.power, watch && e.boat === watch.i ? 1 : 0.3);
-        if (watch && e.boat === watch.i) { rig.bump(0.3); if (pl) hud.say(e.id ? 'ターンマークに接触！' : 'センターポールに接触！', 1.6); }
+        if (watch && e.boat === watch.i) { rig.bump(0.3); if (pl) hud.say(e.id >= 3 ? '消波装置に接触！' : e.id ? 'ターンマークに接触！' : 'センターポールに接触！', 1.6); }
         break;
       }
       case 'lap':
@@ -342,7 +354,7 @@ function step(dt) {
     if (G.resultT >= 0 && live) { G.resultT -= dt; if (G.resultT < 0) showResult(); }
     if (G.state === 'title' && race.state === 'done') { G.attractT -= dt; if (G.attractT <= 0) applyRace(new Race(makeConfig({ env: S.env, weather: program.weather }))); }
     if (replay) {
-      if (G.replayEndT < 0 && pl && (pl.flying || pl.finished) && race.mode !== 'practice') G.replayEndT = pl.flying ? 4 : 5;
+      if (G.replayEndT < 0 && pl && (pl.out || pl.finished) && race.mode !== 'practice') G.replayEndT = pl.out ? 4 : 5;
       if (G.replayEndT >= 0) { G.replayEndT -= dt; if (G.replayEndT < 0) endReplay(); }
     }
 
@@ -366,6 +378,7 @@ function step(dt) {
     let mode;
     if (G.state === 'title') mode = (Math.floor(G.time / 11) % 3 === 1 || race.state === 'pre') ? CAM.FLY : CAM.TV;
     else if (G.state === 'result') mode = CAM.ORBIT;
+    else if (target.sunk) mode = CAM.ORBIT;        // 沈んだ艇は少し離れて回りから映す
     else mode = replay ? G.replayCam : G.camMode;
     rig.shakeOn = S.shake;
     for (let i = 0; i < 6; i++) views[i].setFirstPerson(mode === CAM.ONBOARD && i === target.i);

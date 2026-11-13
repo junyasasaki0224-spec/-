@@ -7,6 +7,7 @@ const ST_LAG = 0.15;   // レバー操作の遅れぶん早めに起こす
 const MAKURI_LEAD = 2.2;
 const GRIP_USE = 0.86;   // 横グリップの限界の何割まで使って回るか
 const ARC_THR = 0.55;     // 旋回中に保つレバーの開き
+const MARK_CLEAR = 2.0;   // ターンマークの中心から最低これだけ離れて通す(m)
 const TURN_IN = 9;       // 旋回円に入る何m手前でレバーを握り直すか   // 内の艇の前を横切るのに必要なリード(m)。艇の長さの約3/4
 
 // cfg: { skill, st(狙うスタートタイミング), sashi(差しを狙う確率), lane }
@@ -28,7 +29,7 @@ function countInside(b, boats, M) {
   let n = 0;
   const d = Math.abs(b.z - M.z);
   for (const o of boats) {
-    if (o === b) continue;
+    if (o === b || o.sunk) continue;
     if (Math.abs(o.R - b.R) < 7 && Math.hypot(o.x - b.x, o.z - b.z) < 28 && Math.abs(o.z - M.z) < d) n++;
   }
   return n;
@@ -124,7 +125,7 @@ export function updateAI(b, race, dt, apply = true) {
   // 内側の艇より艇首が十分前に出ていれば、その艇の前を横切って内へ切り込む(絞る)
   if (ai.firstTurn && lv === 0 && ai.lane > 0 && b.x > 20 && b.x < 100) {
     let beaten = 0;
-    const inner = race.boats.filter((o) => o !== b && !o.flying && o.started && o.z < b.z).sort((a, c) => c.z - a.z);   // 近い内側から
+    const inner = race.boats.filter((o) => o !== b && !o.out && o.started && o.z < b.z).sort((a, c) => c.z - a.z);   // 近い内側から
     for (const o of inner) { if (b.x - o.x >= MAKURI_LEAD) beaten++; else break; }
     if (beaten > ai.makuri) {
       ai.makuri = beaten; ai.effLane = ai.lane - beaten;
@@ -174,7 +175,7 @@ export function updateAI(b, race, dt, apply = true) {
   const ch = Math.cos(b.h), sh = Math.sin(b.h);
   if (reg === 0 || reg === 2) {
     for (const o of race.boats) {
-      if (o === b) continue;
+      if (o === b || o.sunk) continue;
       const rx = o.x - b.x, rz = o.z - b.z;
       const ahead = rx * ch + rz * sh, side = -rx * sh + rz * ch;
       if (ahead > 0.5 && ahead < 12 && Math.abs(side) < 2.4 && sp > o.speed - 1) dodgeT = side > 0 ? -3.2 : 3.2;
@@ -185,6 +186,20 @@ export function updateAI(b, race, dt, apply = true) {
   tz = clamp(tz, BOUNDS.minZ + 4, BOUNDS.maxZ - 4);
   tx = clamp(tx, BOUNDS.minX + 4, BOUNDS.maxX - 4);
 
+  // ターンマークをよける: 狙う向きがマークの手前(外側)を MARK_CLEAR 以上あけて通るように、向きを外へ寄せる。
+  // 先読みで旋回円の内側を突くと、マークに正面から当たって沈没するため
+  {
+    const ox = b.x + ch * 1.05, oz = b.z + sh * 1.05;   // 艇首(最初に当たる所)を基準にする
+    const mx = P.M.x - ox, mz = P.M.z - oz, dM = Math.hypot(mx, mz);
+    if (uNow < 1.5 && dM > MARK_CLEAR && dM < 45) {
+      const al = Math.asin(MARK_CLEAR / dM), beta = Math.atan2(mz, mx);
+      const d0 = wrapAngle(Math.atan2(tz - oz, tx - ox) - beta);
+      if (d0 < al && d0 > -al * 0.5) {
+        const th = beta + al, L2 = Math.hypot(tx - ox, tz - oz);
+        tx = ox + Math.cos(th) * L2; tz = oz + Math.sin(th) * L2;
+      }
+    }
+  }
   const dx = tx - b.x, dz = tz - b.z, dist = Math.hypot(dx, dz) || 1;
   const err = wrapAngle(Math.atan2(dz, dx) - b.h);
   const noise = Math.sin(ai.wob * 2.3 + b.i) * 0.03 * (1.15 - ai.skill * 0.6);
@@ -206,7 +221,7 @@ export function updateAI(b, race, dt, apply = true) {
   // 前を横切られたら(まくられたら)レバーを落として譲る。突っ込むと接触して両方失速する
   if (reg === 0 || reg === 2) {
     for (const o of race.boats) {
-      if (o === b) continue;
+      if (o === b || o.sunk) continue;
       const rx = o.x - b.x, rz = o.z - b.z;
       const ahead = rx * ch + rz * sh, side = -rx * sh + rz * ch;
       if (ahead > 0.3 && ahead < 6 && Math.abs(side) < 2.3) thr = Math.min(thr, 0.25 + 0.1 * ahead);

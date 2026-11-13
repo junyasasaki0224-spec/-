@@ -69,7 +69,8 @@ export class Hud {
     if (kmh !== this._kmh) { this._kmh = kmh; this.spd.textContent = kmh; }
     this.spdBar.style.width = `${Math.min(100, target.speed / 23.5 * 100)}%`;
     this.thr.style.height = `${target.throttle * 100}%`;
-    this.posN.textContent = target.started ? target.rank : '–';
+    this.posN.textContent = target.sunk ? '沈' : target.flying ? 'F' : target.started ? target.rank : '–';
+    this.posN.nextElementSibling.textContent = target.out ? '' : '着';
     this.posN.parentElement.dataset.p = target.started ? target.rank : 0;
     this.lap.textContent = target.started ? `${Math.min(LAPS, target.lap + 1)} / ${LAPS} 周` : 'スタート前';
     this.time.textContent = race.clock > 0 ? fmtTime(target.finished ? target.finishTime : race.clock) : `0'00"0`;
@@ -80,17 +81,17 @@ export class Hud {
     this.rankT -= dt;
     if (this.rankT <= 0) {
       this.rankT = 0.25;
-      const key = race.order.map((b) => b.i).join('') + race.order.map((b) => (b.finished ? 'f' : b.flying ? 'x' : '')).join('') + target.i;
+      const key = race.order.map((b) => b.i).join('') + race.order.map((b) => (b.finished ? 'f' : b.out ? (b.sunk ? 's' : 'x') : '')).join('') + target.i;
       if (key !== this.rankKey) {
         this.rankKey = key;
-        this.rank.innerHTML = race.order.map((b, k) => `<div class="row${b === target ? ' me' : ''}"><em>${b.flying ? 'F' : k + 1}</em>${chip(b.i)}<span>${b.racer.name}</span></div>`).join('');
+        this.rank.innerHTML = race.order.map((b, k) => `<div class="row${b === target ? ' me' : ''}"><em>${b.out ? (b.sunk ? '沈' : 'F') : k + 1}</em>${chip(b.i)}<span>${b.racer.name}</span></div>`).join('');
       }
       let g = '';
-      if (target.started && !target.finished && !target.flying && race.mode !== 'practice') {
+      if (target.started && !target.finished && !target.out && race.mode !== 'practice') {
         const k = target.rank - 1, v = Math.max(target.speed, 8);
         const ahead = k > 0 ? race.order[k - 1] : null, behind = k < 5 ? race.order[k + 1] : null;
-        if (ahead && !ahead.flying) g += `<span class="up">前 ${chip(ahead.i)} ${ahead.finished ? 'ゴール' : '+' + ((ahead.R - target.R) / v).toFixed(1) + '秒'}</span>`;
-        if (behind && !behind.flying && behind.started) g += `<span class="dn">後 ${chip(behind.i)} -${((target.R - behind.R) / v).toFixed(1)}秒</span>`;
+        if (ahead && !ahead.out) g += `<span class="up">前 ${chip(ahead.i)} ${ahead.finished ? 'ゴール' : '+' + ((ahead.R - target.R) / v).toFixed(1) + '秒'}</span>`;
+        if (behind && !behind.out && behind.started) g += `<span class="dn">後 ${chip(behind.i)} -${((target.R - behind.R) / v).toFixed(1)}秒</span>`;
       }
       if (g !== this._gapHtml) { this._gapHtml = g; this.gap.innerHTML = g; }
     }
