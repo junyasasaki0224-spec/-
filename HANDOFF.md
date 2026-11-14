@@ -246,3 +246,9 @@ GPT が作った試作(Rojo 形式: `roblox/default.project.json`、サーバー
 - **iPhone のスピーカーで音が出ない**: iPhone は消音スイッチ(マナーモード)が入っていると、WebAudio の音をスピーカーから出さない(イヤホンなら出る)。`audio.js` の `_unlockSession()` で、`navigator.audioSession.type = 'playback'`(新しい Safari)と、無音の `<audio>` をループ再生する方法(古い Safari)の両方で「再生」扱いにしている。画面のどこを触っても `audio.init()` が呼ばれる(`main.js` の末尾)。画面を離れると `audio.suspend()` で止める
 - 実機での確認はまだ(オーナーに確認してもらう)
 
+## 19. オープニング(自艇視点・自動操縦)と会場の外観(2026-11-14)
+
+- **オープニング**(`src/opening.js`、`main.js` の `G.state === 'opening'`): 見た目だけの演出で、`Race` には書き込まない。6艇はピットの前(`PIT_X = -261.8`、`pitZ(i) = -12 + 10i`: 艇番表示の真下)から1号艇から順に出て、自動操縦でレース開始時の位置へ向かう。カメラは**自艇の後ろ**(`rig.update(..., CAM.CHASE)`)。最後まで見た時はそのままの視点でレースへつながる(`finishOpening(true)`)。経路は2マークと消波装置から10m以上、艇どうしは6m以上離れる(`Opening.clearance()` を `tools/opening-test.mjs` が確かめる)。経路を変えたら必ずこのテストを回す
+- **オープニング曲**(`audio.js` の `startOpening` / `_scheduleOpening`): オリジナル。ティンパニのロールと金管の駆け上がりで始まり、金管の主題・弦の和音・低音・ティンパニ・スネアを残響つきで鳴らす16小節のループ(毎分120拍)。音は WebAudio の合成だけ
+- **会場モデル**(`assets/blender/build_venue.py`、`PY=<bpy の入った python> sh assets/build.sh`): ピットの前は外周の消波装置をあけた(艇の出入口。当たり判定の外周は今までどおり)。「Outside」を追加: スタンド背面の窓・柱・シャッター、正面入口の大庇とゲート、広場(舗装・植えます・ベンチ・旗ざお)、東西の駐車場(区画線・照明)、道路(歩道・車線・横断歩道・街灯・バス停)、ピット棟の窓、1マーク奥の艇庫。駐車中の車と街路樹は `src/gfx/venue.js`(区画線の位置に合わせてある)
+

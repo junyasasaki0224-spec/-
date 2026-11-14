@@ -3,7 +3,7 @@
 #   BLENDER_PY=<bpy を入れた python> sh assets/build.sh
 set -e
 cd "$(dirname "$0")"
-PY="${BLENDER_PY:-python3}"
+PY="${BLENDER_PY:-${PY:-python3}}"
 TMP="${TMPDIR:-/tmp}/minato-assets"
 mkdir -p "$TMP" models
 # 艇は関節(ハンドル・モーター・上半身)を回すので量子化しない

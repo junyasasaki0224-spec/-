@@ -110,7 +110,9 @@ def barrier(x, z, ry):
 x = MINX + 3
 while x < MAXX: barrier(x, MAXZ + 0.1, 0); barrier(x, MINZ - 0.1, 0); x += 6.4
 z = MINZ + 3
-while z < MAXZ: barrier(MINX - 0.1, z, math.pi / 2); barrier(MAXX + 0.1, z, math.pi / 2); z += 6.4
+while z < MAXZ:
+    if not (-21 < z < 44): barrier(MINX - 0.1, z, math.pi / 2)     # ピットの前はあけておく(艇の出入口)
+    barrier(MAXX + 0.1, z, math.pi / 2); z += 6.4
 barriers = done(B, 'Barriers')
 
 # ================= スタンド =================
@@ -297,6 +299,104 @@ for x, z, ry in ((205, -66, 0.2), (-236, -68, 2.9)):
     B.cy('Steel', x, 2.5, z, 0.04, 1.6, seg=5)
 pit = done(B, 'Pit')
 
+# ================= 会場の外: スタンド背面・正面入口・広場・駐車場・道路 =================
+B = VB()
+ZBK = BZ + 0.07
+YG = QUAY + 0.06                       # 地面に描く線や舗装の高さ
+def strip(m, x0, x1, z0, z1, y=YG): B.grid(m, x0, x1, z0, z1, y, 999)
+# スタンド背面: 各階の窓、柱型、軒の青帯、1階のガラス
+for kf in range(NF):
+    y = F0 + kf * FH + 0.28
+    for bi in range(NB):
+        B.quad('Glass', (SX0 + bi * BAY + BAY / 2, y + 2.4, ZBK), BAY - 2.0, 2.8, 0, 0, uv=(3, 0.6))
+    B.bx('White', (SX0 + SX1) / 2, y + 0.75, BZ + 0.15, SX1 - SX0, 0.18, 0.3)
+for bi in range(NB + 1): B.bx('ConcreteLight', SX0 + bi * BAY, (QUAY + RY) / 2, BZ + 0.22, 0.8, RY - QUAY, 0.5)
+B.bx('Blue', (SX0 + SX1) / 2, RY - 0.5, BZ + 0.3, SX1 - SX0 + 1, 1.3, 0.35)
+for bi in range(NB):
+    if bi % 4 != 3: B.quad('Glass', (SX0 + bi * BAY + BAY / 2, QUAY + 2.3, ZBK), BAY - 1.6, 3.4, 0, 0, uv=(3, 1))
+    else: B.bx('Steel', SX0 + bi * BAY + BAY / 2, QUAY + 1.9, BZ + 0.12, BAY - 2.2, 3.8, 0.2)      # 搬入口のシャッター
+# 正面入口: 大きな庇、柱、入場ゲート、階段
+EX = 20
+B.bx('Roof', EX, QUAY + 7.4, BZ + 9.5, 66, 0.45, 19)
+B.bx('ConcreteLight', EX, QUAY + 7.0, BZ + 9.5, 65, 0.35, 18.4)
+B.bx('Blue', EX, QUAY + 8.5, BZ + 19.0, 66, 1.9, 0.5)
+for x in range(EX - 30, EX + 31, 12):
+    B.cy('White', x, QUAY + 3.6, BZ + 17.6, 0.4, 7.2, seg=12)
+    B.bx('Steel', x, QUAY + 7.0, BZ + 9.5, 0.3, 0.5, 18)
+for i in range(9):
+    x = EX - 20 + i * 5
+    B.bx('ConcreteDark', x, QUAY + 0.55, BZ + 5.5, 1.0, 1.1, 2.6); B.bx('Steel', x, QUAY + 1.15, BZ + 5.5, 1.05, 0.08, 2.7)
+    B.bx('Yellow', x, QUAY + 0.95, BZ + 6.9, 1.02, 0.25, 0.1)
+for side in (-1, 1):                    # 入口わきの案内板
+    B.bx('Dark', EX + side * 37, QUAY + 2.2, BZ + 12, 0.3, 3.2, 5); B.bx('Steel', EX + side * 37, QUAY + 0.3, BZ + 12, 0.5, 0.6, 5.4)
+# 広場: 明るい舗装と目地、植えます、ベンチ、旗ざお
+B.grid('ConcreteLight', SX0 - 14, SX1 + 14, 119.2, 147, QUAY + 0.05, 9)
+for z in (126, 133, 140): strip('Concrete', SX0 - 14, SX1 + 14, z - 0.12, z + 0.12, QUAY + 0.07)
+x = SX0 - 5
+while x < SX1 + 6:
+    strip('Concrete', x - 0.12, x + 0.12, 119.2, 147, QUAY + 0.07)
+    x += 17
+for x in range(-140, 181, 32):
+    if abs(x - EX) < 40: continue
+    B.bx('Concrete', x, QUAY + 0.4, 134, 9, 0.8, 3.2, bevel=0.06); B.bx('Grass', x, QUAY + 0.82, 134, 8.4, 0.06, 2.6)
+    for dx in (-2.6, 2.6):
+        B.bx('Wood', x + dx, QUAY + 0.5, 137.3, 2.6, 0.1, 0.6); B.bx('Steel', x + dx - 1.1, QUAY + 0.25, 137.3, 0.08, 0.45, 0.5); B.bx('Steel', x + dx + 1.1, QUAY + 0.25, 137.3, 0.08, 0.45, 0.5)
+for i, m in enumerate(('Red', 'White', 'Blue', 'Yellow', 'Orange', 'White')):
+    x = EX - 20 + i * 8
+    B.cy('Steel', x, QUAY + 6.5, 144.5, 0.1, 13, seg=8); B.cy('Yellow', x, QUAY + 13.1, 144.5, 0.18, 0.25, seg=8)
+    B.bx(m, x + 1.25, QUAY + 11.7, 144.5, 2.3, 1.5, 0.05)
+# 駐車場(西・東): 区画線、車止めの生け垣、照明
+LOTS = ((-206, -14), (56, 204))
+for x0, x1 in LOTS:
+    strip('White', x0, x1, 149.3, 149.5); strip('White', x0, x1, 194.5, 194.7)
+    for zr in (152, 169, 186):
+        strip('White', x0, x1, zr + 5.0, zr + 5.14)
+        x = x0
+        while x <= x1 + 0.01:
+            strip('White', x - 0.06, x + 0.06, zr, zr + 10.14)
+            x += 2.9
+    B.bx('Grass', (x0 + x1) / 2, QUAY + 0.45, 197.2, x1 - x0, 0.9, 1.1, bevel=0.1)
+    for x in (x0 + 30, (x0 + x1) / 2, x1 - 30):
+        for zr in (163.6, 180.6):
+            B.cy('Steel', x, QUAY + 5, zr, 0.14, 10, seg=8); B.bx('Steel', x, QUAY + 10, zr, 2.6, 0.12, 0.3)
+            for dx in (-1.2, 1.2): B.bx('Lamp', x + dx, QUAY + 9.9, zr, 0.9, 0.16, 0.5)
+# 道路: 歩道、車線、横断歩道、街灯、バス停
+for z0, z1 in ((199, 204), (223, 228)):
+    B.grid('ConcreteLight', -440, 440, z0, z1, QUAY + 0.14, 20)
+    B.wall('Concrete', -440, z1 if z0 < 210 else z0, 440, z1 if z0 < 210 else z0, QUAY, QUAY + 0.14, 40)
+strip('White', -440, 440, 204.7, 204.85); strip('White', -440, 440, 222.15, 222.3)
+x = -436
+while x < 436:
+    if abs(x + 2 - EX) > 7: strip('White', x, x + 4, 213.4, 213.6)
+    x += 9
+for k in range(9): strip('White', EX - 4, EX + 4, 205.6 + k * 1.9, 206.5 + k * 1.9)
+x = -420
+while x <= 420:
+    for z, s_ in ((201.5, 1), (225.5, -1)):
+        B.cy('Steel', x, QUAY + 4.3, z, 0.12, 8.4, seg=8); B.bx('Steel', x, QUAY + 8.4, z + s_ * 1.2, 0.12, 0.12, 2.6)
+        B.bx('Lamp', x, QUAY + 8.3, z + s_ * 2.3, 0.5, 0.14, 1.0)
+    x += 56
+for bx_ in (EX + 26, EX - 60):          # バス停
+    B.bx('Roof', bx_, QUAY + 2.9, 201.2, 9, 0.14, 2.4)
+    for dx in (-4.2, 4.2): B.bx('Steel', bx_ + dx, QUAY + 1.5, 200.2, 0.12, 2.8, 0.12)
+    B.quad('Glass', (bx_, QUAY + 1.6, 200.15), 8.4, 2.0, 0, 0, uv=(3, 0.6))
+    B.bx('Wood', bx_, QUAY + 0.6, 200.8, 6, 0.1, 0.6); B.cy('Blue', bx_ + 5.6, QUAY + 2.9, 202.6, 0.5, 0.08, seg=14); B.cy('Steel', bx_ + 5.6, QUAY + 1.5, 202.6, 0.06, 2.8, seg=6)
+# ピット棟の外まわり: 窓とシャッター
+for kf in range(2):
+    for i in range(10):
+        B.quad('Glass', (-336.08, QUAY + 2.8 + kf * 4.6, -27 + i * 8.2), 6, 2.2, -math.pi / 2, 0, uv=(3, 0.5))
+    for i in range(4):
+        B.quad('Glass', (-331 + i * 10, QUAY + 2.8 + kf * 4.6, 52.08), 7, 2.2, 0, 0, uv=(3, 0.5))
+        B.quad('Glass', (-331 + i * 10, QUAY + 7.4, -32.08), 7, 2.2, math.pi, 0, uv=(3, 0.5))
+for i in range(4): B.bx('Steel', -331 + i * 10, QUAY + 2.4, -32.1, 7, 4.6, 0.2)
+B.bx('Blue', -316, QUAY + 9.6, 10, 40.4, 0.8, 84.4)
+# 1マーク奥: 艇庫
+B.bx('ConcreteLight', 372, QUAY + 5.5, -6, 70, 11, 54); B.bx('Roof', 372, QUAY + 11.3, -6, 72, 0.6, 56); B.bx('Blue', 372, QUAY + 10.2, -6, 70.4, 0.8, 54.4)
+for i in range(6):
+    B.bx('Steel', 345 + i * 11, QUAY + 2.6, 21.1, 8, 5.2, 0.2)
+    B.quad('Glass', (336.92, QUAY + 7.4, -28 + i * 9), 6, 2.2, -math.pi / 2, 0, uv=(3, 0.5))
+outside = done(B, 'Outside')
+
 # ================= 遠景: 大橋・クレーン・煙突・タンク・埋立地 =================
 B = VB()
 BZ_ = -520
@@ -326,10 +426,10 @@ for i in range(6):
 B.bx('ConcreteDark', 0, 0, -910, 2400, 3, 320); B.bx('ConcreteDark', 780, 0, 100, 560, 3, 700)
 far = done(B, 'Far')
 
-objs = [land, barriers, stand, struct, towers, pit, far]
+objs = [land, barriers, stand, struct, towers, pit, outside, far]
 tris = sum(len(p.vertices) - 2 for o in objs for p in o.data.polygons)
 print('TRIANGLES', tris)
-bake_ao([land, barriers, stand, struct, towers, pit], samples=24, lo=0.22, gamma=0.9, dist=14)
+bake_ao([land, barriers, stand, struct, towers, pit, outside], samples=24, lo=0.22, gamma=0.9, dist=14)
 bake_ao([far], samples=8, lo=0.5, gamma=1.0, dist=30)
 export_glb(OUT, objs)
 

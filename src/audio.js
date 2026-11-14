@@ -192,12 +192,21 @@ export class GameAudio {
   tick(final) { if (this.ready) this._tone('sine', final ? 1320 : 880, final ? 1320 : 880, final ? 0.28 : 0.14, final ? 0.5 : 0.09); }
   buzzer() { if (this.ready) { this._tone('square', 196, 196, 0.25, 0.9, 0, 0.02); this._tone('square', 207, 207, 0.2, 0.9, 0, 0.02); } }
 
-  // Original 16-bar march, 112 BPM. Short look-ahead avoids background timers.
+  // オープニング曲(このゲームのためのオリジナル)。ティンパニのロールとシンバルで幕を開け、
+  // 金管の主題・弦の和音・行進のスネアを、ホールの残響つきで鳴らす。16小節・毎分120拍でループ
   startOpening() {
     this.stopOpening(0);
     if (!this.ready) return;
-    const gain = this.ctx.createGain(); gain.gain.value = 0.55; gain.connect(this.master);
-    this.openingMusic = { gain, next: this.ctx.currentTime + 0.02, beat: 0, nodes: new Set() };
+    const ctx = this.ctx;
+    const gain = ctx.createGain(); gain.gain.value = 0.85; gain.connect(this.master);
+    const bus = ctx.createGain(); bus.connect(gain);
+    if (!this.hallBuf) {            // 残響(約2.6秒)の素材を1度だけ作る
+      const n = Math.floor(ctx.sampleRate * 2.6); this.hallBuf = ctx.createBuffer(2, n, ctx.sampleRate);
+      for (let c = 0; c < 2; c++) { const d = this.hallBuf.getChannelData(c); for (let q = 0; q < n; q++) d[q] = (Math.random() * 2 - 1) * Math.pow(1 - q / n, 2.6); }
+    }
+    const hall = ctx.createConvolver(); hall.buffer = this.hallBuf;
+    const wet = ctx.createGain(); wet.gain.value = 0.32; bus.connect(hall); hall.connect(wet); wet.connect(gain);
+    this.openingMusic = { gain, bus, next: ctx.currentTime + 0.05, bar: -1, nodes: new Set() };
     this._scheduleOpening();
   }
   stopOpening(fade = 0) {
@@ -224,33 +233,81 @@ export class GameAudio {
   _scheduleOpening() {
     const music = this.openingMusic;
     if (!music || this.ctx.state !== 'running') return;
-    const ctx = this.ctx, beat = 60 / 112;
-    // Distinct phrases composed for this game, with alternating bass and chords.
-    const melody = [72,76,79,74, 77,81,79,76, 74,79,83,81, 77,74,76,79,
-      84,79,81,77, 76,79,74,72, 71,74,79,77, 76,74,72,67,
-      76,79,84,83, 81,77,79,74, 77,81,86,84, 83,79,81,77,
-      79,76,74,77, 81,79,76,74, 72,76,79,83, 84,79,76,72];
-    const roots = [48,53,55,48,57,53,55,48, 48,57,53,55,52,53,55,48];
-    const note = (midi, start, duration, volume, type) => {
-      const oscillator = ctx.createOscillator(), envelope = ctx.createGain();
-      oscillator.type = type; oscillator.frequency.value = 440 * 2 ** ((midi-69)/12);
-      envelope.gain.setValueAtTime(0, start);
-      envelope.gain.linearRampToValueAtTime(volume, start+0.018);
-      envelope.gain.exponentialRampToValueAtTime(0.0001, start+duration);
-      oscillator.connect(envelope); envelope.connect(music.gain);
-      music.nodes.add(oscillator);
-      oscillator.onended = () => { oscillator.disconnect(); envelope.disconnect(); music.nodes.delete(oscillator); if (this.openingMusic !== music && !music.nodes.size) { music.gain.disconnect(); this.fadingOpening?.delete(music); } };
-      oscillator.start(start); oscillator.stop(start+duration+0.02);
+    const ctx = this.ctx, B = 60 / 120, hz = (m) => 440 * 2 ** ((m - 69) / 12);
+    const track = (src, t0, t1) => {
+      music.nodes.add(src);
+      src.onended = () => { music.nodes.delete(src); if (this.openingMusic !== music && !music.nodes.size) { music.gain.disconnect(); this.fadingOpening?.delete(music); } };
+      src.start(t0); src.stop(t1);
     };
-    // Resume at the current phrase without scheduling a backlog after suspension.
+    // 金管: 少しずらした2本のノコギリ波を、吹き始めに明るく開くフィルターに通す
+    const brass = (m, t, d, v) => {
+      const lp = ctx.createBiquadFilter(), g = ctx.createGain();
+      lp.type = 'lowpass'; lp.Q.value = 0.8; lp.frequency.setValueAtTime(500, t); lp.frequency.linearRampToValueAtTime(3200, t + 0.07); lp.frequency.linearRampToValueAtTime(1500, t + d);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.035); g.gain.setValueAtTime(v * 0.82, t + d * 0.75); g.gain.exponentialRampToValueAtTime(0.0008, t + d + 0.12);
+      lp.connect(g); g.connect(music.bus);
+      for (const det of [-5, 6]) { const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = hz(m); o.detune.value = det; o.connect(lp); track(o, t, t + d + 0.15); }
+    };
+    // 弦: 3本のノコギリ波をゆっくり立ち上げる
+    const strings = (m, t, d, v) => {
+      const lp = ctx.createBiquadFilter(), g = ctx.createGain();
+      lp.type = 'lowpass'; lp.frequency.value = 2100;
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.22); g.gain.setValueAtTime(v, t + d - 0.1); g.gain.linearRampToValueAtTime(0.0001, t + d + 0.25);
+      lp.connect(g); g.connect(music.bus);
+      for (const det of [-9, 0, 8]) { const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = hz(m); o.detune.value = det; o.connect(lp); track(o, t, t + d + 0.3); }
+    };
+    const bass = (m, t, d, v) => {
+      const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'triangle'; o.frequency.value = hz(m);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.02); g.gain.exponentialRampToValueAtTime(0.001, t + d);
+      o.connect(g); g.connect(music.bus); track(o, t, t + d + 0.05);
+    };
+    const timp = (m, t, v) => {
+      const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine';
+      o.frequency.setValueAtTime(hz(m) * 1.35, t); o.frequency.exponentialRampToValueAtTime(hz(m), t + 0.06);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.006); g.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
+      o.connect(g); g.connect(music.bus); track(o, t, t + 0.75);
+    };
+    const noise = (t, d, v, type, f, q) => {
+      const src = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), g = ctx.createGain();
+      src.buffer = this.noiseBuf; src.loop = true; fl.type = type; fl.frequency.value = f; fl.Q.value = q;
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0006, t + d);
+      src.connect(fl); fl.connect(g); g.connect(music.bus); track(src, t, t + d + 0.05);
+    };
+    const snare = (t, v) => { noise(t, 0.11, v, 'bandpass', 2400, 0.7); };
+    const crash = (t, v) => { noise(t, 2.4, v, 'highpass', 5200, 0.5); };
+
+    // 和音(根音と3つの音)と主題。主題は [拍, 長さ(拍), 音の高さ] の並び
+    const CH = { C: [36, 60, 64, 67], F: [41, 60, 65, 69], G: [43, 59, 62, 67], Am: [45, 60, 64, 69], Dm: [38, 62, 65, 69], Ab: [44, 60, 63, 68], Bb: [46, 62, 65, 70] };
+    const bars = [
+      ['C', [[0, 1.5, 67], [1.5, 0.5, 72], [2, 2, 76]]], ['C', [[0, 3, 79], [3, 1, 76]]],
+      ['F', [[0, 1.5, 77], [1.5, 0.5, 81], [2, 2, 84]]], ['G', [[0, 1, 83], [1, 1, 79], [2, 2, 74]]],
+      ['Am', [[0, 1.5, 76], [1.5, 0.5, 81], [2, 2, 84]]], ['F', [[0, 1, 81], [1, 1, 77], [2, 2, 72]]],
+      ['Dm', [[0, 1, 74], [1, 1, 77], [2, 1, 81], [3, 1, 86]]], ['G', [[0, 3, 83], [3, 0.5, 79], [3.5, 0.5, 79]]],
+      ['Ab', [[0, 2, 84], [2, 1, 80], [3, 1, 75]]], ['Bb', [[0, 2, 86], [2, 1, 82], [3, 1, 77]]],
+      ['C', [[0, 3, 88], [3, 1, 84]]], ['C', [[0, 1, 79], [1, 1, 84], [2, 1, 88], [3, 1, 91]]],
+      ['F', [[0, 1.5, 81], [1.5, 0.5, 84], [2, 2, 89]]], ['G', [[0, 1, 86], [1, 1, 83], [2, 2, 79]]],
+      ['Ab', [[0, 1, 80], [1, 1, 84], [2, 1, 82], [3, 1, 86]]], ['C', [[0, 4, 84]]],
+    ];
+    // 主題の下でハモる音: 主題より3半音以上低い、いちばん近い和音の音
+    const under = (m, c) => { for (let x = m - 3; x > m - 12; x--) if (c.slice(1).some((n) => (x - n) % 12 === 0)) return x; return m - 12; };
     music.next = Math.max(music.next, ctx.currentTime);
-    while (music.next < ctx.currentTime+0.18) {
-      const n = music.beat % 64, root = roots[Math.floor(n/4)], t = music.next;
-      note(melody[n], t, beat*0.8, 0.085, 'triangle');
-      note(n%2 ? root+7 : root, t, beat*0.65, 0.09, 'triangle');
-      if (n%2) { note(root+12,t,beat*0.35,0.035,'sawtooth'); note(root+16,t,beat*0.35,0.025,'triangle'); }
-      note(n%2 ? 62 : 36,t,0.09,n%2 ? 0.025 : 0.11,'sine');
-      music.next += beat; music.beat++;
+    while (music.next < ctx.currentTime + 0.3) {
+      const t = music.next;
+      if (music.bar < 0) {
+        // 幕開け: ティンパニのロールがふくらみ、金管が駆け上がる
+        for (let q = 0; q < 16; q++) timp(q % 2 ? 43 : 36, t + q * B / 4, 0.05 + 0.2 * (q / 15) ** 2);
+        [[2, 67], [2.5, 72], [3, 76], [3.5, 79]].forEach(([b, m]) => { brass(m, t + b * B, B * 0.45, 0.1); brass(m - 12, t + b * B, B * 0.45, 0.08); });
+        for (let q = 0; q < 8; q++) snare(t + 2 * B + q * B / 4, 0.03 + 0.012 * q);
+      } else {
+        const [name, mel] = bars[music.bar % 16], c = CH[name], big = music.bar % 16 >= 8;
+        if (music.bar % 8 === 0) crash(t, 0.16);
+        for (const [b, d, m] of mel) { brass(m, t + b * B, d * B * 0.92, 0.1); brass(m - 12, t + b * B, d * B * 0.92, 0.075); if (big) brass(under(m, c), t + b * B, d * B * 0.92, 0.045); }
+        for (const m of c.slice(1)) { strings(m, t, 4 * B, 0.034); strings(m + 12, t, 4 * B, 0.02); }
+        strings(c[0] + 12, t, 4 * B, 0.05);
+        for (const b of [0, 1, 2, 3]) bass(b % 2 ? c[0] + 7 : c[0], t + b * B, B * 0.9, 0.16);
+        timp(c[0], t, 0.26); timp(c[0] + 7, t + 2 * B, 0.17); if (music.bar % 4 === 3) { timp(c[0] + 7, t + 3 * B, 0.15); timp(c[0] + 7, t + 3.5 * B, 0.2); }
+        for (const [b, v] of [[0, 0.06], [1, 0.075], [1.5, 0.04], [2, 0.06], [3, 0.075], [3.5, 0.04], [3.75, 0.04]]) snare(t + b * B, v);
+      }
+      music.next += 4 * B; music.bar++;
     }
   }
 

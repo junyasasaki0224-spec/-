@@ -11,6 +11,10 @@ for (const short of [false,true]) {
     for (const b of opening.boats) assert.ok(Number.isFinite(b.x+b.z+b.h+b.speed));
     for (const b of opening.audioBoats) assert.ok(b.speed <= 3 && b.throttle <= 0.08, "pit engines stay at low RPM");
   }
+  const c = opening.clearance();
+  assert.ok(c.obst > 3.5, `boats must stay clear of mark 2 and its boom (${c.obst.toFixed(2)}m)`);
+  assert.ok(c.boat > 4, `boats must not overlap (${c.boat.toFixed(2)}m)`);
+  console.log(short ? 'short' : 'full', 'clearance', c.obst.toFixed(1), 'm from mark/boom,', c.boat.toFixed(1), 'm between boats');
   opening.advance(1);
   for (let i=0;i<6;i++) {
     const b=opening.boats[i], target=race.boats[i];

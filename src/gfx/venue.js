@@ -342,7 +342,9 @@ export async function createVenue(scene) {
     const pts = [];
     for (let x = -290; x < 290; x += 7 + rnd() * 5) if (x < 12 || x > 64) pts.push([x, W.minZ - 15 - rnd() * 3, 0.8 + rnd() * 0.5]);
     for (let z = -90; z < 56; z += 8 + rnd() * 5) pts.push([W.maxX + 19 + rnd() * 3, z, 0.8 + rnd() * 0.5]);
-    for (let i = 0; i < 60; i++) pts.push([-430 + rnd() * 860, 126 + rnd() * 16, 0.9 + rnd() * 0.6]);
+    for (let x = -140; x <= 180; x += 32) if (Math.abs(x - 20) >= 40) pts.push([x, 134, 0.8 + rnd() * 0.25]);                      // 広場の植えます
+    for (let x = -430; x <= 430; x += 14) { pts.push([x + rnd() * 2, 226, 0.85 + rnd() * 0.4]); if (Math.abs(x - 20) > 12 && (x < -210 || x > 208 || (x > -10 && x < 52))) pts.push([x + rnd() * 2, 201, 0.8 + rnd() * 0.3]); }   // 街路樹
+    for (let i = 0; i < 26; i++) pts.push([(i % 2 ? 222 : -420) + rnd() * 200, 128 + rnd() * 60, 0.9 + rnd() * 0.6]);                 // 駐車場の外の緑地
     for (let i = 0; i < 40; i++) pts.push([-430 + rnd() * 120, -90 + rnd() * 90, 0.8 + rnd() * 0.7]);
     const trees = new THREE.InstancedMesh(treeGeometry(), P(L(0xffffff, { vertexColors: true })), pts.length);
     const c = new THREE.Color();
@@ -355,14 +357,21 @@ export async function createVenue(scene) {
 
   // ================= 駐車場と街並み =================
   {
-    const n = 180, cars = new THREE.InstancedMesh(new THREE.BoxGeometry(4.2, 1.4, 1.8), L(0xffffff), n);
-    const c = new THREE.Color(), pal = [0xf2f2f2, 0x22252b, 0xb8bcc2, 0x9a1f24, 0x1f3f8a, 0x6d7278, 0xdad6c8];
-    for (let i = 0; i < n; i++) {
-      const row = i % 6, col = (i / 6) | 0;
-      dummy.position.set(-200 + col * 6.2 + (row % 2) * 0.4, QUAY + 0.7, 150 + row * 8); dummy.rotation.set(0, Math.PI / 2, 0); dummy.scale.set(1, 1, 1); dummy.updateMatrix();
-      cars.setMatrixAt(i, dummy.matrix); cars.setColorAt(i, c.set(pal[(rnd() * pal.length) | 0]));
-    }
-    cars.userData.noShadow = true; group.add(cars);
+    // 区画線(Blender 側)に合わせて並べる: 西と東の駐車場、背中合わせの3組、1台 2.9m 幅。8割ほど埋まっている
+    const slots = [];
+    for (const [x0, x1] of [[-206, -14], [56, 204]]) for (const zr of [152, 169, 186]) for (let k = 0; k < 2; k++)
+      for (let x = x0 + 1.45; x < x1; x += 2.9) if (rnd() < 0.8) slots.push([x, zr + 2.5 + k * 5.14, k]);
+    const body = new THREE.InstancedMesh(new THREE.BoxGeometry(1.75, 0.75, 4.3), L(0xffffff), slots.length);
+    const cabin = new THREE.InstancedMesh(new THREE.BoxGeometry(1.5, 0.48, 2.0), L(0x3a4654), slots.length);
+    const c = new THREE.Color(), pal = [0xf2f2f2, 0x22252b, 0xb8bcc2, 0x9a1f24, 0x1f3f8a, 0x6d7278, 0xdad6c8, 0xf2f2f2, 0xb8bcc2];
+    slots.forEach(([x, z, k], i) => {
+      const jz = (rnd() - 0.5) * 0.3, tall = rnd() < 0.3 ? 1.25 : 1;
+      dummy.rotation.set(0, 0, 0); dummy.scale.set(1, tall, 1); dummy.position.set(x, QUAY + 0.3 + 0.375 * tall, z + jz); dummy.updateMatrix();
+      body.setMatrixAt(i, dummy.matrix); body.setColorAt(i, c.set(pal[(rnd() * pal.length) | 0]));
+      dummy.scale.set(1, 1, tall > 1 ? 1.35 : 1); dummy.position.set(x, QUAY + 0.3 + 0.75 * tall + 0.2, z + jz + (k ? 0.3 : -0.3)); dummy.updateMatrix();
+      cabin.setMatrixAt(i, dummy.matrix);
+    });
+    body.userData.noShadow = true; cabin.userData.noShadow = true; group.add(body, cabin);
   }
   const bldTex = canvasTex(128, 256, (c, w, h) => {
     c.fillStyle = '#a4a9ad'; c.fillRect(0, 0, w, h);

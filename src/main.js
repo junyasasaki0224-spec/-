@@ -74,15 +74,14 @@ function applyRace(race) {
 
 function closeOverlays() { for (const id of ['title', 'result', 'pause', 'howto', 'settings']) show(id, false); }
 
-function finishOpening() {
+function finishOpening(natural = false) {
   if (G.state !== 'opening') return;
   G.opening = null;
   show('opening', false);
   audio.stopOpening(1.5);
   input.clear(true);
-  stage.spray.clear();
-  rig.reset();
-  G.introT = 0;
+  if (natural) G.introT = 99;          // 最後まで見た時は、同じ視点のままレースへつなぐ
+  else { stage.spray.clear(); rig.reset(); G.introT = 0; }
   G.state = 'race';
   document.body.classList.add('playing');
   hud.show(true);
@@ -107,6 +106,7 @@ function startRace() {
     $('opening-phase').textContent = '選手紹介';
     $('opening-entry').classList.remove('hidden');
     G.opening = new Opening(G.race, S.mode === 'gp' && G.gp.round > 0);
+    rig.reset();
     hud.show(false);
     document.body.classList.remove('playing');
     $('opening-title').textContent = `みなとグランプリ　${G.cfg.title}`;
@@ -360,13 +360,15 @@ function step(dt) {
     if (document.hidden) return;
     G.time += dt;
     const opening = G.opening;
-    if (opening.advance(dt)) { finishOpening(); return; }
+    if (opening.advance(dt)) { finishOpening(true); return; }
     $('opening-phase').textContent = opening.phase;
     $('opening-entry').classList.toggle('hidden', opening.elapsed >= (opening.short ? 1 : 8));
-    opening.camera(camera);
     for (const v of views) v.setFirstPerson(false);
     stage.update(dt, G.time, opening.race, { title: G.cfg.title });
-    focus = opening.boats[0];
+    // 自艇の後ろから見る(自動操縦でスタート前の位置へ向かう)
+    focus = opening.boats[opening.playerIndex];
+    rig.shakeOn = false;
+    rig.update(dt, G.time, focus, views[opening.playerIndex], CAM.CHASE, -1);
     audio.update(dt, opening.audioBoats, null, camera.position, rig.right, true, 0.25);
     return;
   }
