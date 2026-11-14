@@ -3,7 +3,7 @@ import {
   clamp, M1, M2, START_X, LAP_S, LAPS, zc, region, sOf,
 } from './course.js';
 import {
-  makeBoat, stepBoat, collideBoats, collideWalls, collideObstacles, timeToCover, applyTilt, SINK_V, SINK_WALL_V,
+  makeBoat, stepBoat, collideBoats, collideWalls, collideObstacles, timeToCover, applyTilt, SINK_V, SINK_UNIT_V, SINK_WALL_V,
 } from './physics.js';
 import { initAI, updateAI } from './ai.js';
 import { ROSTER, PLAYER, DIFFS, motorFactor, randomWeather } from './roster.js';
@@ -147,8 +147,8 @@ export class Race {
       const o = collideObstacles(b);
       if (o && o.power > 1) this.events.push({ type: 'buoy', boat: b.i, id: o.id, power: o.power, nx: o.nx, nz: o.nz });
       // 強くぶつかったら沈没(失格)。ゴール後の艇は対象外
-      if (!b.finished && !b.out) {
-        if (o && o.power >= SINK_V) this._sink(b, o.id === 0 ? 'pole' : o.id >= 3 ? 'unit' : 'mark', o.power);
+      if (b.started && !b.finished && !b.out) {      // スタート前(待機中)の接触は弾かれるだけ
+        if (o && o.power >= (o.id >= 3 ? SINK_UNIT_V : SINK_V)) this._sink(b, o.id === 0 ? 'pole' : o.id >= 3 ? 'unit' : 'mark', o.power);
         else if (w >= SINK_WALL_V) this._sink(b, 'wall', w);
       }
       this._progress(b, px);

@@ -181,9 +181,13 @@ const OBST = [
   { x: M2.x, z: M2.z, r: BUOY_R, id: 2, soft: 0.55 },
   { x: POLE.x, z: POLE.z, r: POLE.r, id: 0, soft: 1 },
 ];
-for (const u of MARK_UNITS) for (const k of [-1, 0, 1]) OBST.push({ x: u.x + u.dx * k, z: u.z + u.dz * k, r: 1.0, id: u.id, soft: 1 });
+for (const u of MARK_UNITS) {     // 細長い浮きは、幅と同じ太さの円を 0.8m おきに並べて表す
+  const n = Math.round(u.len / 0.8);
+  for (let k = 0; k <= n; k++) { const t = -u.len / 2 + u.wid / 2 + (u.len - u.wid) * k / n; OBST.push({ x: u.x + u.dx * t, z: u.z + u.dz * t, r: u.wid / 2, id: u.id, soft: 1 }); }
+}
 // 沈没になる当たりの強さ(ぶつかる向きの速さ m/s)。これより弱いのは「こすった」扱いで弾かれるだけ
-export const SINK_V = 2.0;        // ターンマーク・マーク横の消波装置・センターポール(時速約7km)
+export const SINK_V = 2.0;        // ターンマーク・センターポール(時速約7km)
+export const SINK_UNIT_V = 3.5;   // マーク横の細長い消波装置(時速約13km。浮いていて少したわむので、浅くこすっただけでは沈まない)
 export const SINK_WALL_V = 7.0;   // 外周の消波装置(時速約25km。浅い角度でこすっただけでは沈まない)
 export function collideObstacles(b) {
   let hit = null;

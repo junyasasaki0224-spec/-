@@ -1,6 +1,6 @@
 // AI レーサー。スタートは大時計を見て起こしタイミングを合わせ、
 // レース中はターンマークごとに「進入 → 旋回円 → 立ち上がり」の走行ラインを組み立てて追従する。
-import { PI, clamp, wrapAngle, sm, lerp, M1, M2, BOUNDS, region } from './course.js';
+import { PI, clamp, wrapAngle, sm, lerp, M1, M2, BOUNDS, region, MARK_UNITS } from './course.js';
 import { timeToCover, GRIP } from './physics.js';
 
 const ST_LAG = 0.15;   // レバー操作の遅れぶん早めに起こす
@@ -8,6 +8,7 @@ const MAKURI_LEAD = 2.2;
 const GRIP_USE = 0.86;   // 横グリップの限界の何割まで使って回るか
 const ARC_THR = 0.55;     // 旋回中に保つレバーの開き
 const MARK_CLEAR = 2.0;   // ターンマークの中心から最低これだけ離れて通す(m)
+const UNIT_CLEAR = 2.6;  // マーク横の消波装置から横にこれだけ離れて走る(m)
 const TURN_IN = 9;       // 旋回円に入る何m手前でレバーを握り直すか   // 内の艇の前を横切るのに必要なリード(m)。艇の長さの約3/4
 
 // cfg: { skill, st(狙うスタートタイミング), sashi(差しを狙う確率), lane }
@@ -199,6 +200,13 @@ export function updateAI(b, race, dt, apply = true) {
         tx = ox + Math.cos(th) * L2; tz = oz + Math.sin(th) * L2;
       }
     }
+  }
+  // マーク横の細長い消波装置をよける: 狙う点が浮きの近く(横 UNIT_CLEAR 以内)なら、艇がいる側へ押し出す
+  for (const u of MARK_UNITS) {
+    const rx = tx - u.x, rz = tz - u.z, al = rx * u.dx + rz * u.dz;
+    if (Math.abs(al) > u.len / 2 + 2) continue;
+    const lat = -rx * u.dz + rz * u.dx, side = (-(b.x - u.x) * u.dz + (b.z - u.z) * u.dx) >= 0 ? 1 : -1;
+    if (lat * side < UNIT_CLEAR) { const push = UNIT_CLEAR * side - lat; tx += -u.dz * push; tz += u.dx * push; }
   }
   const dx = tx - b.x, dz = tz - b.z, dist = Math.hypot(dx, dz) || 1;
   const err = wrapAngle(Math.atan2(dz, dx) - b.h);

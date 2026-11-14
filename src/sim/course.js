@@ -12,11 +12,13 @@ export const M2 = { x: -150, z: 0 };   // 2マーク
 export const BOUNDS = { minX: -262, maxX: 252, minZ: -78, maxZ: 58 }; // 消波装置の内側
 export const POLE = { x: 0, z: 4, r: 0.6 };   // センターポール
 export const BUOY_R = 0.8;
-// ターンマーク横の消波装置(緩衝器付き・全長4m・全幅2m)。マークのすぐ内側(もう一方のマーク側)に浮かべてある
+// ターンマーク横の消波装置: マークのすぐ内側から、もう一方のマークの方へまっすぐ伸びる細長い浮き(長さ18m・幅0.9m)。
+// x, z は浮きの中心、dx, dz は浮きの向き(マークから離れる向き)
 const _ml = Math.hypot(M1.x - M2.x, M1.z - M2.z), _mx = (M2.x - M1.x) / _ml, _mz = (M2.z - M1.z) / _ml;
+const UNIT_LEN = 18, UNIT_GAP = 2.0;     // マーク中心から浮きの端までのすき間(m)
 export const MARK_UNITS = [
-  { id: 3, x: M1.x + _mx * 3.3, z: M1.z + _mz * 3.3, dx: _mx, dz: _mz, len: 4, wid: 2 },
-  { id: 4, x: M2.x - _mx * 3.3, z: M2.z - _mz * 3.3, dx: -_mx, dz: -_mz, len: 4, wid: 2 },
+  { id: 3, x: M1.x + _mx * (UNIT_GAP + UNIT_LEN / 2), z: M1.z + _mz * (UNIT_GAP + UNIT_LEN / 2), dx: _mx, dz: _mz, len: UNIT_LEN, wid: 0.9 },
+  { id: 4, x: M2.x - _mx * (UNIT_GAP + UNIT_LEN / 2), z: M2.z - _mz * (UNIT_GAP + UNIT_LEN / 2), dx: -_mx, dz: -_mz, len: UNIT_LEN, wid: 0.9 },
 ];
 export const START_X = 0;
 export const ARC_S = 60;      // ターン区間に割り当てる進行度

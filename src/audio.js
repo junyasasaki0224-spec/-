@@ -7,8 +7,31 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 export class GameAudio {
   constructor() { this.ctx = null; this.ready = false; this.muted = false; this.vol = 0.8; this.engines = []; this.cheer = 0; }
 
+  // iPhone は、消音スイッチ(マナーモード)が入っているとスピーカーから WebAudio の音が出ない(イヤホンなら出る)。
+  // 音の種類を「再生」にして、消音スイッチの影響を受けないようにする。
+  // 新しい Safari は navigator.audioSession で指定でき、古いものは無音の <audio> を流しておくと同じ扱いになる
+  _unlockSession() {
+    try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch (e) { /* 非対応 */ }
+    if (!this.keepAlive) {
+      // 0.5秒の無音 WAV(8kHz・8bit)をその場で作る
+      const n = 4000, buf = new Uint8Array(44 + n), v = new DataView(buf.buffer);
+      const str = (o, t) => { for (let i = 0; i < t.length; i++) buf[o + i] = t.charCodeAt(i); };
+      str(0, 'RIFF'); v.setUint32(4, 36 + n, true); str(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+      v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); str(36, 'data'); v.setUint32(40, n, true);
+      buf.fill(128, 44);
+      let bin = ''; for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+      const el = this.keepAlive = document.createElement('audio');
+      el.src = 'data:audio/wav;base64,' + btoa(bin); el.loop = true; el.preload = 'auto';
+      el.setAttribute('playsinline', ''); el.setAttribute('x-webkit-airplay', 'deny');
+    }
+    if (this.keepAlive.paused && !document.hidden) { try { const p = this.keepAlive.play(); if (p && p.catch) p.catch(() => {}); } catch (e) { /* 再生不可 */ } }
+  }
+  // 画面を離れたら止め、戻ったら次の操作で再開する
+  suspend() { try { if (this.keepAlive) this.keepAlive.pause(); if (this.ctx && this.ctx.state === 'running') this.ctx.suspend(); } catch (e) { /* noop */ } }
+
   init() {
-    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+    this._unlockSession();
+    if (this.ctx) { if (this.ctx.state !== 'running') this.ctx.resume().catch(() => {}); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     const ctx = this.ctx = new AC();
