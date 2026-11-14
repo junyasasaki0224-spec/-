@@ -4,7 +4,7 @@ import { clamp, lerp, BOUNDS, zc } from '../sim/course.js';
 import { VMAX } from '../sim/physics.js';
 
 export const CAM_NAMES = ['追尾カメラ', '接近カメラ', 'オンボード', '中継カメラ', '上空カメラ', '', '', '自由カメラ'];
-export const CAM = { CHASE: 0, CLOSE: 1, ONBOARD: 2, TV: 3, TOP: 4, FLY: 5, ORBIT: 6, FREE: 7, CLOCK: 8 };
+export const CAM = { CHASE: 0, CLOSE: 1, ONBOARD: 2, TV: 3, TOP: 4, FLY: 5, ORBIT: 6, FREE: 7 };
 
 // 中継カメラの設置位置: スタンド屋根 / 1マーク奥 / 対岸 / 2マーク奥
 const TV = [
@@ -91,13 +91,6 @@ export class CameraRig {
       if (!this.init) { this.pos.copy(V); this.look.copy(Lk); }
       this.pos.lerp(V, 1 - Math.exp(-dt * 10)); this.look.lerp(Lk, 1 - Math.exp(-dt * 12));
       fov = 55;
-    } else if (mode === CAM.CLOCK) {
-      // 場内の大時計(venue.js: 中心 (0, 9.0, 61.2)、文字盤は (-0.71, 0, -0.70) の向き)を正面やや下から映し、ゆっくり寄る
-      if (this.lastMode !== CAM.CLOCK) this.clockT = 0;
-      this.clockT += dt;
-      const k = Math.min(1, this.clockT / 2.2), d = 15 - 4 * k;
-      this.pos.set(0 - 0.71 * d, 7.2, 61.2 - 0.70 * d); this.look.set(0, 9.0, 61.2);
-      fov = 38;
     } else if (mode === CAM.FLY) {
       // 会場をゆっくり見せる空撮
       const a = time * 0.07;
@@ -114,7 +107,7 @@ export class CameraRig {
       this.pos.lerp(V, 1 - Math.exp(-dt * 3)); this.look.lerp(Lk, 1 - Math.exp(-dt * 8));
       fov = 52;
     }
-    this.init = true; this.lastMode = mode;
+    this.init = true;
     // 縦長の画面では横の視野が狭くなるので、少し広げて艇が大きく映りすぎないようにする
     if (cam.aspect < 1.2 && mode !== CAM.TV) fov *= 1 + 0.32 * clamp((1.2 - cam.aspect) / 0.7, 0, 1);
     this.fov += (fov - this.fov) * Math.min(1, dt * (mode === CAM.TV ? 3 : 5));

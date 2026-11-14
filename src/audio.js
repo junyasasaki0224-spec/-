@@ -332,11 +332,6 @@ export class GameAudio {
     g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.03); g.gain.setValueAtTime(vol * 0.8, t + dur * 0.7); g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
     o.connect(lp); o2.connect(lp); lp.connect(g); g.connect(this.sfx); o.start(t); o2.start(t); o.stop(t + dur + 0.05); o2.stop(t + dur + 0.05);
   }
-  // スタートの合図: 短く力強いホーン(金管の和音)
-  startHorn() {
-    if (!this.ready) return;
-    for (const [f, v] of [[392, 0.16], [493.9, 0.12], [587.3, 0.12], [196, 0.14]]) this._brass(f, 0.7, 0, v);
-  }
   // ゴール時のジングル
   finishJingle(win) {
     if (!this.ready) return;
