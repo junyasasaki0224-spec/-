@@ -2,6 +2,7 @@
 // ローカル座標: +x 前, +y 上, +z 右。
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import boatGlb from '../../assets/models/boat.glb';
 import { BOAT_COLORS, BOAT_CSS, BOAT_TEXT_CSS, canvasTex, JP_FONT, HULL_MASK } from './common.js';
@@ -12,9 +13,11 @@ import { clamp } from '../sim/course.js';
 const HELMETS = [[0xf4f4f2, 0x1e4fd0], [0x16171b, 0xf2c200], [0xb81d2a, 0xffffff], [0x1740b0, 0xff8a1e], [0xe9e2c8, 0x0f7a55], [0x6a2fa8, 0xffffff], [0xff7a1a, 0x101010]];
 const SUIT_COLORS = [0xf1f1ee, 0x1a1b20, 0xd91e2e, 0x1b50d4, 0xf3d21b, 0x18a24c];
 
-export function loadGLB(bytes) {
+// 会場のモデルは meshopt で圧縮してある(assets/build.sh)。展開器を付けて読む
+export async function loadGLB(bytes) {
   const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
-  return new Promise((res, rej) => new GLTFLoader().parse(buf, '', (g) => res(g.scene), rej));
+  await MeshoptDecoder.ready;
+  return new Promise((res, rej) => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).parse(buf, '', (g) => res(g.scene), rej));
 }
 
 function numberTex(num) {

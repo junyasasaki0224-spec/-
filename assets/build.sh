@@ -10,5 +10,7 @@ mkdir -p "$TMP" models
 "$PY" blender/build_boat.py models/boat.glb
 "$PY" blender/build_venue.py "$TMP/venue.glb"
 npx --yes @gltf-transform/cli weld "$TMP/venue.glb" "$TMP/venue.w.glb"
-npx --yes @gltf-transform/cli quantize "$TMP/venue.w.glb" models/venue.glb --pattern "{POSITION,NORMAL,COLOR_0}" --quantize-color 8 --quantize-normal 8 --quantize-position 16
+npx --yes @gltf-transform/cli quantize "$TMP/venue.w.glb" "$TMP/venue.q.glb" --pattern "{POSITION,NORMAL,COLOR_0}" --quantize-color 8 --quantize-normal 8 --quantize-position 16
+# meshopt で圧縮(読み込み側は src/gfx/boat.js の loadGLB が展開する)。約3分の1になる
+npx --yes @gltf-transform/cli meshopt "$TMP/venue.q.glb" models/venue.glb
 ls -la models
