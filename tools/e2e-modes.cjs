@@ -27,7 +27,7 @@ const S = process.env.OUT || require('os').tmpdir();   // スクリーンショ�
   if (scen === 'title') { await shot('howto'); await p.click('#btn-howto-close'); await shot('title'); await p.click('#btn-settings'); await shot('settings'); }
   if (scen === 'single' || scen === 'all') {
     await p.evaluate(() => { const g = window.__game; g.S.seenHowto = true; document.getElementById('howto').classList.add('hidden'); g.S.mode = 'single'; g.S.lane = 2; if (window.__ENV) g.S.env = window.__ENV; });
-    await p.click('#btn-start'); await bot();
+    await p.evaluate(() => document.getElementById('btn-start').click()); await bot();
     if (process.env.CAM) await p.evaluate((c) => { window.__game.G.camMode = +c; }, process.env.CAM);
     console.log('pre', JSON.stringify(await run(8)));
     if (process.env.SHOT) await shot('pre');
@@ -49,19 +49,19 @@ const S = process.env.OUT || require('os').tmpdir();   // スクリーンショ�
   }
   if (scen === 'practice' || scen === 'all') {
     await p.evaluate(() => { const g = window.__game; g.S.seenHowto = true; document.getElementById('howto').classList.add('hidden'); document.getElementById('btn-title').click(); });
-    await p.click('#modes button[data-v="practice"]');
-    await p.click('#btn-start'); await bot();
+    await p.evaluate(() => document.querySelector('#modes button[data-v="practice"]').click());
+    await p.evaluate(() => document.getElementById('btn-start').click()); await bot();
     console.log('practice', JSON.stringify(await run(60, 'result')), '|', await txt('res-head'), '|', await txt('res-sub'), '|', await txt('res-table'));
     if (process.env.SHOT) await shot('practice');
     await p.click('#btn-title');
   }
   if (scen === 'gp' || scen === 'all') {
     await p.evaluate(() => { const g = window.__game; g.S.seenHowto = true; document.getElementById('howto').classList.add('hidden'); });
-    await p.click('#modes button[data-v="gp"]');
+    await p.evaluate(() => document.querySelector('#modes button[data-v="gp"]').click());
     if (process.env.SHOT) await shot('gp-title');
     for (let r = 0; r < 3; r++) {
       console.log('GP entry', r, await txt('entry-h'), '|', await p.evaluate(() => [...document.querySelectorAll('#entry .nm')].map((e) => e.innerText.trim()).join(',')));
-      await p.click('#btn-start'); await bot();
+      await p.evaluate(() => document.getElementById('btn-start').click()); await bot();
       const e = await run(240, 'result');
       console.log('GP round', r, JSON.stringify(e), '|', await txt('res-head'), '|', await txt('res-sub'), '|', await txt('res-extra'));
       if (process.env.SHOT && r === 2) await shot('gp-final');

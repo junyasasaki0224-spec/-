@@ -101,8 +101,9 @@ export class CameraRig {
       fov = 54;
     } else {
       // 自艇の周りを回る
-      const a = time * 0.3;
-      V.set(b.x + Math.cos(a) * 8, 2.6, b.z + Math.sin(a) * 8); Lk.set(b.x, 0.7, b.z);
+      const a = time * (this.orbitK ?? 0.3) + (this.orbitK < 0.2 ? 2.2 : 0);
+      const hero = this.orbitK < 0.2, R = hero ? 5.4 : 8;      // ホームでは近くからゆっくり
+      V.set(b.x + Math.cos(a) * R, hero ? 1.9 : 2.6, b.z + Math.sin(a) * R); Lk.set(b.x, 0.7, b.z);
       if (!this.init) { this.pos.copy(V); this.look.copy(Lk); }
       this.pos.lerp(V, 1 - Math.exp(-dt * 3)); this.look.lerp(Lk, 1 - Math.exp(-dt * 8));
       fov = 52;

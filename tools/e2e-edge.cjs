@@ -16,15 +16,15 @@ const path = require('path');
   const input = (fn) => p.evaluate((src) => { window.__game.G.debugInput = eval(src); }, fn);
 
   // A: 何も操作しない
-  await p.click('#btn-start'); await input('(r) => ({ steer: 0, throttle: 0, brake: 0 })');
+  await p.evaluate(() => document.getElementById('btn-start').click()); await input('(r) => ({ steer: 0, throttle: 0, brake: 0 })');
   console.log('A idle race:', JSON.stringify(await run(400, 'result')), '|', await txt('res-head'), '|', await txt('res-sub'));
   await p.click('#btn-title');
   // B: 練習で何もしない
-  await p.click('#modes button[data-v="practice"]'); await p.click('#btn-start'); await input('(r) => ({ steer: 0, throttle: 0, brake: 0 })');
+  await p.evaluate(() => document.querySelector('#modes button[data-v="practice"]').click()); await p.evaluate(() => document.getElementById('btn-start').click()); await input('(r) => ({ steer: 0, throttle: 0, brake: 0 })');
   console.log('B idle practice:', JSON.stringify(await run(60, 'result')), '|', await txt('res-head'), '|', await txt('res-sub'));
   await p.click('#btn-title');
   // C: フライング → リプレイ → 結果に戻る
-  await p.click('#modes button[data-v="single"]'); await p.click('#btn-start'); await input('(r) => ({ steer: 0, throttle: 1, brake: 0 })');
+  await p.evaluate(() => document.querySelector('#modes button[data-v="single"]').click()); await p.evaluate(() => document.getElementById('btn-start').click()); await input('(r) => ({ steer: 0, throttle: 1, brake: 0 })');
   await p.evaluate(() => { const g = window.__game; let n = 0; while (n < 60 * 60 && !g.G.spec) { g.step(1 / 60); n++; } });   // フライング → 観戦
   console.log('C spectate:', await p.evaluate(() => !!window.__game.G.spec)); await p.evaluate(() => document.getElementById('sp-exit').click());
   console.log('C flying:', JSON.stringify(await run(1, 'result')), '|', await txt('res-head'));
@@ -46,8 +46,9 @@ const path = require('path');
   await run(3);
   // E: グランプリを途中でやめる → タイトルで時間帯を切り替える
   await p.keyboard.press('Escape'); await p.click('#btn-quit');
-  await p.click('#modes button[data-v="gp"]'); await p.click('#btn-start'); await run(5);
+  await p.evaluate(() => document.querySelector('#modes button[data-v="gp"]').click()); await p.evaluate(() => document.getElementById('btn-start').click()); await run(5);
   await p.keyboard.press('Escape'); await p.click('#btn-quit');
+  await p.click('.tile[data-go="sheet"]');        // ホーム → 出走表(時間帯はここで選ぶ)
   for (const e of ['evening', 'night', 'day']) { await p.click(`#opt-env button[data-v="${e}"]`); await run(1); }
   console.log('E state:', await p.evaluate(() => window.__game.G.state + ' mode=' + window.__game.S.mode + ' gp=' + (window.__game.G.gp ? 'on' : 'off')));
   console.log(errs.slice(0, 10).join('\n') || 'no console errors');

@@ -1,7 +1,7 @@
 import { Race, makeConfig, mulberry32, DT, PRE_TIME } from './sim/race.js';
 import { VMAX, TILTS } from './sim/physics.js';
 import { clamp, LAPS } from './sim/course.js';
-import { ROSTER, PLAYER, POINTS, windLabel, randomWeather } from './sim/roster.js';
+import { ROSTER, PLAYER, POINTS, DIFFS, windLabel, randomWeather } from './sim/roster.js';
 import { BOAT_CSS, BOAT_TEXT_CSS } from './gfx/common.js';
 import { Stage } from './gfx/stage.js';
 import { CameraRig, CAM, CAM_NAMES } from './gfx/camera.js';
@@ -135,6 +135,7 @@ function toTitle() {
   hud.show(false);
   document.body.classList.remove('playing');
   closeOverlays(); show('title', true);
+  setView(S.mode === 'gp' && G.gp && G.gp.round > 0 ? 'sheet' : 'home');     // グランプリの途中は次の出走表へ
   renderTitle();
 }
 
@@ -150,6 +151,15 @@ function setPaused(p) {
 }
 
 // ---------------- タイトル画面 ----------------
+// タイトルの中の画面: home(ホーム) / modes(レースを選ぶ) / sheet(出走表) / records(戦績)
+function setView(v) {
+  if (v === 'howto') { show('howto', true); return; }
+  $('title').dataset.view = v;
+  if (v !== 'home') rig.reset();
+}
+const GRADES = [['B2', 0], ['B1', 3], ['A2', 10], ['A1', 25]];      // 級別: 通算の1着の数で上がる
+const MODE_NAME = { single: 'シングルレース', gp: 'グランプリ', practice: 'スタート練習' };
+
 function renderTitle() {
   const cfg = buildCfg(), gp = S.mode === 'gp';
   document.querySelectorAll('#modes button').forEach((b) => b.classList.toggle('sel', b.dataset.v === S.mode));
@@ -172,8 +182,18 @@ function renderTitle() {
   show('gp-box', gp);
   if (gp) $('gp-box').innerHTML = `<h2>グランプリ得点 <span>1着10点・2着8点・3着6点…　優勝戦の1着が優勝</span></h2>${gpTable()}`;
   $('btn-start').textContent = gp ? (G.gp.round === 2 ? '優勝戦 出走' : `${GP_TITLES[G.gp.round]} 出走`) : S.mode === 'practice' ? '練習開始' : '出 走';
+  // ホーム: 級別と通算成績、今の設定
   const r = S.rec;
-  $('records').textContent = r.races ? `通算 ${r.races}戦 ${r.wins}勝　ベストST ${r.bestST === null ? '—' : r.bestST.toFixed(2)}　ベストタイム ${fmtTime(r.bestTime)}　GP優勝 ${r.gpWins}回` : '';
+  let gi = 0; for (let k = 0; k < GRADES.length; k++) if (r.wins >= GRADES[k][1]) gi = k;
+  const next = GRADES[gi + 1];
+  $('home-grade').textContent = GRADES[gi][0];
+  $('home-stats').textContent = `${r.races}戦 ${r.wins}勝` + (next ? `　${next[0]}まで あと${next[1] - r.wins}勝` : '　最上位');
+  $('home-prog').style.width = next ? `${Math.round((r.wins - GRADES[gi][1]) / (next[1] - GRADES[gi][1]) * 100)}%` : '100%';
+  $('home-now').textContent = `${MODE_NAME[S.mode]}${gp ? `・${GP_TITLES[G.gp.round]}` : S.mode === 'practice' ? '' : `・${S.lane + 1}コース`}・${DIFFS[S.difficulty].name}`;
+  $('sheet-h').textContent = MODE_NAME[S.mode];
+  const row = (k, v) => `<div><span>${k}</span><b>${v}</b></div>`;
+  $('records').innerHTML = row('級別', GRADES[gi][0]) + row('通算', `${r.races}戦 ${r.wins}勝`) + row('勝率', r.races ? `${(r.wins / r.races * 100).toFixed(1)}%` : '—')
+    + row('ベストST', r.bestST === null ? '—' : r.bestST.toFixed(2)) + row('ベストタイム', r.bestTime === null ? '—' : fmtTime(r.bestTime)) + row('グランプリ優勝', `${r.gpWins}回`);
 }
 
 function gpTable() {
@@ -527,11 +547,12 @@ function step(dt) {
   }
   const race = G.race, live = G.state === 'race', replay = G.state === 'replay';
   const pl = race.player;
-  const target = replay ? race.boats[G.follow] || race.order[0] : G.spec && live ? race.boats[G.follow] : pl || race.order[0];
+  const target = G.state === 'title' ? race.boats[S.mode === 'gp' ? 0 : S.lane] : replay ? race.boats[G.follow] || race.order[0] : G.spec && live ? race.boats[G.follow] : pl || race.order[0];
   if (!G.paused) {
     G.time += dt; G.introT += dt;
     let sdt = replay && G.rp ? (G.rp.playing ? dt * G.rp.speed : 0) : dt;   // リプレイの再生速度(止めている時は0)
-    if (live && G.holdT > 0) { G.holdT -= dt; sdt = 0; }    // 時計が出てから少し待って、針(カウント)を動かし始める
+    if (live && G.holdT > 0) { G.holdT -= dt; sdt = 0; }
+    if (G.state === 'title') sdt = 0;                     // ホームでは艇を並べたまま見せる    // 時計が出てから少し待って、針(カウント)を動かし始める
     if (replay && G.rp) G.rp.t += sdt;
     race.update(sdt, live ? (G.debugInput ? G.debugInput(race) : input.get()) : null);
     handleEvents();
@@ -566,7 +587,8 @@ function step(dt) {
 
     // カメラ
     let mode;
-    if (G.state === 'title') mode = (Math.floor(G.time / 11) % 3 === 1 || race.state === 'pre') ? CAM.FLY : CAM.TV;
+    rig.orbitK = G.state === 'title' ? 0.06 : 0.3;
+    if (G.state === 'title') mode = CAM.ORBIT;
     else if (G.state === 'result') mode = CAM.ORBIT;
     else if (target.sunk) mode = CAM.ORBIT;        // 沈んだ艇は少し離れて回りから映す
     else mode = replay ? G.replayCam : G.spec ? G.spec.cam : G.camMode;
@@ -603,7 +625,7 @@ function bindUi() {
     audio.init(); audio.click();
     S.mode = b.dataset.v; save();
     if (S.mode === 'gp') { if (!G.gp) startGp(); } else G.gp = null;
-    renderTitle();
+    renderTitle(); setView('sheet');
   }));
   $('opt-diff').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { S.difficulty = +b.dataset.v; save(); audio.init(); audio.click(); renderTitle(); }));
   $('opt-env').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
@@ -611,6 +633,8 @@ function bindUi() {
     stage.setEnv(S.env, G.cfg.weather); G.cfg.env = S.env; renderTitle();
   }));
   click('btn-start', startRace);
+  click('btn-race', () => { audio.init(); audio.click(); setView('modes'); });
+  document.querySelectorAll('#title [data-go]').forEach((b) => b.addEventListener('click', () => { audio.init(); audio.click(); setView(b.dataset.go); }));
   click('btn-opening-mute', toggleMute);
   $('opening').addEventListener('click', (e) => { if (!e.target.closest('#btn-opening-mute')) finishOpening(); });
   click('btn-next', nextAfterResult);
