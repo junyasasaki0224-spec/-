@@ -58,13 +58,12 @@ class Builder:
                 f.material_index = mi; f.smooth = smooth
     def prim(self, kind, m, loc=(0, 0, 0), rot=(0, 0, 0), scale=(1, 1, 1), smooth=True, **kw):
         M = Matrix.Translation(loc) @ Euler(rot, 'XYZ').to_matrix().to_4x4() @ Matrix.Diagonal((*scale, 1))
-        before = set(self.bm.faces)
-        if kind == 'box': bmesh.ops.create_cube(self.bm, size=1, matrix=M)
-        elif kind == 'cyl': bmesh.ops.create_cone(self.bm, cap_ends=True, cap_tris=False, segments=kw.get('seg', 20), radius1=kw.get('r1', 0.5), radius2=kw.get('r2', kw.get('r1', 0.5)), depth=1, matrix=M)
-        elif kind == 'sphere': bmesh.ops.create_uvsphere(self.bm, u_segments=kw.get('seg', 20), v_segments=kw.get('rings', 12), radius=0.5, matrix=M)
-        elif kind == 'ico': bmesh.ops.create_icosphere(self.bm, subdivisions=kw.get('sub', 2), radius=0.5, matrix=M)
+        if kind == 'box': result = bmesh.ops.create_cube(self.bm, size=1, matrix=M)
+        elif kind == 'cyl': result = bmesh.ops.create_cone(self.bm, cap_ends=True, cap_tris=False, segments=kw.get('seg', 20), radius1=kw.get('r1', 0.5), radius2=kw.get('r2', kw.get('r1', 0.5)), depth=1, matrix=M)
+        elif kind == 'sphere': result = bmesh.ops.create_uvsphere(self.bm, u_segments=kw.get('seg', 20), v_segments=kw.get('rings', 12), radius=0.5, matrix=M)
+        elif kind == 'ico': result = bmesh.ops.create_icosphere(self.bm, subdivisions=kw.get('sub', 2), radius=0.5, matrix=M)
         mi = self.mi(m)
-        new = [f for f in self.bm.faces if f not in before]
+        new = {f for v in result['verts'] for f in v.link_faces}
         for f in new: f.material_index = mi; f.smooth = smooth
         return new
     def box(self, m, size, loc, rot=(0, 0, 0), bevel=0.0, smooth=False):
@@ -87,11 +86,10 @@ class Builder:
             a, b = Vector(a), Vector(b); d = b - a
             q = Vector((0, 0, 1)).rotation_difference(d.normalized())
             M = Matrix.Translation((a + b) / 2) @ q.to_matrix().to_4x4() @ Matrix.Diagonal((1, 1, d.length, 1))
-            before = set(self.bm.faces)
-            bmesh.ops.create_cone(self.bm, cap_ends=True, segments=seg, radius1=r, radius2=r, depth=1, matrix=M)
+            result = bmesh.ops.create_cone(self.bm, cap_ends=True, segments=seg, radius1=r, radius2=r, depth=1, matrix=M)
             mi = self.mi(m)
-            for f in self.bm.faces:
-                if f not in before: f.material_index = mi; f.smooth = True
+            for f in {f for v in result['verts'] for f in v.link_faces}:
+                f.material_index = mi; f.smooth = True
     def torus(self, m, R, r, loc, rot=(0, 0, 0), seg=28, sseg=8):
         M = Matrix.Translation(loc) @ Euler(rot, 'XYZ').to_matrix().to_4x4()
         ring = []
