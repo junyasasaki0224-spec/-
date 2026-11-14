@@ -2,6 +2,7 @@ local wins={0,0,0,0,0,0}
 local startSums,startCounts={0,0,0,0,0,0},{0,0,0,0,0,0}
 local racerSums,racerCounts={0,0,0,0,0,0},{0,0,0,0,0,0}
 local finishes,flights=0,0
+local sunk, sinkRaces = 0,0
 local contacts=0
 local dt=1/120
 for race=1,NUM_RACES do
@@ -22,14 +23,21 @@ for race=1,NUM_RACES do
     local clock=-14
     local firstTime=nil
     local count=0
+    local sinksThisRace=0
     for step=1,120*254 do
         clock=clock+dt
         for i,b in ipairs(boats) do
+            if b.out then continue end
             local oldX,oldZ=b.x,b.z
             local throttle,steer=0,0
-            if not b.flying and not b.finished then throttle,steer=AI.update(b,boats,clock,dt) end
+            if not b.flying and not b.finished then throttle,steer=AI.update(b,boats,clock,dt,collision.units) end
             physics(b,throttle,steer,dt)
-            collision.obstacles(b)
+            collision.walls(b,clock)
+            collision.obstacles(b,clock)
+            if b.sunk then
+                sinksThisRace+=1; count+=1
+                continue
+            end
             b.speed=math.sqrt(b.vx*b.vx+b.vz*b.vz)
             b.trailTimer=b.trailTimer+dt
             if b.trailTimer>=0.06 then
@@ -47,10 +55,8 @@ for race=1,NUM_RACES do
                 local racerId=racers[i].racer.id
                 racerSums[racerId]=racerSums[racerId]+startTime
                 racerCounts[racerId]=racerCounts[racerId]+1
-                if b.flying then flights=flights+1 end
+                if b.flying then collision.disqualify(b,"F",clock); flights+=1; count+=1; continue end
             end
-            if b.x< -274 or b.x>274 then b.x=math.clamp(b.x,-274,274); b.vx=b.vx*-0.25 end
-            if b.z< -79 or b.z>79 then b.z=math.clamp(b.z,-79,79); b.vz=b.vz*-0.25 end
             if b.checkpoint==0 and oldX<150 and b.x>=150 and b.z>8 then b.checkpoint=1 end
             if b.checkpoint==1 and oldZ>8 and b.z<=8 and b.x>150 then b.checkpoint=2 end
             if b.checkpoint==2 and oldX>150 and b.x<=150 and b.z<8 then b.checkpoint=3 end
@@ -69,11 +75,11 @@ for race=1,NUM_RACES do
             end
         end
         for _,b in ipairs(boats) do
-            b.x=math.clamp(b.x,-274,274); b.z=math.clamp(b.z,-79,79)
+            if b.out then continue end
             b.speed=math.sqrt(b.vx*b.vx+b.vz*b.vz)
             local wake=0
             for _,other in ipairs(boats) do
-                if other~=b then
+                if other~=b and not other.out then
                     for index=#other.trail,1,-2 do
                         local point=other.trail[index]
                         local age=clock-point.time
@@ -89,8 +95,10 @@ for race=1,NUM_RACES do
         end
         if count==6 or (firstTime and clock-firstTime>45) then break end
     end
+    sunk+=sinksThisRace
+    if sinksThisRace>0 then sinkRaces+=1 end
     for i,b in ipairs(boats) do
-        if not b.finished then print("unfinished",race,i,b.checkpoint,math.floor(b.x),math.floor(b.z),b.flying) end
+        if not b.out and not b.finished then print("unfinished",race,i,b.checkpoint,math.floor(b.x),math.floor(b.z),b.flying) end
     end
 end
 print(string.format("Races: %d",NUM_RACES))
@@ -98,6 +106,7 @@ for i=1,6 do
     local mean = startCounts[i]>0 and startSums[i]/startCounts[i] or 0
     print(string.format("Lane %d: %d wins (%.1f%%), mean ST %.3f",i,wins[i],wins[i]*100/NUM_RACES,mean))
 end
+print(string.format("Sunk: %d boats in %d/%d races",sunk,sinkRaces,NUM_RACES))
 print(string.format("Finished: %d/%d; flying: %d",finishes,NUM_RACES*6,flights))
 print(string.format("Strong contacts per race: %.2f",contacts/NUM_RACES))
 for i=1,6 do

@@ -82,11 +82,24 @@ local inputSequence, currentSequence = 0, 0
 local sentThrottle, sentSteer = 0,0
 local pendingSteps = {}
 local predictionRace = nil
-snapshotRemote.OnClientEvent:Connect(function(states, active, acknowledged, raceNumber)
+local viewing, serverClock, seatNumber, resultRows
+local resultText=""
+local roundChanged = false
+snapshotRemote.OnClientEvent:Connect(function(states, active, acknowledged, raceNumber, clock, seat, results)
+    if predictionRace ~= raceNumber then roundChanged=true end
+    if results and (not resultRows or predictionRace~=raceNumber) then
+        local lines={"レース結果"}
+        for _,row in ipairs(results) do
+            local place=tonumber(row[2])
+            table.insert(lines,string.format("%s　%d号艇",place and (place.."着") or row[2],row[1]))
+        end
+        resultText=table.concat(lines,"\n")
+    end
+    serverClock,seatNumber,resultRows=clock,seat,results
     latest, running = states, active
-    local number = player:GetAttribute("MinatoBoat") or 0
+    local number = seat
     local state = states[number]
-    if not active or not state then
+    if not active or not state or state[17] ~= "" or state[19] then
         predicted=nil; predictedNumber=0; pendingSteps={}; currentSequence=0; predictionRace=raceNumber
         sentThrottle,sentSteer=0,0
         return
@@ -103,8 +116,9 @@ end)
 local gui = Instance.new("ScreenGui")
 gui.Name = "MinatoHUD"
 gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
+gui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
 gui.Parent = player:WaitForChild("PlayerGui")
+viewing = require(ReplicatedStorage:WaitForChild("Spectator"))(gui)
 local function label(name, text, size, position, textSize)
     local item = Instance.new("TextLabel")
     item.Name, item.Text, item.Size, item.Position = name,text,size,position
@@ -203,6 +217,8 @@ end)
 roomRemote.OnClientEvent:Connect(function(message) rankedPanel.Text=message end)
 
 local status = label("Status","みなとグランプリ",UDim2.fromOffset(180,75),UDim2.fromOffset(12,12),16)
+local result = label("Results","",UDim2.fromOffset(218,168),UDim2.new(1,-226,0,58),16)
+result.Visible=false
 local tiltButton = Instance.new("TextButton")
 tiltButton.Name = "Tilt"
 tiltButton.Size = UDim2.fromOffset(112,40)
@@ -231,7 +247,7 @@ hand.BackgroundColor3 = Color3.fromRGB(209,54,45)
 hand.Parent = clockFace
 local clockText = label("Clock","",UDim2.fromOffset(82,24),UDim2.new(1,-97,0,128),14)
 tiltButton.Activated:Connect(function()
-    if (world:GetAttribute("Time") or 0)<0 and (player:GetAttribute("MinatoBoat") or 0)>0 then
+    if running and predicted and (serverClock or 0)<0 then
         setupRemote:FireServer(((boat:GetAttribute("Tilt") or 2)%4)+1,predictionRace)
     end
 end)
@@ -310,20 +326,37 @@ if UserInputService.TouchEnabled then help.Text = "左で旋回　右でスロ�
 local function held(key) return UserInputService:IsKeyDown(key) end
 local nextSend = 0
 RunService.RenderStepped:Connect(function(dt)
-    local boatNumber = player:GetAttribute("MinatoBoat") or 0
+    if roundChanged then
+        viewing.reset()
+        controls.throttle,controls.steer=0,0
+        table.clear(activeTouches)
+        updateSteering(); updateThrottle()
+        roundChanged=false
+    end
+    local boatNumber = seatNumber or 0
+    local mine = latest[boatNumber]
+    local reason = mine and mine[17] or ""
+    local driving = running and mine and reason=="" and not mine[19]
+    local watching = running and (boatNumber==0 or (reason~="" and serverClock-mine[18]>=3))
+    viewing.update(watching,latest)
+    gui.Steering.Visible=driving==true
+    gui.Throttle.Visible=driving==true
+    help.Visible=driving==true
+    clockText.Visible=driving==true
+    clockFace.Visible=driving==true
     boat = templates:FindFirstChild("Boat"..math.max(boatNumber,1)) or boat
     local left = held(Enum.KeyCode.A) or held(Enum.KeyCode.Left)
     local right = held(Enum.KeyCode.D) or held(Enum.KeyCode.Right)
     local up = held(Enum.KeyCode.W) or held(Enum.KeyCode.Up)
     local down = held(Enum.KeyCode.S) or held(Enum.KeyCode.Down)
-    if up or down then
+    if driving and (up or down) then
         controls.throttle = math.clamp(controls.throttle + ((up and 1 or 0)-(down and 1 or 0))*dt,0,1)
         updateThrottle()
     end
     local throttle = controls.throttle
     local steer = left and 1 or (right and -1 or controls.steer)
     nextSend += dt
-    if nextSend >= 0.05 and boatNumber > 0 and running and predictionRace then
+    if nextSend >= 0.05 and driving and predictionRace then
         nextSend = 0
         inputSequence += 1
         currentSequence = inputSequence
@@ -350,6 +383,11 @@ RunService.RenderStepped:Connect(function(dt)
             if i == boatNumber and predicted then
                 x,z,h,w,vx,vz,th = predicted.x,predicted.z,predicted.h,predicted.w,predicted.vx,predicted.vz,predicted.throttle
             end
+            local out=state[17]
+            local sinkTime=out=="沈" and math.max(0,serverClock-state[18]) or 0
+            local hidden=out~="" and (out~="沈" or sinkTime>=8)
+            local parent = if hidden then nil else workspace
+            if visual.Parent ~= parent then visual.Parent=parent end
             local speed = math.sqrt(vx*vx+vz*vz)
             local forwardSpeed = vx*math.cos(h)+vz*math.sin(h)
             local lateralSpeed = -vx*math.sin(h)+vz*math.cos(h)
@@ -370,24 +408,32 @@ RunService.RenderStepped:Connect(function(dt)
             local visibility = i == boatNumber and 0.3 or 1
             wakes[i].fan.Rate = math.min(140,420*sprayIntensity*(0.3+0.7*th)*(0.4+0.6*math.clamp(speed/22.6,0,1)))*visibility
             if wakes[i].engine then
-                wakes[i].engine.Volume = 0.12 + 0.38*math.clamp(speed/22.6,0,1)
+                wakes[i].engine.Volume = out=="" and (0.12 + 0.38*math.clamp(speed/22.6,0,1)) or 0
                 wakes[i].engine.PlaybackSpeed = 0.75 + 0.9*math.clamp(speed/22.6,0,1)
             end
-            local pos = Vector3.new(x,0.5,z)*STUDS_PER_METRE
+            local sink=math.clamp(sinkTime/1.2,0,1)
+            local pos = Vector3.new(x,0.5-0.3*sink-math.max(0,sinkTime-2.5)*0.26,z)*STUDS_PER_METRE
             local destination = CFrame.lookAt(pos,pos+Vector3.new(math.cos(h),0,math.sin(h)))
-                * CFrame.Angles(0,-view.yaw,0) * CFrame.Angles(view.pitch,0,view.roll)
+                * CFrame.Angles(0,-view.yaw,0) * CFrame.Angles(view.pitch+0.4*sink,0,view.roll+1.2*sink)
             local current = visual:GetPivot()
             if (current.Position-destination.Position).Magnitude > 30*STUDS_PER_METRE then visual:PivotTo(destination)
             else visual:PivotTo(current:Lerp(destination,1-math.exp(-12*dt))) end
         end
     end
-    local visibleBoat = renderBoats[math.max(boatNumber,1)]
+    local following=watching and not viewing.exited
+    local visibleBoat = renderBoats[following and viewing.lane or math.max(boatNumber,1)]
     local cf = visibleBoat:GetPivot()
     camera.CameraType = Enum.CameraType.Scriptable
     local forward = Vector3.new(cf.LookVector.X,0,cf.LookVector.Z).Unit
     local desired = cf.Position - forward*(15*STUDS_PER_METRE) + Vector3.new(0,7*STUDS_PER_METRE,0)
     local target = CFrame.lookAt(desired,cf.Position+forward*(15*STUDS_PER_METRE)+Vector3.new(0,STUDS_PER_METRE,0))
-    camera.CFrame = camera.CFrame:Lerp(target,1-math.exp(-5*dt))
+    if following then
+        local pose,focus=viewing.camera(cf)
+        camera.CFrame,camera.Focus=pose,focus
+    elseif not (watching and viewing.exited) then
+        camera.CFrame=camera.CFrame:Lerp(target,1-math.exp(-5*dt))
+        camera.Focus=CFrame.new(cf.Position)
+    end
     local time = world:GetAttribute("Time") or -8
     hand.Rotation = (time*30)%360
     local startTime = boat:GetAttribute("StartTime")
@@ -395,12 +441,20 @@ RunService.RenderStepped:Connect(function(dt)
     local speed = boat:GetAttribute("Speed") or 0
     local lap = boat:GetAttribute("Lap") or 1
     local rank = boat:GetAttribute("Rank") or 1
-    tiltButton.Visible = boatNumber > 0 and time < 0
+    tiltButton.Visible = driving==true and time < 0
     tiltButton.Text = "チルト "..tiltNames[boat:GetAttribute("Tilt") or 2]
     local message = time < -14 and string.format("参加受付中　あと %d 秒",math.ceil(-14-time)) or (time < 0 and string.format("スタートまで %.1f",-time) or string.format("%d / 3 周　　%d km/h",lap,speed))
     if boat:GetAttribute("Finished") then message=string.format("ゴール！　%d 着",boat:GetAttribute("Place") or 0) end
     if boat:GetAttribute("Flying") then message="フライング失格" end
     if boatNumber == 0 and time >= -14 then message="観戦中・次のレースから参加\n"..message end
     if boatNumber > 0 then message=boatNumber.."号艇　"..rank.."位\n"..message end
+    if reason~="" then message=reason=="F" and "フライング失格" or (reason=="沈" and "沈没失格" or "途中退出") end
+    if watching then message=viewing.exited and "待合　次のレースから参加" or (viewing.lane.."号艇を観戦中") end
+    result.Visible=resultRows~=nil
+    if resultRows then
+        result.Text=resultText
+        message="レース終了"
+    end
+    status.TextColor3=reason~="" and not watching and Color3.fromRGB(255,90,77) or Color3.new(1,1,1)
     status.Text = "みなとグランプリ\n"..message
 end)

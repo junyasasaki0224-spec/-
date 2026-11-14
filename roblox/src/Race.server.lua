@@ -9,10 +9,13 @@ local collision = require(script.Parent:WaitForChild("BoatCollision"))
 local RaceAI = require(script.Parent:WaitForChild("RaceAI"))
 local createRoster = require(script.Parent:WaitForChild("RaceRoster"))
 local stepBoat = require(ReplicatedStorage:WaitForChild("BoatPhysics"))
-local PlayerStats = require(script.Parent:WaitForChild("PlayerStats"))
-local RoomService = require(script.Parent:WaitForChild("RoomService"))
-local MatchQueue = require(script.Parent:WaitForChild("MatchQueue"))
+local Rules = require(script.Parent:WaitForChild("ResultRules"))
+-- Unpublished Studio places cannot open a DataStore. Only a live result needs it.
+local localPractice = RunService:IsStudio() and game.GameId == 0
+local PlayerStats = not localPractice and require(script.Parent:WaitForChild("PlayerStats"))
 local isRoom = game.PrivateServerId ~= "" and game.PrivateServerOwnerId == 0
+local RoomService = isRoom and require(script.Parent:WaitForChild("RoomService"))
+local MatchQueue = isRoom and require(script.Parent:WaitForChild("MatchQueue"))
 local roomMembers, roomHost, roomCode = {}, nil, nil
 local roomWaiting = isRoom
 local roomKind, rankedStartAt, rankedStarted = nil, nil, false
@@ -65,15 +68,20 @@ part(world,"Stand",Vector3.new(440,14,35),CFrame.new(0,5,101),c(96,106,110),Enum
 for i = 0, 5 do
     part(world,"Terrace",Vector3.new(440,2,5),CFrame.new(0,12+i*2,90+i*5),c(169,176,173),Enum.Material.Concrete)
 end
-for _, z in ipairs({-83,83}) do
-    part(world,"Breakwater",Vector3.new(560,3,2),CFrame.new(0,0,z),c(231,229,213),Enum.Material.Concrete)
+for _, z in ipairs({-79,59}) do
+    part(world,"Breakwater",Vector3.new(516,3,2),CFrame.new(-5,0,z),c(231,229,213),Enum.Material.Concrete)
 end
-for _, x in ipairs({-278,278}) do
-    part(world,"Breakwater",Vector3.new(2,3,166),CFrame.new(x,0,0),c(231,229,213),Enum.Material.Concrete)
+for _, x in ipairs({-263,253}) do
+    part(world,"Breakwater",Vector3.new(2,3,138),CFrame.new(x,0,-10),c(231,229,213),Enum.Material.Concrete)
 end
 for _, mark in ipairs({Vector3.new(150,0,8),Vector3.new(-150,0,0)}) do
     part(world,"TurnMark",Vector3.new(1.6,1.6,1.6),CFrame.new(mark.X,0.8,mark.Z),c(240,104,45),Enum.Material.SmoothPlastic,Enum.PartType.Ball)
     part(world,"MarkFlag",Vector3.new(0.3,7,0.3),CFrame.new(mark.X,4,mark.Z),c(240,240,235))
+end
+for _, u in ipairs(collision.units) do
+    local center = Vector3.new(u.x,0.15,u.z)
+    part(world,"MarkFloat",Vector3.new(u.width,0.5,u.length),
+        CFrame.lookAt(center,center+Vector3.new(u.dx,0,u.dz)),c(32,98,192))
 end
 part(world,"StartLine",Vector3.new(0.3,0.1,40),CFrame.new(0,-0.4,28),c(238,235,210),Enum.Material.Neon)
 part(world,"CenterPole",Vector3.new(1.2,8,1.2),CFrame.new(0,3.5,4),c(244,220,48),Enum.Material.Metal)
@@ -94,7 +102,7 @@ for i=1,6 do
     part(model,"Racer",Vector3.new(1.4,1.3,1.5),CFrame.new(0,1.2,0.5),colors[i],nil,nil,BOAT_SCALE)
     part(model,"Helmet",Vector3.new(1.2,1.2,1.2),CFrame.new(0,2,0.2),colors[i],Enum.Material.SmoothPlastic,Enum.PartType.Ball,BOAT_SCALE)
     model.Parent = templates
-    boats[i] = {model=model, x=-95, z=14+i*5, h=0, vx=0, vz=0, w=0, throttle=0, steer=0, lap=0, checkpoint=0, finished=false, speed=0}
+    boats[i] = {number=i,model=model, x=-95, z=14+i*5, h=0, vx=0, vz=0, w=0, throttle=0, steer=0, lap=0, checkpoint=0, finished=false, speed=0}
 end
 
 local commands = {}
@@ -170,11 +178,11 @@ Players.PlayerRemoving:Connect(function(player)
     roomMembers[player] = nil
     for _, boat in ipairs(boats) do
         if boat.player == player then
-            if not boat.finished then boat.humanLeft = true end
+            collision.disqualify(boat,"退出",raceClock)
             boat.player = nil
         end
     end
-    if raceClock >= 0 and saveResults then
+    if saveResults then
         local remaining = false
         for _, other in ipairs(Players:GetPlayers()) do
             if other ~= player then remaining = true; break end
@@ -196,7 +204,6 @@ local function assignPlayers()
         if i <= #players then player = players[((nextFirst+i-2) % #players)+1] end
         boat.player = player
         boat.humanUserId = player and player.UserId or nil
-        boat.humanLeft = false
         if player then
             commands[player] = {throttle=0, steer=0, last=0, sequence=0, applied=0}
             player:SetAttribute("MinatoBoat", i)
@@ -206,7 +213,7 @@ local function assignPlayers()
 end
 input.OnServerEvent:Connect(function(player, throttle, steer, sequence, round)
     local command = commands[player]
-    if round ~= raceNumber then return end
+    if roomWaiting or round ~= raceNumber then return end
     if not command or type(throttle) ~= "number" or type(steer) ~= "number" or type(sequence) ~= "number" then return end
     if throttle ~= throttle or steer ~= steer or math.abs(throttle) > 1 or math.abs(steer) > 1 then return end
     if sequence ~= sequence or sequence%1 ~= 0 or sequence <= command.sequence or sequence > 2147483647 then return end
@@ -215,7 +222,7 @@ input.OnServerEvent:Connect(function(player, throttle, steer, sequence, round)
     command.throttle, command.steer, command.last, command.sequence = math.clamp(throttle,0,1), steer, now, sequence
 end)
 setup.OnServerEvent:Connect(function(player, index, round)
-    if round ~= raceNumber then return end
+    if roomWaiting or round ~= raceNumber then return end
     if type(index) ~= "number" or index ~= index or index%1 ~= 0 or not tilts[index] or raceClock >= 0 then return end
     local command = commands[player]
     if not command or os.clock()-(command.setupLast or 0)<0.2 then return end
@@ -239,7 +246,7 @@ end
 local function orderBoats()
     local order = table.clone(boats)
     table.sort(order,function(a,b)
-        local outA,outB = a.flying or a.humanLeft, b.flying or b.humanLeft
+        local outA,outB = a.out ~= nil, b.out ~= nil
         if outA ~= outB then return not outA end
         if a.finished ~= b.finished then return a.finished end
         if a.finished and b.finished then return a.place < b.place end
@@ -265,8 +272,9 @@ local function reset()
         b.laneZ = b.z
         b.throttle,b.steer,b.lap,b.checkpoint,b.finished,b.speed = 0,0,0,0,false,0
         b.started,b.flying,b.place,b.startTime = false,false,0,nil
+        b.out,b.outAt,b.sunk = nil,nil,false
         b.player = nil
-        b.humanUserId,b.humanLeft,b.finishTime = nil,false,nil
+        b.humanUserId,b.finishTime = nil,nil
         b.windX,b.windZ = math.cos(windAngle)*wind,math.sin(windAngle)*wind
         b.motor,b.gripF,b.thrustF,b.inWake = racers[i].motor,1,1,0
         b.model:SetAttribute("Racer",racers[i].racer.name)
@@ -284,24 +292,19 @@ local finishCount = 0
 local assigned = false
 local raceId = HttpService:GenerateGUID(false)
 local resultsSaved = false
+local aloneSince, finalRows = nil,nil
 local accumulator = 0
 local dt = 1/120
 saveResults = function()
     if resultsSaved or not assigned then return end
     resultsSaved = true
     local results = {}
+    finalRows = {}
     for position, boat in ipairs(orderBoats()) do
-        if boat.humanUserId then
-            local disqualified = boat.flying or boat.humanLeft
-            table.insert(results,{
-                userId=boat.humanUserId,
-                place=disqualified and 7 or position,
-                won=not disqualified and boat.finished and boat.place==1,
-                time=not disqualified and boat.finished and boat.finishTime or nil,
-            })
-        end
+        finalRows[position] = {boat.number,boat.out or (boat.finished and tostring(boat.place) or "未完走")}
+        if boat.humanUserId then table.insert(results,Rules.entry(boat,position)) end
     end
-    if #results > 0 then
+    if #results > 0 and not localPractice then
         -- The mode was established only after server-side admission.
         PlayerStats.recordRace(raceId,results,roomKind=="ranked")
     end
@@ -338,10 +341,12 @@ local function step()
     raceClock = elapsed
     if not assigned and elapsed >= -14 then
         assigned = true
+        finalRows = nil
         assignPlayers()
     end
     if not assigned then return end
     for i,b in ipairs(boats) do
+        if b.out then continue end
         local previousX, previousZ = b.x, b.z
         local throttle, steer = 0,0
         if not b.finished and not b.flying then
@@ -352,11 +357,16 @@ local function step()
                     command.applied = command.sequence
                 end
             else
-                throttle,steer = RaceAI.update(b,boats,elapsed,dt)
+                throttle,steer = RaceAI.update(b,boats,elapsed,dt,collision.units)
             end
         end
         stepBoat(b, throttle, steer, dt)
-        collision.obstacles(b)
+        collision.walls(b,elapsed)
+        collision.obstacles(b,elapsed)
+        if b.out then
+            if b.player then commands[b.player]=nil end
+            continue
+        end
         b.speed = math.sqrt(b.vx*b.vx+b.vz*b.vz)
         b.trailTimer += dt
         if b.trailTimer >= 0.06 then
@@ -368,10 +378,12 @@ local function step()
             b.started = true
             local fraction = (0-previousX)/math.max(b.x-previousX,0.000001)
             b.startTime = elapsed-dt*(1-fraction)
-            if b.startTime < 0 then b.flying = true end
+            if b.startTime < 0 then
+                collision.disqualify(b,"F",elapsed)
+                if b.player then commands[b.player]=nil end
+                continue
+            end
         end
-        if b.x < -274 or b.x > 274 then b.x=math.clamp(b.x,-274,274); b.vx *= -0.25 end
-        if b.z < -79 or b.z > 79 then b.z=math.clamp(b.z,-79,79); b.vz *= -0.25 end
         -- The mark crossings enforce the correct side and sequence.
         if b.checkpoint == 0 and previousX < 150 and b.x >= 150 and b.z > 8 then b.checkpoint=1 end
         if b.checkpoint == 1 and previousZ > 8 and b.z <= 8 and b.x > 150 then b.checkpoint=2 end
@@ -381,6 +393,7 @@ local function step()
         if b.checkpoint == 5 and previousX < -150 and b.x >= -150 and b.z > 0 then b.checkpoint=0; b.lap += 1 end
         if not b.finished and not b.flying and b.lap >= 3 and previousX < 0 and b.x >= 0 and b.z > 4 then
             b.finished=true
+            if b.player then commands[b.player]=nil end
             b.finishTime = math.max(0.001,elapsed-(b.startTime or 0))
             finishCount += 1
             b.place = finishCount
@@ -393,12 +406,11 @@ local function step()
         end
     end
     for _, boat in ipairs(boats) do
-        boat.x = math.clamp(boat.x, -274, 274)
-        boat.z = math.clamp(boat.z, -79, 79)
+        if boat.out then continue end
         boat.speed = math.sqrt(boat.vx * boat.vx + boat.vz * boat.vz)
         local wake = 0
         for _, other in ipairs(boats) do
-            if other ~= boat then
+            if other ~= boat and not other.out then
                 for index = #other.trail, 1, -2 do
                     local point = other.trail[index]
                     local age = elapsed-point.time
@@ -412,7 +424,9 @@ local function step()
         boat.gripF = 1-0.22*boat.inWake
         boat.thrustF = 1-0.05*boat.inWake
     end
-    if (finishTime and elapsed-finishTime > 45) or elapsed > 240 then
+    local endEarly
+    endEarly, aloneSince = Rules.shouldEnd(boats,elapsed,aloneSince)
+    if endEarly or (finishTime and elapsed-finishTime > 45) or elapsed > 240 then
         saveResults()
         if roomKind == "ranked" then
             roomWaiting=true
@@ -423,6 +437,7 @@ local function step()
         reset(); elapsed=-31; raceClock=elapsed; finishTime=nil; finishCount=0; assigned=false
         raceId = HttpService:GenerateGUID(false)
         resultsSaved = false
+        aloneSince = nil
         if isRoom then
             roomWaiting = true
             world:SetAttribute("RoomWaiting", true)
@@ -430,8 +445,8 @@ local function step()
     end
 end
 game:BindToClose(function()
-    if raceClock >= 0 then saveResults() end
-    PlayerStats.waitForPending(25)
+    saveResults()
+    if PlayerStats then PlayerStats.waitForPending(25) end
 end)
 local snapshotTimer = 0
 RunService.Heartbeat:Connect(function(frame)
@@ -454,11 +469,11 @@ RunService.Heartbeat:Connect(function(frame)
         snapshotTimer %= 1/15
         local states = {}
         for i, b in ipairs(boats) do
-            states[i] = {b.x,b.z,b.h,b.vx,b.vz,b.w,b.throttle,b.steer,b.accF,b.topF,b.gripSet,b.gripF,b.thrustF,b.windX,b.windZ,b.motor}
+            states[i] = {b.x,b.z,b.h,b.vx,b.vz,b.w,b.throttle,b.steer,b.accF,b.topF,b.gripSet,b.gripF,b.thrustF,b.windX,b.windZ,b.motor,b.out or "",b.outAt or 0,b.finished,b.place}
         end
         for _, player in ipairs(Players:GetPlayers()) do
             local command = commands[player]
-            snapshots:FireClient(player, states, assigned, command and command.applied or 0, raceNumber)
+            snapshots:FireClient(player, states, assigned and not roomWaiting, command and command.applied or 0, raceNumber, elapsed, player:GetAttribute("MinatoBoat") or 0, finalRows)
         end
     end
 end)

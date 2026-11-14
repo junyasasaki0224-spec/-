@@ -25,4 +25,24 @@ function Rules.apply(value, result, raceId, change)
     return data
 end
 
+-- Only assigned racers count. An empty practice field must still run normally.
+function Rules.shouldEnd(boats, clock, aloneSince)
+    local hasHuman, survivingHuman, racing = false, false, false
+    for _, b in ipairs(boats) do
+        if b.humanUserId then
+            hasHuman = true
+            if not b.out then survivingHuman = true end
+        end
+        if not b.out and not b.finished then racing = true end
+    end
+    if hasHuman and not survivingHuman then aloneSince = aloneSince or clock else aloneSince = nil end
+    return not racing or (aloneSince ~= nil and clock-aloneSince >= 10), aloneSince
+end
+
+function Rules.entry(b, position)
+    return {userId=b.humanUserId, place=b.out and 6 or position,
+        won=not b.out and b.finished and b.place==1,
+        time=not b.out and b.finished and b.finishTime or nil}
+end
+
 return Rules
