@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import boatGlb from '../../assets/models/boat.glb';
-import { BOAT_COLORS, BOAT_CSS, BOAT_TEXT_CSS, canvasTex, JP_FONT } from './common.js';
+import { BOAT_COLORS, BOAT_CSS, BOAT_TEXT_CSS, canvasTex, JP_FONT, HULL_MASK } from './common.js';
 import { VMAX } from '../sim/physics.js';
 import { clamp } from '../sim/course.js';
 
@@ -53,14 +53,32 @@ function mergedPositions(root, filter) {
 }
 const under = (o, name) => { for (let p = o; p; p = p.parent) if (p.name === name) return true; return false; };
 
-let proto = null, shadowBodyGeo = null, shadowUpperGeo = null;
+let proto = null, shadowBodyGeo = null, shadowUpperGeo = null, hullMaskGeo = null;
 export async function loadBoatModel() {
   proto = await loadGLB(boatGlb);
   proto.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   shadowBodyGeo = mergedPositions(proto, (o) => !under(o, 'RacerUpper') && !under(o, 'Glass') && !under(o, 'Flag') && !under(o, 'Plates'));
   const up = proto.getObjectByName('RacerUpper');
   shadowUpperGeo = mergedPositions(up, () => true);
+  // 艇の上面(甲板と操縦席の口)の輪郭: 船体の縁より上の頂点を真上から見た凸包を、少し内側へ縮めて縁の高さに置く
+  const pts = [], hp = mergedPositions(proto.getObjectByName('Hull'), () => true).attributes.position;
+  for (let k = 0; k < hp.count; k++) if (hp.getY(k) > 0.25) pts.push([hp.getX(k), hp.getZ(k)]);
+  pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo = [], hi = [];
+  for (const p of pts) { while (lo.length > 1 && cross(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+  for (const p of pts.slice().reverse()) { while (hi.length > 1 && cross(hi[hi.length - 2], hi[hi.length - 1], p) <= 0) hi.pop(); hi.push(p); }
+  const ring = lo.slice(0, -1).concat(hi.slice(0, -1));
+  const cx = ring.reduce((s, p) => s + p[0], 0) / ring.length, cz = ring.reduce((s, p) => s + p[1], 0) / ring.length;
+  const shape = new THREE.Shape(ring.map(([x, z]) => new THREE.Vector2(cx + (x - cx) * 0.97, cz + (z - cz) * 0.97)));
+  hullMaskGeo = new THREE.ShapeGeometry(shape).rotateX(Math.PI / 2).translate(0, HULL_RIM, 0);
 }
+const HULL_RIM = 0.3;      // 目印を置く高さ(艇のローカル座標。船体の縁のいちばん低い所)
+// 色も深さも書かず、ステンシルに目印だけを書く。水面(renderOrder -5)より先に描く
+const hullMaskMat = new THREE.MeshBasicMaterial({
+  colorWrite: false, depthWrite: false, depthTest: false, side: THREE.DoubleSide, fog: false,
+  stencilWrite: true, stencilFunc: THREE.AlwaysStencilFunc, stencilRef: HULL_MASK, stencilWriteMask: HULL_MASK, stencilZPass: THREE.ReplaceStencilOp,
+});
 
 const shadowMat = new THREE.MeshBasicMaterial({
   color: 0x000a10, transparent: true, opacity: 0.42, depthWrite: false, fog: false,
@@ -126,6 +144,11 @@ export class BoatView {
     this.flag.geometry = fg;
     this.flagBase = fg.attributes.position.array.slice();
 
+    // 艇の中に水面を描かないための目印
+    this.hullMask = new THREE.Mesh(hullMaskGeo, hullMaskMat);
+    this.hullMask.renderOrder = -6; this.hullMask.castShadow = false; this.hullMask.receiveShadow = false; this.hullMask.userData.noShadow = true;
+    tilt.add(this.hullMask);
+
     // 水面の影
     this.shBody = new THREE.Mesh(shadowBodyGeo, shadowMat);
     this.shUpper = new THREE.Mesh(shadowUpperGeo, shadowMat);
@@ -177,6 +200,7 @@ export class BoatView {
       this.tilt.rotation.z += e * 0.4;
       this.tilt.position.y -= 0.3 * e + Math.max(0, t - 2.5) * 0.26;
     }
+    this.hullMask.visible = !b.sunk;        // 沈んだ艇は水面の下に見えるようにする
     const gone = b.sunk && b.sinkT > 8;
     if (this.root.visible === gone) { this.root.visible = !gone; this.shBody.visible = !gone; this.shUpper.visible = !gone; }
 

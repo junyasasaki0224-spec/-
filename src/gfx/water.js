@@ -2,6 +2,7 @@
 // 水面: タイル化した波の法線テクスチャ(起動時に生成)を多重に流し、フレネル反射で
 // 平面リフレクション(艇・会場・空の映り込み)と水色を混ぜる。
 import * as THREE from 'three';
+import { HULL_MASK } from './common.js';
 import { GLSL_NOISE } from './common.js';
 
 // ---------------- 波テクスチャ ----------------
@@ -163,6 +164,8 @@ export function createWater(scene, waveTex) {
     uLights: { value: lights }, uChop: { value: 1 }, uWind: { value: new THREE.Vector2(1, 0) },
   };
   const mat = new THREE.ShaderMaterial({
+    // 艇の上面の目印(boat.js の hullMask)がある所には水面を描かない。旋回で傾いても操縦席に水が見えないように
+    stencilWrite: true, stencilFunc: THREE.NotEqualStencilFunc, stencilRef: HULL_MASK, stencilFuncMask: HULL_MASK, stencilWriteMask: 0,
     uniforms, fog: false,
     vertexShader: /* glsl */`
       varying vec3 vW;

@@ -79,3 +79,6 @@ export function canvasTex(w, h, draw, { repeat = false, aniso = 4 } = {}) {
 }
 
 export const JP_FONT = '"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic","Meiryo",sans-serif';
+
+// 艇の中に水面を描かないための目印(ステンシルの1ビット)。水面の影は 0 を使うので別のビットにする
+export const HULL_MASK = 0x80;
