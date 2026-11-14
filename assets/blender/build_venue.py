@@ -120,6 +120,16 @@ B = VB()
 SX0, SX1, BAY = -150, 190, 8.5
 NB = round((SX1 - SX0) / BAY)
 ROWS, TZ0, TD, TR = 12, 72.0, 1.5, 0.62
+seat_mesh = VB()  # ガラスのUVを共有しない軽量な座席メッシュ
+def seat_shell(x, y, z, material):
+    # 約6千脚あるので、前縁から背までを4断面、各2点で曲げる。
+    shell = []
+    for depth, height, width in ((-.23,.42,.225),(.11,.396,.254),
+                                 (.18,.455,.25),(.245,.78,.205)):
+        shell.append([seat_mesh.vert(P(x+k*width,y+height,z+depth)) for k in (-1,1)])
+    for front, back in zip(shell,shell[1:]):
+        seat_mesh.face([front[0],back[0],back[1],front[1]],material)
+
 for bi in range(NB):
     x0, x1 = SX0 + bi * BAY, SX0 + (bi + 1) * BAY
     aisle = (bi % 4 == 0)
@@ -130,9 +140,17 @@ for bi in range(NB):
         B.face([v[0], v[1], v[2], v[3]], 'Concrete', smooth=False)
         B.face([v[3], v[2], v[5], v[4]], 'ConcreteLight', smooth=False)
         sx0 = x0 + (1.5 if aisle else 0.15)
-        B.bx(seat, (sx0 + x1 - 0.15) / 2, y1 + 0.4, z0 + 0.95, x1 - 0.15 - sx0, 0.07, 0.42)
-        B.bx(seat, (sx0 + x1 - 0.15) / 2, y1 + 0.62, z0 + 1.2, x1 - 0.15 - sx0, 0.4, 0.05, 0, -0.2)
-        B.bx('Steel', (sx0 + x1 - 0.15) / 2, y1 + 0.2, z0 + 0.95, x1 - 0.6 - sx0, 0.4, 0.06)
+        # 観客の配置と同じ0.62mピッチ、通路幅も同じ。
+        n = math.ceil((x0 + (.3 if not aisle else 1.70) - SX0 - .5) / .62)
+        while SX0+.5+n*.62 < x1-.30:
+            seat_shell(SX0+.5+n*.62, y1, z0+.95, seat)
+            n += 1
+        B.bx('Steel',(sx0+x1-.15)/2,y1+.34,z0+.97,x1-.2-sx0,.08,.16)
+        for xfoot in (sx0+.42,x1-.57):
+            B.wall('Steel',xfoot,z0+.83,xfoot,z0+1.11,y1,y1+.32)
+        if aisle:
+            B.bx('ConcreteLight',x0+.76,y0+.16,z0-.36,1.25,.31,.72)
+            B.bx('Yellow',x0+.76,y0+.319,z0-.68,1.18,.008,.07)
     if aisle:   # 通路の手すり
         for i in (0, ROWS):
             B.cy('Steel', x0 + 0.1, QUAY + TR * i + 0.55, TZ0 + TD * i, 0.035, 1.1, seg=6)
@@ -203,6 +221,36 @@ for x in (SX0 - 9, SX1 + 9):
     B.bx('ConcreteDark', x, QUAY + 26.3, 100, 17, 0.6, 31)
     for kf in range(4): B.quad('Glass', (x, QUAY + 4 + kf * 6, 84.98), 9, 3.2, math.pi, 0, uv=(4, 0.6))
 stand = done(B, 'Stand')
+seats = seat_mesh.build('Seats', sharp_angle=None)
+
+# 空調機の架台・吸い込み格子・排気ファン。客席裏の売店には窓口とカウンターをつける。
+B = VB()
+for x in range(-128,178,38):
+    y = RY + 1.14
+    for dx in (-1.7,1.7):
+        B.bx('ConcreteDark',x+dx,y+.15,111,0.38,.36,3.1)
+    B.bx('ConcreteLight',x,y+1.15,111,4.4,1.75,2.6)
+    for dx in (-1.08,1.08):
+        B.cy('Dark',x+dx,y+2.06,111,.88,.13,seg=16)
+        B.cy('Steel',x+dx,y+2.14,111,.19,.10,seg=8)
+        for k in range(4):
+            a=k*math.pi/2+.35
+            B.bx('Roof',x+dx+.43*math.cos(a),y+2.14,111-.43*math.sin(a),.7,.06,.25,a)
+    for k in range(5): B.bx('Steel',x,y+.55+.23*k,109.68,3.92,.07,.11)
+    B.tube('Steel',[P(x+2.2,y+.48,111),P(x+3,y+.48,111),P(x+3,y,111)],.12,8)
+for x in range(-134,175,34):
+    B.bx('Dark',x,TOPY+1.30,93.77,4.8,2.45,.22)
+    B.bx('Wood',x,TOPY+.92,93.31,5.1,.17,.85)
+    B.bx('Blue',x,TOPY+2.56,93.35,5.3,.42,.98)
+    for dx in (-2.33,0,2.33): B.bx('White',x+dx,TOPY+1.72,93.53,.08,1.55,.1)
+for bi in range(0,NB+1,2):
+    x=SX0+bi*BAY
+    for k in range(4):
+        z=RZ0+.7+3.2*k
+        B.tube('Steel',[P(x,RY+1.85-.28*k,z),P(x,RY+.92-.28*k,z+1.6),
+                         P(x,RY+1.57-.28*k,z+3.2)],.085,5)
+    B.tube('Steel',[P(x,RY+.92,RZ0+2.3),P(x,RY+.08,RZ0+11.9)],.12,6)
+stand_services = done(B,'StandServices')
 
 # ================= 審判塔・大時計の台・センターポール・距離標 =================
 B = VB()
@@ -252,6 +300,40 @@ B.tube('White', [P(-262, QUAY + 1.1, 61.7), P(252, QUAY + 1.1, 61.7)], 0.04, 5)
 B.tube('White', [P(-262, QUAY + 0.6, 61.7), P(252, QUAY + 0.6, 61.7)], 0.03, 5)
 x = -262
 while x <= 252: B.cy('White', x, QUAY + 0.55, 61.7, 0.045, 1.1, seg=6); x += 4
+# 点検口と排水の縦格子。最前段より陸寄りに収める。
+for x in range(-250,250,18):
+    B.bx('Dark',x,.89,ZF+1.78,.76,.36,.055)
+    for dx in (-.26,-.13,0,.13,.26):
+        B.bx('Steel',x+dx,.89,ZF+1.74,.035,.34,.042)
+for x in (-185,-96,38,126,208):
+    B.bx('Steel',x,QUAY+.65,62.05,.16,1.3,.18)
+    B.bx('White',x,QUAY+1.34,62.05,1.06,1.13,.28)
+    B.torus('Orange',.335,.083,P(x,QUAY+1.36,61.85),(math.pi/2,0,0),20,6)
+    for k in range(4):
+        a=math.pi/4+k*math.pi/2
+        B.bx('White',x+.336*math.cos(a),QUAY+1.36+.336*math.sin(a),61.802,.11,.11,.10)
+# 大時計の背面に点検台。文字盤が向いている側をあける。
+B.bx('Steel',1.7,QUAY+4.52,62.7,3.45,.14,1.55)
+for x in (.28,1.72,3.16):
+    B.cy('Steel',x,QUAY+5.05,63.43,.045,.98,seg=6)
+B.bx('Steel',1.72,QUAY+5.54,63.43,2.98,.07,.07)
+for y in range(5): B.bx('Steel',2.96,QUAY+.46+y*.84,62.7,.48,.06,.12)
+# 審判室の窓割りと屋上の八木アンテナ。
+for offset in (-2,0,2):
+    for side in (-1,1):
+        B.bx('Steel',10+offset,QUAY+15.45,66+side*4.03,.09,3.8,.11)
+        B.bx('Steel',10+side*4.03,QUAY+15.45,66+offset,.11,3.8,.09)
+B.bx('Steel',10,QUAY+23.77,66,2.7,.055,.07)
+for i in range(6): B.bx('Steel',8.85+i*.45,QUAY+23.77,66,.05,.05,1.4-i*.13)
+# 映像装置の背面点検通路、筋交い、看板裏の控え。
+for dx in range(-21,22,7):
+    B.bx('Steel',SCX+dx,QUAY+12.8,SCZ-1.05,.23,17.6,.25)
+    B.bx('Steel',SCX+dx,QUAY+4.76,SCZ-2.2,.09,1.05,.09)
+    if dx < 21:
+        B.tube('Steel',[P(SCX+dx,QUAY+4.5,SCZ-1.1),P(SCX+dx+7,QUAY+12,SCZ-1.1)],.12,6)
+for x in range(-254,242,13):
+    for dx in (-4.85,4.85):
+        B.tube('Steel',[P(x+dx,QUAY+.1,MINZ-3.1),P(x+dx,QUAY+2,MINZ-1.87)],.05,5)
 struct = done(B, 'Structures')
 
 # ================= ナイター照明塔 =================
@@ -260,6 +342,9 @@ def tower(x, z, ry):
     B.cy('Steel', x, QUAY + 18, z, 0.42, 36, r2=0.75, seg=10)
     B.cy('ConcreteDark', x, QUAY + 0.4, z, 1.3, 0.8, seg=10)
     B.cy('Steel', x, QUAY + 33, z, 1.5, 0.15, seg=10)
+    B.torus('Steel',1.48,.052,P(x,QUAY+34.13,z),seg=12,sseg=4)
+    for dx in (-.26,.26): B.bx('Steel',x+dx,QUAY+17,z+.86,.065,32.3,.085)
+    for k in range(52): B.bx('Steel',x,QUAY+1.05+k*.62,z+.86,.54,.055,.09)
     for a in range(8):
         d = ry_(Vector((1.5, 0, 0)), a * math.pi / 4)
         B.cy('Steel', x + d.x, QUAY + 33.6, z + d.z, 0.03, 1.1, seg=4)
@@ -298,6 +383,63 @@ for x, z, ry in ((205, -66, 0.2), (-236, -68, 2.9)):
     B.bx('White', x + c.x, 1.25, z + c.z, 1.9, 1.1, 1.6, ry)
     B.cy('Steel', x, 2.5, z, 0.04, 1.6, seg=5)
 pit = done(B, 'Pit')
+
+B = VB()
+# 桟橋の板の継ぎ目は細い溝として刻む。航路側の端は従来どおり。
+for i in range(130):
+    z=-20.55+.5*i
+    B.bx('ConcreteDark',-277.5,.597,z,26.45,.006,.018)
+for i in range(6):
+    z=-12+10*i
+    for dz in (-3.72,3.72):
+        B.cy('Wood',-264.45,.18,z+dz,.19,1.26,seg=10)
+        B.cy('Steel',-264.45,.79,z+dz,.21,.14,seg=10)
+        B.bx('Steel',-265.13,.64,z+dz,.55,.09,.26)
+        B.bx('Dark',-265.13,.76,z+dz,.11,.2,.12)
+        B.bx('Steel',-265.13,.87,z+dz,.55,.09,.13)
+    # 車輪とゴム張りのV受けをもつ艇台車。整備工具は桟橋の奥。
+    for dx in (-.70,.70):
+        for dz in (-.48,.48):
+            B.cyl('Dark',.17,.105,P(-279+dx,.79,z+dz),(math.pi/2,0,0),seg=10)
+        B.bx('Steel',-279+dx,.88,z,.14,.14,1.02)
+        for side in (-1,1):
+            B.tube('Steel',[P(-279+dx,.91,z),P(-279+dx,1.18,z+side*.43)],.052,6)
+            B.bx('Dark',-279+dx,1.2,z+side*.43,.30,.09,.21)
+    B.bx('Steel',-279,.9,z,2.02,.13,.16)
+    B.tube('Steel',[P(-279.78,.90,z),P(-280.74,1.02,z),P(-281,1.34,z)],.05,6)
+    B.bx('Blue',-286,1.01,z+2.5,1.6,.79,.72)
+    B.bx('Wood',-286,1.46,z+2.5,1.74,.12,.86)
+    for y in (.8,1.04,1.28): B.bx('Steel',-286,y,z+2.11,1.12,.045,.055)
+    B.bx('Yellow',-285.78,1.61,z+2.54,.45,.2,.31)
+    B.bx('Dark',-285.78,1.735,z+2.54,.21,.05,.06)
+for i in range(4):
+    x=-331+i*10
+    for k in range(9): B.bx('ConcreteDark',x,QUAY+.4+k*.48,-32.24,6.93,.058,.10)
+# 水面側に開く整備窓口。既存の上階窓は残し、下階の3区画をシャッター付きにする。
+for z in (-18.8,5.8,30.4):
+    B.bx('Dark',-295.83,QUAY+1.98,z,.23,3.96,7.22)
+    for j in range(11):
+        B.bx('Steel',-295.67,QUAY+1.95+j*.18,z,.13,.15,7.0)
+    B.bx('Blue',-295.65,QUAY+4.2,z,.36,.52,7.52)
+    B.bx('Wood',-295.5,QUAY+.96,z,.88,.14,6.88)
+    for side in (-1,1):
+        B.bx('ConcreteLight',-295.6,QUAY+1.92,z+side*3.52,.36,3.84,.21)
+        B.bx('Steel',-295.47,QUAY+1.43,z+side*1.9,.28,.08,2.62)
+        for j in range(4):
+            B.cy('Blue' if j%2 else 'White',-295.46,QUAY+1.63,z+side*(.99+j*.47),.095,.33,seg=8)
+for i in range(7):
+    z=-17+i*10
+    for sign in (-1,1):
+        B.tube('Steel',[P(-267,4.1,z),P(-268.1,5.42,z+sign*1.1)],.085,6)
+for i in range(3):
+    B.cy('Orange',-301+i*1.12,QUAY+.61,-47,.41,1.14,seg=12)
+    for h in (.32,.88): B.cy('Steel',-301+i*1.12,QUAY+h,-47,.425,.047,seg=12)
+B.tube('Yellow',[P(-296,QUAY+4.8,-40),P(-288.2,QUAY+7.6,-40)],.15,8)
+B.bx('Dark',-281.4,QUAY+7.39,-40,1.06,.70,.85)
+for dz in (-.22,.22):
+    B.tube('Steel',[P(-281.4,QUAY+7.11,-40+dz),P(-281.4,QUAY+3.0,-40+dz)],.034,6)
+B.torus('Yellow',.225,.055,P(-281.4,QUAY+2.8,-40),(math.pi/2,0,0),14,6)
+pit_equipment = done(B,'PitEquipment')
 
 # ================= 会場の外: スタンド背面・正面入口・広場・駐車場・道路 =================
 B = VB()
@@ -397,6 +539,58 @@ for i in range(6):
     B.quad('Glass', (336.92, QUAY + 7.4, -28 + i * 9), 6, 2.2, -math.pi / 2, 0, uv=(3, 0.5))
 outside = done(B, 'Outside')
 
+B = VB()
+# 入場機の読み取り面と開閉翼、入口脇の券売機。広場から操作面が見える向き。
+for i in range(9):
+    x=EX-20+i*5
+    B.bx('Dark',x,QUAY+1.21,BZ+6.40,.49,.08,.54)
+    B.bx('Blue',x,QUAY+1.255,BZ+6.4,.32,.014,.35)
+    if i<8:
+        for dx in (.8,4.2): B.bx('Blue',x+dx,QUAY+.7,BZ+5.7,.65,.63,.08)
+for side in (-1,1):
+    for i in range(3):
+        x=EX+side*(24.4+i*1.55)
+        B.bx('ConcreteLight',x,QUAY+.99,BZ+1.1,1.29,1.98,.85,bevel=.06)
+        B.bx('Dark',x,QUAY+1.39,BZ+1.54,.92,.65,.06)
+        B.quad('Glass',(x,QUAY+1.4,BZ+1.58),.72,.44,uv=(.25,.18))
+        B.bx('Blue',x,QUAY+.95,BZ+1.57,1.12,.12,.16)
+        B.bx('Dark',x-.13,QUAY+.74,BZ+1.55,.45,.13,.08)
+    # 自転車置き場の屋根、横桟、前輪を固定する逆U字の金具。
+    cx=EX+side*63
+    B.bx('Roof',cx,QUAY+2.6,141.8,14,.18,3.8,rx=-.08)
+    for dx in (-6.4,0,6.4):
+        B.bx('Steel',cx+dx,QUAY+1.24,140.16,.13,2.48,.14)
+    for j in range(12):
+        x=cx-5.9+1.06*j
+        B.tube('Steel',[P(x,QUAY+.06,141.4),P(x,QUAY+.73,141.4),
+                         P(x,QUAY+.73,142.23),P(x,QUAY+.06,142.23)],.045,6)
+for x in (EX+26,EX-60):
+    B.bx('Steel',x-3.23,QUAY+1.53,200.9,.89,1.36,.12)
+    B.bx('White',x-3.23,QUAY+1.51,200.979,.73,1.11,.035)
+    for j in range(7): B.bx('Blue' if j==0 else 'ConcreteDark',x-3.23,QUAY+1.92-j*.12,201,.59,.045,.015)
+    for dx in (-2.4,2.4): B.bx('Steel',x+dx,QUAY+.3,200.8,.11,.6,.42)
+for side in (-1,1):
+    x=EX+side*10
+    z=202 if side<0 else 225
+    B.cy('Steel',x,QUAY+1.65,z,.07,3.3,seg=8)
+    B.bx('Blue',x,QUAY+3.3,z,1.36,.89,.095)
+    for dx in (-.37,-.13,.11,.35): B.bx('White',x+dx,QUAY+3.23,z+side*.055,.12,.30,.018)
+for x0,x1 in LOTS:
+    for x in range(x0,x1,8):
+        B.cy('Steel',x,QUAY+.62,198.65,.055,1.22,seg=6)
+    for h in (.48,1.14): B.bx('Steel',(x0+x1)/2,QUAY+h,198.65,x1-x0,.045,.045)
+    # 車止めを区画線に合わせて並べる。側面と上面だけの共通断面。
+    for j in range(int((x1-x0)/2.9)):
+        x=x0+(j+.5)*2.9
+        for z in (152.65,161.4,169.65,178.4,186.65,195.4):
+            rings=[]
+            for dx in (-.67,.67):
+                rings.append([B.vert(P(x+dx,QUAY+h,z+dz)) for h,dz in
+                              ((.004,-.14),(.15,-.086),(.15,.086),(.004,.14))])
+            for k in range(3):
+                B.face([rings[0][k],rings[1][k],rings[1][k+1],rings[0][k+1]],'Concrete',smooth=False)
+entry_equipment = done(B,'EntryEquipment')
+
 # ================= 遠景: 大橋・クレーン・煙突・タンク・埋立地 =================
 B = VB()
 BZ_ = -520
@@ -423,13 +617,25 @@ for x, z, h in ((-640, -700, 150), (-560, -730, 120), (-720, -760, 135)):
 for i in range(6):
     B.cy('White', -520 + i * 40, 11, -780, 16, 20, seg=20)
     B.cy('ConcreteLight', -520 + i * 40, 21.5, -780, 12, 1.5, r2=2, seg=20)
+    B.torus('Steel',16,.34,P(-520+i*40,15,-780),seg=20,sseg=4)
+    B.tube('Steel',[P(-520+i*40,4,-764),P(-520+i*40,4,-754),
+                    P(-510+i*40,4,-754)],.73,6)
+for i in range(4):
+    x=560+i*70
+    for side in (-1,1):
+        for k in range(3):
+            B.tube('Red',[P(x-12,3+k*19,-250+side*9),
+                          P(x+12,22+k*19,-250+side*9)],.58,5)
+    B.tube('Dark',[P(x,65,-307),P(x,33,-307)],.20,5)
+    B.bx('Yellow',x,32,-307,10,1.8,2.0)
 B.bx('ConcreteDark', 0, 0, -910, 2400, 3, 320); B.bx('ConcreteDark', 780, 0, 100, 560, 3, 700)
 far = done(B, 'Far')
 
-objs = [land, barriers, stand, struct, towers, pit, outside, far]
+near = [land, barriers, stand, seats, stand_services, struct, towers, pit, pit_equipment, outside, entry_equipment]
+objs = near + [far]
 tris = sum(len(p.vertices) - 2 for o in objs for p in o.data.polygons)
 print('TRIANGLES', tris)
-bake_ao([land, barriers, stand, struct, towers, pit, outside], samples=24, lo=0.22, gamma=0.9, dist=14)
+bake_ao(near, samples=24, lo=0.22, gamma=0.9, dist=14)
 bake_ao([far], samples=8, lo=0.5, gamma=1.0, dist=30)
 export_glb(OUT, objs)
 
