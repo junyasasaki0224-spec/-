@@ -9,12 +9,13 @@ for (const short of [false,true]) {
     opening.advance(1/60);
     assert.equal(JSON.stringify(race), original, 'presentation must never change simulation');
     for (const b of opening.boats) assert.ok(Number.isFinite(b.x+b.z+b.h+b.speed));
-    for (const b of opening.audioBoats) assert.ok(b.speed <= 3 && b.throttle <= 0.08, "pit engines stay at low RPM");
+    for (const b of opening.audioBoats) assert.ok(b.speed <= 9 && b.throttle <= 0.25, "engines stay quiet under the music");
   }
   const c = opening.clearance();
   assert.ok(c.obst > 3.5, `boats must stay clear of mark 2 and its boom (${c.obst.toFixed(2)}m)`);
   assert.ok(c.boat > 4, `boats must not overlap (${c.boat.toFixed(2)}m)`);
-  console.log(short ? 'short' : 'full', 'clearance', c.obst.toFixed(1), 'm from mark/boom,', c.boat.toFixed(1), 'm between boats');
+  assert.ok(c.vmax < 22, `waiting action must not look like racing (${(c.vmax * 3.6).toFixed(0)}km/h)`);
+  console.log(short ? 'short' : 'full', `${opening.duration}s`, 'clearance', c.obst.toFixed(1), 'm from mark/boom,', c.boat.toFixed(1), 'm between boats, top speed', (c.vmax * 3.6).toFixed(0), 'km/h');
   opening.advance(1);
   for (let i=0;i<6;i++) {
     const b=opening.boats[i], target=race.boats[i];

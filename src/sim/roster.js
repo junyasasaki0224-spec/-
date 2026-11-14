@@ -14,6 +14,7 @@ export const DIFFS = [
   { name: '初級', skill: 0.88, st: 0.1, motor: -0.055 },
   { name: '中級', skill: 0.955, st: 0.04, motor: -0.02 },
   { name: '上級', skill: 1.015, st: -0.01, motor: 0.006 },
+  { name: '達人', skill: 1.08, st: -0.06, motor: 0.035 },    // 上級のさらに上: 旋回が速く、スタートが早く、モーターも強い
 ];
 export const POINTS = [10, 8, 6, 4, 2, 1];
 
