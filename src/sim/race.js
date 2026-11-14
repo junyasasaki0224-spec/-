@@ -256,7 +256,9 @@ export class Race {
   }
 
   _kimarite(w) {
-    const t = this.turn1, first = t.order[0];
+    // 決まり手は「1周1マークを回り終えた時(バックストレッチの半ば)の先頭」が勝ったかどうかで決める。
+    // 最初にマークを回った艇(たいてい内側)ではない: 内を差して前に出た艇は「差し」で、「抜き」ではない
+    const t = this.turn1, first = t.back ?? t.order[0];
     if (first === undefined) { this.kimarite = ''; return; }
     if (w.i !== first) { this.kimarite = '抜き'; return; }
     if (w.i === 0) { this.kimarite = '逃げ'; return; }
@@ -317,6 +319,7 @@ export class Race {
     });
     for (let k = 0; k < 6; k++) this.order[k].rank = k + 1;
     const lead = this.order[0];
+    if (this.turn1.back === undefined && lead.started && lead.sectorCount >= 2 && lead.x < 60) this.turn1.back = lead.i;   // 1周1マークを回り終えた時の先頭
     if (this.state === 'racing' && lead.started && lead.R > 60 && lead.i !== this.leader) {
       if (this.leader >= 0) this.events.push({ type: 'lead', boat: lead.i });
       this.leader = lead.i;
