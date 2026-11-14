@@ -25,7 +25,9 @@ const path = require('path');
   await p.click('#btn-title');
   // C: フライング → リプレイ → 結果に戻る
   await p.click('#modes button[data-v="single"]'); await p.click('#btn-start'); await input('(r) => ({ steer: 0, throttle: 1, brake: 0 })');
-  console.log('C flying:', JSON.stringify(await run(60, 'result')), '|', await txt('res-head'));
+  await p.evaluate(() => { const g = window.__game; let n = 0; while (n < 60 * 60 && !g.G.spec) { g.step(1 / 60); n++; } });   // フライング → 観戦
+  console.log('C spectate:', await p.evaluate(() => !!window.__game.G.spec)); await p.evaluate(() => document.getElementById('sp-exit').click());
+  console.log('C flying:', JSON.stringify(await run(1, 'result')), '|', await txt('res-head'));
   await p.click('#btn-replay');
   await run(6); await p.waitForTimeout(400); await p.screenshot({ path: path.join(process.env.OUT || require('os').tmpdir(), 'r-replay-pre.png'), timeout: 120000 });
   console.log('C replay:', JSON.stringify(await run(120, 'replay-end')), await p.evaluate(() => document.getElementById('btn-replay-end').click()), 'result visible:', await p.evaluate(() => !document.getElementById('result').classList.contains('hidden')));

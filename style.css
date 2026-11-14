@@ -334,3 +334,21 @@ body:has(#result:not(.hidden)) #touch { display: none; }
   #rp-boats button { width: 30px; height: 30px; }
   #hud.replay #rank { display: none; }
 }
+
+/* ---------- 観戦(失格した後) ---------- */
+#sp-bar { display: none; position: absolute; left: 50%; transform: translateX(-50%); bottom: max(12px, env(safe-area-inset-bottom)); align-items: center; gap: 8px; padding: 8px 10px; border-radius: 14px; background: rgba(6, 18, 38, 0.82); border: 1px solid rgba(255, 255, 255, 0.22); pointer-events: auto; text-shadow: none; max-width: calc(100vw - 24px); }
+#hud.spectate #sp-bar { display: flex; }
+#hud.spectate #speedo, #hud.spectate #lift, #hud.spectate #warn { display: none; }
+#hud.spectate #minimap { bottom: 80px; }
+#sp-bar > b { font-size: 13px; color: #ff8a7a; letter-spacing: 0.06em; white-space: nowrap; }
+#sp-boats { display: flex; gap: 4px; }
+#sp-boats button { width: 36px; height: 36px; border-radius: 7px; border: 2px solid transparent; font-size: 16px; font-weight: 900; opacity: 0.65; }
+#sp-boats button.sel { border-color: #fff; opacity: 1; box-shadow: 0 0 0 2px #f5a400; }
+#sp-boats button.out { opacity: 0.25; text-decoration: line-through; }
+#sp-bar > button { height: 38px; padding: 0 12px; border-radius: 9px; border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.08); color: #fff; font-size: 14px; font-weight: 800; white-space: nowrap; }
+#sp-exit { background: #fff !important; color: #111 !important; border: 0 !important; }
+@media (max-width: 640px) {
+  #sp-bar { flex-wrap: wrap; justify-content: center; width: calc(100vw - 24px); gap: 6px; }
+  #sp-boats { width: 100%; justify-content: space-between; order: 3; }
+  #sp-boats button { width: calc((100% - 20px) / 6); }
+}

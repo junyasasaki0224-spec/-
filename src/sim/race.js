@@ -156,7 +156,7 @@ export class Race {
     }
     this.stepN++;
     for (let i = 0; i < 6; i++) for (let j = i + 1; j < 6; j++) {
-      if (boats[i].sunk || boats[j].sunk) continue;
+      if (boats[i].out || boats[j].out) continue;      // 失格した艇(フライング・沈没)はコースから外れたものとして当たらない
       const c = collideBoats(boats[i], boats[j]);
       if (c && c.power > 0.35) this.events.push({ type: 'hit', a: i, b: j, power: c.power, x: c.x, z: c.z });
     }

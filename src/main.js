@@ -33,7 +33,7 @@ window.addEventListener('resize', () => { stage.resize(); hud.resize(); });
 // ---------------- ゲーム状態 ----------------
 const G = {
   state: 'loading',        // loading | title | race | result | replay
-  paused: false, race: null, cfg: null, gp: null, replayData: null, rp: null,
+  paused: false, race: null, cfg: null, gp: null, replayData: null, rp: null, spec: null, specT: -1,
   camMode: CAM.CHASE, replayCam: CAM.TV, follow: -1,
   time: 0, introT: 0, resultT: -1, attractT: 0, replayEndT: -1, lastTick: 0, cheer: 0.25,
   crossed: false, debugInput: null,
@@ -70,6 +70,7 @@ function applyRace(race) {
   hud.setWeather(race.cfg.weather);
   stage.spray.clear(); rig.reset();
   G.lastTick = -99; G.resultT = -1; G.replayEndT = -1; G.introT = 0; G.crossed = false;
+  leaveSpectate();
 }
 
 function closeOverlays() { for (const id of ['title', 'result', 'pause', 'howto', 'settings']) show(id, false); }
@@ -181,6 +182,7 @@ function gpTable() {
 
 // ---------------- 結果 ----------------
 function showResult() {
+  leaveSpectate();
   const race = G.race, pl = race.player, practice = race.mode === 'practice', gp = S.mode === 'gp';
   G.state = 'result';
   G.replayData = { cfg: race.cfg, inputs: Int8Array.from(race.rec) };
@@ -318,6 +320,46 @@ function replayCam(mode) {
   G.replayCam = mode; if (mode !== CAM.FREE) rig.reset();
   updateReplayUi();
 }
+// リプレイと観戦で共通: 今のカメラ / カメラを切り替える
+const viewCam = () => (G.spec ? G.spec.cam : G.replayCam);
+function setViewCam(mode) {
+  if (!G.spec) { replayCam(mode); return; }
+  if (mode === CAM.FREE && G.spec.cam !== CAM.FREE) rig.startFree(G.race.boats[G.follow] || G.race.order[0]);
+  G.spec.cam = mode; if (mode !== CAM.FREE) rig.reset();
+  updateSpecUi();
+}
+
+// ---------------- 観戦(フライング・沈没で失格した後) ----------------
+// レースはそのまま続き、走っている艇を好きな視点で見られる。「退出」で結果画面へ
+function enterSpectate() {
+  const race = G.race;
+  if (G.state !== 'race' || !race.player || !race.player.out) return;
+  const running = race.order.filter((b) => !b.out);
+  G.follow = (running[0] || race.order[0]).i;
+  G.spec = { cam: CAM.CHASE }; rig.reset();
+  document.body.classList.remove('playing');
+  $('hud').classList.add('spectate');
+  $('sp-boats').innerHTML = race.boats.map((b, i) => `<button data-i="${i}" title="${b.num}号艇 ${b.racer.name}を見る" style="background:${BOAT_CSS[i]};color:${BOAT_TEXT_CSS[i]}">${b.num}</button>`).join('');
+  updateSpecUi();
+  hud.say('観戦中　艇の番号で見る艇を選べます。画面をドラッグで好きな角度から', 4);
+}
+function leaveSpectate() {
+  G.specT = -1;
+  if (!G.spec) return;
+  G.spec = null;
+  $('hud').classList.remove('spectate');
+}
+function updateSpecUi() {
+  const race = G.race;
+  $('sp-boats').querySelectorAll('button').forEach((el, i) => { el.classList.toggle('sel', i === G.follow); el.classList.toggle('out', race.boats[i].out); });
+  const t = RP_CAM_LABEL[G.spec.cam] || '追尾';
+  if ($('sp-cam').textContent !== t) $('sp-cam').textContent = t;
+}
+function bindSpectateUi() {
+  $('sp-boats').addEventListener('click', (e) => { const i = e.target.closest('button')?.dataset.i; if (i !== undefined && G.spec) { G.follow = +i; if (G.spec.cam !== CAM.FREE) rig.reset(); updateSpecUi(); } });
+  $('sp-cam').addEventListener('click', () => cycleCam());
+  $('sp-exit').addEventListener('click', () => { if (G.spec && G.state === 'race') { audio.click(); showResult(); } });
+}
 const rpEl = {};
 function buildReplayUi() {
   const rp = G.rp, span = rp.end - rp.start;
@@ -355,30 +397,31 @@ function bindReplayUi() {
   $('rp-exit').addEventListener('click', endReplay);
   // 画面をドラッグ: 自由カメラで回り込む。2本指で広げる/縮める・ホイールで寄る/引く
   const ptrs = new Map();
-  const onCanvas = (e) => G.state === 'replay' && e.target && (e.target.id === 'gl' || e.target.id === 'fx');
+  const onCanvas = (e) => (G.state === 'replay' || (G.spec && G.state === 'race')) && e.target && (e.target.id === 'gl' || e.target.id === 'fx');
   window.addEventListener('pointerdown', (e) => { if (onCanvas(e)) ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); });
   window.addEventListener('pointermove', (e) => {
-    const p = ptrs.get(e.pointerId); if (!p || G.state !== 'replay') return;
+    const p = ptrs.get(e.pointerId); if (!p || !(G.state === 'replay' || G.spec)) return;
     if (ptrs.size === 1) {
       const dx = e.clientX - p.x, dy = e.clientY - p.y;
-      if (Math.abs(dx) + Math.abs(dy) > 0) { if (G.replayCam !== CAM.FREE) replayCam(CAM.FREE); rig.orbitBy(dx, dy); }
+      if (Math.abs(dx) + Math.abs(dy) > 0) { if (viewCam() !== CAM.FREE) setViewCam(CAM.FREE); rig.orbitBy(dx, dy); }
     } else if (ptrs.size === 2) {
       const [a, b] = [...ptrs.values()], d0 = Math.hypot(a.x - b.x, a.y - b.y);
       p.x = e.clientX; p.y = e.clientY;
       const d1 = Math.hypot(a.x - b.x, a.y - b.y);
-      if (d0 > 10 && d1 > 10) { if (G.replayCam !== CAM.FREE) replayCam(CAM.FREE); rig.zoomBy(d0 / d1); }
+      if (d0 > 10 && d1 > 10) { if (viewCam() !== CAM.FREE) setViewCam(CAM.FREE); rig.zoomBy(d0 / d1); }
       return;
     }
     p.x = e.clientX; p.y = e.clientY;
   });
   for (const ev of ['pointerup', 'pointercancel']) window.addEventListener(ev, (e) => ptrs.delete(e.pointerId));
-  window.addEventListener('wheel', (e) => { if (!onCanvas(e)) return; if (G.replayCam !== CAM.FREE) replayCam(CAM.FREE); rig.zoomBy(1 + clamp(e.deltaY, -200, 200) * 0.0015); }, { passive: true });
+  window.addEventListener('wheel', (e) => { if (!onCanvas(e)) return; if (viewCam() !== CAM.FREE) setViewCam(CAM.FREE); rig.zoomBy(1 + clamp(e.deltaY, -200, 200) * 0.0015); }, { passive: true });
 }
 
 // ---------------- イベント処理 ----------------
 function handleEvents() {
   const race = G.race, live = G.state === 'race', audible = G.state !== 'title';
-  const pl = live ? race.player : null, watch = G.state === 'replay' ? race.boats[G.follow] : pl;
+  const pl = live ? race.player : null, watch = G.state === 'replay' || G.spec ? race.boats[G.follow] : pl;
+  const me = G.spec ? null : pl;      // 自分あての知らせ(観戦中は出さない)
   for (const e of race.events) {
     switch (e.type) {
       case 'go': if (audible) audio.tick(true); break;
@@ -390,7 +433,7 @@ function handleEvents() {
         }
         break;
       case 'flying':
-        if (pl && e.boat === pl.i) { audio.buzzer(); hud.message('フライング！', 'スタート時刻より早くラインを通過', 3.5, 'bad'); G.resultT = 3.2; }
+        if (pl && e.boat === pl.i) { audio.buzzer(); hud.message('フライング！', 'スタート時刻より早くラインを通過', 3.5, 'bad'); if (race.mode === 'practice') G.resultT = 3.2; else G.specT = 3.0; }
         break;
       case 'sink': {
         const b = race.boats[e.boat];
@@ -398,7 +441,7 @@ function handleEvents() {
         const d = Math.hypot(e.x - camera.position.x, e.z - camera.position.z);
         if (audible) audio.hit(Math.min(8, e.power * 0.6), 1 / (1 + (d / 25) ** 2));
         if (watch && e.boat === watch.i) rig.bump(1);
-        if (pl && e.boat === pl.i) { audio.buzzer(); hud.message('沈没', `${SINK_WORD[e.cause]}に衝突 — 失格`, 3.5, 'bad'); if (race.mode !== 'practice') G.resultT = 3.6; }
+        if (pl && e.boat === pl.i) { audio.buzzer(); hud.message('沈没', `${SINK_WORD[e.cause]}に衝突 — 失格`, 3.5, 'bad'); if (race.mode !== 'practice') G.specT = 3.0; }
         break;
       }
       case 'hit': {
@@ -410,7 +453,7 @@ function handleEvents() {
           rig.bump(e.power * 0.22);
           if (e.power > 1.2) {
             hud.addDrops(6 + e.power * 3, true);
-            if (pl) { hud.say(`接触！ ${race.boats[e.a === pl.i ? e.b : e.a].num}号艇とぶつかった`, 1.8); try { if (navigator.vibrate) navigator.vibrate(40); } catch (err) { /* 非対応 */ } }
+            if (me) { hud.say(`接触！ ${race.boats[e.a === me.i ? e.b : e.a].num}号艇とぶつかった`, 1.8); try { if (navigator.vibrate) navigator.vibrate(40); } catch (err) { /* 非対応 */ } }
           }
         }
         break;
@@ -419,7 +462,7 @@ function handleEvents() {
         stage.spray.burst(e.x, e.z, e.power * 0.6);
         const d = Math.hypot(e.x - camera.position.x, e.z - camera.position.z);
         if (audible) audio.hit(e.power * 0.5, 1 / (1 + (d / 25) ** 2));
-        if (watch && e.boat === watch.i) { rig.bump(e.power * 0.1); if (pl) hud.say('消波装置に接触！', 1.6); }
+        if (watch && e.boat === watch.i) { rig.bump(e.power * 0.1); if (me) hud.say('消波装置に接触！', 1.6); }
         break;
       }
       case 'buoy': {
@@ -427,7 +470,7 @@ function handleEvents() {
         stage.venue.hitBuoy(e.id, e.nx, e.nz, e.power);
         stage.spray.burst(b.x, b.z, e.power * 0.4, b.vx, b.vz);
         if (audible) audio.buoy(e.power, watch && e.boat === watch.i ? 1 : 0.3);
-        if (watch && e.boat === watch.i) { rig.bump(0.3); if (pl) hud.say(e.id >= 3 ? '消波装置に接触！' : e.id ? 'ターンマークに接触！' : 'センターポールに接触！', 1.6); }
+        if (watch && e.boat === watch.i) { rig.bump(0.3); if (me) hud.say(e.id >= 3 ? '消波装置に接触！' : e.id ? 'ターンマークに接触！' : 'センターポールに接触！', 1.6); }
         break;
       }
       case 'lap':
@@ -481,7 +524,7 @@ function step(dt) {
   }
   const race = G.race, live = G.state === 'race', replay = G.state === 'replay';
   const pl = race.player;
-  const target = replay ? race.boats[G.follow] || race.order[0] : pl || race.order[0];
+  const target = replay ? race.boats[G.follow] || race.order[0] : G.spec && live ? race.boats[G.follow] : pl || race.order[0];
   if (!G.paused) {
     G.time += dt; G.introT += dt;
     const sdt = replay && G.rp ? (G.rp.playing ? dt * G.rp.speed : 0) : dt;   // リプレイの再生速度(止めている時は0)
@@ -494,6 +537,7 @@ function step(dt) {
       if (s <= 3 && s !== G.lastTick) { G.lastTick = s; audio.tick(false); }
     }
     if (G.resultT >= 0 && live) { G.resultT -= dt; if (G.resultT < 0) showResult(); }
+    if (G.specT >= 0 && live) { G.specT -= dt; if (G.specT < 0) enterSpectate(); }
     if (G.state === 'title' && race.state === 'done') { G.attractT -= dt; if (G.attractT <= 0) applyRace(new Race(makeConfig({ env: S.env, weather: program.weather }))); }
     if (replay && G.rp) {           // 最後まで来たら止める(リプレイを終わるかどうかは自分で選ぶ)
       if (G.rp.playing && race.clock >= G.rp.end - 1e-3) G.rp.playing = false;
@@ -521,7 +565,8 @@ function step(dt) {
     if (G.state === 'title') mode = (Math.floor(G.time / 11) % 3 === 1 || race.state === 'pre') ? CAM.FLY : CAM.TV;
     else if (G.state === 'result') mode = CAM.ORBIT;
     else if (target.sunk) mode = CAM.ORBIT;        // 沈んだ艇は少し離れて回りから映す
-    else mode = replay ? G.replayCam : G.camMode;
+    else mode = replay ? G.replayCam : G.spec ? G.spec.cam : G.camMode;
+    if (G.spec) updateSpecUi();
     rig.shakeOn = S.shake;
     for (let i = 0; i < 6; i++) views[i].setFirstPerson(mode === CAM.ONBOARD && i === target.i);
     rig.update(dt, G.time, target, views[target.i], mode, live ? G.introT : -1);
@@ -568,6 +613,7 @@ function bindUi() {
   click('btn-replay', startReplay);
   click('btn-replay-end', endReplay);
   bindReplayUi();
+  bindSpectateUi();
   click('btn-title', () => { audio.click(); if (S.mode === 'gp') { G.gp = null; program = null; S.mode = 'single'; save(); } else newProgram(); toTitle(); });
   click('btn-resume', () => setPaused(false));
   click('btn-restart', () => { if (S.mode === 'gp') { setPaused(false); return; } retry(); });
@@ -593,6 +639,7 @@ function bindUi() {
   }
 }
 function cycleCam() {
+  if (G.spec && G.state === 'race') { setViewCam(RP_CAMS[(RP_CAMS.indexOf(G.spec.cam) + 1) % RP_CAMS.length]); hud.say(CAM_NAMES[G.spec.cam], 1.2); return; }
   if (G.state === 'replay') { replayCam(RP_CAMS[(RP_CAMS.indexOf(G.replayCam) + 1) % RP_CAMS.length]); hud.say(CAM_NAMES[G.replayCam], 1.2); return; }
   G.camMode = (G.camMode + 1) % 5; rig.reset();
   if (G.state === 'race') hud.say(CAM_NAMES[G.camMode], 1.2);
@@ -615,7 +662,7 @@ input.onKey = (code) => {
   else if (code === 'Escape' || code === 'KeyP') { if (G.state === 'replay') endReplay(); else setPaused(!G.paused); }
   else if (code === 'KeyR' && (G.state === 'race' || G.state === 'result')) retry();
   else if (code === 'Enter') { if (G.state === 'title') startRace(); else if (G.state === 'result') nextAfterResult(); else if (G.paused) setPaused(false); }
-  else if (G.state === 'replay' && /^Digit[1-6]$/.test(code)) { G.follow = +code.slice(5) - 1; rig.reset(); }
+  else if ((G.state === 'replay' || G.spec) && /^Digit[1-6]$/.test(code)) { G.follow = +code.slice(5) - 1; rig.reset(); }
 };
 document.addEventListener('visibilitychange', () => { if (document.hidden) { audio.suspend(); if (G.state === 'race') setPaused(true); } });
 // どこを触っても音を出せるようにする(iPhone は操作の中でしか音を始められない)
