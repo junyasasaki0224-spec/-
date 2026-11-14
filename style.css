@@ -292,3 +292,45 @@ body:has(#result:not(.hidden)) #touch { display: none; }
 @media (max-width: 520px) { #opening-entry { top: 110px; grid-template-columns: minmax(0,280px); } #opening header { padding-left: 18px; padding-right: 18px; } }
 @media (max-height: 440px) { #opening-entry { top: 85px; } .opening-racer { padding: 6px 12px; } #opening header { padding-top: 12px; } }
 @media (prefers-reduced-motion: reduce) { .opening-racer { animation: none; } }
+
+/* ---------- リプレイの操作部 ---------- */
+#gl, #fx { touch-action: none; }
+#rp-bar { display: none; position: absolute; left: 50%; transform: translateX(-50%); bottom: max(12px, env(safe-area-inset-bottom)); width: min(760px, calc(100vw - 32px)); padding: 8px 12px 10px; border-radius: 14px; background: rgba(6, 18, 38, 0.82); border: 1px solid rgba(255, 255, 255, 0.22); pointer-events: auto; text-shadow: none; }
+#hud.replay #rp-bar { display: block; }
+#hud.replay #minimap { bottom: 150px; }
+#hud.replay #wx { display: none; }
+.rp-row { display: flex; align-items: center; gap: 8px; }
+#rp-time, #rp-total { font-size: 13px; font-weight: 800; color: #dbe6fa; min-width: 54px; text-align: center; }
+#rp-track { position: relative; flex: 1; height: 28px; display: flex; align-items: center; }
+#rp-seek { width: 100%; margin: 0; accent-color: #f5a400; height: 28px; position: relative; z-index: 1; background: transparent; }
+#rp-marks { position: absolute; left: 8px; right: 8px; top: 3px; bottom: 3px; pointer-events: none; }
+#rp-marks i { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: rgba(255, 210, 60, 0.75); border-radius: 1px; }
+#rp-chapters { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 6px; }
+#rp-chapters::-webkit-scrollbar { display: none; }
+#rp-chapters button { flex: none; padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(255, 210, 60, 0.6); background: rgba(255, 210, 60, 0.1); color: #ffe69a; font-size: 12px; font-weight: 800; }
+.rp-ctl { margin-top: 6px; flex-wrap: wrap; }
+.rp-ctl button { min-width: 44px; height: 38px; padding: 0 10px; border-radius: 9px; border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.08); color: #fff; font-size: 14px; font-weight: 800; }
+#rp-play { min-width: 56px; background: linear-gradient(180deg, #ffe066, #f5a400); color: #1a1200; border: 0; font-size: 16px; }
+#rp-boats { display: flex; gap: 4px; margin-left: auto; }
+#rp-exit { display: none; }
+#rp-boats button { min-width: 0; width: 34px; height: 34px; padding: 0; border-radius: 7px; font-size: 16px; font-weight: 900; border: 2px solid transparent; opacity: 0.6; }
+#rp-boats button.sel { border-color: #fff; opacity: 1; box-shadow: 0 0 0 2px #f5a400; }
+@media (max-width: 640px) {
+  #rp-bar { padding: 6px 8px 8px; }
+  #hud.replay #replay-badge { display: none; }
+  #rp-exit { display: inline-block; }
+  .rp-ctl { gap: 5px; }
+  .rp-ctl button { height: 36px; min-width: 38px; padding: 0 6px; font-size: 12px; }
+  #rp-play { min-width: 46px; }
+  #rp-boats { margin-left: 0; width: 100%; justify-content: space-between; }
+  #rp-boats button { width: calc((100% - 20px) / 6); }
+}
+@media (max-height: 520px) and (min-width: 641px) {
+  #rp-bar { padding: 5px 10px 6px; width: min(700px, calc(100vw - 32px)); }
+  #hud.replay #replay-badge { display: none; }
+  #rp-exit { display: inline-block; }
+  #rp-chapters { padding-bottom: 2px; }
+  .rp-ctl { margin-top: 2px; } .rp-ctl button { height: 32px; }
+  #rp-boats button { width: 30px; height: 30px; }
+  #hud.replay #rank { display: none; }
+}

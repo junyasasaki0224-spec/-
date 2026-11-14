@@ -27,6 +27,10 @@ Claude の使用量が多くなると GPT を使う意味が薄れる。**量の
 - 新しい仕組みには、Roblox なしで回せる単体テスト(`roblox/tests/*.spec.luau`)を足した
 - 改行は LF。BASE.txt を入れた。WORKLOG のいちばん上に報告を書いた
 
+### GPT に頼むかどうかの決め方(オーナーの方針・2026-11-14)
+- オーナーが GPT にやらせたい時は、その都度「GPT に頼みたい」と言う。言われなければ Claude が作業する
+- Claude が GPT に回した方がよいと判断した時は、Claude からオーナーに「これは GPT に頼んでください」と指示してよい(送る文と ZIP を用意する)
+
 ## 情報の置き場所(ここだけが正本)
 
 - コード: GitHub `junyasasaki0224-spec/-` のブランチ `claude/vigilant-hopper-gs3igi`

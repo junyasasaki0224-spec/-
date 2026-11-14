@@ -9,8 +9,9 @@ const path = require('path');
   p.on('pageerror', (e) => errs.push('PAGEERROR: ' + e.message + ' ' + (e.stack || '').slice(0, 300)));
   await p.goto('file://' + require('path').resolve(__dirname, '../index.html'));
   await p.waitForFunction(() => window.__game, null, { timeout: 150000 });
+  await p.evaluate(() => { window.__game.S.opening = false; });   // オープニングは e2e-opening.cjs で確かめる
   await p.evaluate(() => { const g = window.__game; g.S.quality = 'low'; g.stage.autoQuality = false; g.stage.setQuality('low'); g.S.seenHowto = true; document.getElementById('howto').classList.add('hidden'); g.S.mode = 'single'; g.S.lane = 3; });
-  const run = (sec, until) => p.evaluate(([sec, until]) => { const g = window.__game; let n = 0; while (n < sec * 60 && !(until && g.G.state === until)) { g.step(1 / 60); n++; } const r = g.race, b = r.player || r.order[0]; return { state: g.G.state, rs: r.state, clock: +r.clock.toFixed(1), place: b.place, st: b.st, rank: b.rank }; }, [sec, until]);
+  const run = (sec, until) => p.evaluate(([sec, until]) => { const g = window.__game; let n = 0; while (n < sec * 60 && !(until && (until === 'replay-end' ? g.G.rp && g.G.race.clock >= g.G.rp.end - 1e-3 : g.G.state === until))) { g.step(1 / 60); n++; } const r = g.race, b = r.player || r.order[0]; return { state: g.G.state, rs: r.state, clock: +r.clock.toFixed(1), place: b.place, st: b.st, rank: b.rank }; }, [sec, until]);
   const txt = (id) => p.evaluate((id) => document.getElementById(id).innerText.replace(/\s+/g, ' ').slice(0, 160), id);
   const input = (fn) => p.evaluate((src) => { window.__game.G.debugInput = eval(src); }, fn);
 
@@ -27,7 +28,7 @@ const path = require('path');
   console.log('C flying:', JSON.stringify(await run(60, 'result')), '|', await txt('res-head'));
   await p.click('#btn-replay');
   await run(6); await p.waitForTimeout(400); await p.screenshot({ path: path.join(process.env.OUT || require('os').tmpdir(), 'r-replay-pre.png'), timeout: 120000 });
-  console.log('C replay:', JSON.stringify(await run(120, 'result')), 'result visible:', await p.evaluate(() => !document.getElementById('result').classList.contains('hidden')));
+  console.log('C replay:', JSON.stringify(await run(120, 'replay-end')), await p.evaluate(() => document.getElementById('btn-replay-end').click()), 'result visible:', await p.evaluate(() => !document.getElementById('result').classList.contains('hidden')));
   // D: 走行中にポーズ・設定・画質・時間帯の切り替え
   await p.click('#btn-next'); await input('(r) => { const a = r.player.advice; return { steer: a.steer, throttle: a.throttle, brake: 0 }; }');
   await run(20);
@@ -35,8 +36,8 @@ const path = require('path');
   console.log('D paused:', await p.evaluate(() => window.__game.G.paused));
   await p.click('#btn-pause-settings');
   for (const q of ['high', 'medium', 'low', 'auto', 'low']) { await p.selectOption('#set-quality', q); await p.waitForTimeout(200); }
-  await p.click('#set-guide'); await p.click('#set-voice'); await p.click('#set-shake'); await p.click('#set-assist');
-  console.log('D quality after toggles:', await p.evaluate(() => window.__game.stage.quality + ' ' + JSON.stringify([window.__game.S.guide, window.__game.S.voice])));
+  await p.click('#set-guide'); await p.click('#set-shake'); await p.click('#set-assist');
+  console.log('D quality after toggles:', await p.evaluate(() => window.__game.stage.quality + ' ' + JSON.stringify([window.__game.S.guide, window.__game.S.shake])));
   await p.click('#btn-settings-close'); await p.click('#btn-resume');
   console.log('D resumed:', JSON.stringify(await run(15)));
   await p.keyboard.press('KeyC'); await p.keyboard.press('KeyC'); await p.keyboard.press('KeyM'); await p.keyboard.press('KeyM');

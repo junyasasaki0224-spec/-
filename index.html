@@ -40,6 +40,15 @@
   <div id="ticker"></div>
   <div id="warn">ターンマークの外側を回ってください</div>
   <div id="replay-badge">● REPLAY<button id="btn-replay-end">リプレイを終わる</button></div>
+  <div id="rp-bar">
+    <div id="rp-chapters"></div>
+    <div class="rp-row"><span id="rp-time">0'00"0</span><div id="rp-track"><input id="rp-seek" type="range" min="0" max="1000" step="1" value="0" aria-label="再生位置"><div id="rp-marks"></div></div><span id="rp-total">0'00"0</span></div>
+    <div class="rp-row rp-ctl">
+      <button id="rp-back" title="5秒戻る(←)">« 5秒</button><button id="rp-step" title="コマ送り(.)">▶|</button><button id="rp-play" title="再生/一時停止(Space)">❚❚</button><button id="rp-fwd" title="5秒進む(→)">5秒 »</button>
+      <button id="rp-speed" title="再生速度">1×</button><button id="rp-cam" title="カメラ切替(C)">中継</button><button id="rp-exit" title="リプレイを終わる(Esc)">終わる</button>
+      <span id="rp-boats"></span>
+    </div>
+  </div>
   <div id="hud-btn">
     <button id="btn-cam" title="カメラ切替 (C)">🎥</button>
     <button id="btn-mute" title="ミュート (M)">🔊</button>

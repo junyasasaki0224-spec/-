@@ -3,8 +3,8 @@ import * as THREE from 'three';
 import { clamp, lerp, BOUNDS, zc } from '../sim/course.js';
 import { VMAX } from '../sim/physics.js';
 
-export const CAM_NAMES = ['追尾カメラ', '接近カメラ', 'オンボード', '中継カメラ', '上空カメラ'];
-export const CAM = { CHASE: 0, CLOSE: 1, ONBOARD: 2, TV: 3, TOP: 4, FLY: 5, ORBIT: 6 };
+export const CAM_NAMES = ['追尾カメラ', '接近カメラ', 'オンボード', '中継カメラ', '上空カメラ', '', '', '自由カメラ'];
+export const CAM = { CHASE: 0, CLOSE: 1, ONBOARD: 2, TV: 3, TOP: 4, FLY: 5, ORBIT: 6, FREE: 7 };
 
 // 中継カメラの設置位置: スタンド屋根 / 1マーク奥 / 対岸 / 2マーク奥
 const TV = [
@@ -23,7 +23,12 @@ export class CameraRig {
     this.tv = -1; this.tvHold = 0;
     this.right = new THREE.Vector3(1, 0, 0);
     this._v = new THREE.Vector3(); this._l = new THREE.Vector3(); this._u = new THREE.Vector3();
+    this.free = { yaw: 0, pitch: 0.35, dist: 12 };   // 自由カメラ(リプレイで指やマウスで動かす)
   }
+  // 自由カメラは、追う艇の斜め後ろ・少し上から始める(そこから指で回り込む)
+  startFree(b) { this.free.yaw = b.h + Math.PI + 0.5; this.free.pitch = 0.32; this.free.dist = 13; }
+  orbitBy(dx, dy) { this.free.yaw += dx * 0.008; this.free.pitch = clamp(this.free.pitch + dy * 0.006, 0.04, 1.45); }
+  zoomBy(k) { this.free.dist = clamp(this.free.dist * k, 3, 120); }
   reset() { this.init = false; this.tv = -1; this.shake = 0; }
   bump(s) { this.shake = Math.min(1.4, this.shake + s); }
 
@@ -80,6 +85,12 @@ export class CameraRig {
       if (!this.init) { this.pos.copy(V); this.look.copy(Lk); }
       this.pos.lerp(V, 1 - Math.exp(-dt * 4)); this.look.lerp(Lk, 1 - Math.exp(-dt * 8));
       fov = 46;
+    } else if (mode === CAM.FREE) {
+      const F = this.free, cp = Math.cos(F.pitch);
+      V.set(b.x + Math.cos(F.yaw) * cp * F.dist, 0.6 + Math.sin(F.pitch) * F.dist, b.z + Math.sin(F.yaw) * cp * F.dist); Lk.set(b.x, 0.6, b.z);
+      if (!this.init) { this.pos.copy(V); this.look.copy(Lk); }
+      this.pos.lerp(V, 1 - Math.exp(-dt * 10)); this.look.lerp(Lk, 1 - Math.exp(-dt * 12));
+      fov = 55;
     } else if (mode === CAM.FLY) {
       // 会場をゆっくり見せる空撮
       const a = time * 0.07;

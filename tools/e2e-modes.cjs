@@ -17,7 +17,7 @@ const S = process.env.OUT || require('os').tmpdir();   // スクリーンショ�
   const bot = () => p.evaluate(() => { window.__game.G.debugInput = (race) => { const a = race.player.advice; return { steer: a.steer, throttle: a.throttle, brake: 0 }; }; });
   const run = (sec, until) => p.evaluate(([sec, until]) => {
     const g = window.__game; let n = 0;
-    while (n < sec * 60 && !(until && g.G.state === until)) { g.step(1 / 60); n++; }
+    while (n < sec * 60 && !(until && (until === 'replay-end' ? g.G.rp && g.G.race.clock >= g.G.rp.end - 1e-3 : g.G.state === until))) { g.step(1 / 60); n++; }
     const r = g.race, b = r.player || r.order[0];
     return { state: g.G.state, rs: r.state, clock: +r.clock.toFixed(2), lap: b.lap, rank: b.rank, st: b.st === null ? null : +b.st.toFixed(3), x: +b.x.toFixed(2), z: +b.z.toFixed(2), place: b.place, fin: +b.finishTime.toFixed(3), lift: b.advice && b.advice.lift };
   }, [sec, until]);
@@ -39,7 +39,9 @@ const S = process.env.OUT || require('os').tmpdir();   // スクリーンショ�
     // リプレイが同じ結果になるか
     await p.click('#btn-replay');
     if (process.env.SHOT) { await run(22); await shot('replay'); }
-    const rp = await run(300, 'result'); console.log('replay end', JSON.stringify(rp));
+    const rp = await run(300, 'replay-end'); console.log('replay end', JSON.stringify(rp));
+    await p.evaluate(() => document.getElementById('btn-replay-end').click());
+    require('assert/strict').equal(await p.evaluate(() => window.__game.G.state), 'result', 'replay end button returns to the result');
     require('assert/strict').equal(rp.fin, end.fin, 'replay finish time must match');
     require('assert/strict').equal(rp.st, end.st, 'replay start time must match');
     const same = await p.evaluate(() => { const r = window.__game.race; return r.order.map((b) => `${b.num}:${b.finishTime.toFixed(3)}`).join(' '); });

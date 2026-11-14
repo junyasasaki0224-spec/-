@@ -1,4 +1,4 @@
-import { Race, makeConfig, mulberry32 } from './sim/race.js';
+import { Race, makeConfig, mulberry32, DT, PRE_TIME } from './sim/race.js';
 import { VMAX, TILTS } from './sim/physics.js';
 import { clamp, LAPS } from './sim/course.js';
 import { ROSTER, PLAYER, POINTS, windLabel, randomWeather } from './sim/roster.js';
@@ -33,7 +33,7 @@ window.addEventListener('resize', () => { stage.resize(); hud.resize(); });
 // ---------------- ゲーム状態 ----------------
 const G = {
   state: 'loading',        // loading | title | race | result | replay
-  paused: false, race: null, cfg: null, gp: null, replayData: null,
+  paused: false, race: null, cfg: null, gp: null, replayData: null, rp: null,
   camMode: CAM.CHASE, replayCam: CAM.TV, follow: -1,
   time: 0, introT: 0, resultT: -1, attractT: 0, replayEndT: -1, lastTick: 0, cheer: 0.25,
   crossed: false, debugInput: null,
@@ -253,18 +253,126 @@ function nextAfterResult() {
 }
 
 // ---------------- リプレイ ----------------
+// 記録した入力でレースをもう一度計算して見せる。見たい所へ飛ぶ時は、最初から計算し直してその時刻まで進める
+const RP_CAMS = [CAM.TV, CAM.CHASE, CAM.CLOSE, CAM.ONBOARD, CAM.TOP, CAM.FREE];
+const RP_CAM_LABEL = { [CAM.TV]: '中継', [CAM.CHASE]: '追尾', [CAM.CLOSE]: '接近', [CAM.ONBOARD]: 'オンボード', [CAM.TOP]: '上空', [CAM.FREE]: '自由' };
+const RP_SPEEDS = [1, 0.5, 0.25, 2];
+const fmtClock = (t) => (t < 0 ? '-' : '') + fmtTime(Math.abs(t));
+
+// 最後まで一度計算して、長さと見どころ(スタート・1周1マーク・各周回・ゴール・沈没など)を集める
+function scanReplay({ cfg, inputs }) {
+  const r = new Race(cfg, inputs), ch = [], seen = new Set(), recEnd = inputs.length / 3 * DT - PRE_TIME;
+  const add = (key, label, t) => { if (!seen.has(key)) { seen.add(key); ch.push({ label, t: Math.max(-PRE_TIME, t) }); } };
+  add('start', 'スタート', -4);
+  while (r.state !== 'done' && r.clock < Math.max(recEnd + 15, 20) && r.clock < 400) {
+    r.step(DT, null);
+    for (const e of r.events) {
+      const b = r.boats[e.boat];
+      if (e.type === 'turn1') add('t1', '1周1マーク', r.clock - 3);
+      else if (e.type === 'lap' && b.rank === 1) add('lap' + e.lap, e.lap === LAPS ? '最終周回' : `${e.lap}周目`, r.clock - 2);
+      else if (e.type === 'finish' && e.place === 1) add('goal', 'ゴール', r.clock - 4);
+      if (e.type === 'finish' && b.isPlayer && e.place !== 1) add('pgoal', 'あなたのゴール', r.clock - 3);
+      if (e.type === 'sink') add('sink' + e.boat, b.isPlayer ? 'あなたの沈没' : `${b.num}号艇 沈没`, r.clock - 3);
+      if (e.type === 'flying' && b.isPlayer) add('pf', 'あなたのフライング', r.clock - 3);
+    }
+    r.events.length = 0;
+  }
+  return { start: -PRE_TIME, end: r.clock, chapters: ch.sort((a, b) => a.t - b.t) };
+}
+
 function startReplay() {
   if (!G.replayData) return;
   audio.click();
   applyRace(new Race(G.replayData.cfg, G.replayData.inputs));
-  G.state = 'replay'; G.paused = false; G.follow = G.race.playerIndex;
+  G.state = 'replay'; G.paused = false; G.follow = G.race.playerIndex; G.replayCam = CAM.TV;
+  G.rp = { ...scanReplay(G.replayData), playing: true, speed: 1, dragging: false, t: 0, shown: '' };
+  buildReplayUi();
   closeOverlays(); hud.show(true, true);
   document.body.classList.remove('playing');
-  hud.say('リプレイ　C: カメラ切替　1〜6: 追う艇を変える', 4);
+  hud.say('画面をドラッグすると、好きな角度から見られます', 3.5);
 }
 function endReplay() {
   if (G.state !== 'replay') return;
+  G.rp = null;
   G.state = 'result'; hud.show(false); show('result', true);
+}
+// 時刻 t(レースの時計)へ飛ぶ
+function seekReplay(t) {
+  const rp = G.rp; if (!rp) return;
+  t = clamp(t, rp.start, rp.end);
+  let r = G.race;
+  if (t < r.clock - 1e-6) r = G.race = new Race(G.replayData.cfg, G.replayData.inputs);
+  while (r.clock < t - 1e-9 && r.state !== 'done') { r.step(DT, null); r.events.length = 0; }
+  r.acc = 0;
+  stage.spray.clear(); rig.reset(); G.lastTick = Math.ceil(-r.clock);
+  updateReplayUi();
+}
+function replayPlay(on) {
+  const rp = G.rp; if (!rp) return;
+  if (on && G.race.clock >= rp.end - 1e-3) seekReplay(rp.start);    // 最後まで見たら最初から
+  rp.playing = on; updateReplayUi();
+}
+function replayCam(mode) {
+  const target = G.race.boats[G.follow] || G.race.order[0];
+  if (mode === CAM.FREE && G.replayCam !== CAM.FREE) rig.startFree(target);
+  G.replayCam = mode; if (mode !== CAM.FREE) rig.reset();
+  updateReplayUi();
+}
+const rpEl = {};
+function buildReplayUi() {
+  const rp = G.rp, span = rp.end - rp.start;
+  for (const id of ['rp-seek', 'rp-time', 'rp-total', 'rp-play', 'rp-speed', 'rp-cam', 'rp-boats', 'rp-chapters', 'rp-marks']) rpEl[id] = $(id);
+  rpEl['rp-chapters'].innerHTML = rp.chapters.map((c, k) => `<button data-k="${k}">${c.label}</button>`).join('');
+  rpEl['rp-marks'].innerHTML = rp.chapters.map((c) => `<i style="left:${((c.t - rp.start) / span * 100).toFixed(2)}%"></i>`).join('');
+  rpEl['rp-total'].textContent = fmtClock(rp.end);
+  rpEl['rp-boats'].innerHTML = G.race.boats.map((b, i) => `<button data-i="${i}" title="${b.num}号艇 ${b.racer.name}を追う" style="background:${BOAT_CSS[i]};color:${BOAT_TEXT_CSS[i]}">${b.num}</button>`).join('');
+  updateReplayUi();
+}
+function updateReplayUi() {
+  const rp = G.rp; if (!rp || !rpEl['rp-seek']) return;
+  const span = rp.end - rp.start;
+  if (!rp.dragging) rpEl['rp-seek'].value = Math.round((G.race.clock - rp.start) / span * 1000);
+  const t = rp.dragging ? rp.start + rpEl['rp-seek'].value / 1000 * span : G.race.clock;
+  const txt = fmtClock(t);
+  if (txt !== rp.shown) { rp.shown = txt; rpEl['rp-time'].textContent = txt; }
+  rpEl['rp-play'].textContent = rp.playing ? '❚❚' : '▶';
+  rpEl['rp-speed'].textContent = `${rp.speed}×`;
+  rpEl['rp-cam'].textContent = RP_CAM_LABEL[G.replayCam] || '中継';
+  rpEl['rp-boats'].querySelectorAll('button').forEach((b, i) => b.classList.toggle('sel', i === G.follow));
+}
+function bindReplayUi() {
+  const seek = $('rp-seek');
+  seek.addEventListener('input', () => { if (G.rp) { G.rp.dragging = true; updateReplayUi(); } });
+  seek.addEventListener('change', () => { if (!G.rp) return; const rp = G.rp; rp.dragging = false; seekReplay(rp.start + seek.value / 1000 * (rp.end - rp.start)); });
+  $('rp-chapters').addEventListener('click', (e) => { const k = e.target.closest('button')?.dataset.k; if (k !== undefined && G.rp) { seekReplay(G.rp.chapters[+k].t); G.rp.playing = true; updateReplayUi(); } });
+  $('rp-boats').addEventListener('click', (e) => { const i = e.target.closest('button')?.dataset.i; if (i !== undefined) { G.follow = +i; if (G.replayCam !== CAM.FREE) rig.reset(); updateReplayUi(); } });
+  $('rp-play').addEventListener('click', () => replayPlay(!G.rp?.playing));
+  $('rp-back').addEventListener('click', () => G.rp && seekReplay(G.race.clock - 5));
+  $('rp-fwd').addEventListener('click', () => G.rp && seekReplay(G.race.clock + 5));
+  $('rp-step').addEventListener('click', () => { if (!G.rp) return; G.rp.playing = false; seekReplay(G.race.clock + 1 / 30); });
+  $('rp-speed').addEventListener('click', () => { if (!G.rp) return; G.rp.speed = RP_SPEEDS[(RP_SPEEDS.indexOf(G.rp.speed) + 1) % RP_SPEEDS.length]; updateReplayUi(); });
+  $('rp-cam').addEventListener('click', () => cycleCam());
+  $('rp-exit').addEventListener('click', endReplay);
+  // 画面をドラッグ: 自由カメラで回り込む。2本指で広げる/縮める・ホイールで寄る/引く
+  const ptrs = new Map();
+  const onCanvas = (e) => G.state === 'replay' && e.target && (e.target.id === 'gl' || e.target.id === 'fx');
+  window.addEventListener('pointerdown', (e) => { if (onCanvas(e)) ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); });
+  window.addEventListener('pointermove', (e) => {
+    const p = ptrs.get(e.pointerId); if (!p || G.state !== 'replay') return;
+    if (ptrs.size === 1) {
+      const dx = e.clientX - p.x, dy = e.clientY - p.y;
+      if (Math.abs(dx) + Math.abs(dy) > 0) { if (G.replayCam !== CAM.FREE) replayCam(CAM.FREE); rig.orbitBy(dx, dy); }
+    } else if (ptrs.size === 2) {
+      const [a, b] = [...ptrs.values()], d0 = Math.hypot(a.x - b.x, a.y - b.y);
+      p.x = e.clientX; p.y = e.clientY;
+      const d1 = Math.hypot(a.x - b.x, a.y - b.y);
+      if (d0 > 10 && d1 > 10) { if (G.replayCam !== CAM.FREE) replayCam(CAM.FREE); rig.zoomBy(d0 / d1); }
+      return;
+    }
+    p.x = e.clientX; p.y = e.clientY;
+  });
+  for (const ev of ['pointerup', 'pointercancel']) window.addEventListener(ev, (e) => ptrs.delete(e.pointerId));
+  window.addEventListener('wheel', (e) => { if (!onCanvas(e)) return; if (G.replayCam !== CAM.FREE) replayCam(CAM.FREE); rig.zoomBy(1 + clamp(e.deltaY, -200, 200) * 0.0015); }, { passive: true });
 }
 
 // ---------------- イベント処理 ----------------
@@ -335,7 +443,6 @@ function handleEvents() {
       case 'done':
         if (G.state === 'result') renderResultTable();
         else if (G.state === 'title') G.attractT = 7;
-        else if (G.state === 'replay') G.replayEndT = 2.5;
         else if (pl && G.resultT < 0) G.resultT = race.mode === 'practice' ? 0.9 : 0.5;
         break;
     }
@@ -377,7 +484,9 @@ function step(dt) {
   const target = replay ? race.boats[G.follow] || race.order[0] : pl || race.order[0];
   if (!G.paused) {
     G.time += dt; G.introT += dt;
-    race.update(dt, live ? (G.debugInput ? G.debugInput(race) : input.get()) : null);
+    const sdt = replay && G.rp ? (G.rp.playing ? dt * G.rp.speed : 0) : dt;   // リプレイの再生速度(止めている時は0)
+    if (replay && G.rp) G.rp.t += sdt;
+    race.update(sdt, live ? (G.debugInput ? G.debugInput(race) : input.get()) : null);
     handleEvents();
 
     if ((live || replay) && race.clock < 0) {      // カウントダウン音
@@ -386,9 +495,9 @@ function step(dt) {
     }
     if (G.resultT >= 0 && live) { G.resultT -= dt; if (G.resultT < 0) showResult(); }
     if (G.state === 'title' && race.state === 'done') { G.attractT -= dt; if (G.attractT <= 0) applyRace(new Race(makeConfig({ env: S.env, weather: program.weather }))); }
-    if (replay) {
-      if (G.replayEndT < 0 && pl && (pl.out || pl.finished) && race.mode !== 'practice') G.replayEndT = pl.out ? 4 : 5;
-      if (G.replayEndT >= 0) { G.replayEndT -= dt; if (G.replayEndT < 0) endReplay(); }
+    if (replay && G.rp) {           // 最後まで来たら止める(リプレイを終わるかどうかは自分で選ぶ)
+      if (G.rp.playing && race.clock >= G.rp.end - 1e-3) G.rp.playing = false;
+      updateReplayUi();
     }
 
     // 観客の盛り上がり
@@ -401,7 +510,7 @@ function step(dt) {
 
     if (race !== upd.race) { upd.race = race; upd.names = race.boats.map((b) => b.racer.name); upd.title = race.cfg.title; }
     upd.cheer = cheer > 0.8 ? 1 : 0; upd.guideBoat = pl; upd.guide = S.guide && live;
-    stage.update(dt, G.time, race, upd);
+    stage.update(sdt, replay && G.rp ? G.rp.t : G.time, race, upd);
     for (let i = 0; i < 6; i++) {
       const v = views[i];
       if (v.slapped > 0) { if (race.boats[i] === target && (live || replay)) audio.slap(Math.min(0.3, v.slapped * 0.5)); v.slapped = 0; }
@@ -458,6 +567,7 @@ function bindUi() {
   click('btn-next', nextAfterResult);
   click('btn-replay', startReplay);
   click('btn-replay-end', endReplay);
+  bindReplayUi();
   click('btn-title', () => { audio.click(); if (S.mode === 'gp') { G.gp = null; program = null; S.mode = 'single'; save(); } else newProgram(); toTitle(); });
   click('btn-resume', () => setPaused(false));
   click('btn-restart', () => { if (S.mode === 'gp') { setPaused(false); return; } retry(); });
@@ -483,7 +593,7 @@ function bindUi() {
   }
 }
 function cycleCam() {
-  if (G.state === 'replay') { G.replayCam = G.replayCam === CAM.TV ? CAM.CHASE : G.replayCam === CAM.CHASE ? CAM.TOP : CAM.TV; rig.reset(); hud.say(CAM_NAMES[G.replayCam], 1.2); return; }
+  if (G.state === 'replay') { replayCam(RP_CAMS[(RP_CAMS.indexOf(G.replayCam) + 1) % RP_CAMS.length]); hud.say(CAM_NAMES[G.replayCam], 1.2); return; }
   G.camMode = (G.camMode + 1) % 5; rig.reset();
   if (G.state === 'race') hud.say(CAM_NAMES[G.camMode], 1.2);
 }
@@ -494,6 +604,12 @@ input.onKey = (code) => {
   if (code === 'Escape' && overlay) { show('howto', false); show('settings', false); return; }
   if (overlay || G.state === 'loading') return;
   if (G.state === 'opening') { if (code === 'KeyM') toggleMute(); else if (code === 'Enter' || code === 'Escape' || code === 'Space') finishOpening(); return; }
+  if (G.state === 'replay' && G.rp) {
+    if (code === 'Space') { replayPlay(!G.rp.playing); return; }
+    if (code === 'ArrowLeft') { seekReplay(G.race.clock - 5); return; }
+    if (code === 'ArrowRight') { seekReplay(G.race.clock + 5); return; }
+    if (code === 'Period') { G.rp.playing = false; seekReplay(G.race.clock + 1 / 30); return; }
+  }
   if (code === 'KeyC') cycleCam();
   else if (code === 'KeyM') toggleMute();
   else if (code === 'Escape' || code === 'KeyP') { if (G.state === 'replay') endReplay(); else setPaused(!G.paused); }
@@ -517,7 +633,7 @@ stage.init().then(() => {
   if (!S.seenHowto) show('howto', true);
   requestAnimationFrame(frame);
   // デバッグ/自動テスト用
-  window.__game = { G, S, audio, step, finishOpening, startRace, toTitle, startReplay, showResult, stage, rig, camera, get race() { return G.race; } };
+  window.__game = { G, S, audio, step, seekReplay, finishOpening, startRace, toTitle, startReplay, showResult, stage, rig, camera, get race() { return G.race; } };
 }).catch((e) => {
   console.error(e);
   $('loading').innerHTML = '<div><b>読み込みに失敗しました</b><span>WebGL2 に対応したブラウザで開いてください</span></div>';
