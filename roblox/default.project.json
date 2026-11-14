@@ -6,6 +6,9 @@
       "BoatPhysics": {
         "$path": "src/BoatPhysics.lua"
       },
+      "Spectator": {
+        "$path": "src/Spectator.lua"
+      },
       "Reconciliation": {
         "$path": "src/Reconciliation.lua"
       },
@@ -50,6 +53,16 @@
         "Controls": {
           "$path": "src/Controls.client.lua"
         }
+      },
+      "$properties": {
+        "DevTouchMovementMode": "Scriptable",
+        "DevComputerMovementMode": "Scriptable"
+      }
+    },
+    "StarterGui": {
+      "$className": "StarterGui",
+      "$properties": {
+        "ScreenOrientation": "Sensor"
       }
     }
   }

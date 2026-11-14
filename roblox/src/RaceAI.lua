@@ -25,7 +25,7 @@ end
 local function countInside(b, boats, markZ)
     local n = 0
     for _,other in ipairs(boats) do
-        if other ~= b and math.abs(other.x-b.x)<7 and distance(other.x-b.x,other.z-b.z)<28 and math.abs(other.z-markZ)<math.abs(b.z-markZ) then n=n+1 end
+        if other ~= b and not other.out and math.abs(other.x-b.x)<7 and distance(other.x-b.x,other.z-b.z)<28 and math.abs(other.z-markZ)<math.abs(b.z-markZ) then n=n+1 end
     end
     return n
 end
@@ -34,7 +34,7 @@ local function makePlan(b, mark, boats)
     local sign=mark==1 and 1 or -1
     local mx,mz=mark==1 and 150 or -150,mark==1 and 8 or 0
     local u0,v0=(b.x-mx)*sign,(b.z-mz)*sign
-    local maxV=(mark==1 and 79-mz or mz+79)-5
+    local maxV=(mark==1 and 58-mz or mz+78)-5
     local n=countInside(b,boats,mz)
     local approach,close,exit
     if ai.firstTurn and mark==1 then
@@ -63,7 +63,7 @@ local function makePlan(b, mark, boats)
     for i=0,14 do local th=pi*i/14; push(ux+rho*math.sin(th),center+rho*math.cos(th)) end
     local vEnd=center-rho
     for u=ux-5,-175,-5 do push(u,lerp(vEnd,-math.max(exit,-vEnd),smooth((ux-u)/60))) end
-    ai.plan={xs=xs,zs=zs,turnStart=turnStart,ux=ux,sign=sign,mx=mx,vArc=math.sqrt(GRIP_USE*GRIP*ai.skill*(b.gripSet or 1)*rho)}
+    ai.plan={xs=xs,zs=zs,turnStart=turnStart,ux=ux,sign=sign,mx=mx,mz=mz,vArc=math.sqrt(GRIP_USE*GRIP*ai.skill*(b.gripSet or 1)*rho)}
     ai.planMark=mark
     local best=math.huge
     for i=1,#xs do
@@ -83,7 +83,7 @@ local function timeToCover(distanceLeft, velocity, boat)
     end
     return t-(d-distanceLeft)/math.max(velocity,0.1)
 end
-function AI.update(b, boats, clock, dt)
+function AI.update(b, boats, clock, dt, units)
     local ai=b.ai
     ai.wob=ai.wob+dt
     if not b.started then
@@ -103,7 +103,7 @@ function AI.update(b, boats, clock, dt)
     if ai.firstTurn and b.checkpoint==0 and ai.lane>0 and b.x>20 and b.x<100 then
         local inner={}
         for _,other in ipairs(boats) do
-            if other~=b and not other.flying and other.started and other.z<b.z then inner[#inner+1]=other end
+            if other~=b and not other.out and other.started and other.z<b.z then inner[#inner+1]=other end
         end
         table.sort(inner,function(a,c) return a.z>c.z end)
         local beaten=0
@@ -149,7 +149,7 @@ function AI.update(b, boats, clock, dt)
     local dodge=0
     if b.checkpoint==0 or b.checkpoint==3 then
         for _,other in ipairs(boats) do
-            if other~=b then
+            if other~=b and not other.out then
                 local rx,rz=other.x-b.x,other.z-b.z
                 local ahead,side=rx*ch+rz*sh,-rx*sh+rz*ch
                 if ahead>0.5 and ahead<12 and math.abs(side)<3.2 and b.speed>other.speed-1 then dodge=side>0 and -3.2 or 3.2 end
@@ -157,7 +157,29 @@ function AI.update(b, boats, clock, dt)
         end
     end
     ai.dodge=ai.dodge+clamp(dodge-ai.dodge,-7*dt,7*dt)
-    tx,tz=clamp(tx-sh*ai.dodge,-270,270),clamp(tz+ch*ai.dodge,-75,75)
+    tx,tz=clamp(tx-sh*ai.dodge,-258,248),clamp(tz+ch*ai.dodge,-74,54)
+    local ox,oz = b.x+1.05*ch, b.z+1.05*sh
+    local mx,mz = plan.mx-ox,plan.mz-oz
+    local d = distance(mx,mz)
+    if uNow < 1.5 and d > 2 and d < 45 then
+        local alpha,beta = math.asin(2/d), math.atan2(mz,mx)
+        local delta = wrap(math.atan2(tz-oz,tx-ox)-beta)
+        if delta < alpha and delta > -alpha*0.5 then
+            local reach = distance(tx-ox,tz-oz)
+            tx,tz = ox+math.cos(beta+alpha)*reach,oz+math.sin(beta+alpha)*reach
+        end
+    end
+    for _,u in ipairs(units) do
+        local rx,rz = tx-u.x,tz-u.z
+        if math.abs(rx*u.dx+rz*u.dz) <= u.length/2+2 then
+            local lateral = -rx*u.dz+rz*u.dx
+            local side = -(b.x-u.x)*u.dz+(b.z-u.z)*u.dx >= 0 and 1 or -1
+            if side*lateral < 2.6 then
+                local push = 2.6*side-lateral
+                tx,tz = tx-u.dz*push,tz+u.dx*push
+            end
+        end
+    end
     local dx,dz=tx-b.x,tz-b.z
     local dist=math.max(distance(dx,dz),0.001)
     local err=wrap(math.atan2(dz,dx)-b.h)
@@ -173,7 +195,7 @@ function AI.update(b, boats, clock, dt)
         if b.speed*b.speed-entry*entry>2*6.2*dTurn then throttle=dTurn>TURN_IN and 0.05 or ARC_THR end
     end
     for _,other in ipairs(boats) do
-        if other~=b then
+        if other~=b and not other.out then
             local rx,rz=other.x-b.x,other.z-b.z
             local ahead,side=rx*ch+rz*sh,-rx*sh+rz*ch
             if ahead>0.3 and ahead<6 and math.abs(side)<3.2 then throttle=math.min(throttle,0.25+0.1*ahead) end

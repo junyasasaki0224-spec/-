@@ -6,6 +6,7 @@ local inertia = 1.25
 local restitution = 0.25
 
 local function collide(a, b)
+    if a.out or b.out then return end
     local dx, dz = b.x - a.x, b.z - a.z
     if dx * dx + dz * dz > 18 then return end
 
@@ -65,9 +66,33 @@ local obstacles = {
     {x = 0, z = 4, radius = 0.6, softness = 1},
 }
 
-local function collideObstacles(boat)
+local units = {}
+local length = math.sqrt(300^2 + 8^2)
+for side, mark in ipairs({obstacles[1], obstacles[2]}) do
+    local sign = side == 1 and -1 or 1
+    local dx, dz = sign*300/length, sign*8/length
+    local unit = {x=mark.x+11*dx, z=mark.z+11*dz, dx=dx, dz=dz, length=18, width=0.9}
+    table.insert(units, unit)
+    for i = 0, 23 do
+        local t = -8.55 + 17.1*i/23
+        table.insert(obstacles, {x=unit.x+t*dx,z=unit.z+t*dz,radius=0.45,softness=1,unit=true})
+    end
+end
+
+local function disqualify(boat, reason, clock)
+    if boat.finished or boat.out then return end
+    boat.out, boat.outAt = reason, clock
+    boat.flying, boat.sunk = reason == "F", reason == "沈"
+    boat.vx, boat.vz, boat.w, boat.speed = 0, 0, 0, 0
+    boat.throttle, boat.steer = 0, 0
+end
+
+local function collideObstacles(boat, clock)
+    if boat.out then return end
+    local power, threshold = 0, 2
     local ch, sh = math.cos(boat.h), math.sin(boat.h)
     for _, obstacle in ipairs(obstacles) do
+        if (boat.x-obstacle.x)^2+(boat.z-obstacle.z)^2 > 9 then continue end
         for _, offset in ipairs(offsets) do
             local dx = boat.x + ch * offset - obstacle.x
             local dz = boat.z + sh * offset - obstacle.z
@@ -80,6 +105,9 @@ local function collideObstacles(boat)
                 boat.x, boat.z = boat.x + nx * penetration, boat.z + nz * penetration
                 local normalSpeed = boat.vx * nx + boat.vz * nz
                 if normalSpeed < 0 then
+                    if -normalSpeed > power then
+                        power, threshold = -normalSpeed, obstacle.unit and 3.5 or 2
+                    end
                     local rebound = obstacle.softness == 1 and 1.2 or 0.6
                     boat.vx = (boat.vx - rebound * normalSpeed * nx) * 0.985
                     boat.vz = (boat.vz - rebound * normalSpeed * nz) * 0.985
@@ -88,6 +116,27 @@ local function collideObstacles(boat)
             end
         end
     end
+    if boat.started and power >= threshold then disqualify(boat,"沈",clock) end
 end
 
-return {boats = collide, obstacles = collideObstacles}
+local function walls(b, clock)
+    if b.out then return end
+    local impact = 0
+    if b.x < -261 or b.x > 251 then
+        if (b.x < -261 and b.vx < 0) or (b.x > 251 and b.vx > 0) then
+            impact = math.abs(b.vx)
+            b.vx, b.vz = -0.3*b.vx, 0.8*b.vz
+        end
+        b.x = math.clamp(b.x,-261,251)
+    end
+    if b.z < -77 or b.z > 57 then
+        if (b.z < -77 and b.vz < 0) or (b.z > 57 and b.vz > 0) then
+            impact = math.max(impact,math.abs(b.vz))
+            b.vz, b.vx = -0.3*b.vz, 0.8*b.vx
+        end
+        b.z = math.clamp(b.z,-77,57)
+    end
+    if b.started and impact >= 7 then disqualify(b,"沈",clock) end
+end
+
+return {boats=collide, obstacles=collideObstacles, walls=walls, units=units, disqualify=disqualify}
