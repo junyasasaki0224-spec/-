@@ -49,6 +49,15 @@ export class Hud {
     this.msg.innerHTML = `<b>${text}</b>${sub ? `<span>${sub}</span>` : ''}`;
     this.msg.className = 'show ' + cls; this.msgT = dur;
   }
+  // 大時計の枠を数回光らせる(カウントが始まった合図)
+  flashStart() { this.startbox.classList.remove('flash'); void this.startbox.offsetWidth; this.startbox.classList.add('flash'); }
+  // 画面のふちを光らせる(kind: 'gold' = カウント / 'go' = スタート)。strength 0〜1
+  pulse(kind, strength = 0.5) {
+    const el = this.pulseEl || (this.pulseEl = document.getElementById('pulse'));
+    if (!el) return;
+    el.style.setProperty('--p', String(strength));
+    el.className = ''; void el.offsetWidth; el.className = kind;
+  }
   say(text, dur = 3) { this.ticker.textContent = text; this.ticker.className = 'show'; this.tickT = dur; }
 
   addDrops(n, strong = false) {

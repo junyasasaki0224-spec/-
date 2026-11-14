@@ -69,7 +69,7 @@ function applyRace(race) {
   race.boats.forEach((b, i) => views[i].setRacer(b.racer));
   hud.setWeather(race.cfg.weather);
   stage.spray.clear(); rig.reset();
-  G.lastTick = -99; G.resultT = -1; G.replayEndT = -1; G.introT = 0; G.crossed = false;
+  G.lastTick = -99; G.resultT = -1; G.replayEndT = -1; G.introT = 0; G.crossed = false; G.countShown = false;
   leaveSpectate();
 }
 
@@ -254,6 +254,8 @@ function nextAfterResult() {
   } else retry();
 }
 
+const CLOCK_SHOT = 2.2;          // 大時計を映す秒数
+
 // ---------------- リプレイ ----------------
 // 記録した入力でレースをもう一度計算して見せる。見たい所へ飛ぶ時は、最初から計算し直してその時刻まで進める
 const RP_CAMS = [CAM.TV, CAM.CHASE, CAM.CLOSE, CAM.ONBOARD, CAM.TOP, CAM.FREE];
@@ -424,7 +426,10 @@ function handleEvents() {
   const me = G.spec ? null : pl;      // 自分あての知らせ(観戦中は出さない)
   for (const e of race.events) {
     switch (e.type) {
-      case 'go': if (audible) audio.tick(true); break;
+      case 'go':
+        if (audible) audio.tick(true);
+        if (live) { hud.pulse('go', 1); audio.startHorn(); }
+        break;
       case 'cross':
         if (pl && e.boat === pl.i) {
           const st = e.st;
@@ -532,9 +537,18 @@ function step(dt) {
     race.update(sdt, live ? (G.debugInput ? G.debugInput(race) : input.get()) : null);
     handleEvents();
 
+    // スタートの合図(文字ではなく演出で): 大時計が回り始めたら大時計を映し、枠を光らせる。
+    // 残り5秒からは毎秒、画面のふちが金色に脈打ち(0秒に近いほど強く)、0秒で緑に光ってホーンが鳴る
+    if (live && race.state === 'pre' && !G.countShown) {
+      G.countShown = true; G.introT = -CLOCK_SHOT;       // 大時計を映し終えたら、上空から自艇の後ろへ降りる
+      hud.flashStart(); hud.pulse('gold', 0.55);
+    }
     if ((live || replay) && race.clock < 0) {      // カウントダウン音
       const s = Math.ceil(-race.clock);
-      if (s <= 3 && s !== G.lastTick) { G.lastTick = s; audio.tick(false); }
+      if (s <= 5 && s !== G.lastTick) {
+        G.lastTick = s; audio.tick(false);
+        if (live) hud.pulse('gold', 0.3 + (5 - s) * 0.15);
+      }
     }
     if (G.resultT >= 0 && live) { G.resultT -= dt; if (G.resultT < 0) showResult(); }
     if (G.specT >= 0 && live) { G.specT -= dt; if (G.specT < 0) enterSpectate(); }
@@ -565,6 +579,7 @@ function step(dt) {
     if (G.state === 'title') mode = (Math.floor(G.time / 11) % 3 === 1 || race.state === 'pre') ? CAM.FLY : CAM.TV;
     else if (G.state === 'result') mode = CAM.ORBIT;
     else if (target.sunk) mode = CAM.ORBIT;        // 沈んだ艇は少し離れて回りから映す
+    else if (live && G.introT < 0 && race.state === 'pre') mode = CAM.CLOCK;   // 大時計が回り始めた所を映す
     else mode = replay ? G.replayCam : G.spec ? G.spec.cam : G.camMode;
     if (G.spec) updateSpecUi();
     rig.shakeOn = S.shake;

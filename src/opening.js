@@ -71,6 +71,7 @@ export class Opening {
     this.race = { ...race, boats: this.boats, order: this.boats };
     this.playerIndex = race.playerIndex >= 0 ? race.playerIndex : 0;
     this.prevH = this.targets.map(() => 0);
+    this.wS = this.targets.map(() => 0);           // なめらかにした旋回の速さ
     this.sample(0, 0);
   }
   advance(dt) { this.elapsed = Math.min(this.duration, this.elapsed + dt); this.sample(this.elapsed, dt); return this.elapsed >= this.duration; }
@@ -88,14 +89,17 @@ export class Opening {
   pos(i, time) { const d = this.dist(i, time), p = at(this.routes[i], d.s); return { u: d.u, x: p[0], z: p[1], v: d.v }; }
   sample(time, dt) {
     for (let i = 0; i < 6; i++) {
-      const b = this.boats[i], g = this.targets[i], p = this.pos(i, time);
-      const q = at(this.routes[i], this.dist(i, time).s + 0.6);
-      const dx = q[0] - p.x, dz = q[1] - p.z;
+      const b = this.boats[i], g = this.targets[i], p = this.pos(i, time), s0 = this.dist(i, time).s;
+      // 向きは前後 3m の点から求める(2m ごとの折れ線の角で向きが跳ねないように)
+      const q = at(this.routes[i], s0 + 3), r = at(this.routes[i], s0 - 3);
+      const dx = q[0] - r[0], dz = q[1] - r[1];
       const done = p.u >= 1, moving = p.v > 0.05 && !done;
       b.x = done ? g.x : p.x; b.z = done ? g.z : p.z;
       const h = done ? g.h : Math.hypot(dx, dz) > 1e-4 ? Math.atan2(dz, dx) : this.prevH[i];
       let dh = h - this.prevH[i]; while (dh > Math.PI) dh -= 2 * Math.PI; while (dh < -Math.PI) dh += 2 * Math.PI;
-      b.w = dt > 0 && moving ? dh / dt : 0;          // 旋回の速さ(艇を傾ける・しぶきを出すのに使う)
+      const wRaw = dt > 0 && moving ? dh / dt : 0;
+      this.wS[i] += (wRaw - this.wS[i]) * Math.min(1, dt * 5);   // 直線から円に入る所で急に傾かないよう、なめらかにする
+      b.w = this.wS[i];                               // 旋回の速さ(艇を傾ける・しぶきを出すのに使う)
       b.h = h; this.prevH[i] = h;
       b.speed = moving ? p.v : 0;
       b.vx = Math.cos(b.h) * b.speed; b.vz = Math.sin(b.h) * b.speed;

@@ -5,12 +5,15 @@ for (const short of [false,true]) {
   const race = new Race(makeConfig({ seed: 42, playerLane: 2 }));
   const original = JSON.stringify(race);
   const opening = new Opening(race,short);
+  const prevW = opening.boats.map(() => 0); let jump = 0;
   for (let i=0;i<opening.duration*60;i++) {
     opening.advance(1/60);
+    opening.boats.forEach((b, k) => { jump = Math.max(jump, Math.abs(b.w - prevW[k])); prevW[k] = b.w; });
     assert.equal(JSON.stringify(race), original, 'presentation must never change simulation');
     for (const b of opening.boats) assert.ok(Number.isFinite(b.x+b.z+b.h+b.speed));
     for (const b of opening.audioBoats) assert.ok(b.speed <= 9 && b.throttle <= 0.25, "engines stay quiet under the music");
   }
+  assert.ok(jump < 0.5, `turning must be smooth (yaw-rate jump ${jump.toFixed(2)} rad/s per frame)`);
   const c = opening.clearance();
   assert.ok(c.obst > 3.5, `boats must stay clear of mark 2 and its boom (${c.obst.toFixed(2)}m)`);
   assert.ok(c.boat > 4, `boats must not overlap (${c.boat.toFixed(2)}m)`);
