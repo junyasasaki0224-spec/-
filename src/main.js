@@ -8,13 +8,14 @@ import { CameraRig, CAM, CAM_NAMES } from './gfx/camera.js';
 import { GameAudio } from './audio.js';
 import { Hud, fmtTime, chip } from './hud.js';
 import { Input } from './input.js';
+import { Opening } from './opening.js';
 
 const $ = (id) => document.getElementById(id);
 const show = (id, v) => $(id).classList.toggle('hidden', !v);
 
 // ---------------- 設定と記録(ブラウザに保存) ----------------
 const KEY = 'minato-gp-v2';
-const S = { quality: 'auto', volume: 0.8, guide: true, assist: true, shake: true, leverReturn: false, leverUp: 40, tilt: 1, difficulty: 1, env: 'day', lane: 0, mode: 'single', seenHowto: false, rec: { races: 0, wins: 0, bestST: null, bestTime: null, gpWins: 0 } };
+const S = { opening: true, quality: 'auto', volume: 0.8, guide: true, assist: true, shake: true, leverReturn: false, leverUp: 40, tilt: 1, difficulty: 1, env: 'day', lane: 0, mode: 'single', seenHowto: false, rec: { races: 0, wins: 0, bestST: null, bestTime: null, gpWins: 0 } };
 try { const o = JSON.parse(localStorage.getItem(KEY) || '{}'); Object.assign(S, o, { rec: Object.assign(S.rec, o.rec || {}) }); } catch (e) { /* 保存データなし */ }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* 保存できない環境 */ } };
 const isTouch = matchMedia('(pointer: coarse)').matches;
@@ -73,6 +74,23 @@ function applyRace(race) {
 
 function closeOverlays() { for (const id of ['title', 'result', 'pause', 'howto', 'settings']) show(id, false); }
 
+function finishOpening() {
+  if (G.state !== 'opening') return;
+  G.opening = null;
+  show('opening', false);
+  audio.stopOpening(1.5);
+  input.clear(true);
+  stage.spray.clear();
+  rig.reset();
+  G.introT = 0;
+  G.state = 'race';
+  document.body.classList.add('playing');
+  hud.show(true);
+  stage.update(0, G.time, G.race, { title: G.cfg.title });
+  hud.update(0, G.race, G.race.player, { assist: S.assist, guide: S.guide });
+  audio.fanfare();
+}
+
 function startRace() {
   audio.init(); audio.click();
   if (!program) newProgram();
@@ -82,7 +100,20 @@ function startRace() {
   closeOverlays();
   hud.show(true);
   document.body.classList.add('playing');
-  audio.fanfare();
+  if (S.opening && S.mode !== 'practice') {
+    G.state = 'opening';
+    hud.drops.length = 0;
+    hud.fctx.clearRect(0, 0, hud.fx.width, hud.fx.height);
+    $('opening-phase').textContent = '選手紹介';
+    $('opening-entry').classList.remove('hidden');
+    G.opening = new Opening(G.race, S.mode === 'gp' && G.gp.round > 0);
+    hud.show(false);
+    document.body.classList.remove('playing');
+    $('opening-title').textContent = `みなとグランプリ　${G.cfg.title}`;
+    $('opening-entry').innerHTML = G.race.boats.map((b, i) => `<div class="opening-racer" style="--delay:${i * 0.22}s">${chip(i)}<strong>${b.racer.name}</strong><span>${b.racer.cls}</span></div>`).join('');
+    show('opening', true);
+    audio.startOpening();
+  } else audio.fanfare();
   try { if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(() => {}); } catch (e) { /* 非対応 */ }
 }
 
@@ -92,6 +123,9 @@ function retry() {
 }
 
 function toTitle() {
+  audio.stopOpening(0);
+  G.opening = null;
+  show('opening', false);
   if (!program) newProgram();
   if (S.mode === 'gp' && !G.gp) startGp();
   G.state = 'title'; G.paused = false;
@@ -322,6 +356,20 @@ function frame(now) {
 }
 
 function step(dt) {
+  if (G.state === 'opening') {
+    if (document.hidden) return;
+    G.time += dt;
+    const opening = G.opening;
+    if (opening.advance(dt)) { finishOpening(); return; }
+    $('opening-phase').textContent = opening.phase;
+    $('opening-entry').classList.toggle('hidden', opening.elapsed >= (opening.short ? 1 : 8));
+    opening.camera(camera);
+    for (const v of views) v.setFirstPerson(false);
+    stage.update(dt, G.time, opening.race, { title: G.cfg.title });
+    focus = opening.boats[0];
+    audio.update(dt, opening.audioBoats, null, camera.position, rig.right, true, 0.25);
+    return;
+  }
   const race = G.race, live = G.state === 'race', replay = G.state === 'replay';
   const pl = race.player;
   const target = replay ? race.boats[G.follow] || race.order[0] : pl || race.order[0];
@@ -403,6 +451,8 @@ function bindUi() {
     stage.setEnv(S.env, G.cfg.weather); G.cfg.env = S.env; renderTitle();
   }));
   click('btn-start', startRace);
+  click('btn-opening-mute', toggleMute);
+  $('opening').addEventListener('click', (e) => { if (!e.target.closest('#btn-opening-mute')) finishOpening(); });
   click('btn-next', nextAfterResult);
   click('btn-replay', startReplay);
   click('btn-replay-end', endReplay);
@@ -418,7 +468,7 @@ function bindUi() {
   const openSettings = () => {
     audio.init(); audio.click();
     $('set-quality').value = S.quality; $('set-volume').value = Math.round(S.volume * 100);
-    $('set-guide').checked = S.guide; $('set-assist').checked = S.assist; $('set-shake').checked = S.shake; $('set-hold').checked = S.leverReturn; $('set-leverup').value = S.leverUp;
+    $('set-opening').checked = S.opening; $('set-guide').checked = S.guide; $('set-assist').checked = S.assist; $('set-shake').checked = S.shake; $('set-hold').checked = S.leverReturn; $('set-leverup').value = S.leverUp;
     show('settings', true);
   };
   click('btn-settings', openSettings); click('btn-pause-settings', openSettings);
@@ -426,7 +476,7 @@ function bindUi() {
   $('set-quality').addEventListener('change', (e) => { S.quality = e.target.value; save(); applySettings(); });
   $('set-volume').addEventListener('input', (e) => { S.volume = e.target.value / 100; save(); applySettings(); });
   $('set-leverup').addEventListener('input', (e) => { S.leverUp = +e.target.value; save(); applySettings(); });
-  for (const [id, k] of [['set-guide', 'guide'], ['set-assist', 'assist'], ['set-shake', 'shake'], ['set-hold', 'leverReturn']]) {
+  for (const [id, k] of [['set-opening', 'opening'], ['set-guide', 'guide'], ['set-assist', 'assist'], ['set-shake', 'shake'], ['set-hold', 'leverReturn']]) {
     $(id).addEventListener('change', (e) => { S[k] = e.target.checked; save(); applySettings(); });
   }
 }
@@ -435,12 +485,13 @@ function cycleCam() {
   G.camMode = (G.camMode + 1) % 5; rig.reset();
   if (G.state === 'race') hud.say(CAM_NAMES[G.camMode], 1.2);
 }
-function toggleMute() { audio.init(); audio.setMuted(!audio.muted); $('btn-mute').textContent = audio.muted ? '🔇' : '🔊'; }
+function toggleMute() { audio.init(); audio.setMuted(!audio.muted); $('btn-mute').textContent = audio.muted ? '🔇' : '🔊'; $('btn-opening-mute').textContent = audio.muted ? '音を出す' : '消音'; }
 
 input.onKey = (code) => {
   const overlay = !$('howto').classList.contains('hidden') || !$('settings').classList.contains('hidden');
   if (code === 'Escape' && overlay) { show('howto', false); show('settings', false); return; }
   if (overlay || G.state === 'loading') return;
+  if (G.state === 'opening') { if (code === 'KeyM') toggleMute(); else if (code === 'Enter' || code === 'Escape' || code === 'Space') finishOpening(); return; }
   if (code === 'KeyC') cycleCam();
   else if (code === 'KeyM') toggleMute();
   else if (code === 'Escape' || code === 'KeyP') { if (G.state === 'replay') endReplay(); else setPaused(!G.paused); }
@@ -464,7 +515,7 @@ stage.init().then(() => {
   if (!S.seenHowto) show('howto', true);
   requestAnimationFrame(frame);
   // デバッグ/自動テスト用
-  window.__game = { G, S, step, startRace, toTitle, startReplay, showResult, stage, rig, camera, get race() { return G.race; } };
+  window.__game = { G, S, audio, step, finishOpening, startRace, toTitle, startReplay, showResult, stage, rig, camera, get race() { return G.race; } };
 }).catch((e) => {
   console.error(e);
   $('loading').innerHTML = '<div><b>読み込みに失敗しました</b><span>WebGL2 に対応したブラウザで開いてください</span></div>';

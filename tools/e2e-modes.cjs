@@ -3,13 +3,13 @@ const { chromium } = require('playwright');
 const path = require('path');
 const S = process.env.OUT || require('os').tmpdir();   // スクリーンショットの保存先
 (async () => {
-  const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+  const b = await chromium.launch({ executablePath: process.env.CHROME_PATH || undefined, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   const vp = process.env.VP ? process.env.VP.split('x').map(Number) : [1280, 720];
   const p = await b.newPage({ viewport: { width: vp[0], height: vp[1] }, deviceScaleFactor: 1, hasTouch: !!process.env.TOUCH, isMobile: !!process.env.TOUCH });
   const errs = [];
   p.on('console', (m) => { const t = m.text(); if ((m.type() === 'error' || m.type() === 'warning') && !t.includes('Interleaved')) errs.push(m.type() + ': ' + t.slice(0, 400)); });
   p.on('pageerror', (e) => errs.push('PAGEERROR: ' + e.message + '\n' + (e.stack || '').slice(0, 500)));
-  await p.addInitScript((e) => { window.__ENV = e; }, process.env.ENV || ''); await p.goto('file://' + require('path').resolve(__dirname, '../index.html'));
+  await p.addInitScript((e) => { window.__ENV = e; }, process.env.ENV || ''); await p.goto(require('url').pathToFileURL(path.resolve(__dirname, '../index.html')).href);
   await p.waitForFunction(() => window.__game, null, { timeout: 150000 });
   const Q = process.env.Q || 'low';
   await p.evaluate((Q) => { const g = window.__game; g.S.quality = Q; g.stage.autoQuality = false; g.stage.setQuality(Q); }, Q);
@@ -40,6 +40,8 @@ const S = process.env.OUT || require('os').tmpdir();   // スクリーンショ�
     await p.click('#btn-replay');
     if (process.env.SHOT) { await run(22); await shot('replay'); }
     const rp = await run(300, 'result'); console.log('replay end', JSON.stringify(rp));
+    require('assert/strict').equal(rp.fin, end.fin, 'replay finish time must match');
+    require('assert/strict').equal(rp.st, end.st, 'replay start time must match');
     const same = await p.evaluate(() => { const r = window.__game.race; return r.order.map((b) => `${b.num}:${b.finishTime.toFixed(3)}`).join(' '); });
     console.log('replay order', same);
   }

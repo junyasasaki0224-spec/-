@@ -118,6 +118,7 @@ export class GameAudio {
   update(dt, boats, listenerBoat, cam, camRight, active, cheer) {
     if (!this.ready) return;
     const ctx = this.ctx, t = ctx.currentTime;
+    this._scheduleOpening();
     let nearSpeed = 0, nearTurn = 0;
     for (let i = 0; i < 6; i++) {
       const b = boats[i], e = this.engines[i];
@@ -190,6 +191,68 @@ export class GameAudio {
   click() { if (this.ready) this._tone('triangle', 880, 660, 0.12, 0.07); }
   tick(final) { if (this.ready) this._tone('sine', final ? 1320 : 880, final ? 1320 : 880, final ? 0.28 : 0.14, final ? 0.5 : 0.09); }
   buzzer() { if (this.ready) { this._tone('square', 196, 196, 0.25, 0.9, 0, 0.02); this._tone('square', 207, 207, 0.2, 0.9, 0, 0.02); } }
+
+  // Original 16-bar march, 112 BPM. Short look-ahead avoids background timers.
+  startOpening() {
+    this.stopOpening(0);
+    if (!this.ready) return;
+    const gain = this.ctx.createGain(); gain.gain.value = 0.55; gain.connect(this.master);
+    this.openingMusic = { gain, next: this.ctx.currentTime + 0.02, beat: 0, nodes: new Set() };
+    this._scheduleOpening();
+  }
+  stopOpening(fade = 0) {
+    if (fade === 0 && this.fadingOpening) {
+      for (const old of this.fadingOpening) {
+        old.gain.gain.cancelScheduledValues(this.ctx.currentTime);
+        old.gain.gain.setValueAtTime(0, this.ctx.currentTime);
+        for (const node of old.nodes) node.stop(this.ctx.currentTime);
+      }
+      this.fadingOpening.clear();
+    }
+    const music = this.openingMusic;
+    if (!music) return;
+    this.openingMusic = null;
+    this.fadingOpening ??= new Set();
+    this.fadingOpening.add(music);
+    const t = this.ctx.currentTime;
+    music.gain.gain.cancelScheduledValues(t);
+    music.gain.gain.setValueAtTime(music.gain.gain.value, t);
+    music.gain.gain.linearRampToValueAtTime(0, t + fade);
+    for (const node of music.nodes) node.stop(t + fade + 0.02);
+    if (!music.nodes.size) music.gain.disconnect();
+  }
+  _scheduleOpening() {
+    const music = this.openingMusic;
+    if (!music || this.ctx.state !== 'running') return;
+    const ctx = this.ctx, beat = 60 / 112;
+    // Distinct phrases composed for this game, with alternating bass and chords.
+    const melody = [72,76,79,74, 77,81,79,76, 74,79,83,81, 77,74,76,79,
+      84,79,81,77, 76,79,74,72, 71,74,79,77, 76,74,72,67,
+      76,79,84,83, 81,77,79,74, 77,81,86,84, 83,79,81,77,
+      79,76,74,77, 81,79,76,74, 72,76,79,83, 84,79,76,72];
+    const roots = [48,53,55,48,57,53,55,48, 48,57,53,55,52,53,55,48];
+    const note = (midi, start, duration, volume, type) => {
+      const oscillator = ctx.createOscillator(), envelope = ctx.createGain();
+      oscillator.type = type; oscillator.frequency.value = 440 * 2 ** ((midi-69)/12);
+      envelope.gain.setValueAtTime(0, start);
+      envelope.gain.linearRampToValueAtTime(volume, start+0.018);
+      envelope.gain.exponentialRampToValueAtTime(0.0001, start+duration);
+      oscillator.connect(envelope); envelope.connect(music.gain);
+      music.nodes.add(oscillator);
+      oscillator.onended = () => { oscillator.disconnect(); envelope.disconnect(); music.nodes.delete(oscillator); if (this.openingMusic !== music && !music.nodes.size) { music.gain.disconnect(); this.fadingOpening?.delete(music); } };
+      oscillator.start(start); oscillator.stop(start+duration+0.02);
+    };
+    // Resume at the current phrase without scheduling a backlog after suspension.
+    music.next = Math.max(music.next, ctx.currentTime);
+    while (music.next < ctx.currentTime+0.18) {
+      const n = music.beat % 64, root = roots[Math.floor(n/4)], t = music.next;
+      note(melody[n], t, beat*0.8, 0.085, 'triangle');
+      note(n%2 ? root+7 : root, t, beat*0.65, 0.09, 'triangle');
+      if (n%2) { note(root+12,t,beat*0.35,0.035,'sawtooth'); note(root+16,t,beat*0.35,0.025,'triangle'); }
+      note(n%2 ? 62 : 36,t,0.09,n%2 ? 0.025 : 0.11,'sine');
+      music.next += beat; music.beat++;
+    }
+  }
 
   // 館内チャイム + オリジナルのファンファーレ
   fanfare() {

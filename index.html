@@ -12,6 +12,11 @@
 <div id="vignette"></div>
 <div id="loading"><div><b>みなとグランプリ</b><span>会場を準備しています…</span></div></div>
 
+<section id="opening" class="hidden" aria-label="オープニング">
+  <header><p id="opening-phase">選手紹介</p><h1 id="opening-title"></h1></header>
+  <div id="opening-entry"></div>
+  <footer><button id="btn-opening-mute" type="button">消音</button><button id="btn-opening-skip" type="button">スキップ <small>Enter</small></button></footer>
+</section>
 <div id="hud" class="hidden">
   <div id="hud-tl">
     <div id="pos"><span id="pos-n">1</span><small>着</small></div>
@@ -122,6 +127,7 @@
     <label class="row"><span>音量</span><input id="set-volume" type="range" min="0" max="100" step="5"></label>
     <label class="row"><span>走行ガイドライン</span><input id="set-guide" type="checkbox"></label>
     <label class="row"><span>スタートアシスト(予想STバー)</span><input id="set-assist" type="checkbox"></label>
+    <label class="row"><span>オープニングを見る</span><input id="set-opening" type="checkbox"></label>
     <label class="row"><span>画面の揺れ</span><input id="set-shake" type="checkbox"></label>
     <label class="row"><span>レバーの高さ(スマホ)</span><input id="set-leverup" type="range" min="0" max="140" step="10"></label>
     <label class="row"><span>スロットルレバーを離すと戻す(握り式)</span><input id="set-hold" type="checkbox"></label>
