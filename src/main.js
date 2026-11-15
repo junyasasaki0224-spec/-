@@ -45,7 +45,7 @@ window.addEventListener('resize', () => { stage.resize(); hud.resize(); });
 // ---------------- ゲーム状態 ----------------
 const G = {
   state: 'loading',        // loading | title | race | result | replay
-  paused: false, race: null, cfg: null, gp: null, replayData: null, rp: null, spec: null, specT: -1,
+  paused: false, race: null, cfg: null, gp: null, replayData: null, rp: null, spec: null, specT: -1, equipFx: 0,
   holdT: 0,                // スタート位置に着いて時計が出てから、針が動き出すまでの待ち(秒)
   camMode: CAM.CHASE, replayCam: CAM.TV, follow: -1,
   time: 0, introT: 0, resultT: -1, attractT: 0, replayEndT: -1, lastTick: 0, cheer: 0.25,
@@ -196,6 +196,15 @@ const itemCard = (it, cls = '', note = '') => `<button class="item r-${it.r} ${c
 // ---------------- ホームから開く画面(ガチャ・倉庫・ミッション・メール・ランキング・シーズンパス・通信対戦) ----------------
 const META_VIEWS = { gacha: 'ガチャ', garage: '倉庫', missions: 'ミッション', mail: 'メール', ranking: 'ランキング', pass: 'シーズンパス', online: '通信対戦' };
 let gachaLast = null, garageTab = 'skin';
+// 装備した時の知らせ(レア度の色で光る)
+let toastT = 0;
+function showEquipToast(it) {
+  const el = $('equip-toast');
+  el.className = `r-${it.r}`;
+  el.innerHTML = `<i style="${swatch(it)}"></i><div><small>${it.kind === 'skin' ? '塗装' : 'ヘルメット'}を装備</small><b>${it.name}</b></div><em>${it.r}</em>`;
+  void el.offsetWidth; el.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 2200);
+}
 function renderMeta(v) {
   $('meta-h').textContent = META_VIEWS[v];
   $('meta-coins').querySelector('b').textContent = coinTxt(M.coins);
@@ -207,7 +216,9 @@ function renderMeta(v) {
       <p class="note">出る確率: ${Object.values(Meta.RARITY).map((r) => `${r.name} ${(r.rate * 100).toFixed(0)}%`).join('　')}　・　全${Meta.ITEMS.length}種のうち ${M.own.length}種 所持　・　同じ物が出たらコインに変わります</p>`;
   } else if (v === 'garage') {
     const list = Meta.ITEMS.filter((it) => it.kind === garageTab);
-    h = `<div class="seg" id="garage-tabs"><button data-t="skin" class="${garageTab === 'skin' ? 'sel' : ''}">塗装</button><button data-t="helmet" class="${garageTab === 'helmet' ? 'sel' : ''}">ヘルメット</button></div>
+    const eq = (id) => { const it = Meta.item(id); return `<div class="eq r-${it.r}"><i style="${swatch(it)}"></i><span>${it.kind === 'skin' ? '塗装' : 'ヘルメット'}</span><b>${it.name}</b><em>${it.r}</em></div>`; };
+    h = `<div class="equipped"><h2>装備中</h2>${eq(M.skin)}${eq(M.helmet)}</div>
+      <div class="seg" id="garage-tabs"><button data-t="skin" class="${garageTab === 'skin' ? 'sel' : ''}">塗装</button><button data-t="helmet" class="${garageTab === 'helmet' ? 'sel' : ''}">ヘルメット</button></div>
       <div class="items">${list.map((it) => itemCard(it, M.own.includes(it.id) ? (M.skin === it.id || M.helmet === it.id ? 'own sel' : 'own') : 'lock', M.own.includes(it.id) ? (M.skin === it.id || M.helmet === it.id ? '　装備中' : '') : '　未入手')).join('')}</div>
       <p class="note">持っている物を押すと、すぐ艇に反映されます。未入手の物はガチャで当たります。</p>`;
   } else if (v === 'missions') {
@@ -237,7 +248,12 @@ function renderMeta(v) {
   B.innerHTML = h;
   B.querySelectorAll('[data-pull]').forEach((b) => b.addEventListener('click', () => { const out = Meta.pull(M, +b.dataset.pull); if (!out) return; gachaLast = out; audio.init(); audio.finishJingle(out.some((r) => r.item.r === 'SSR' || r.item.r === 'SR')); save(); renderMeta('gacha'); }));
   B.querySelectorAll('#garage-tabs button').forEach((b) => b.addEventListener('click', () => { garageTab = b.dataset.t; audio.click(); renderMeta('garage'); }));
-  if (v === 'garage') B.querySelectorAll('.item.own').forEach((b) => b.addEventListener('click', () => { Meta.equip(M, b.dataset.id); save(); audio.click(); applySkins(); renderMeta('garage'); }));
+  if (v === 'garage') B.querySelectorAll('.item.own').forEach((b) => b.addEventListener('click', () => {
+    const it = Meta.item(b.dataset.id), was = it.kind === 'skin' ? M.skin : M.helmet;
+    Meta.equip(M, it.id); save(); applySkins();
+    if (was !== it.id) { G.equipFx = 1.6; audio.init(); audio.finishJingle(it.r === 'SR' || it.r === 'SSR'); showEquipToast(it); } else audio.click();
+    renderMeta('garage');
+  }));
   B.querySelectorAll('[data-mis]').forEach((b) => b.addEventListener('click', () => { if (Meta.claimMission(M, b.dataset.mis)) { audio.click(); save(); renderMeta('missions'); } }));
   B.querySelectorAll('[data-mail]').forEach((b) => b.addEventListener('click', () => { Meta.claimMail(M, b.dataset.mail); audio.click(); save(); renderMeta('mail'); }));
   B.querySelectorAll('[data-mailall]').forEach((b) => b.addEventListener('click', () => { for (const x of M.mail.slice()) Meta.claimMail(M, x.id); audio.click(); save(); renderMeta('mail'); }));
@@ -683,7 +699,12 @@ function step(dt) {
 
     // カメラ
     let mode;
-    rig.orbitK = G.state === 'title' ? 0.06 : 0.3;
+    rig.orbitK = G.state === 'title' ? (G.equipFx > 0 ? 0.9 : 0.06) : 0.3;   // 装備した直後は艇のまわりを素早く一周して見せる
+    for (let i = 0; i < 6; i++) views[i].hidden = G.state === 'title' && race.boats[i] !== target;
+    if (G.equipFx > 0) {
+      G.equipFx -= dt;
+      if (Math.random() < dt * 22) stage.spray.burst(target.x + (Math.random() - 0.5) * 3, target.z + (Math.random() - 0.5) * 1.6, 1.2);
+    }
     if (G.state === 'title') mode = CAM.ORBIT;
     else if (G.state === 'result') mode = CAM.ORBIT;
     else if (target.sunk) mode = CAM.ORBIT;        // 沈んだ艇は少し離れて回りから映す

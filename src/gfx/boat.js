@@ -213,7 +213,7 @@ export class BoatView {
       this.tilt.position.y -= 0.3 * e + Math.max(0, t - 2.5) * 0.26;
     }
     this.hullMask.visible = !b.sunk;        // 沈んだ艇は水面の下に見えるようにする
-    const gone = b.sunk && b.sinkT > 8;
+    const gone = (b.sunk && b.sinkT > 8) || this.hidden;      // hidden: ホームでは自分の艇だけ見せる
     if (this.root.visible === gone) { this.root.visible = !gone; this.shBody.visible = !gone; this.shUpper.visible = !gone; }
 
     // レーサー: 旋回で腰を浮かせて内側へ体重を移す(モンキーターン)
