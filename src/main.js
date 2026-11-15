@@ -708,7 +708,7 @@ stage.init().then(() => {
   if (!S.seenHowto) show('howto', true);
   requestAnimationFrame(frame);
   // デバッグ/自動テスト用
-  window.__game = { G, S, audio, step, seekReplay, finishOpening, startRace, toTitle, startReplay, showResult, stage, rig, camera, get race() { return G.race; } };
+  window.__game = { G, S, audio, input, step, seekReplay, finishOpening, startRace, toTitle, startReplay, showResult, stage, rig, camera, get race() { return G.race; } };
 }).catch((e) => {
   console.error(e);
   $('loading').innerHTML = '<div><b>読み込みに失敗しました</b><span>WebGL2 に対応したブラウザで開いてください</span></div>';
