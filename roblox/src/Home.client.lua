@@ -27,9 +27,7 @@ local white=Color3.new(1,1,1)
 local rarity={N=white,R=Color3.fromRGB(57,140,255),SR=Color3.fromRGB(172,110,255),SSR=gold}
 local mode="シーズン"
 local m,page,pending=nil,"ホーム",nil
-local Practice=require(RS:WaitForChild("StartPractice"))
 local quality=require(RS:WaitForChild("DisplayQuality"))
-local practiceActive=false
 local practiceLane=1
 local roomCode=player:GetAttribute("MinatoInviteCode") or ""
 if roomCode~="" then page="フレンド" end
@@ -116,7 +114,7 @@ Run.RenderStepped:Connect(function(dt)
     updateVenue(0,sceneClock,1)
     local cam=workspace.CurrentCamera
     if waitLabel and waitLabel.Parent then waitLabel.Text=waitText() end
-    if gui.Enabled and not practiceActive then
+    if gui.Enabled then
         cam.CameraType=Enum.CameraType.Scriptable
         local t=math.clamp((sceneClock-spinStart)/SPIN_TIME,0,1)
         local angle=.65+sceneClock*.012+math.pi*2*(t*t*(3-2*t))
@@ -209,16 +207,14 @@ player:GetAttributeChangedSignal("MinatoInviteCode"):Connect(function()
     if roomCode~="" then page="フレンド" end
     if page=="フレンド" and m then redraw() end
 end)
+-- スタート練習: レース会場の本番と同じ画面で練習する(自分だけの会場へ移る)
 local function startPractice()
-    if practiceActive then return end
-    practiceActive=true
-    root.Visible=false
-    toast.Visible=false
-    Practice.start(gui,model,practiceLane,m.lever,function()
-        practiceActive=false
-        root.Visible=true
-        toast.Visible=true
-        go("スタート練習")
+    local remoteFr=RS:FindFirstChild("MinatoFreeRace")
+    if not remoteFr then toast.Text="スタート練習の準備中です";return end
+    toast.Text="会場を探しています"
+    task.spawn(function()
+        local ok,res=pcall(remoteFr.InvokeServer,remoteFr,{practice=true,lane=practiceLane})
+        toast.Text=ok and type(res)=="table" and res.message or "通信を確かめられません"
     end)
 end
 local matchEvent
@@ -483,7 +479,7 @@ function redraw()
         end
         button(list,"更新",8,y,140,function() refreshBoard(true) end);y+=58
     elseif page=="スタート練習" then
-        y=row("スタートラインで大時計の0秒を狙う","1艇で練習します。1〜3コースはスロー、4〜6コースはダッシュです。",y)
+        y=row("スタートラインで大時計の0秒を狙う","本番と同じ6艇で、スタートだけを何度でも。1〜3コースはスロー、4〜6コースはダッシュです。",y)
         local bw=math.floor((width-32)/3)
         for lane=1,6 do
             button(list,lane.."コース",8+((lane-1)%3)*(bw+8),y+math.floor((lane-1)/3)*54,bw,function() practiceLane=lane;redraw() end,lane==practiceLane)

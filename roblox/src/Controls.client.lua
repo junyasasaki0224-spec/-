@@ -706,14 +706,39 @@ RunService.RenderStepped:Connect(function(dt)
         if resultView.key ~= key then
             local buttons = {}
             local function fire(action) return function() roomRemote:FireServer(action) end end
-            if (mode == "ta" or mode == "single") and phase == "finished" then
+            -- スタート練習: 大きな文字は自分の ST。評価の言葉と、何番目のスタートか(ブラウザ版と同じ)
+            local opts = nil
+            if world:GetAttribute("Practice") then
+                local mineRow, order = nil, 0
+                for k, r in ipairs(resultRows) do if r[1] == boatNumber then mineRow, order = r, k end end
+                opts = {placeHeader = "ST順", head = "スタート練習", sub = ""}
+                if mineRow then
+                    local st = mineRow[8]
+                    if mineRow[2] == "F" then
+                        opts.head, opts.color = "フライング", Color3.fromRGB(255,90,77)
+                        opts.sub = string.format("スタート時刻より %.2f秒 早くラインを通過 — 本番なら失格", -(st or 0))
+                    elseif mineRow[2] == "沈" then
+                        opts.head, opts.color, opts.sub = "沈没", Color3.fromRGB(255,90,77), "本番なら失格"
+                    elseif type(st) ~= "number" then
+                        opts.head, opts.sub = "出遅れ", "助走をつけて、針が0を指す瞬間にスタートラインを越えよう"
+                    else
+                        local word = st <= 0.1 and "トップスタート級！" or (st <= 0.2 and "ナイススタート" or (st <= 0.45 and "まずまず" or (st <= 1 and "遅れ気味" or "出遅れ")))
+                        opts.head = string.format("ST %.2f", st)
+                        opts.color = st <= 0.2 and Color3.fromRGB(255,210,60) or Color3.new(1,1,1)
+                        opts.sub = word.."　"..order.."番目のスタート"
+                    end
+                end
+            end
+            if world:GetAttribute("Practice") and phase == "finished" then
+                buttons = {{"Again","もう一度",true,fire("again")},{"Lobby","ロビーへ",false,fire("return")}}
+            elseif (mode == "ta" or mode == "single") and phase == "finished" then
                 buttons = {{"Again","もう一度走る",true,fire("again")},{"Lobby","ロビーへ",false,fire("return")}}
             elseif mode == "gp" and eliminated then
                 buttons = {{"WatchFinal","優勝戦を観戦する",true,fire("watchFinal")},{"Lobby","ロビーへ",false,fire("return")}}
             elseif mode and phase == "finished" then
                 buttons = {{"Lobby","ロビーへ戻る",true,fire("return")}}
             end
-            resultView:show(resultRows, boatNumber, extra, buttons, key)
+            resultView:show(resultRows, boatNumber, extra, buttons, key, opts)
         end
     elseif resultView.key then
         resultView:hide()

@@ -20,9 +20,9 @@ local function drops(anchor, name, speed, spread)
     p.EmissionDirection = Enum.NormalId.Front
     p.Orientation = Enum.ParticleOrientation.VelocityParallel
     p.Squash = NumberSequence.new(-.72)
-    p.Size = sequence(.6,1,.35)
+    p.Size = sequence(.9,1.7,.7)
     p.Color = ColorSequence.new(Color3.fromRGB(245,252,255), Color3.fromRGB(184,211,221))
-    p.Transparency = sequence(.16,.30,1)
+    p.Transparency = sequence(.08,.22,1)
     p.Speed, p.SpreadAngle = speed, spread
     p.Acceleration = Vector3.new(0,-34,0)
     p.Lifetime = NumberRange.new(.48,.83)
@@ -37,6 +37,9 @@ function Wake.new(root)
     local fan = attachment(root,"TurnSheet",Vector3.new(0,-.8,4.4),Vector3.new(1,.7,.55))
     local jet = drops(stern,"SternDrops",NumberRange.new(9,17),Vector2.new(14,17))
     local sheet = drops(fan,"SheetDrops",NumberRange.new(17,34),Vector2.new(30,20))
+    -- ターンの外側へ飛ぶ扇形のしぶきは、大きく白く(ブラウザ版の見せ場)
+    sheet.Size = sequence(1.3,2.6,1.4)
+    sheet.Lifetime = NumberRange.new(.6,1.05)
     local mist = drops(stern,"Spindrift",NumberRange.new(3,6),Vector2.new(30,20))
     mist.Orientation = Enum.ParticleOrientation.FacingCamera
     mist.Squash, mist.Size = NumberSequence.new(0), sequence(1,2.1,4.2)
@@ -55,9 +58,9 @@ function Wake.new(root)
         trail.TextureMode, trail.TextureLength = Enum.TextureMode.Wrap, 8
         trail.FaceCamera = false
         trail.Color = ColorSequence.new(Color3.fromRGB(236,250,248),Color3.fromRGB(156,190,198))
-        trail.Transparency = sequence(.28,.56,1)
+        trail.Transparency = sequence(.12,.42,1)
         trail.WidthScale = sequence(.48,.84,1)
-        trail.MinLength, trail.MaxLength, trail.Lifetime = .65, 95, 1.55
+        trail.MinLength, trail.MaxLength, trail.Lifetime = .65, 150, 2.6
         trail.Enabled = false
         trail.Parent = root
         table.insert(ribbons,trail)

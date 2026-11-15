@@ -153,7 +153,8 @@ end
 -- 結果を見せる。rows = サーバーの結果の行 {艇番, 着か失格, 名前, AIか, 塗装, ヘルメット, タイム, ST}
 -- mySeat = 自分の艇番(観戦なら 0)、extra = 記録の文(タイムアタック・大会の得点など)
 -- buttons = { {name, caption, primary, onPress}, ... }
-function Result:show(rows, mySeat, extra, buttons, key)
+-- opts(なくてもよい): { head = 大きな文字, sub = ひとこと, color = 色, placeHeader = 表の1列目の見出し }
+function Result:show(rows, mySeat, extra, buttons, key, opts)
     local size = self.gui.AbsoluteSize
     local w = math.min(560, size.X - 24)
     local compact = size.Y < 520
@@ -182,8 +183,12 @@ function Result:show(rows, mySeat, extra, buttons, key)
     elseif rows[1] then
         sub = string.format("1着 %d号艇 %s", rows[1][1], rows[1][3] or "")
     end
+    if opts then
+        head, sub, color = opts.head or head, opts.sub or sub, opts.color or color
+    end
+    self.cols[1].label.Text = opts and opts.placeHeader or "着"
     local y = compact and 10 or 18
-    local headSize = compact and 46 or (mine and tonumber(mine[2]) and 72 or 50)
+    local headSize = compact and 46 or ((not opts and mine and tonumber(mine[2])) and 72 or 50)
     self.head.TextSize = headSize
     self.head.Text, self.head.TextColor3 = head, color
     self.head.Position, self.head.Size = UDim2.fromOffset(x0, y), UDim2.fromOffset(inner, headSize + 6)

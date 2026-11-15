@@ -29,8 +29,12 @@ local Meta = require(ReplicatedStorage:WaitForChild("Meta"))
 -- 公開していない Studio では、ワークスペースの属性 MinatoTestMode(ranked / online / event)で
 -- オンライン対戦の会場と同じ AI・イベント・結果の表示を確かめられる(保存はしない)
 -- タイムアタックは ta(コースは属性 MinatoTestLane = 1〜6)
-local TEST_MODES = {ranked=true, online=true, event=true, ta=true, gp=true, single=true}
+local TEST_MODES = {ranked=true, online=true, event=true, ta=true, gp=true, single=true, practice=true}
 local studioMode = localPractice and TEST_MODES[workspace:GetAttribute("MinatoTestMode")] and workspace:GetAttribute("MinatoTestMode") or nil
+-- スタート練習は、フリーレース(1人用)の仕組みを使い、スタートだけで終わる(成績・報酬なし)
+local practiceMode = studioMode == "practice"
+if practiceMode then studioMode = "single" end
+local practiceEnd = nil
 local function matchKind() return roomKind or studioMode end
 -- タイムアタック: 走るコース(0〜5)、入力の記録、次の走りを待っているか、ゴースト(世界1位の走りの再現)
 local taLane = studioMode == "ta" and math.clamp(math.floor(tonumber(workspace:GetAttribute("MinatoTestLane")) or 1),1,6)-1 or 0
@@ -109,8 +113,18 @@ for _, x in ipairs({-263,253}) do
     part(world,"Breakwater",Vector3.new(2,3,138),CFrame.new(x,0,-10),c(231,229,213),Enum.Material.Concrete)
 end
 for _, mark in ipairs({Vector3.new(150,0,8),Vector3.new(-150,0,0)}) do
-    part(world,"TurnMark",Vector3.new(1.6,1.6,1.6),CFrame.new(mark.X,0.8,mark.Z),c(240,104,45),Enum.Material.SmoothPlastic,Enum.PartType.Ball)
-    part(world,"MarkFlag",Vector3.new(0.3,7,0.3),CFrame.new(mark.X,4,mark.Z),c(240,240,235))
+    -- ブラウザ版と同じターンマーク: 白い台の上に、赤白6段の縞の円すい、てっぺんに赤い玉(円柱を6段重ねて円すいにする)
+    local function cylinder(name, diameter, height, y, color)
+        local p = part(world,name,Vector3.new(height,diameter,diameter),CFrame.new(mark.X,y,mark.Z)*CFrame.Angles(0,0,math.pi/2),color,Enum.Material.SmoothPlastic,Enum.PartType.Cylinder)
+        p.CastShadow = true
+        return p
+    end
+    cylinder("TurnMarkBase",1.72,0.34,0.1,c(242,242,238))
+    for k = 0, 5 do
+        local t0 = (k+0.5)/6
+        cylinder("TurnMark",2*(0.78+(0.16-0.78)*t0),1.7/6+0.01,0.2+1.7*t0,k%2==0 and c(220,37,48) or c(246,246,242))
+    end
+    part(world,"TurnMarkTop",Vector3.new(0.4,0.4,0.4),CFrame.new(mark.X,1.95,mark.Z),c(220,37,48),Enum.Material.SmoothPlastic,Enum.PartType.Ball)
 end
 for _, u in ipairs(collision.units) do
     local center = Vector3.new(u.x,0.15,u.z)
@@ -212,6 +226,24 @@ local function preparePlayer(player)
                 rankedStartAt = rankedStartAt or os.clock()+20
                 if world:GetAttribute("RankedPhase") == nil then world:SetAttribute("RankedPhase","waiting") end
             end
+            return
+        end
+        -- スタート練習: 予約した会場に1人だけ。コース(1〜6)だけを受け取る
+        if type(data) == "table" and data.mode == "practice" then
+            local lane = data.lane
+            if roomKind or next(roomMembers) or type(lane) ~= "number" or lane % 1 ~= 0 or lane < 1 or lane > 6 then
+                player:Kick("スタート練習の会場に入れません。ロビーから入り直してください")
+                return
+            end
+            roomKind, practiceMode = "single", true
+            singleCfg = {lane=lane, tilt=2, diff=2, env="day", seed=math.random(1,1000000)}
+            if type(join.SourcePlaceId)=="number" and join.SourcePlaceId>0 then rankedLobbyPlace=rankedLobbyPlace or join.SourcePlaceId end
+            roomMembers[player] = true
+            world:SetAttribute("MatchMode","single")
+            world:SetAttribute("Practice",true)
+            world:SetAttribute("RoomMode",false)
+            world:SetAttribute("RankedPhase","waiting")
+            singlePending = true
             return
         end
         -- フリーレース: 予約した会場に1人だけ。値はすべて範囲を確かめる
@@ -441,6 +473,8 @@ local function reset()
     setEnvironment(env, wave)
     world:SetAttribute("Environment", env)
     world:SetAttribute("MatchMode", kind)
+    world:SetAttribute("Practice", practiceMode or nil)
+    practiceEnd = nil
     world:SetAttribute("EventName", todayEvent and todayEvent.name or nil)
     world:SetAttribute("Wind",wind)
     world:SetAttribute("WindDir",windAngle)
@@ -674,6 +708,21 @@ saveResults = function()
     resultsSaved = true
     local results = {}
     finalRows = {}
+    if practiceMode then
+        -- スタート練習の結果: ST の早い順(フライングと、通過しなかった艇は後ろ)。成績・報酬には入れない
+        local list = table.clone(boats)
+        local function key(b) return b.flying and 8 or (b.startTime == nil and 9 or b.startTime) end
+        table.sort(list, function(a, b)
+            if key(a) == key(b) then return a.number < b.number end
+            return key(a) < key(b)
+        end)
+        for k, boat in ipairs(list) do
+            finalRows[k] = {boat.number, boat.flying and "F" or (boat.out == "沈" and "沈" or (boat.startTime and tostring(k) or "—")),
+                boat.model:GetAttribute("Racer") or "", boat.humanUserId == nil,
+                boat.model:GetAttribute("Skin") or "", boat.model:GetAttribute("HelmetStyle") or "", false, boat.startTime or false}
+        end
+        return
+    end
     for _, boat in ipairs(orderBoats()) do
         if boat.out == "TA" then continue end
         local position = #finalRows + 1
@@ -905,7 +954,16 @@ local function step()
     end
     local endEarly
     endEarly, aloneSince = Rules.shouldEnd(boats,elapsed,aloneSince)
-    if endEarly or (finishTime and elapsed-finishTime > 45) or elapsed > 240 then
+    -- スタート練習: 自分がスタートラインを通過(または失格)したら2.2秒走って終わる。8秒たっても通過しなければ打ち切り
+    local practiceDone = false
+    if practiceMode and singleCfg then
+        local mine = boats[singleCfg.lane]
+        if mine.started or mine.out or elapsed > 8 then
+            practiceEnd = practiceEnd or elapsed
+            practiceDone = elapsed - practiceEnd > 2.2 or not (mine.started or mine.out)
+        end
+    end
+    if practiceDone or endEarly or (finishTime and elapsed-finishTime > 45) or elapsed > 240 then
         -- 大会は、次の段階(予選2走目・優勝戦・終わり)を大会の処理が決めるので、先に待ちにしておく
         if matchKind() == "gp" then
             roomWaiting=true

@@ -124,9 +124,6 @@
       "VenueDecor": {
         "$path": "src/VenueDecor.lua"
       },
-      "StartPractice": {
-        "$path": "src/StartPractice.lua"
-      },
       "RaceStep": {
         "$path": "src/RaceStep.lua"
       },

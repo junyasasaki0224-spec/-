@@ -24,11 +24,17 @@ remote.OnServerInvoke = function(player, cfg)
         return { message = "少し待ってからもう一度押してください" }
     end
     last[player] = now
-    if not int(cfg.lane, 1, 6) or not int(cfg.tilt, 1, 4) or not int(cfg.diff, 1, 4) or not ENVS[cfg.env] or not int(cfg.seed, 1, 1000000) then
+    -- スタート練習はコースだけを受け取る。フリーレースは出走表の値をすべて確かめる
+    local practice = cfg.practice == true
+    if practice then
+        if not int(cfg.lane, 1, 6) then
+            return { message = "コースを選び直してください" }
+        end
+    elseif not int(cfg.lane, 1, 6) or not int(cfg.tilt, 1, 4) or not int(cfg.diff, 1, 4) or not ENVS[cfg.env] or not int(cfg.seed, 1, 1000000) then
         return { message = "出走表を開き直してください" }
     end
     if not live then
-        return { message = "Studio では会場へ移動しません（会場の place で MinatoTestMode=single を使って確かめます）" }
+        return { message = "Studio では会場へ移動しません（会場の place で MinatoTestMode を使って確かめます）" }
     end
     if moving[player] then
         return { message = "移動の準備をしています" }
@@ -38,7 +44,8 @@ remote.OnServerInvoke = function(player, cfg)
     if ok and type(access) == "string" then
         local options = Instance.new("TeleportOptions")
         options.ReservedServerAccessCode = access
-        options:SetTeleportData({ mode = "single", lane = cfg.lane, tilt = cfg.tilt, diff = cfg.diff, env = cfg.env, seed = cfg.seed })
+        options:SetTeleportData(practice and { mode = "practice", lane = cfg.lane }
+            or { mode = "single", lane = cfg.lane, tilt = cfg.tilt, diff = cfg.diff, env = cfg.env, seed = cfg.seed })
         ok = pcall(TeleportService.TeleportAsync, TeleportService, config.racePlaceId, { player }, options)
     end
     moving[player] = nil
