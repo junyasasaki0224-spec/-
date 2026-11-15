@@ -90,6 +90,13 @@ local templates = Instance.new("Folder")
 templates.Name = "MinatoTemplates"
 templates.Parent = ReplicatedStorage
 local colors = {c(245,245,238),c(32,37,42),c(222,59,47),c(49,102,202),c(239,213,54),c(67,170,101)}
+local visuals=require(ReplicatedStorage:WaitForChild("VisualModels"))
+local venue=visuals.venue(world)
+if venue then
+    for _,p in ipairs(world:GetChildren()) do
+        if p.Name=="Stand" or p.Name=="Terrace" or p.Name=="Breakwater" then p:Destroy() end
+    end
+end
 local boats = {}
 for i=1,6 do
     local model = Instance.new("Model")
@@ -101,6 +108,12 @@ for i=1,6 do
     part(model,"Motor",Vector3.new(1.1,1.3,1.2),CFrame.new(0,0.5,3.3),c(45,48,50),Enum.Material.Metal,nil,BOAT_SCALE)
     part(model,"Racer",Vector3.new(1.4,1.3,1.5),CFrame.new(0,1.2,0.5),colors[i],nil,nil,BOAT_SCALE)
     part(model,"Helmet",Vector3.new(1.2,1.2,1.2),CFrame.new(0,2,0.2),colors[i],Enum.Material.SmoothPlastic,Enum.PartType.Ball,BOAT_SCALE)
+    local detailed=visuals.boat(nil,i)
+    if detailed then
+        model:Destroy()
+        model=detailed
+        model.Name="Boat"..i
+    end
     model.Parent = templates
     boats[i] = {number=i,model=model, x=-95, z=14+i*5, h=0, vx=0, vz=0, w=0, throttle=0, steer=0, lap=0, checkpoint=0, finished=false, speed=0}
 end

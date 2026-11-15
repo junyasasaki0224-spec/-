@@ -64,3 +64,42 @@ MetaLobby は get / pull / equip / mail / mission だけを受け付けます。
 倉庫の装備はサーバーから艇テンプレートの属性として配信し、各クライアントが同じ色を表示します。レース開始のたびに装備を読み直すので、前の人の色が残りません。ホームとカードの艇表示はRobloxの部品で作ったプレビューです。Blenderモデルの取り込み（L1）とカード画像のアセット登録は別途必要です。
 
 計算は luau roblox/tests/meta.spec.luau、一括検証は sh tools/check-all.sh です。文法チェックは公式Luauの loadstring を使い、Windowsで luau-compile が使えない環境にも対応します。シミュレーションの失敗がパイプで隠れないように一括検証も修正しました。
+
+## Blenderの艇・会場（L1）
+
+Boat.rbxmx / Venue.rbxmx はStudioのImporterで登録したMeshIdを含みます。Rojoで両プロジェクトを生成すると ReplicatedStorage.VisualAssets に入り、ロビーとレースが自動で使用します。物理とコースの座標はメートル、表示は1m=3.5 studsです。
+
+再生成はプロジェクトの一番上で次を実行します。
+
+    blender -b --factory-startup --python assets/blender/export_roblox.py -- boat roblox/assets/models
+    blender -b --factory-startup --python assets/blender/export_roblox.py -- venue roblox/assets/models
+
+既存のbuild_boat.py / build_venue.pyから生成し、材質と元の部品名で分割します。会場はさらに120mの区画と長い辺の分割を使い、三角形は18,000以下にします。FBXはcentimeter変換を補正済みです。Importerの軸変換に合わせ、会場のMeshPartを原点の周りにY軸180度回してゲーム座標に戻します（package_visuals.pyが処理）。Studioで「シーン位置を使用して挿入」「ピボットをシーン起源に設定」を有効にし、大きさの警告がないことを確かめてください。艇の全長は約11.7studsです。
+
+公式の上限は1メッシュ20,000三角形・各軸2,048studsです。会場を1つのメッシュへ結合しないでください。
+https://create.roblox.com/docs/onboarding/artists
+https://create.roblox.com/docs/reference/engine/classes/MeshPart
+https://create.roblox.com/docs/studio/importer
+
+取り込み直したモデル内のMeshPartについて name / mesh（MeshId）/ cf（CFrame:GetComponents()の12個）/ size（X,Y,Z）/ natural（MeshSizeのX,Y,Z）をJSON配列へ書き出し、次でRojo用にまとめます。
+
+    python roblox/tools/package_visuals.py boat boat-import.json
+    python roblox/tools/package_visuals.py venue venue-import.json
+
+原点はmanifestから復元します。Wheel・Motor・RacerUpperは透明Pivotを回転の中心にします。Anchored・CanCollide=falseにして既存の独自の衝突計算へ引き継ぎます。倉庫の色は HullWhite / Trim / Deck / MotorRed / Helmet / HelmetStripe の材質名から適用します。Mesh所有者と公開ゲームの所有者が異なる時は、ゲームで読み取る許可をRoblox側で設定し、公開環境で確認してください。
+
+## カード画像
+
+今回、8枚とも登録済みでCardImages.luaにIDを入れてあります。所有者を変える時は次の手順で登録し直してください。
+
+assets/cards/ の8枚をStudioのファイル→インポートから、ゲームと同じ所有者へ登録します。画像のアセットIDをコピーし、roblox/src/CardImages.lua の同名キーに rbxassetid://番号 の形式で入れます。順番は season / online / ta / friend / gp / event / single / practice。ImageLabelは画像をCropで表示し、金枠と角丸は画面側で付けます。
+
+参照したAPI
+https://create.roblox.com/docs/reference/engine/classes/ImageLabel
+https://create.roblox.com/docs/reference/engine/classes/UIStroke
+https://create.roblox.com/docs/reference/engine/classes/UICorner
+https://create.roblox.com/docs/reference/engine/classes/Model
+https://create.roblox.com/docs/reference/engine/classes/PVInstance
+https://create.roblox.com/docs/reference/engine/classes/BasePart
+
+Studioのホームは表示名を「テストレーサー」にして、レビュー写真へのアカウント名の写り込みを防ぎます。公開ゲームは通常の表示名です。

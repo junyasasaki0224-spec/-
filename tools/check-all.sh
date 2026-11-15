@@ -14,6 +14,7 @@ r=$(node tools/guide-bot.mjs 2>&1) && say "$r" || { say "ガイドボット: 失
 node tools/meta-test.mjs >/dev/null 2>&1 && say "コイン・ガチャ・レートの計算: OK" || { say "コイン・ガチャ・レートの計算: 失敗"; fail=1; }
 
 say "== Roblox 版"
+"${PYTHON:-python3}" roblox/tools/check_visuals.py || fail=1
 if command -v luau >/dev/null 2>&1; then
   "${PYTHON:-python3}" roblox/tools/check_syntax.py || fail=1
   for t in roblox/tests/*.luau; do
