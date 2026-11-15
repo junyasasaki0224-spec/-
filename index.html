@@ -82,12 +82,18 @@
   <!-- ホーム: 自艇を中央に映し、まわりに操作を置く -->
   <div id="home">
     <div id="home-prof"><em id="home-grade">B2</em><div><b>あなた</b><span id="home-stats"></span><i><u id="home-prog"></u></i></div></div>
+    <div id="home-chips"><span class="pill" id="home-coins"><i class="coin"></i><b>0</b></span><button class="pill" id="home-pass" data-go="pass">シーズンパス <b>0段</b></button></div>
     <div class="logo"><small>MINATO BOAT STADIUM</small><h1>みなとグランプリ</h1></div>
-    <div id="home-tools"><button id="btn-settings">設定</button></div>
+    <div id="home-tools"><button id="btn-mail" data-go="mail">メール<i class="badge" id="mail-badge"></i></button><button id="btn-settings">設定</button></div>
     <nav id="home-menu">
-      <button class="tile" data-go="sheet"><svg viewBox="0 0 64 40"><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><rect x="6" y="5" width="52" height="30" rx="3"/><path d="M14 14h8M28 14h22M14 21h8M28 21h22M14 28h8M28 28h22"/></g></svg><b>出走表</b><span>乗る艇・チルト・難易度</span></button>
-      <button class="tile" data-go="records"><svg viewBox="0 0 64 40"><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 6h20v10a10 10 0 0 1-20 0zM22 9h-8c0 8 4 10 9 11M42 9h8c0 8-4 10-9 11M32 26v6M24 34h16"/></g></svg><b>戦績</b><span>級別・通算成績・ベスト</span></button>
-      <button class="tile" id="btn-howto"><svg viewBox="0 0 64 40"><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="32" cy="20" r="15"/><path d="M27 15a5 5 0 1 1 7 5c-2 1-2 2-2 4"/><circle cx="32" cy="29" r="1" fill="currentColor"/></g></svg><b>遊び方</b><span>スタートとターンのコツ</span></button>
+      <button class="tile" data-go="gacha"><svg viewBox="0 0 64 40"><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="4" width="36" height="32" rx="4"/><circle cx="32" cy="16" r="7"/><path d="M26 29h12M32 23v3"/></g></svg><b>ガチャ</b><span>塗装とヘルメットを集める</span></button>
+      <button class="tile" data-go="garage"><svg viewBox="0 0 64 40"><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 18 32 6l24 12v16H8z"/><path d="M18 34V22h28v12M18 27h28"/></g></svg><b>倉庫</b><span>艇の見た目を着せ替える</span></button>
+      <button class="tile" data-go="missions"><svg viewBox="0 0 64 40"><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="12" y="5" width="40" height="30" rx="3"/><path d="m19 14 3 3 5-6M32 14h14M19 26l3 3 5-6M32 26h14"/></g></svg><b>ミッション</b><span>毎日の目標でコイン</span><i class="badge" id="mis-badge"></i></button>
+      <button class="tile" data-go="ranking"><svg viewBox="0 0 64 40"><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 6h20v10a10 10 0 0 1-20 0zM22 9h-8c0 8 4 10 9 11M42 9h8c0 8-4 10-9 11M32 26v6M24 34h16"/></g></svg><b>ランキング</b><span>レート・タイム・戦績</span></button>
+    </nav>
+    <nav id="home-side">
+      <button class="tile" data-go="online"><svg viewBox="0 0 64 40"><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="20" r="15"/><path d="M17 20h30M32 5c-7 8-7 22 0 30M32 5c7 8 7 22 0 30"/></g></svg><b>通信対戦</b><span>オンライン・フレンド</span></button>
+      <button class="tile" id="btn-howto"><svg viewBox="0 0 64 40"><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="20" r="15"/><path d="M27 15a5 5 0 1 1 7 5c-2 1-2 2-2 4"/><circle cx="32" cy="29" r="1" fill="currentColor"/></g></svg><b>遊び方</b><span>スタートとターンのコツ</span></button>
     </nav>
     <div id="home-race"><span id="home-now"></span><button id="btn-race"><b>レース</b><small>モードを選んで出走</small></button></div>
   </div>
@@ -96,15 +102,14 @@
   <div id="mode-view">
     <div class="view-head"><button class="back" data-go="home">‹ 戻る</button><h3>レースを選ぶ</h3></div>
     <div id="modes">
-      <button class="mcard" data-v="single"><b>シングルレース</b>
-        <i class="art art-single"><s style="--c:#f2f2f0"></s><s style="--c:#16161a"></s><s style="--c:#d91e2e"></s><s style="--c:#1b50d4"></s><s style="--c:#f3d21b"></s><s style="--c:#18a24c"></s></i>
-        <span>好きな枠を選んで、6艇で3周の1レース</span><em>いちばん手軽</em></button>
-      <button class="mcard" data-v="gp"><b>グランプリ</b>
-        <i class="art art-gp"><svg viewBox="0 0 100 80"><g fill="#ffd23c" stroke="#a56a00" stroke-width="2" stroke-linejoin="round"><path d="M32 10h36v18a18 18 0 0 1-36 0z"/><path d="M32 15H18c0 14 7 18 16 20M68 15h14c0 14-7 18-16 20" fill="none" stroke="#ffd23c" stroke-width="5"/><path d="M45 46h10v12H45zM34 58h32v9H34z"/></g></svg></i>
-        <span>予選2走＋優勝戦。得点で枠が決まる</span><em>優勝を目指す</em></button>
-      <button class="mcard" data-v="practice"><b>スタート練習</b>
-        <i class="art art-practice"><svg viewBox="0 0 100 80"><circle cx="50" cy="40" r="30" fill="#f4f4ee" stroke="#16161a" stroke-width="4"/><path d="M50 40 L50 14 A26 26 0 0 1 63 17.5Z" fill="#39d98a"/><path d="M50 40L50 16" stroke="#f4a300" stroke-width="5" stroke-linecap="round"/><path d="M50 40L33 34" stroke="#16161a" stroke-width="4" stroke-linecap="round"/><circle cx="50" cy="40" r="4" fill="#16161a"/></svg></i>
-        <span>スタートだけを何度でも。STを磨く</span><em>まずはここから</em></button>
+      <button class="mcard" data-v="season"><b>シーズン</b><i class="art" data-art="season"></i><span>ランク戦。着順でレートと級が動く</span><em>B2 → A1 を目指す</em></button>
+      <button class="mcard net" data-v="online"><b>オンライン</b><i class="art" data-art="online"></i><span>6人のカジュアル戦。レートなし</span><em>Roblox版</em></button>
+      <button class="mcard" data-v="ta"><b>タイムアタック</b><i class="art" data-art="ta"></i><span>枠を選んで1艇で3周。ベストを狙う</span><em>コースごとに記録</em></button>
+      <button class="mcard net" data-v="friend"><b>フレンド</b><i class="art" data-art="friend"></i><span>合言葉で部屋を作って対戦</span><em>Roblox版</em></button>
+      <button class="mcard" data-v="gp"><b>大会</b><i class="art" data-art="gp"></i><span>予選2走＋優勝戦。得点で枠が決まる</span><em>優勝を目指す</em></button>
+      <button class="mcard" data-v="event"><b>イベント</b><i class="art" data-art="event"></i><span>日替わりの特別レース</span><em>コイン2倍</em></button>
+      <button class="mcard" data-v="single"><b>フリーレース</b><i class="art" data-art="single"></i><span>好きな枠・難易度で1レース</span><em>気軽に</em></button>
+      <button class="mcard" data-v="practice"><b>スタート練習</b><i class="art" data-art="practice"></i><span>スタートだけを何度でも</span><em>STを磨く</em></button>
     </div>
   </div>
 
@@ -131,10 +136,10 @@
     </div>
   </div>
 
-  <!-- 戦績 -->
-  <div class="panel narrow" id="records-view">
-    <div class="view-head"><button class="back" data-go="home">‹ ホーム</button><h3>戦績</h3></div>
-    <div id="records"></div>
+  <!-- ガチャ・倉庫・ミッション・メール・ランキング・シーズンパス・通信対戦の案内 -->
+  <div class="panel" id="meta-view">
+    <div class="view-head"><button class="back" data-go="home">‹ ホーム</button><h3 id="meta-h"></h3><span class="pill" id="meta-coins"><i class="coin"></i><b>0</b></span></div>
+    <div id="meta-body"></div>
   </div>
 </div>
 

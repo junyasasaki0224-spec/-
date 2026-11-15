@@ -48,7 +48,7 @@ const path = require('path');
   await p.keyboard.press('Escape'); await p.click('#btn-quit');
   await p.evaluate(() => document.querySelector('#modes button[data-v="gp"]').click()); await p.evaluate(() => document.getElementById('btn-start').click()); await run(5);
   await p.keyboard.press('Escape'); await p.click('#btn-quit');
-  await p.click('.tile[data-go="sheet"]');        // ホーム → 出走表(時間帯はここで選ぶ)
+  await p.click('#btn-race'); await p.click('#modes button[data-v="single"]');        // ホーム → レース → フリーレース → 出走表(時間帯はここで選ぶ)
   for (const e of ['evening', 'night', 'day']) { await p.click(`#opt-env button[data-v="${e}"]`); await run(1); }
   console.log('E state:', await p.evaluate(() => window.__game.G.state + ' mode=' + window.__game.S.mode + ' gp=' + (window.__game.G.gp ? 'on' : 'off')));
   console.log(errs.slice(0, 10).join('\n') || 'no console errors');

@@ -96,6 +96,8 @@ export function setShadowProjection(L, h = 0.03) {
   shadowMat.opacity = 0.2 + 0.24 * clamp(L.y * 1.6, 0, 1);
 }
 
+const SKIN_PARTS = { HullWhite: 'hull', Trim: 'trim', Deck: 'deck', MotorRed: 'cowl' };
+
 export class BoatView {
   constructor(scene, num) {
     this.num = num;
@@ -109,6 +111,7 @@ export class BoatView {
 
     // 艇ごとのマテリアル差し替え
     const numTex = numberTex(num), cache = new Map();
+    this.mSkin = {};
     const swap = (m) => {
       if (cache.has(m)) return cache.get(m);
       let n = m;
@@ -117,6 +120,7 @@ export class BoatView {
       else if (base === 'Suit') { n = m.clone(); n.color.set(SUIT_COLORS[i]); }
       else if (base === 'Helmet') { n = m.clone(); n.color.set(HELMETS[i][0]); this.mHelmet = n; }
       else if (base === 'HelmetStripe') { n = m.clone(); n.color.set(HELMETS[i][1]); this.mStripe = n; }
+      else if (SKIN_PARTS[base]) { n = m.clone(); this.mSkin[SKIN_PARTS[base]] = { mat: n, orig: n.color.clone() }; }
       else if (base === 'NumberPlate') { n = m.clone(); n.color.set(0xffffff); n.map = numTex; }
       else if (base === 'Flag') { n = m.clone(); n.color.set(0xffffff); n.map = numTex; n.side = THREE.DoubleSide; }
       else if (base === 'Glass') { n = m.clone(); n.transparent = true; n.opacity = 0.4; n.depthWrite = false; n.side = THREE.DoubleSide; }
@@ -169,6 +173,11 @@ export class BoatView {
 
   // レーサーごとのヘルメットに塗り替える
   setRacer(r) { const h = HELMETS[r.helmet % HELMETS.length]; this.mHelmet.color.set(h[0]); this.mStripe.color.set(h[1]); }
+  // 塗装(倉庫で選んだ物)。skin = { hull, trim, deck, cowl } / null で元の色。helmet = { base, stripe }
+  setSkin(skin, helmet) {
+    for (const k in this.mSkin) { const p = this.mSkin[k]; if (skin && skin[k] !== undefined) p.mat.color.set(skin[k]); else p.mat.color.copy(p.orig); }
+    if (helmet) { this.mHelmet.color.set(helmet.base); this.mStripe.color.set(helmet.stripe); }
+  }
 
   update(b, dt, time) {
     const sp = b.speed, f = clamp(sp / VMAX, 0, 1);

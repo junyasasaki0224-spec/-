@@ -1,6 +1,6 @@
 // レース進行: フライングスタート、周回判定、順位、引き波、衝突イベント、入力の記録(リプレイ用)。
 import {
-  clamp, M1, M2, START_X, LAP_S, LAPS, zc, region, sOf,
+  clamp, M1, M2, START_X, LAP_S, LAPS, zc, region, sOf, BOUNDS,
 } from './course.js';
 import {
   makeBoat, stepBoat, collideBoats, collideWalls, collideObstacles, timeToCover, applyTilt, SINK_V, SINK_UNIT_V, SINK_WALL_V,
@@ -40,7 +40,7 @@ export function makeConfig(o = {}) {
   // 相手のチルト: 外枠ほど伸び型を選びやすい
   const tilts = o.tilts || lanes.map((id, i) => (id === 'P' ? (o.playerTilt ?? 1) : (rng() < 0.12 + i * 0.07 ? 2 : rng() < 0.3 ? 0 : 1)));
   return {
-    seed, mode: o.mode || 'race', difficulty: o.difficulty ?? 1, lanes, motors, tilts,
+    seed, mode: o.mode || 'race', solo: !!o.solo, difficulty: o.difficulty ?? 1, lanes, motors, tilts,
     weather: o.weather || randomWeather(rng), env: o.env || 'day', title: o.title || '第12R 優勝戦',
   };
 }
@@ -95,6 +95,8 @@ export class Race {
         b.motor = motorFactor(b.motorRate) + D.motor;
         initAI(b, this.rng, { skill: b.racer.skill * D.skill, st: b.racer.st + D.st, sashi: b.racer.sashi, lane: i });
       }
+      // 単独走(タイムアタック): 自艇のほかは最初からいない扱い(当たらず、映らない)
+      if (cfg.solo && !b.isPlayer) { b.out = true; b.sunk = true; b.sinkT = 99; b.x = BOUNDS.minX + 4; b.z = BOUNDS.minZ + 4 + i * 3; }
       this.boats.push(b);
     }
     this.order = this.boats.slice();

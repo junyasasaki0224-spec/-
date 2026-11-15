@@ -11,6 +11,7 @@ say "== ブラウザ版"
 if npm run build >/tmp/check-build.log 2>&1; then say "ビルド: OK"; else say "ビルド: 失敗"; tail -5 /tmp/check-build.log; fail=1; fi
 r=$(node tools/sim-test.mjs 60 1 2>&1 | tail -1) && say "AI 60レース: $r" || { say "AI レース: 失敗"; fail=1; }
 r=$(node tools/guide-bot.mjs 2>&1) && say "$r" || { say "ガイドボット: 失敗"; fail=1; }
+node tools/meta-test.mjs >/dev/null 2>&1 && say "コイン・ガチャ・レートの計算: OK" || { say "コイン・ガチャ・レートの計算: 失敗"; fail=1; }
 
 say "== Roblox 版"
 if command -v luau-compile >/dev/null 2>&1; then

@@ -9,6 +9,16 @@ import { GameAudio } from './audio.js';
 import { Hud, fmtTime, chip } from './hud.js';
 import { Input } from './input.js';
 import { Opening } from './opening.js';
+import * as Meta from './meta.js';
+import artSeason from '../assets/cards/season.jpg';
+import artSingle from '../assets/cards/single.jpg';
+import artTa from '../assets/cards/ta.jpg';
+import artGp from '../assets/cards/gp.jpg';
+import artEvent from '../assets/cards/event.jpg';
+import artPractice from '../assets/cards/practice.jpg';
+import artOnline from '../assets/cards/online.jpg';
+import artFriend from '../assets/cards/friend.jpg';
+const CARD_ART = { season: artSeason, single: artSingle, ta: artTa, gp: artGp, event: artEvent, practice: artPractice, online: artOnline, friend: artFriend };
 
 const $ = (id) => document.getElementById(id);
 const show = (id, v) => $(id).classList.toggle('hidden', !v);
@@ -17,6 +27,8 @@ const show = (id, v) => $(id).classList.toggle('hidden', !v);
 const KEY = 'minato-gp-v2';
 const S = { opening: true, quality: 'auto', volume: 0.8, guide: true, assist: true, shake: true, leverReturn: false, leverUp: 40, tilt: 1, difficulty: 1, env: 'day', lane: 0, mode: 'single', seenHowto: false, rec: { races: 0, wins: 0, bestST: null, bestTime: null, gpWins: 0 } };
 try { const o = JSON.parse(localStorage.getItem(KEY) || '{}'); Object.assign(S, o, { rec: Object.assign(S.rec, o.rec || {}) }); } catch (e) { /* 保存データなし */ }
+const M = Meta.ensureMeta(S);          // コイン・持ち物・レートなど(設定と一緒に保存する)
+if (!['single', 'gp', 'practice', 'season', 'ta', 'event'].includes(S.mode)) S.mode = 'single';
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* 保存できない環境 */ } };
 const isTouch = matchMedia('(pointer: coarse)').matches;
 
@@ -46,7 +58,7 @@ function newProgram(keepMotors) {
   const seed = (Math.random() * 1e9) | 0, rng = mulberry32(seed);
   const motors = keepMotors || {};
   if (!keepMotors) for (const id of ['P', 0, 1, 2, 3, 4, 5]) motors[id] = Math.round((28 + rng() * 20) * 10) / 10;
-  program = { seed, motors, weather: randomWeather(rng) };
+  program = { seed, motors, weather: randomWeather(rng), seasonLane: (rng() * 6) | 0 };
 }
 
 function gpLanes(gp) {
@@ -60,6 +72,11 @@ function gpLanes(gp) {
 function buildCfg() {
   const base = { seed: program.seed, playerTilt: S.tilt, difficulty: S.difficulty, env: S.env, motors: program.motors, weather: program.weather };
   if (S.mode === 'gp') return makeConfig({ ...base, lanes: gpLanes(G.gp), title: GP_TITLES[G.gp.round] });
+  // シーズン: 枠は抽選、相手の強さは級別で決まる
+  if (S.mode === 'season') return makeConfig({ ...base, playerLane: program.seasonLane, difficulty: Meta.GRADES[Meta.gradeOf(M.rate)].diff, title: 'シーズン戦' });
+  // タイムアタック: 1艇だけ・無風の水面で3周
+  if (S.mode === 'ta') return makeConfig({ ...base, playerLane: S.lane, solo: true, weather: { wind: 0, windDir: 0, wave: 0, cover: 0.2 }, title: 'タイムアタック' });
+  if (S.mode === 'event') { const ev = Meta.eventOf(Meta.dayKey()); return makeConfig({ ...base, playerLane: ev.lane ?? S.lane, env: ev.env, weather: ev.weather, difficulty: ev.difficulty ?? S.difficulty, title: ev.name }); }
   return makeConfig({ ...base, playerLane: S.lane, mode: S.mode === 'practice' ? 'practice' : 'race', title: S.mode === 'practice' ? 'スタート練習' : '第12R 優勝戦' });
 }
 
@@ -68,10 +85,19 @@ function applyRace(race) {
   G.race = race; G.cfg = race.cfg;
   stage.setEnv(race.cfg.env, race.cfg.weather);
   race.boats.forEach((b, i) => views[i].setRacer(b.racer));
+  applySkins();
   hud.setWeather(race.cfg.weather);
   stage.spray.clear(); rig.reset();
   G.lastTick = -99; G.resultT = -1; G.replayEndT = -1; G.introT = 0; G.crossed = false; G.holdT = 0;
   leaveSpectate();
+}
+
+// 倉庫で選んだ塗装とヘルメットを、自分の艇(ホームでは選んでいるコースの艇)に付ける
+function applySkins() {
+  const race = G.race; if (!race) return;
+  const skin = Meta.item(M.skin), helmet = Meta.item(M.helmet), mineI = race.playerIndex >= 0 ? race.playerIndex : (S.mode === 'gp' ? 0 : S.mode === 'season' ? program.seasonLane : S.lane);
+  race.boats.forEach((b, i) => { if (i === mineI) views[i].setSkin(skin, helmet); else { views[i].setSkin(null); views[i].setRacer(b.racer); } });
+  $('hud').classList.toggle('solo', !!race.cfg.solo);
 }
 
 function closeOverlays() { for (const id of ['title', 'result', 'pause', 'howto', 'settings']) show(id, false); }
@@ -101,7 +127,7 @@ function startRace() {
   closeOverlays();
   hud.show(true);
   document.body.classList.add('playing');
-  if (S.opening && S.mode !== 'practice') {
+  if (S.opening && S.mode !== 'practice' && S.mode !== 'ta') {
     G.state = 'opening';
     hud.drops.length = 0;
     hud.fctx.clearRect(0, 0, hud.fx.width, hud.fx.height);
@@ -134,6 +160,7 @@ function toTitle() {
   applyRace(new Race(makeConfig({ env: S.env, weather: program.weather })));
   hud.show(false);
   document.body.classList.remove('playing');
+  if (Meta.dailyRefresh(M)) save();
   closeOverlays(); show('title', true);
   setView(S.mode === 'gp' && G.gp && G.gp.round > 0 ? 'sheet' : 'home');     // グランプリの途中は次の出走表へ
   renderTitle();
@@ -155,23 +182,80 @@ function setPaused(p) {
 function setView(v) {
   if (v === 'howto') { show('howto', true); return; }
   $('title').dataset.view = v;
-  if (v !== 'home') rig.reset();
+  if (META_VIEWS[v]) renderMeta(v);
+  if (v === 'home') renderTitle();
 }
-const GRADES = [['B2', 0], ['B1', 3], ['A2', 10], ['A1', 25]];      // 級別: 通算の1着の数で上がる
-const MODE_NAME = { single: 'シングルレース', gp: 'グランプリ', practice: 'スタート練習' };
+const MODE_NAME = { single: 'フリーレース', gp: '大会', practice: 'スタート練習', season: 'シーズン', ta: 'タイムアタック', event: 'イベント' };
+const hex = (n) => '#' + n.toString(16).padStart(6, '0');
+const coinTxt = (n) => n.toLocaleString('ja-JP');
+const swatch = (it) => (it.kind === 'skin'
+  ? `background:linear-gradient(135deg, ${hex(it.hull)} 0 46%, ${hex(it.trim)} 46% 62%, ${hex(it.deck)} 62% 82%, ${hex(it.cowl)} 82%)`
+  : `background:radial-gradient(circle at 50% 42%, ${hex(it.stripe)} 0 16%, ${hex(it.base)} 17%)`);
+const itemCard = (it, cls = '', note = '') => `<button class="item r-${it.r} ${cls}" data-id="${it.id}"><i style="${swatch(it)}"></i><b>${it.name}</b><span>${it.kind === 'skin' ? '塗装' : 'ヘルメット'}・${it.r}${note}</span></button>`;
+
+// ---------------- ホームから開く画面(ガチャ・倉庫・ミッション・メール・ランキング・シーズンパス・通信対戦) ----------------
+const META_VIEWS = { gacha: 'ガチャ', garage: '倉庫', missions: 'ミッション', mail: 'メール', ranking: 'ランキング', pass: 'シーズンパス', online: '通信対戦' };
+let gachaLast = null, garageTab = 'skin';
+function renderMeta(v) {
+  $('meta-h').textContent = META_VIEWS[v];
+  $('meta-coins').querySelector('b').textContent = coinTxt(M.coins);
+  const B = $('meta-body'); let h = '';
+  if (v === 'gacha') {
+    h = `<p class="lead">塗装とヘルメットが当たります。コインはレース・ミッション・メールで手に入ります(お金では買えません)。</p>
+      <div class="btns"><button class="primary" data-pull="1" ${M.coins < Meta.GACHA_COST ? 'disabled' : ''}>1回 <small>${Meta.GACHA_COST}コイン</small></button><button class="primary" data-pull="10" ${M.coins < Meta.GACHA_COST10 ? 'disabled' : ''}>10回 <small>${Meta.GACHA_COST10}コイン</small></button></div>
+      <div id="gacha-out" class="items">${gachaLast ? gachaLast.map((r, k) => itemCard(r.item, 'pop', r.dupe ? `　かぶり +${r.dupe}コイン` : '　NEW').replace('<button', `<button style="animation-delay:${k * 0.07}s"`)).join('') : ''}</div>
+      <p class="note">出る確率: ${Object.values(Meta.RARITY).map((r) => `${r.name} ${(r.rate * 100).toFixed(0)}%`).join('　')}　・　全${Meta.ITEMS.length}種のうち ${M.own.length}種 所持　・　同じ物が出たらコインに変わります</p>`;
+  } else if (v === 'garage') {
+    const list = Meta.ITEMS.filter((it) => it.kind === garageTab);
+    h = `<div class="seg" id="garage-tabs"><button data-t="skin" class="${garageTab === 'skin' ? 'sel' : ''}">塗装</button><button data-t="helmet" class="${garageTab === 'helmet' ? 'sel' : ''}">ヘルメット</button></div>
+      <div class="items">${list.map((it) => itemCard(it, M.own.includes(it.id) ? (M.skin === it.id || M.helmet === it.id ? 'own sel' : 'own') : 'lock', M.own.includes(it.id) ? (M.skin === it.id || M.helmet === it.id ? '　装備中' : '') : '　未入手')).join('')}</div>
+      <p class="note">持っている物を押すと、すぐ艇に反映されます。未入手の物はガチャで当たります。</p>`;
+  } else if (v === 'missions') {
+    h = `<p class="lead">毎日0時に新しくなります。</p>` + Meta.MISSIONS.map((ms) => {
+      const n = Math.min(ms.goal, M.mis[ms.id] || 0), done = M.misDone[ms.id], ready = !done && n >= ms.goal;
+      return `<div class="mrow${done ? ' done' : ''}"><div><b>${ms.name}</b><i><u style="width:${n / ms.goal * 100}%"></u></i></div><span>${n}/${ms.goal}</span><button data-mis="${ms.id}" ${ready ? '' : 'disabled'}>${done ? '受取済み' : `${ms.coins}コイン`}</button></div>`;
+    }).join('');
+  } else if (v === 'mail') {
+    h = M.mail.length ? `<div class="btns sub"><button data-mailall="1">すべて受け取る</button></div>` + M.mail.map((x) => `<div class="mrow"><div><b>${x.title}</b><small>${x.body}</small></div><button data-mail="${x.id}">${x.coins ? `${x.coins}コイン` : '閉じる'}</button></div>`).join('') : '<p class="lead">新しいメールはありません。</p>';
+  } else if (v === 'pass') {
+    const into = M.xp - M.tier * Meta.PASS_STEP;
+    h = `<div class="passbar"><b>${M.tier}段</b><i><u style="width:${into / Meta.PASS_STEP * 100}%"></u></i><span>次の段まで あと${Meta.PASS_STEP - into}</span></div>
+      <p class="lead">レースに出ると経験値がたまり、100たまるごとに段が上がってコインがメールで届きます。</p>
+      <div class="passrow">${[1, 2, 3, 4, 5, 6].map((k) => `<div><span>${M.tier + k}段</span><b>${Meta.passReward(M.tier + k)}</b><small>コイン</small></div>`).join('')}</div>`;
+  } else if (v === 'ranking') {
+    const board = Meta.rateBoard(M, ROSTER), r = S.rec;
+    h = `<h2>場内レートランキング <span>シーズン戦の成績で動きます(相手は場内の選手)</span></h2><table class="rk">${board.map((x, k) => `<tr class="${x.me ? 'me' : ''}"><td>${k + 1}</td><td>${x.name}</td><td>${x.cls}</td><td><b>${x.rate}</b></td></tr>`).join('')}</table>
+      <h2>タイムアタック <span>コースごとの自己ベスト</span></h2><table class="rk"><tr>${M.ta.map((_, k) => `<th>${chip(k)}</th>`).join('')}</tr><tr>${M.ta.map((t) => `<td>${t === null ? '—' : fmtTime(t)}</td>`).join('')}</tr></table>
+      <h2>戦績</h2><table class="rk"><tr><td>通算</td><td><b>${r.races}戦 ${r.wins}勝</b></td><td>勝率</td><td><b>${r.races ? (r.wins / r.races * 100).toFixed(1) + '%' : '—'}</b></td></tr>
+      <tr><td>シーズン</td><td><b>${M.seasonRaces}戦 ${M.seasonWins}勝</b></td><td>最高レート</td><td><b>${M.peak}</b></td></tr>
+      <tr><td>ベストST</td><td><b>${r.bestST === null ? '—' : r.bestST.toFixed(2)}</b></td><td>大会優勝</td><td><b>${r.gpWins}回</b></td></tr></table>`;
+  } else if (v === 'online') {
+    h = `<p class="lead">ほかの人と走る通信対戦は、Roblox 版で遊べます。このブラウザ版は1人用です。</p>
+      <div class="netlist"><div><b>オンライン</b><span>6人のカジュアル戦。レートは動きません</span></div><div><b>フレンド</b><span>合言葉(部屋コード)で部屋を作り、友だちと対戦</span></div><div><b>ランク戦</b><span>近いレートの相手と当たり、世界ランキングに載ります</span></div><div><b>支部・招待</b><span>仲間とチームを組む・友だちを招く(Roblox 版で準備中)</span></div></div>
+      <p class="note">ブラウザ版のコイン・塗装・レートは、この端末の中だけに保存されます。</p>`;
+  }
+  B.innerHTML = h;
+  B.querySelectorAll('[data-pull]').forEach((b) => b.addEventListener('click', () => { const out = Meta.pull(M, +b.dataset.pull); if (!out) return; gachaLast = out; audio.init(); audio.finishJingle(out.some((r) => r.item.r === 'SSR' || r.item.r === 'SR')); save(); renderMeta('gacha'); }));
+  B.querySelectorAll('#garage-tabs button').forEach((b) => b.addEventListener('click', () => { garageTab = b.dataset.t; audio.click(); renderMeta('garage'); }));
+  if (v === 'garage') B.querySelectorAll('.item.own').forEach((b) => b.addEventListener('click', () => { Meta.equip(M, b.dataset.id); save(); audio.click(); applySkins(); renderMeta('garage'); }));
+  B.querySelectorAll('[data-mis]').forEach((b) => b.addEventListener('click', () => { if (Meta.claimMission(M, b.dataset.mis)) { audio.click(); save(); renderMeta('missions'); } }));
+  B.querySelectorAll('[data-mail]').forEach((b) => b.addEventListener('click', () => { Meta.claimMail(M, b.dataset.mail); audio.click(); save(); renderMeta('mail'); }));
+  B.querySelectorAll('[data-mailall]').forEach((b) => b.addEventListener('click', () => { for (const x of M.mail.slice()) Meta.claimMail(M, x.id); audio.click(); save(); renderMeta('mail'); }));
+}
 
 function renderTitle() {
-  const cfg = buildCfg(), gp = S.mode === 'gp';
+  const cfg = buildCfg(), gp = S.mode === 'gp', ev = S.mode === 'event' ? Meta.eventOf(Meta.dayKey()) : null;
+  const fixedLane = gp || S.mode === 'season' || (ev && ev.lane !== undefined);
   document.querySelectorAll('#modes button').forEach((b) => b.classList.toggle('sel', b.dataset.v === S.mode));
-  $('entry-h').innerHTML = gp ? `${GP_TITLES[G.gp.round]} 出走表 <span>枠は得点順・番組で決まります</span>` : '出走表 <span>行を押して乗る艇を選ぶ</span>';
+  $('entry-h').innerHTML = gp ? `${GP_TITLES[G.gp.round]} 出走表 <span>枠は得点順・番組で決まります</span>` : S.mode === 'season' ? '出走表 <span>枠は抽選。相手は級別に合わせた強さ</span>' : ev ? `出走表 <span>${ev.desc}</span>` : S.mode === 'ta' ? '走るコースを選ぶ <span>1艇だけで走ります</span>' : '出走表 <span>行を押して乗る艇を選ぶ</span>';
   $('entry').innerHTML = cfg.lanes.map((id, i) => {
     const r = id === 'P' ? PLAYER : ROSTER[id], t = TILTS[cfg.tilts[i]];
-    return `<button class="entry${id === 'P' ? ' sel' : ''}${gp ? ' locked' : ''}" data-i="${i}">
+    return `<button class="entry${id === 'P' ? ' sel' : ''}${fixedLane ? ' locked' : ''}${cfg.solo && id !== 'P' ? ' ghost' : ''}" data-i="${i}">
       <span class="num" style="background:${BOAT_CSS[i]};color:${BOAT_TEXT_CSS[i]}">${i + 1}</span>
       <span class="nm">${r.name}${id === 'P' ? '' : `<i>${r.cls}</i>`}</span><span class="cs">${i + 1}コース・${i < 3 ? 'スロー' : 'ダッシュ'}</span>
       <span class="st"><span>モーター2連率 <b>${cfg.motors[id].toFixed(1)}%</b></span>${id === 'P' ? '' : `<span>平均ST <b>${r.st.toFixed(2)}</b></span><span>得意 <b>${r.style}</b></span>`}<span>チルト <b>${t.label}</b></span></span></button>`;
   }).join('');
-  if (!gp) $('entry').querySelectorAll('.entry').forEach((el) => el.addEventListener('click', () => { S.lane = +el.dataset.i; save(); audio.init(); audio.click(); renderTitle(); }));
+  if (!fixedLane) $('entry').querySelectorAll('.entry').forEach((el) => el.addEventListener('click', () => { S.lane = +el.dataset.i; save(); audio.init(); audio.click(); renderTitle(); applySkins(); }));
   const w = cfg.weather, wx = Math.cos(w.windDir) * w.wind;
   $('wxline').innerHTML = `水面状況　<b>${windLabel(w)}</b>・波高 <b>${w.wave}cm</b>　${wx < -1.5 ? '向かい風で助走が伸びにくい' : wx > 1.5 ? '追い風でスタートが早くなりやすい' : ''}`;
   $('opt-tilt').innerHTML = TILTS.map((t, k) => `<button data-v="${k}" class="${k === S.tilt ? 'sel' : ''}">${t.label}<small>${t.note}</small></button>`).join('');
@@ -181,19 +265,23 @@ function renderTitle() {
   for (const [id, v] of [['opt-diff', S.difficulty], ['opt-env', S.env]]) $(id).querySelectorAll('button').forEach((b) => b.classList.toggle('sel', b.dataset.v === String(v)));
   show('gp-box', gp);
   if (gp) $('gp-box').innerHTML = `<h2>グランプリ得点 <span>1着10点・2着8点・3着6点…　優勝戦の1着が優勝</span></h2>${gpTable()}`;
+  // 選べない項目は隠す(シーズンは相手の強さが級別で決まる。タイムアタックは相手がいない。イベントは時間帯が決まっている)
+  const hideDiff = S.mode === 'season' || S.mode === 'ta' || (ev && ev.difficulty !== undefined), hideEnv = !!ev;
+  show('opt-diff', !hideDiff); $('opt-diff').previousElementSibling.classList.toggle('hidden', hideDiff);
+  show('opt-env', !hideEnv); $('opt-env').previousElementSibling.classList.toggle('hidden', hideEnv);
   $('btn-start').textContent = gp ? (G.gp.round === 2 ? '優勝戦 出走' : `${GP_TITLES[G.gp.round]} 出走`) : S.mode === 'practice' ? '練習開始' : '出 走';
-  // ホーム: 級別と通算成績、今の設定
-  const r = S.rec;
-  let gi = 0; for (let k = 0; k < GRADES.length; k++) if (r.wins >= GRADES[k][1]) gi = k;
-  const next = GRADES[gi + 1];
-  $('home-grade').textContent = GRADES[gi][0];
-  $('home-stats').textContent = `${r.races}戦 ${r.wins}勝` + (next ? `　${next[0]}まで あと${next[1] - r.wins}勝` : '　最上位');
-  $('home-prog').style.width = next ? `${Math.round((r.wins - GRADES[gi][1]) / (next[1] - GRADES[gi][1]) * 100)}%` : '100%';
-  $('home-now').textContent = `${MODE_NAME[S.mode]}${gp ? `・${GP_TITLES[G.gp.round]}` : S.mode === 'practice' ? '' : `・${S.lane + 1}コース`}・${DIFFS[S.difficulty].name}`;
-  $('sheet-h').textContent = MODE_NAME[S.mode];
-  const row = (k, v) => `<div><span>${k}</span><b>${v}</b></div>`;
-  $('records').innerHTML = row('級別', GRADES[gi][0]) + row('通算', `${r.races}戦 ${r.wins}勝`) + row('勝率', r.races ? `${(r.wins / r.races * 100).toFixed(1)}%` : '—')
-    + row('ベストST', r.bestST === null ? '—' : r.bestST.toFixed(2)) + row('ベストタイム', r.bestTime === null ? '—' : fmtTime(r.bestTime)) + row('グランプリ優勝', `${r.gpWins}回`);
+  // ホーム: 級別(レート)・コイン・シーズンパス・知らせの数
+  const gi = Meta.gradeOf(M.rate), next = Meta.GRADES[gi + 1], g0 = Meta.GRADES[gi];
+  $('home-grade').textContent = g0.name;
+  $('home-stats').textContent = `RATE ${M.rate}` + (next ? `　${next.name}まで あと${next.rate - M.rate}点` : '　最上位');
+  $('home-prog').style.width = next ? `${Math.round((M.rate - g0.rate) / (next.rate - g0.rate) * 100)}%` : '100%';
+  $('home-coins').querySelector('b').textContent = coinTxt(M.coins);
+  $('home-pass').querySelector('b').textContent = `${M.tier}段`;
+  const badge = (id, n) => { $(id).textContent = n || ''; $(id).classList.toggle('on', n > 0); };
+  badge('mail-badge', M.mail.length); badge('mis-badge', Meta.missionsReady(M));
+  const laneTxt = gp ? `・${GP_TITLES[G.gp.round]}` : S.mode === 'practice' ? '' : S.mode === 'season' ? `・${g0.name}級` : `・${cfg.lanes.indexOf('P') + 1}コース`;
+  $('home-now').textContent = `${MODE_NAME[S.mode]}${ev ? `「${ev.name}」` : ''}${laneTxt}${hideDiff || S.mode === 'practice' ? '' : `・${DIFFS[cfg.difficulty].name}`}`;
+  $('sheet-h').textContent = ev ? `イベント「${ev.name}」` : MODE_NAME[S.mode];
 }
 
 function gpTable() {
@@ -230,6 +318,14 @@ function showResult() {
     if (pl.lapTimes.length) tags.push(`ベストラップ <b>${Math.min(...pl.lapTimes).toFixed(1)}秒</b>`);
     if (pl.finished && pl.finishTime > 0 && (rec.bestTime === null || pl.finishTime < rec.bestTime)) { rec.bestTime = pl.finishTime; tags.push('<b>ベストタイム更新！</b>'); }
   }
+  // コイン・レート・シーズンパス・ミッション
+  const rw = Meta.applyResult(M, { mode: practice ? 'practice' : S.mode, place: pl.place || pl.rank, out: pl.out, st: pl.st, lane: race.playerIndex, time: pl.finished && pl.finishTime > 0 ? pl.finishTime : 0, event: S.mode === 'event' });
+  if (S.mode === 'ta' && !pl.out) { head = fmtTime(pl.finishTime); p = rw.taBest ? '1' : 'x'; sub = rw.taBest ? `${race.playerIndex + 1}コースの自己ベスト更新！` : `${race.playerIndex + 1}コース　自己ベスト ${fmtTime(M.ta[race.playerIndex])}`; }
+  if (rw.rate) tags.push(`レート <b>${rw.rate > 0 ? '+' : ''}${rw.rate}</b>（${M.rate}）`);
+  if (rw.grade) tags.push(`<b>${rw.grade} 級に昇級！</b>`);
+  if (rw.coins) tags.push(`コイン <b>+${rw.coins}</b>${S.mode === 'event' ? '（2倍）' : ''}`);
+  if (rw.tiers.length) tags.push(`<b>シーズンパス ${rw.tiers[rw.tiers.length - 1]}段！</b> メールにごほうび`);
+  if (Meta.missionsReady(M)) tags.push('<b>ミッション達成</b> ホームで受け取れます');
   let extra = tags.map((t) => `<span class="tag">${t}</span>`).join('');
   // グランプリの得点
   let last = false;
@@ -547,7 +643,7 @@ function step(dt) {
   }
   const race = G.race, live = G.state === 'race', replay = G.state === 'replay';
   const pl = race.player;
-  const target = G.state === 'title' ? race.boats[S.mode === 'gp' ? 0 : S.lane] : replay ? race.boats[G.follow] || race.order[0] : G.spec && live ? race.boats[G.follow] : pl || race.order[0];
+  const target = G.state === 'title' ? race.boats[S.mode === 'gp' ? 0 : S.mode === 'season' ? program.seasonLane : S.lane] : replay ? race.boats[G.follow] || race.order[0] : G.spec && live ? race.boats[G.follow] : pl || race.order[0];
   if (!G.paused) {
     G.time += dt; G.introT += dt;
     let sdt = replay && G.rp ? (G.rp.playing ? dt * G.rp.speed : 0) : dt;   // リプレイの再生速度(止めている時は0)
@@ -623,9 +719,10 @@ function bindUi() {
   const click = (id, fn) => $(id).addEventListener('click', fn);
   document.querySelectorAll('#modes button').forEach((b) => b.addEventListener('click', () => {
     audio.init(); audio.click();
+    if (b.classList.contains('net')) { setView('online'); return; }     // 通信対戦は Roblox 版
     S.mode = b.dataset.v; save();
     if (S.mode === 'gp') { if (!G.gp) startGp(); } else G.gp = null;
-    renderTitle(); setView('sheet');
+    renderTitle(); applySkins(); setView('sheet');
   }));
   $('opt-diff').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { S.difficulty = +b.dataset.v; save(); audio.init(); audio.click(); renderTitle(); }));
   $('opt-env').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
@@ -641,6 +738,8 @@ function bindUi() {
   click('btn-replay', startReplay);
   click('btn-replay-end', endReplay);
   bindReplayUi();
+  // モードのカードの絵(ゲームの画面から作った画像)
+  document.querySelectorAll('.mcard .art').forEach((el) => { const a = CARD_ART[el.dataset.art]; if (a) el.style.backgroundImage = `url(${URL.createObjectURL(new Blob([a], { type: 'image/jpeg' }))})`; });
   bindSpectateUi();
   click('btn-title', () => { audio.click(); if (S.mode === 'gp') { G.gp = null; program = null; S.mode = 'single'; save(); } else newProgram(); toTitle(); });
   click('btn-resume', () => setPaused(false));
