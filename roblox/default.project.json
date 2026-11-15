@@ -88,6 +88,11 @@
       "$properties": {
         "ScreenOrientation": "Sensor"
       }
+    },
+    "Players": {
+      "$properties": {
+        "CharacterAutoLoads": false
+      }
     }
   }
 }

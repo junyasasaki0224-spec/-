@@ -19,6 +19,16 @@ local MatchQueue = isRoom and require(script.Parent:WaitForChild("MatchQueue"))
 local roomMembers, roomHost, roomCode = {}, nil, nil
 local roomWaiting = isRoom
 local roomKind, rankedStartAt, rankedStarted = nil, nil, false
+-- 待ち合わせで来る予定の人数(全員そろえば20秒を待たずに始める)
+local rankedExpected = 0
+-- オンライン対戦のモード(シーズン・オンライン・イベント)。空きは AI の達人が走り、結果に「AI」と付ける
+local ONLINE = {ranked=true, online=true, event=true}
+local Meta = require(ReplicatedStorage:WaitForChild("Meta"))
+-- 公開していない Studio では、ワークスペースの属性 MinatoTestMode(ranked / online / event)で
+-- オンライン対戦の会場と同じ AI・イベント・結果の表示を確かめられる(保存はしない)
+local studioMode = localPractice and ONLINE[workspace:GetAttribute("MinatoTestMode")] and workspace:GetAttribute("MinatoTestMode") or nil
+local function matchKind() return roomKind or studioMode end
+local todayEvent = nil
 local rankedLobbyPlace = nil
 local returning = {}
 local roomRemote = Instance.new("RemoteEvent")
@@ -143,13 +153,18 @@ local function preparePlayer(player)
     task.spawn(function()
         local join = player:GetJoinData()
         local data = join and join.TeleportData
-        if type(data) == "table" and (data.mode == "ranked" or data.mode == "online") then
-            if rankedStarted or (roomKind and roomKind ~= data.mode) or not MatchQueue.accept(player.UserId,game.PrivateServerId,data.mode)
-                or rankedStarted or (roomKind and roomKind ~= data.mode) then
+        if type(data) == "table" and ONLINE[data.mode] then
+            if rankedStarted or (roomKind and roomKind ~= data.mode) then
+                player:Kick("対戦会場に入れません。ロビーから入り直してください")
+                return
+            end
+            local admitted, expected = MatchQueue.accept(player.UserId,game.PrivateServerId,data.mode)
+            if not admitted or rankedStarted or (roomKind and roomKind ~= data.mode) then
                 if player.Parent == Players then player:Kick("対戦会場に入れません。ロビーから入り直してください") end
                 return
             end
             if player.Parent ~= Players then return end
+            rankedExpected = math.max(rankedExpected, math.min(expected, 6))
             roomKind=data.mode
             world:SetAttribute("MatchMode",roomKind)
             if type(join.SourcePlaceId)=="number" and join.SourcePlaceId>0 then rankedLobbyPlace=rankedLobbyPlace or join.SourcePlaceId end
@@ -214,12 +229,19 @@ local function assignPlayers()
     table.sort(players, function(a,b) return a.UserId < b.UserId end)
     commands = {}
     for _, player in ipairs(players) do player:SetAttribute("MinatoBoat", 0) end
-    for i, boat in ipairs(boats) do
+    -- イベント「大外まくり指令」では、人間を6号艇から順に乗せる(ほかは1号艇から)
+    local seats = {1,2,3,4,5,6}
+    if todayEvent and todayEvent.lane == 5 then seats = {6,5,4,3,2,1} end
+    for k, i in ipairs(seats) do
+        local boat = boats[i]
         local player = nil
-        if i <= #players then player = players[((nextFirst+i-2) % #players)+1] end
+        if k <= #players then player = players[((nextFirst+k-2) % #players)+1] end
         boat.player = player
         boat.humanUserId = player and player.UserId or nil
+        boat.model:SetAttribute("IsAI", player == nil)
         if player then
+            -- 名前はサーバーが決めて配る。Studio では画面写真にアカウント名が写らないよう伏せる
+            boat.model:SetAttribute("Racer", RunService:IsStudio() and ("テストレーサー"..k) or player.DisplayName)
             commands[player] = {throttle=0, steer=0, last=0, sequence=0, applied=0}
             player:SetAttribute("MinatoBoat", i)
             local round=raceNumber
@@ -286,6 +308,16 @@ local function reset()
     local wind = ((raceNumber*13)%41)/10
     local windAngle = ((raceNumber*47)%360)*math.pi/180
     local racers = createRoster(raceNumber)
+    local kind = matchKind()
+    -- オンライン対戦の空きは達人、フリーレースは今までどおり中級
+    local diff = ONLINE[kind] and RaceAI.DIFFS[4] or RaceAI.DIFFS[2]
+    todayEvent = kind == "event" and Meta.eventOf(Meta.today()) or nil
+    if todayEvent then
+        wind, windAngle, wave = todayEvent.weather.wind, todayEvent.weather.windDir, todayEvent.weather.wave
+    end
+    Lighting.ClockTime = todayEvent and ({day=14, evening=17.4, night=20.5})[todayEvent.env] or 14
+    world:SetAttribute("MatchMode", kind)
+    world:SetAttribute("EventName", todayEvent and todayEvent.name or nil)
     world:SetAttribute("Wind",wind)
     world:SetAttribute("Wave",wave)
     for i,b in ipairs(boats) do
@@ -301,11 +333,12 @@ local function reset()
         b.player = nil
         b.humanUserId,b.finishTime = nil,nil
         b.windX,b.windZ = math.cos(windAngle)*wind,math.sin(windAngle)*wind
-        b.motor,b.gripF,b.thrustF,b.inWake = racers[i].motor,1,1,0
+        b.motor,b.gripF,b.thrustF,b.inWake = racers[i].motor+(diff.motor-RaceAI.DIFFS[2].motor),1,1,0
         b.model:SetAttribute("Racer",racers[i].racer.name)
+        b.model:SetAttribute("IsAI",true)
         b.trail,b.trailTimer = {},0
         applyTilt(b,2)
-        RaceAI.init(b,i-1,1000+raceNumber*37+i*7919,racers[i].racer)
+        RaceAI.init(b,i-1,1000+raceNumber*37+i*7919,racers[i].racer,diff)
     end
     commands = {}
     for _, player in ipairs(Players:GetPlayers()) do player:SetAttribute("MinatoBoat", 0) end
@@ -326,16 +359,21 @@ saveResults = function()
     local results = {}
     finalRows = {}
     for position, boat in ipairs(orderBoats()) do
-        finalRows[position] = {boat.number,boat.out or (boat.finished and tostring(boat.place) or "未完走")}
+        -- 結果の表: 艇番、着(または F・沈・退出)、名前、AI か、塗装、ヘルメット
+        finalRows[position] = {boat.number,boat.out or (boat.finished and tostring(boat.place) or "未完走"),
+            boat.model:GetAttribute("Racer") or "",boat.humanUserId == nil,
+            boat.model:GetAttribute("Skin") or "",boat.model:GetAttribute("HelmetStyle") or ""}
         if boat.humanUserId then table.insert(results,Rules.entry(boat,position)) end
     end
+    -- レートは人間どうしの着順だけで決める(人間の数と、人間の中の順位をサーバーが付ける)
+    Rules.rankHumans(results)
     if #results > 0 and not localPractice then
         -- The mode was established only after server-side admission.
-        PlayerStats.recordRace(raceId,results,roomKind=="ranked")
+        PlayerStats.recordRace(raceId,results,roomKind)
     end
 end
 roomRemote.OnServerEvent:Connect(function(player, action)
-    if action == "return" and (roomKind == "ranked" or roomKind == "online") and (world:GetAttribute("RankedPhase") == "finished" or world:GetAttribute("RankedPhase") == "incomplete")
+    if action == "return" and ONLINE[roomKind] and (world:GetAttribute("RankedPhase") == "finished" or world:GetAttribute("RankedPhase") == "incomplete")
         and roomMembers[player] and rankedLobbyPlace and not returning[player] then
         returning[player]=true
         task.spawn(function()
@@ -353,18 +391,20 @@ roomRemote.OnServerEvent:Connect(function(player, action)
 end)
 local function step()
     if roomWaiting then
-        if (roomKind == "ranked" or roomKind == "online") and not rankedStarted and rankedStartAt and os.clock() >= rankedStartAt then
+        local arrived = 0
+        for member in pairs(roomMembers) do
+            if member.Parent == Players then arrived += 1 end
+        end
+        -- 予定の全員が来たら、または最初の人の到着から20秒で、来た人だけで出走する(空きは AI)
+        if ONLINE[roomKind] and not rankedStarted and rankedStartAt
+            and (os.clock() >= rankedStartAt or (rankedExpected > 0 and arrived >= rankedExpected)) then
             rankedStarted = true
-            if roomKind == "online" then
-                local count = 0
-                for member in pairs(roomMembers) do
-                    if member.Parent == Players then count += 1 end
-                end
-                if count < 6 then
-                    world:SetAttribute("RankedPhase","incomplete")
-                    return
-                end
+            if arrived == 0 then
+                world:SetAttribute("RankedPhase","incomplete")
+                return
             end
+            -- 会場のモードが決まったので、AI の強さとイベントの水面を決め直す
+            reset()
             roomWaiting = false
             elapsed = -14
             raceClock = elapsed
@@ -463,7 +503,7 @@ local function step()
     endEarly, aloneSince = Rules.shouldEnd(boats,elapsed,aloneSince)
     if endEarly or (finishTime and elapsed-finishTime > 45) or elapsed > 240 then
         saveResults()
-        if roomKind == "ranked" or roomKind == "online" then
+        if ONLINE[roomKind] then
             roomWaiting=true
             world:SetAttribute("RoomWaiting",true)
             world:SetAttribute("RankedPhase","finished")

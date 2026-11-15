@@ -298,3 +298,13 @@ GPT が作った試作(Rojo 形式: `roblox/default.project.json`、サーバー
 - ブラウザ版は1人用なので、これらのモードは今までどおり AI 相手のまま(Roblox 版の手本と練習用)。オンラインの部分は Roblox 版だけで作る
 - AI がいたレースでは、レートは人間どうしの着順だけで計算する(AI 相手に勝ってレートを稼げないように。T11 の判断はこれで決着)
 
+**T17 ① の作り(Roblox 版。2026-11-15 Claude)**
+- 待ち合わせの決まりは `roblox/src/MatchPolicy.lua`(Roblox に依存しない。`roblox/tests/match-policy.spec.luau`)。モードは `ranked`(シーズン。近いレートどうし、10秒ごとに許す差を100ずつ広げる)・`online`・`event`(レートを見ない)。6人そろえばすぐ、2人以上なら最初の人が30秒待った時、1人なら60秒で出走。待っている人には「人数(同じ組に入れる人。6まで)」と「残り秒数」を3秒ごとに送る(`Policy.status`)
+- 待ち行列はモードごとに MemoryStore のソート済みマップの1項目(`MatchQueue.lua`。ranked は以前と同じ項目名 `queue`)。**公開していない Studio では MemoryStore が使えないので、同じ決まりをサーバー内の表で動かし、組が決まったら「出走が決まりました(人 n・AI m)」と知らせて終わる**(会場へは移動しない)。会場の番号 `LobbyConfig.racePlaceId` が 0 の公開版は今までどおり「準備中」
+- 会場(`Race.server.lua`)は、組の人数を MemoryStore から数え(`Policy.expected`)、全員そろうか最初の到着から20秒で出走する。来なかった人の艇と空きは AI。オンライン対戦の AI は難易度「達人」(`RaceAI.DIFFS[4]`。ブラウザ版の DIFFS と同じ数字)、フリーレースは今までどおり中級
+- イベントは `Meta.EVENTS` / `Meta.eventOf(日本時間の日付)`(ブラウザ版と同じ計算で同じ物を選ぶ)。風・風向き・波と時間帯(昼14時・薄暮17.4時・夜20.5時)を変える。「大外まくり指令」は人間を6号艇から乗せる。コインは2倍(`result.event`)、レートは変わらない
+- レート: Elo(`rating`。マッチング用)は以前から人間どうしの組み合わせだけ。シーズンの `meta.rate`(級別)は `Meta.seasonDelta`: 人間が1人なら動かない。2人以上なら人間の中の順位を 1〜6着の表(+30 … -15)に広げて当てはめる(2人なら +30 / -15、3人なら +30 / 0 / -15)。失格は -20。人数と順位はサーバーが `Rules.rankHumans` で付ける
+- 名前・AI か・装備は会場のサーバーが艇の属性(`Racer` / `IsAI` / `Skin` / `HelmetStyle`)と結果の行で配る。Studio では人の名前を「テストレーサー1」などに伏せる
+- ロビーと会場ではアバターを出さない(`Players.CharacterAutoLoads = false`。ホームにほかの人が映らないように)
+- Studio で会場の動きを試す時は、ワークスペースに属性 `MinatoTestMode`(`ranked` / `online` / `event`)を付けて遊ぶ(公開していない Studio の時だけ効く。保存はしない)
+

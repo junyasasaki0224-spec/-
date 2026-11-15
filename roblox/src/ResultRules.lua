@@ -43,6 +43,14 @@ function Rules.shouldEnd(boats, clock, aloneSince)
     return not racing or (aloneSince ~= nil and clock-aloneSince >= 10), aloneSince
 end
 
+-- 人間だけの着順を付ける(results は全体の着順に並んでいる)。シーズンのレートはこの順位だけで決める
+function Rules.rankHumans(results)
+    for k, r in ipairs(results) do
+        r.humans, r.humanPlace = #results, k
+    end
+    return results
+end
+
 function Rules.entry(b, position)
     return {userId=b.humanUserId, place=b.out and 6 or position, out=b.out, st=b.startTime, lane=(b.number or 1)-1,
         won=not b.out and b.finished and b.place==1,

@@ -103,3 +103,13 @@ https://create.roblox.com/docs/reference/engine/classes/PVInstance
 https://create.roblox.com/docs/reference/engine/classes/BasePart
 
 Studioのホームは表示名を「テストレーサー」にして、レビュー写真へのアカウント名の写り込みを防ぎます。公開ゲームは通常の表示名です。
+
+## T17 ①（シーズン・オンライン・イベントの待ち合わせと AI 補充）
+
+ホームの「レース」→ シーズン / オンライン / イベントのカード →「参加する」で並びます。6人そろえばすぐ、2人以上なら最初の人が30秒待った時点で、1人だけなら60秒で、空きを AI（達人）で埋めて出走します。待っている間は「3/6 人　出走まで あと 25 秒」と取り消しボタンが出て、ホームに戻っても同じ表示が残ります。
+
+公開していない Studio では MemoryStore と会場への移動が使えないため、同じ決まりをロビーのサーバーの中だけで動かし、組が決まると「出走が決まりました（人 1・AI 5）。Studio では会場へ移動しません」と出ます。会場側の動き（AI 達人・イベントの水面・出走表と結果）は、レース会場のプロジェクトを同期した place で、ワークスペースに文字列の属性 `MinatoTestMode` を `event`（または `ranked` / `online`）として付けてから遊ぶと確かめられます。
+
+AI がいるレースのレートは人間どうしの着順だけで決まります（1人なら動きません）。イベントはコイン2倍・レートなしです。計算のテストは `luau roblox/tests/online-rules.spec.luau` と `luau roblox/tests/match-policy.spec.luau`、達人の AI だけの60レースは `python roblox/tools/run_sim.py 60 4` です。
+
+公開した会場での複数人の待ち合わせ・移動・結果の保存は、`LobbyConfig.racePlaceId` を設定したテスト公開で確かめてください。

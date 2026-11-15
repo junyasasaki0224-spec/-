@@ -93,16 +93,26 @@ model:PivotTo(CFrame.new(0,0,100))
 local root=box("Frame",gui,"Content");root.BackgroundTransparency=1;root.Size=UDim2.fromScale(1,1)
 local toast=label(gui,"読み込み中…",8,8,300,40,14);toast.TextColor3=gold
 local sceneClock=0
+-- 装備した瞬間に、カメラが艇のまわりを素早く1周する(1.1秒。始めと終わりはゆっくり)
+local spinStart=-10
+local SPIN_TIME=1.1
+local waitLabel,matchCount,matchDeadline
+local function waitText()
+    if not matchDeadline then return "" end
+    return string.format("%d/6 人　出走まで あと %d 秒",matchCount or 1,math.max(0,math.ceil(matchDeadline-os.clock())))
+end
 Run.RenderStepped:Connect(function(dt)
     sceneClock+=dt
     local cam=workspace.CurrentCamera
+    if waitLabel and waitLabel.Parent then waitLabel.Text=waitText() end
     if gui.Enabled then
         cam.CameraType=Enum.CameraType.Scriptable
-        local angle=.65+sceneClock*.012
+        local t=math.clamp((sceneClock-spinStart)/SPIN_TIME,0,1)
+        local angle=.65+sceneClock*.012+math.pi*2*(t*t*(3-2*t))
         local portrait=gui.AbsoluteSize.X<gui.AbsoluteSize.Y
         local dist=portrait and 24 or 14
         cam.CFrame=CFrame.lookAt(Vector3.new(math.sin(angle)*dist,7,100+math.cos(angle)*dist),Vector3.new(0,1,100))
-        if page=="倉庫" and not portrait then cam.CFrame=cam.CFrame*CFrame.new(-5,0,0) end
+        if (page=="倉庫" or page=="シーズン" or page=="オンライン" or page=="イベント") and not portrait then cam.CFrame=cam.CFrame*CFrame.new(-5,0,0) end
         cam.Focus=CFrame.new(0,1,100)
     end
 end)
@@ -116,14 +126,22 @@ end
 local matchEvent
 local waitingMode
 local matchMessage=""
-local matchNames={online="オンライン",ranked="シーズン"}
+local matchNames={online="オンライン",ranked="シーズン",event="イベント"}
+local pageKinds={["シーズン"]="ranked",["オンライン"]="online",["イベント"]="event"}
+local joinActions={ranked="join",online="online",event="event"}
+-- サーバーから: 文言、待っているか、モード、集まった人数、出走までの残り秒数
 local function bindMatch(event)
     if event.Name~="MinatoRankedLobby" or matchEvent==event then return end
     matchEvent=event
-    event.OnClientEvent:Connect(function(message,waiting,kind)
+    event.OnClientEvent:Connect(function(message,waiting,kind,count,remaining)
         waitingMode=waiting and (kind or waitingMode or "ranked") or nil
-        matchMessage=message
-        if m and (page=="オンライン" or page=="シーズン" or page=="ホーム") then redraw() end
+        matchMessage=type(message)=="string" and message or ""
+        if waiting and type(count)=="number" and type(remaining)=="number" then
+            matchCount,matchDeadline=math.clamp(count,1,6),os.clock()+math.clamp(remaining,0,120)
+        elseif not waiting then
+            matchCount,matchDeadline=nil,nil
+        end
+        if m and (pageKinds[page] or page=="ホーム") then redraw() end
     end)
     if m then redraw() end
 end
@@ -157,6 +175,7 @@ local function preview(parent,index,width,height)
     local c=Instance.new("Camera");local angle=index*.62;c.CFrame=CFrame.lookAt(Vector3.new(math.sin(angle)*4,2+index*.15,math.cos(angle)*4),Vector3.new(0,.3,0));c.Parent=v;v.CurrentCamera=c
 end
 function redraw()
+    waitLabel=nil
     for _,c in ipairs(root:GetChildren()) do if c:IsA("GuiObject") then c:Destroy() end end
     if not m then return end
     outfit(model,m.skin,m.helmet)
@@ -201,12 +220,23 @@ function redraw()
         end
         button(root,"通信対戦",portrait and 8 or w-186,portrait and h-139 or (short and h-164 or h-190),portrait and (w-24)/2 or 172,legacy)
         button(root,"遊び方",portrait and w/2+4 or w-186,portrait and h-139 or (short and h-110 or h-132),portrait and (w-24)/2 or 172,function() go("遊び方") end)
-        label(root,waitingMode and (matchNames[waitingMode].." 待機中") or mode,w-214,h-79,200,24,14)
+        if waitingMode then
+            -- 待っている間もホームの艇は見えたまま。人数と残り秒数、取り消しをレースボタンの上に出す
+            local chip=frame(root,"Waiting",portrait and 8 or w-558,portrait and h-250 or h-54,portrait and w-16 or 300,48);stroke(chip,gold,1)
+            label(chip,matchNames[waitingMode].." 待機中",10,0,140,24,14).TextColor3=gold
+            waitLabel=label(chip,waitText(),10,22,190,24,14)
+            button(chip,"取り消し",portrait and w-124 or 196,1,100,function() matchEvent:FireServer("cancel") end)
+        else
+            label(root,mode,w-214,h-79,200,24,14)
+        end
         button(root,"レース",portrait and 8 or w-250,h-54,portrait and w-16 or 236,function() go(waitingMode and matchNames[waitingMode] or "レースを選ぶ") end,true)
         return
     end
-    local panelWidth=page=="倉庫" and math.min(w-16,640) or w-16
-    local panel=frame(root,"Panel",8,8,panelWidth,h-16);stroke(panel,white)
+    local side=page=="倉庫" or pageKinds[page]~=nil
+    local panelWidth=side and math.min(w-16,pageKinds[page] and 460 or 640) or w-16
+    -- 待ち合わせの画面はスマホ縦なら上半分だけにして、下に自分の艇を見せる
+    local panelHeight=(pageKinds[page] and portrait) and math.min(h-16,math.floor(h*.55)) or h-16
+    local panel=frame(root,"Panel",8,8,panelWidth,panelHeight);stroke(panel,white)
     button(panel,"ホーム",8,8,88,function() go("ホーム") end)
     label(panel,page,108,8,math.max(90,panelWidth-220),44,portrait and 16 or 22)
     label(panel,"● "..m.coins,panelWidth-105,8,97,44,16).TextColor3=gold
@@ -233,26 +263,39 @@ function redraw()
             if not shortCard then button(card,mode==name and "選択中" or "選ぶ",8,204,194,function() mode=name;redraw() end,true) end
             button(card,"出走の準備",8,shortCard and 146 or 260,194,function()
                 mode=name
-                if name=="シーズン" or name=="オンライン" then go(name)
+                if pageKinds[name] then go(name)
                 elseif name=="フレンド" or name=="フリーレース" then legacy()
                 else toast.Text=name.."の対戦機能は次回の作業で追加します" end
             end)
         end
         list.CanvasSize=UDim2.fromOffset(8*222,shortCard and 204 or 330);return
-    elseif page=="オンライン" or page=="シーズン" then
-        local kind=page=="オンライン" and "online" or "ranked"
+    elseif pageKinds[page] then
+        local kind=pageKinds[page]
         if kind=="online" then
             y=row("6人で対戦","着順でレートは変わりません",y)
+        elseif kind=="event" then
+            local ev=Meta.eventOf(Meta.today())
+            y=row("今日のイベント　"..ev.name,ev.desc,y)
+            y=row("コイン2倍","レートは変わりません。日本時間0時に入れ替わります",y)
         else
             y=row("シーズン戦","近いレートの選手から相手を探します",y)
         end
+        y=row("待ち合わせ","2人以上なら30秒、1人なら60秒で、空きを AI（達人）で埋めて出走",y)
         if waitingMode and waitingMode~=kind then
             y=row(matchNames[waitingMode].."で待機中","モードを切り替えるには待機を終了してください",y,
                 function() go(matchNames[waitingMode]) end,"待機画面へ")
         elseif matchEvent then
-            y=row(waitingMode and "対戦相手を待っています" or "出走受付",matchMessage,y,function()
-                matchEvent:FireServer(waitingMode and "cancel" or (kind=="online" and "online" or "join"))
-            end,waitingMode and "待機をやめる" or "参加する")
+            if waitingMode then
+                label(list,"参加者を待っています",8,y,width-16,30,17)
+                waitLabel=label(list,waitText(),8,y+31,width-16,28,16);waitLabel.TextColor3=gold
+                label(list,matchMessage,8,y+59,width-16,24,14).TextColor3=pale
+                button(list,"待機をやめる",8,y+89,math.min(width-16,170),function() matchEvent:FireServer("cancel") end,true)
+                y+=149
+            else
+                y=row("出走受付",matchMessage~="" and matchMessage or "参加すると会場を探します",y,function()
+                    matchEvent:FireServer(joinActions[kind])
+                end,"参加する")
+            end
         else
             y=row("受付の準備中","通信の準備ができると参加できます",y)
         end
@@ -275,9 +318,22 @@ function redraw()
         end
         y=row("所持 "..#m.own.." / "..#Meta.ITEMS.." 種","重複時 N15 / R40 / SR120 / SSR400 コイン",y)
     elseif page=="倉庫" then
+        -- いちばん上に「装備中」: 塗装とヘルメットを色見本・名前・レア度で出す
+        label(list,"装備中",8,0,120,26,16).TextColor3=gold
+        for k,id in ipairs({m.skin,m.helmet}) do
+            local it=Meta.item(id)
+            if it then
+                local cardW=math.floor((width-24)/2)
+                local now=frame(list,"Equipped"..k,8+(k-1)*(cardW+8),28,cardW,64);stroke(now,rarity[it.r],2)
+                swatch(now,it,8,8,44,48)
+                label(now,it.name,60,6,cardW-66,28,15)
+                label(now,(it.kind=="skin" and "塗装 " or "ヘルメット ")..it.r,60,34,cardW-66,22,12).TextColor3=rarity[it.r]
+            end
+        end
+        y=104
         local columns=math.max(1,math.floor(width/175));local cw=math.floor(width/columns)-8
         for i,it in ipairs(Meta.ITEMS) do
-            local x=((i-1)%columns)*(cw+8);local cy=math.floor((i-1)/columns)*156
+            local x=((i-1)%columns)*(cw+8);local cy=y+math.floor((i-1)/columns)*156
             local card=frame(list,it.id,x,cy,cw,146)
             local owned=table.find(m.own,it.id)
             card.BackgroundTransparency=owned and .1 or .7
@@ -288,7 +344,7 @@ function redraw()
             if owned then button(card,(m.skin==it.id or m.helmet==it.id) and "装備中" or "装備する",8,96,cw-16,function() request("equip",it.id) end)
             else label(card,"未入手",8,99,cw-16,40,14) end
         end
-        y=math.ceil(#Meta.ITEMS/columns)*156
+        y+=math.ceil(#Meta.ITEMS/columns)*156
     elseif page=="メール" then
         for _,v in ipairs(m.mail) do y=row(v.title,v.body.."　+"..v.coins.." コイン",y,function() request("mail",v.id) end) end
         if #m.mail==0 then y=row("メールはありません","次のログインやレースで報酬が届きます",y) end
@@ -313,6 +369,38 @@ function redraw()
     end
     list.CanvasSize=UDim2.fromOffset(0,y+12)
 end
+-- 装備した瞬間の演出: しぶきの粒、レア度の色で光る知らせ(2秒)、レア度に合わせた音、カメラの1周
+local RARITY_PITCH={N=1,R=1.12,SR=1.26,SSR=1.45}
+local splash=Instance.new("Part");splash.Name="EquipSplash";splash.Anchored=true;splash.CanCollide=false
+splash.Transparency=1;splash.Size=Vector3.new(1,1,1);splash.CFrame=CFrame.new(0,1,100);splash.Parent=scenery
+local sparks=Instance.new("ParticleEmitter")
+sparks.Texture="rbxasset://textures/particles/sparkles_main.dds";sparks.Enabled=false
+sparks.Lifetime=NumberRange.new(.6,1.1);sparks.Speed=NumberRange.new(6,14);sparks.SpreadAngle=Vector2.new(70,70)
+sparks.Acceleration=Vector3.new(0,-18,0);sparks.Size=NumberSequence.new(.5,.1)
+sparks.Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0),NumberSequenceKeypoint.new(1,1)})
+sparks.Parent=splash
+local function sound(id,pitch,volume)
+    local s=Instance.new("Sound");s.SoundId=id;s.PlaybackSpeed=pitch;s.Volume=volume;s.Parent=gui
+    s.Ended:Connect(function() s:Destroy() end);s:Play()
+end
+local function celebrate(it)
+    local color=rarity[it.r]
+    spinStart=sceneClock
+    sparks.Color=ColorSequence.new(Color3.fromRGB(226,244,246),color)
+    sparks:Emit(it.r=="SSR" and 90 or (it.r=="SR" and 60 or 36))
+    sound("rbxasset://sounds/impact_water.mp3",1,.5)
+    for k=1,(it.r=="SSR" and 3 or (it.r=="SR" and 2 or 1)) do
+        task.delay((k-1)*.13,function() sound("rbxasset://sounds/volume_slider.ogg",RARITY_PITCH[it.r]+(k-1)*.12,.7) end)
+    end
+    local w,h=gui.AbsoluteSize.X,gui.AbsoluteSize.Y
+    local portrait=w<h
+    local note=box("TextLabel",gui,"EquipNotice",(it.kind=="skin" and "塗装を装備　" or "ヘルメットを装備　")..it.name.."　"..it.r)
+    note.Size=UDim2.fromOffset(math.min(w-24,360),48)
+    note.Position=portrait and UDim2.fromOffset(12,70) or UDim2.fromOffset(w-math.min(w-24,360)-12,h-120)
+    note.TextColor3=color;note.ZIndex=20;note.TextSize=16
+    local glow=stroke(note,color,it.r=="N" and 1 or 3);glow.Transparency=0
+    task.delay(2,function() note:Destroy() end)
+end
 request=function(action,arg)
     if pending then return end
     local token=m and m.token
@@ -321,7 +409,12 @@ request=function(action,arg)
         local intent=pending
         local ok,data,message=pcall(remote.InvokeServer,remote,action,arg,token)
         if ok and data then
+            local before=m and {m.skin,m.helmet}
             m=data;pending=nil;toast.Text=type(m.last)=="string" and m.last or "";redraw()
+            if action=="equip" and before and (m.skin~=before[1] or m.helmet~=before[2]) then
+                local it=Meta.item(m.skin~=before[1] and m.skin or m.helmet)
+                if it then toast.Text="";celebrate(it) end
+            end
             local feedback=toast.Text
             task.delay(3,function() if toast.Text==feedback then toast.Text="" end end)
         else

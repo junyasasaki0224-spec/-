@@ -14,11 +14,19 @@ local function rand(ai)
     ai.seed = (1664525*ai.seed+1013904223)%4294967296
     return ai.seed/4294967296
 end
-function AI.init(boat, lane, seed, racer)
+-- 難易度(src/sim/roster.js の DIFFS と同じ数字)。motor は RaceRoster の中級の値(-0.02)との差を Race 側で足す
+AI.DIFFS = {
+    {name="初級",skill=0.88,st=0.1,motor=-0.055},
+    {name="中級",skill=0.955,st=0.04,motor=-0.02},
+    {name="上級",skill=1.015,st=-0.01,motor=0.006},
+    {name="達人",skill=1.08,st=-0.06,motor=0.035},
+}
+function AI.init(boat, lane, seed, racer, diff)
     local ai = {lane=lane,seed=seed,skill=1,going=false,firstTurn=true,planMark=0,refined=false,effLane=lane,makuri=0,k=1,dodge=0,wob=0,stuck=0}
     racer = racer or {skill=1,st=0.12,sashi=0.4}
-    ai.skill = racer.skill*0.955*(0.985+0.03*rand(ai))
-    ai.stTarget = math.max(0.02,racer.st+0.04+(rand(ai)-0.4)*0.17)
+    diff = diff or AI.DIFFS[2]
+    ai.skill = racer.skill*diff.skill*(0.985+0.03*rand(ai))
+    ai.stTarget = math.max(0.02,racer.st+diff.st+(rand(ai)-0.4)*0.17)
     ai.sashi = lane > 0 and rand(ai) < racer.sashi
     boat.ai = ai
 end

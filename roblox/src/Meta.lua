@@ -101,6 +101,37 @@ function Meta.action(m,action,arg,rnd)
     end
     return "受け取れる報酬・持ち物を選んでください"
 end
+-- 日替わりイベント(src/meta.js の EVENTS と同じ)。wind は m/s、wave は cm、windDir はラジアン
+Meta.EVENTS={
+    {id="night-gale",name="ナイター強風戦",desc="夜・向かい風7mの荒れた水面",env="night",weather={wind=7,windDir=math.pi,wave=7}},
+    {id="outside",name="大外まくり指令",desc="6コースから勝負。薄暮・追い風",env="evening",lane=5,weather={wind=4,windDir=0,wave=3}},
+    {id="glass",name="無風スピード戦",desc="無風・波なし。タイムが出る水面",env="day",weather={wind=0,windDir=0,wave=0}},
+    {id="rough",name="荒水面サバイバル",desc="横風6m・波高8cm。沈没に注意",env="evening",weather={wind=6,windDir=math.pi/2,wave=8}},
+    {id="inside",name="イン逃げ指令",desc="1コースを守り切れ。達人が相手",env="night",lane=0,weather={wind=2,windDir=math.pi,wave=2}},
+}
+-- 日付(日本時間の "YYYY-MM-DD")からその日のイベントを選ぶ(ブラウザ版の eventOf と同じ計算)
+function Meta.eventOf(day)
+    local h=0
+    for i=1,#day do h=(h*31+string.byte(day,i))%4294967296 end
+    return Meta.EVENTS[h%#Meta.EVENTS+1]
+end
+-- 日本時間の今日の日付
+function Meta.today(now)
+    return os.date("!%Y-%m-%d",(now or os.time())+9*3600)
+end
+-- シーズンのレートの増減。オンライン(人間の数 humans がある時)は人間どうしの着順だけで決める:
+-- 人間が1人なら動かない。2人以上なら、人間の中の順位を1〜6着の表に広げて当てはめる(AI に勝っても負けても変わらない)
+local SEASON_DELTA={30,20,10,0,-10,-15}
+function Meta.seasonDelta(r)
+    if type(r.humans)=="number" then
+        if r.humans<2 then return 0 end
+        if r.out then return -20 end
+        local p=math.clamp(r.humanPlace or r.humans,1,r.humans)
+        return SEASON_DELTA[math.floor(1+(p-1)*5/(r.humans-1)+0.5)]
+    end
+    if r.out then return -20 end
+    return SEASON_DELTA[math.clamp(r.place or 6,1,6)]
+end
 function Meta.result(m,r)
     if r.mode=="practice" then return end
     local pi=math.clamp(r.place or 6,1,6)
@@ -116,7 +147,7 @@ function Meta.result(m,r)
         if r.event then coins*=2 end
         if r.mode=="season" then
             local before=Meta.grade(m.rate)
-            m.rate=math.max(0,m.rate+(r.out and -20 or ({30,20,10,0,-10,-15})[pi]))
+            m.rate=math.max(0,m.rate+Meta.seasonDelta(r))
             m.peak=math.max(m.peak,m.rate);m.seasonRaces+=1
             if not r.out and pi==1 then m.seasonWins+=1 end
             local after=Meta.grade(m.rate)

@@ -134,7 +134,9 @@ local function queueResult(result, raceId, change)
     end)
 end
 
-function Stats.recordRace(raceId, participants, ranked)
+-- kind: 会場のモード("ranked" / "online" / "event" / nil)。以前の true は ranked として扱う
+function Stats.recordRace(raceId, participants, kind)
+    local ranked = kind == true or kind == "ranked"
     -- Loading every opponent can yield or fail; retry without blocking Heartbeat.
     pending += 1
     task.spawn(function()
@@ -156,6 +158,7 @@ function Stats.recordRace(raceId, participants, ranked)
         local changes = ranked and calculateRating(eligible) or {}
         for i, result in ipairs(participants) do
             result.mode=ranked and "season" or "race"
+            result.event=kind=="event"
             result.day=os.date("!%Y-%m-%d",os.time()+9*3600)
             queueResult(result,raceId,changes[i] or 0)
         end

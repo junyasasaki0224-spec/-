@@ -15,9 +15,10 @@ for race=1,NUM_RACES do
         local lane=i-1
         local x=lane<3 and -106-lane*4 or -182-(lane-3)*5
         local b={x=x,z=11+lane*5.5,h=0,vx=0,vz=0,w=0,throttle=0,steer=0,lap=0,checkpoint=0,speed=0,started=false,flying=false,
-            windX=math.cos(angle)*wind,windZ=math.sin(angle)*wind,gripSet=1-wave*0.006,gripF=1,thrustF=1,inWake=0,trail={},trailTimer=0,motor=racers[i].motor}
+            windX=math.cos(angle)*wind,windZ=math.sin(angle)*wind,gripSet=1-wave*0.006,gripF=1,thrustF=1,inWake=0,trail={},trailTimer=0,
+            motor=racers[i].motor+(AI.DIFFS[DIFFICULTY].motor-AI.DIFFS[2].motor)}
         b.laneZ=b.z
-        AI.init(b,lane,1000+race*37+i*7919,racers[i].racer)
+        AI.init(b,lane,1000+race*37+i*7919,racers[i].racer,AI.DIFFS[DIFFICULTY])
         boats[i]=b
     end
     local clock=-14

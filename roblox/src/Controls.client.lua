@@ -220,8 +220,9 @@ rankedPanel.Parent = gui
 local function updateRanked()
     local phase=world:GetAttribute("RankedPhase")
     rankedPanel.Visible = phase == "waiting" or phase == "finished" or phase == "incomplete"
-    rankedPanel.Text = phase == "finished" and "終了：ロビーに戻る" or phase == "incomplete" and "6人未到着：ロビーに戻る"
-        or world:GetAttribute("MatchMode")=="online" and "オンライン：参加者を待っています" or "ランク戦：参加者を待っています"
+    local names = {ranked="シーズン", online="オンライン", event="イベント"}
+    rankedPanel.Text = phase == "finished" and "終了：ロビーに戻る" or phase == "incomplete" and "参加者が来ませんでした：ロビーに戻る"
+        or (names[world:GetAttribute("MatchMode")] or "シーズン").."：参加者の到着を待っています"
 end
 world:GetAttributeChangedSignal("RankedPhase"):Connect(updateRanked)
 updateRanked()
@@ -232,8 +233,102 @@ end)
 roomRemote.OnClientEvent:Connect(function(message) rankedPanel.Text=message end)
 
 local status = label("Status","みなとグランプリ",UDim2.fromOffset(180,75),UDim2.fromOffset(12,12),16)
-local result = label("Results","",UDim2.fromOffset(218,168),UDim2.new(1,-226,0,58),16)
-result.Visible=false
+-- 出走表(スタート前)と結果(ゴール後)の表。艇番の色・着・名前・AI の札・塗装とヘルメットの色見本
+-- 名前・AI か・装備はサーバーが艇の属性と結果の行で配る(クライアントの申告は使わない)
+local Meta = require(ReplicatedStorage:WaitForChild("Meta"))
+local LANE = {{Color3.fromRGB(242,242,240),Color3.fromRGB(17,17,17)},{Color3.fromRGB(22,22,26),Color3.new(1,1,1)},
+    {Color3.fromRGB(217,30,46),Color3.new(1,1,1)},{Color3.fromRGB(27,80,212),Color3.new(1,1,1)},
+    {Color3.fromRGB(243,210,27),Color3.fromRGB(17,17,17)},{Color3.fromRGB(24,162,76),Color3.new(1,1,1)}}
+local GOLD = Color3.fromRGB(255,210,60)
+local function hex(n) return Color3.fromRGB(bit32.rshift(n,16),bit32.band(bit32.rshift(n,8),255),bit32.band(n,255)) end
+local result = Instance.new("Frame")
+result.Name = "Results"
+result.Size = UDim2.fromOffset(260,34+6*30)
+result.Position = UDim2.new(1,-268,0,58)
+result.BackgroundColor3 = Color3.fromRGB(11,29,58)
+result.BackgroundTransparency = 0.16
+result.Visible = false
+result.Parent = gui
+do
+    local corner = Instance.new("UICorner"); corner.CornerRadius = UDim.new(0,12); corner.Parent = result
+    local edge = Instance.new("UIStroke"); edge.Color = Color3.new(1,1,1); edge.Transparency = 0.7; edge.Parent = result
+end
+local function cell(parent, class, x, w, text, size)
+    local t = Instance.new(class)
+    t.BackgroundTransparency = 1; t.BorderSizePixel = 0
+    t.Position = UDim2.fromOffset(x,0); t.Size = UDim2.new(0,w,1,0)
+    if class == "TextLabel" then
+        t.Text = text or ""; t.TextColor3 = Color3.new(1,1,1); t.Font = Enum.Font.GothamBold
+        t.TextSize = size or 14; t.TextXAlignment = Enum.TextXAlignment.Left; t.TextTruncate = Enum.TextTruncate.AtEnd
+    end
+    t.Parent = parent
+    return t
+end
+local resultTitle = cell(result,"TextLabel",12,236,"出走表",15)
+resultTitle.Size = UDim2.fromOffset(236,32); resultTitle.TextColor3 = GOLD
+local resultLines = {}
+for i = 1, 6 do
+    local line = Instance.new("Frame")
+    line.Name = "Row"..i; line.BackgroundColor3 = GOLD; line.BackgroundTransparency = 1; line.BorderSizePixel = 0
+    line.Position = UDim2.fromOffset(6,32+(i-1)*30); line.Size = UDim2.fromOffset(248,28); line.Parent = result
+    local corner = Instance.new("UICorner"); corner.CornerRadius = UDim.new(0,6); corner.Parent = line
+    local place = cell(line,"TextLabel",4,34,"",14)
+    local lane = cell(line,"TextLabel",40,22,"",14)
+    lane.BackgroundTransparency = 0; lane.TextXAlignment = Enum.TextXAlignment.Center; lane.Size = UDim2.fromOffset(22,22); lane.Position = UDim2.fromOffset(40,3)
+    local name = cell(line,"TextLabel",68,118,"",14)
+    local ai = cell(line,"TextLabel",188,22,"AI",11)
+    ai.TextColor3 = Color3.fromRGB(169,189,219)
+    local paint = cell(line,"Frame",212,18)
+    paint.Size = UDim2.fromOffset(18,18); paint.Position = UDim2.fromOffset(212,5); paint.BackgroundTransparency = 0
+    local paintCorner = Instance.new("UICorner"); paintCorner.CornerRadius = UDim.new(0,4); paintCorner.Parent = paint
+    local trim = cell(paint,"Frame",9,9); trim.BackgroundTransparency = 0; trim.Size = UDim2.new(0,9,1,0)
+    local helmet = cell(line,"Frame",232,14)
+    helmet.Size = UDim2.fromOffset(14,14); helmet.Position = UDim2.fromOffset(233,7); helmet.BackgroundTransparency = 0
+    local helmetCorner = Instance.new("UICorner"); helmetCorner.CornerRadius = UDim.new(1,0); helmetCorner.Parent = helmet
+    resultLines[i] = {frame=line,place=place,lane=lane,name=name,ai=ai,paint=paint,trim=trim,helmet=helmet}
+end
+-- 1行を描く。number: 艇番、placeText: 着や失格、mine: 自分の行(金の帯)
+local function drawLine(i, number, placeText, racer, isAI, skinId, helmetId, mine)
+    local line = resultLines[i]
+    local skin = Meta.item(skinId ~= "" and skinId or "s0") or Meta.item("s0")
+    local helmet = Meta.item(helmetId ~= "" and helmetId or "h0") or Meta.item("h0")
+    line.frame.BackgroundTransparency = mine and 0.72 or 1
+    line.place.Text = placeText
+    line.place.TextColor3 = (placeText == "F" or placeText == "沈" or placeText == "退出") and Color3.fromRGB(255,90,77)
+        or (placeText == "1着" and GOLD or Color3.new(1,1,1))
+    line.lane.Text = tostring(number)
+    line.lane.BackgroundColor3, line.lane.TextColor3 = LANE[number][1], LANE[number][2]
+    line.name.Text = racer
+    line.ai.Visible = isAI
+    line.paint.BackgroundColor3 = hex(skin.hull); line.trim.BackgroundColor3 = hex(skin.trim)
+    line.helmet.BackgroundColor3 = hex(helmet.base)
+end
+-- スタート前の出走表(艇の属性から)と、ゴール後の結果(サーバーの結果の行から)を描き分ける
+local function drawResults(rows, mySeat, time)
+    -- 右上の大時計(幅約100)をよけて、その左に置く。狭い画面では大時計の下へ
+    result.Position = gui.AbsoluteSize.X >= 700 and UDim2.new(1,-372,0,58) or UDim2.new(1,-268,0,160)
+    if rows then
+        resultTitle.Text = "レース結果"
+        for i = 1, 6 do
+            local row = rows[i]
+            if row then
+                local place = tonumber(row[2])
+                drawLine(i, row[1], place and (place.."着") or tostring(row[2]), row[3] or "", row[4] == true, row[5] or "", row[6] or "", row[1] == mySeat)
+            end
+        end
+        return true
+    end
+    if time >= 0 then return false end
+    resultTitle.Text = (world:GetAttribute("EventName") and (world:GetAttribute("EventName").."　") or "").."出走表"
+    for i = 1, 6 do
+        local b = templates:FindFirstChild("Boat"..i)
+        if b then
+            drawLine(i, i, "", b:GetAttribute("Racer") or "", b:GetAttribute("IsAI") ~= false,
+                b:GetAttribute("Skin") or "", b:GetAttribute("HelmetStyle") or "", i == mySeat)
+        end
+    end
+    return true
+end
 local tiltButton = Instance.new("TextButton")
 tiltButton.Name = "Tilt"
 tiltButton.Size = UDim2.fromOffset(112,40)
@@ -466,9 +561,8 @@ RunService.RenderStepped:Connect(function(dt)
     if boatNumber > 0 then message=boatNumber.."号艇　"..rank.."位\n"..message end
     if reason~="" then message=reason=="F" and "フライング失格" or (reason=="沈" and "沈没失格" or "途中退出") end
     if watching then message=viewing.exited and "待合　次のレースから参加" or (viewing.lane.."号艇を観戦中") end
-    result.Visible=resultRows~=nil
+    result.Visible=drawResults(resultRows, boatNumber, time)
     if resultRows then
-        result.Text=resultText
         message="レース終了"
     end
     status.TextColor3=reason~="" and not watching and Color3.fromRGB(255,90,77) or Color3.new(1,1,1)
