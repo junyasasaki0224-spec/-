@@ -124,6 +124,27 @@ function Hud.new(gui)
     self.time.Size = UDim2.fromOffset(200, 30)
     self.time.TextXAlignment = Enum.TextXAlignment.Left
 
+    -- 左上の下: 前後の艇との秒差(前は暖色、後ろは寒色。ブラウザ版の #gap)
+    self.gaps = {}
+    for k, color in ipairs({ Color3.fromRGB(255, 217, 168), Color3.fromRGB(191, 227, 255) }) do
+        local row = panel(root, k == 1 and "GapAhead" or "GapBehind")
+        row.Position = UDim2.fromOffset(16, 86 + (k - 1) * 25)
+        row.Size = UDim2.fromOffset(150, 22)
+        corner(row, 7)
+        local label = text(row, "Label", 13, BOLD_FONT, color)
+        label.Position = UDim2.fromOffset(7, 0)
+        label.Size = UDim2.fromOffset(20, 22)
+        label.Text = k == 1 and "前" or "後"
+        local c = chip(row, 1, 18)
+        c.Position = UDim2.fromOffset(28, 2)
+        local value = text(row, "Value", 13, NUMBER_FONT, color)
+        value.Position = UDim2.fromOffset(52, 0)
+        value.Size = UDim2.fromOffset(94, 22)
+        value.TextXAlignment = Enum.TextXAlignment.Left
+        row.Visible = false
+        self.gaps[k] = { frame = row, chip = c, value = value }
+    end
+
     -- 左上の下: ミニマップ(コースの形、ターンマーク、各艇の点。自分は三角)
     local map = panel(root, "Minimap", 0.28)
     map.BackgroundColor3 = Color3.fromRGB(8, 40, 60)
@@ -387,7 +408,7 @@ function Hud:layout()
     local compact = size.X < 760 or size.Y < 460
     local portrait = size.X < size.Y
     self.compact = compact
-    self.map.Position = UDim2.fromOffset(16, 88)
+    self.map.Position = UDim2.fromOffset(16, 142)
     self.map.Size = compact and UDim2.fromOffset(170, 45) or UDim2.fromOffset(230, 61)
     self.order.Position = UDim2.new(1, compact and -16 or -166, 0, compact and 52 or 62)
     self.order.AnchorPoint = compact and Vector2.new(1, 0) or Vector2.new(0, 0)
@@ -485,6 +506,16 @@ function Hud:update(info)
                 outline.Color = (self.compact and me) and GOLD or WHITE
                 outline.Thickness = (self.compact and me) and 2 or 1
             end
+        end
+    end
+    -- 前後との秒差
+    for k, g in ipairs(self.gaps) do
+        local item = info.gaps and info.gaps[k]
+        g.frame.Visible = item ~= nil
+        if item then
+            g.chip.Text = tostring(item.lane)
+            g.chip.BackgroundColor3, g.chip.TextColor3 = LANE[item.lane][1], LANE[item.lane][2]
+            g.value.Text = item.text
         end
     end
     -- ミニマップ

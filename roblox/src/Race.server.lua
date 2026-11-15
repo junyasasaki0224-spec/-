@@ -1015,7 +1015,7 @@ RunService.Heartbeat:Connect(function(frame)
         -- ゴーストの位置(x, z, 向き, ハンドル, ゴールしたか)
         local ghost = ghostBoat and {ghostBoat.x, ghostBoat.z, ghostBoat.h, ghostBoat.steer, ghostBoat.finished or ghostBoat.out ~= nil} or nil
         for i, b in ipairs(boats) do
-            states[i] = {b.x,b.z,b.h,b.vx,b.vz,b.w,b.throttle,b.steer,b.accF,b.topF,b.gripSet,b.gripF,b.thrustF,b.windX,b.windZ,b.motor,b.out or "",b.outAt or 0,b.finished,b.place}
+            states[i] = {b.x,b.z,b.h,b.vx,b.vz,b.w,b.throttle,b.steer,b.accF,b.topF,b.gripSet,b.gripF,b.thrustF,b.windX,b.windZ,b.motor,b.out or "",b.outAt or 0,b.finished,b.place,progress(b)}
         end
         for _, player in ipairs(Players:GetPlayers()) do
             local command = commands[player]

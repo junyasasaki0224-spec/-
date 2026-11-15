@@ -876,7 +876,29 @@ RunService.RenderStepped:Connect(function(dt)
     else
         lastVelocity = nil
     end
+    -- 前後の艇との秒差(スタート後・ゴール前・失格していない時だけ)。進んだ距離の差を自分の速さで割る
+    local gaps = nil
+    if shownLane and startTime and not finished and shownOut == "" and not resultRows and not world:GetAttribute("Practice") then
+        local me = latest[shownLane]
+        local myRank = shown and shown:GetAttribute("Rank")
+        if me and me[21] and myRank then
+            local v = math.max(math.sqrt(me[4]*me[4]+me[5]*me[5]), 8)
+            gaps = {}
+            for i = 1, 6 do
+                local other, t = latest[i], templates:FindFirstChild("Boat"..i)
+                local rank = t and t:GetAttribute("Rank")
+                if i ~= shownLane and other and other[21] and other[17] == "" and rank and not t:GetAttribute("Absent") then
+                    if rank == myRank - 1 then
+                        gaps[1] = {lane = i, text = other[19] and "ゴール" or string.format("+%.1f秒", math.max(0, (other[21]-me[21])/v))}
+                    elseif rank == myRank + 1 and t:GetAttribute("StartTime") then
+                        gaps[2] = {lane = i, text = string.format("-%.1f秒", math.max(0, (me[21]-other[21])/v))}
+                    end
+                end
+            end
+        end
+    end
     hud:update({
+        gaps = gaps,
         visible = not (watching and viewing.exited),
         rank = shown and not resultRows and shownOut == "" and (finished and shown:GetAttribute("Place") or shown:GetAttribute("Rank")) or nil,
         out = shown and shownOut ~= "" and (shownOut=="F" and "F" or (shownOut=="沈" and "沈" or "退")) or nil,
