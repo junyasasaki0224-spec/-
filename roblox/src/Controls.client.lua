@@ -11,7 +11,7 @@ local roomRemote = ReplicatedStorage:WaitForChild("MinatoRoomRace")
 local roomInfo = ReplicatedStorage:WaitForChild("MinatoRoomInfo")
 local stepBoat = require(ReplicatedStorage:WaitForChild("BoatPhysics"))
 local reconcile = require(ReplicatedStorage:WaitForChild("Reconciliation"))
-local audioConfig = require(ReplicatedStorage:WaitForChild("AudioConfig"))
+local Sfx = require(ReplicatedStorage:WaitForChild("Sfx"))
 local world = workspace:WaitForChild("Minato")
 local templates = ReplicatedStorage:WaitForChild("MinatoTemplates")
 local boat = templates:WaitForChild("Boat1")
@@ -43,15 +43,12 @@ for i = 1, 6 do
     visual.Name = "VisualBoat"..i
     visual.Parent = workspace
     local foam = Wake.new(visual.PrimaryPart)
-    local engine
-    if audioConfig.engineAssetId ~= "" then
-        engine = Instance.new("Sound")
-        engine.SoundId = audioConfig.engineAssetId
-        engine.Looped = true
-        engine.Volume = 0
-        engine.RollOffMaxDistance = 80*STUDS_PER_METRE
-        engine.Parent = visual.PrimaryPart
-        engine:Play()
+    -- エンジン音は艇の位置から聞こえる(近いほど大きい)
+    local engine = Sfx.loop("engine", visual.PrimaryPart)
+    if engine then
+        engine.RollOffMode = Enum.RollOffMode.InverseTapered
+        engine.RollOffMinDistance = 22*STUDS_PER_METRE
+        engine.RollOffMaxDistance = 140*STUDS_PER_METRE
     end
     foam.engine = engine
     wakes[i] = foam
@@ -552,6 +549,9 @@ local function windText()
 end
 -- 大きな知らせのための、前のフレームの状態
 local lastStart, lastLap, lastFinished, lastOut, lastRace = nil, nil, false, "", nil
+-- 音: 水切り(自分の艇)、観客、スタートの合図(残り3秒から毎秒と0秒)、衝突
+local waterLoop, crowdLoop = Sfx.loop("water"), Sfx.loop("crowd")
+local lastBeep, fanfareRace, lastVelocity, lastHit = nil, nil, nil, 0
 local function held(key) return UserInputService:IsKeyDown(key) end
 local nextSend = 0
 RunService.RenderStepped:Connect(function(dt)
@@ -628,8 +628,11 @@ RunService.RenderStepped:Connect(function(dt)
             local pitch = 0.01+0.07*plane-0.028*math.clamp(speed/22.6,0,1)+0.05*turnIntensity
             view.pitch += (pitch-view.pitch)*(1-math.exp(-5*dt))
             if wakes[i].engine then
-                wakes[i].engine.Volume = out=="" and (0.12 + 0.38*math.clamp(speed/22.6,0,1))*(player:GetAttribute("MinatoVolume") or 80)/100 or 0
-                wakes[i].engine.PlaybackSpeed = 0.75 + 0.9*math.clamp(speed/22.6,0,1)
+                -- 回転数は速さとスロットルで上がる。自分の艇は少し大きく
+                local ratio = math.clamp(speed/22.6,0,1)
+                local own = i == boatNumber and 1 or 0.7
+                wakes[i].engine.Volume = out=="" and (0.14 + 0.3*ratio + 0.16*th)*own*Sfx.master() or 0
+                wakes[i].engine.PlaybackSpeed = 0.62 + 0.62*ratio + 0.2*th
             end
             local sink=math.clamp(sinkTime/1.2,0,1)
             local pos = Vector3.new(x,0.5-0.3*sink-math.max(0,sinkTime-2.5)*0.26,z)*STUDS_PER_METRE
@@ -670,6 +673,10 @@ RunService.RenderStepped:Connect(function(dt)
     elseif not (watching and viewing.exited) then
         camera.CFrame=camera.CFrame:Lerp(target,1-math.exp(-5*dt))
         camera.Focus=CFrame.new(cf.Position)
+        -- 速いほど視野を少し広げて、スピード感を出す(70° → 最大 82°)
+        local own = predicted and math.sqrt(predicted.vx*predicted.vx+predicted.vz*predicted.vz) or 0
+        local fov = 70 + 12*math.clamp(own/22.6,0,1)^1.5
+        camera.FieldOfView += (fov-camera.FieldOfView)*math.min(1,dt*2.5)
     end
     local time = world:GetAttribute("Time") or -8
     -- サーバーの時計を手元で進めた時刻(大時計と予想STを滑らかにする)
@@ -774,25 +781,75 @@ RunService.RenderStepped:Connect(function(dt)
     if boatNumber > 0 and not watching then
         local myStart = boat:GetAttribute("StartTime")
         if myStart and not lastStart then
+            if myStart < 0 then Sfx.play("buzzer", 0.8) elseif myStart <= 0.15 then Sfx.play("select", 0.8) end
             hud:flash(string.format("ST %.2f", myStart), myStart < 0 and "フライング" or (myStart <= 0.15 and "好スタート！" or ""),
                 myStart < 0 and Color3.fromRGB(255,90,77) or (myStart <= 0.15 and Color3.fromRGB(255,210,60) or Color3.new(1,1,1)))
         end
         lastStart = myStart
         local myLap = boat:GetAttribute("Lap")
         if myLap and lastLap and myLap > lastLap and not boat:GetAttribute("Finished") then
+            Sfx.play("lap", 0.8, myLap == 3 and 1.12 or 1)
             hud:flash(myLap == 3 and "最終周" or (myLap.."周目"), "", Color3.new(1,1,1), 1.6)
         end
         lastLap = myLap
         local myFinished = boat:GetAttribute("Finished") == true
         if myFinished and not lastFinished then
             local place = boat:GetAttribute("Place") or 0
+            Sfx.play(place == 1 and "finishWin" or "finish", 0.9)
+            if place <= 3 then Sfx.play("cheer", place == 1 and 0.9 or 0.5) end
             hud:flash("ゴール", place.."着", place == 1 and Color3.fromRGB(255,210,60) or Color3.new(1,1,1), 3)
         end
         lastFinished = myFinished
         if reason ~= "" and lastOut == "" then
+            if reason == "沈" then Sfx.play("splash", 1) end
             hud:flash(reason=="F" and "フライング" or (reason=="沈" and "沈没" or "退出"), "失格", Color3.fromRGB(255,90,77), 3)
         end
         lastOut = reason
+    end
+    -- スタートの合図: 残り3秒から毎秒、0秒で高い音。出走が決まった時(-14秒)にファンファーレ
+    if running and time >= -14 then
+        if fanfareRace ~= raceKey and clock < -9 then
+            fanfareRace = raceKey
+            Sfx.play("fanfare", 0.7)
+        end
+        local second = math.floor(clock)
+        if second ~= lastBeep then
+            if lastBeep and second >= -3 and second <= -1 then Sfx.play("beep", 0.8)
+            elseif lastBeep and second == 0 then Sfx.play("go", 0.9) end
+            lastBeep = second
+        end
+    else
+        lastBeep = nil
+    end
+    -- 水切りの音(自分か、観戦中の艇の速さと横すべり)と、観客のざわめき
+    local shownState = shownLane and latest[shownLane]
+    if waterLoop then
+        local v = 0
+        if shownState and shownState[17] == "" then
+            local vx, vz = shownState[4], shownState[5]
+            if shownLane == boatNumber and predicted then vx, vz = predicted.vx, predicted.vz end
+            v = math.clamp(math.sqrt(vx*vx+vz*vz)/22.6, 0, 1)
+        end
+        waterLoop.Volume += ((0.05 + 0.34*v)*(v > 0.02 and 1 or 0)*Sfx.master() - waterLoop.Volume)*math.min(1, dt*6)
+        waterLoop.PlaybackSpeed = 0.8 + 0.5*v
+    end
+    if crowdLoop then
+        crowdLoop.Volume += ((running and 0.16 or 0.08)*Sfx.master() - crowdLoop.Volume)*math.min(1, dt*2)
+    end
+    -- 衝突: 自分の艇の速さが一瞬で大きく変わった時(サーバーの値で見る)
+    local mineState = boatNumber > 0 and latest[boatNumber]
+    if mineState and mineState[17] == "" then
+        local now = Vector3.new(mineState[4], 0, mineState[5])
+        if lastVelocity and lastVelocity.state ~= mineState then
+            local jump = (now - lastVelocity.v).Magnitude
+            if jump > 2.4 and os.clock() - lastHit > 0.35 and time > -14 then
+                lastHit = os.clock()
+                Sfx.play("hit", math.clamp(0.35 + jump/10, 0.35, 1), 0.9 + math.random()*0.25)
+            end
+        end
+        if not lastVelocity or lastVelocity.state ~= mineState then lastVelocity = {v = now, state = mineState} end
+    else
+        lastVelocity = nil
     end
     hud:update({
         visible = not (watching and viewing.exited),

@@ -6,6 +6,9 @@ local cards=require(RS:WaitForChild("CardImages"))
 local visuals=require(RS:WaitForChild("VisualModels"))
 local Meta=require(RS:WaitForChild("Meta"))
 local Ui=require(RS:WaitForChild("HomeUi"))
+local Sfx=require(RS:WaitForChild("Sfx"))
+-- ホームでは BGM を静かに流す
+Sfx.music(true)
 local Roster=require(RS:WaitForChild("RaceRoster"))
 -- フリーレースの出走表: 乗る艇、チルト、難易度、時間帯、出走表の種(ページを開くたびに新しくする)
 local fr={lane=1,tilt=2,diff=2,env="day",seed=1}
@@ -57,6 +60,7 @@ local function button(parent,title,x,y,w,action,primary)
         b.BackgroundTransparency=0;b.BackgroundColor3=white;b.TextColor3=Color3.fromRGB(26,18,0)
         local g=Instance.new("UIGradient");g.Color=ColorSequence.new(Color3.fromRGB(255,224,102),Color3.fromRGB(245,164,0));g.Rotation=90;g.Parent=b
     end
+    b.Activated:Connect(function() Sfx.play(primary and "select" or "click",.7) end)
     b.Activated:Connect(action);return b
 end
 local function label(parent,text,x,y,w,h,size)
@@ -919,9 +923,15 @@ local function celebrate(it)
     spinStart=sceneClock
     sparks.Color=ColorSequence.new(Color3.fromRGB(226,244,246),color)
     sparks:Emit(it.r=="SSR" and 90 or (it.r=="SR" and 60 or 36))
-    sound("rbxasset://sounds/impact_water.mp3",1,.5)
-    for k=1,(it.r=="SSR" and 3 or (it.r=="SR" and 2 or 1)) do
-        task.delay((k-1)*.13,function() sound("rbxasset://sounds/volume_slider.ogg",RARITY_PITCH[it.r]+(k-1)*.12,.7) end)
+    if Sfx.enabled then
+        -- 装備の音と、レア度に合わせた音
+        Sfx.play("equip",.8)
+        task.delay(.25,function() Sfx.play("gacha"..it.r,.8) end)
+    else
+        sound("rbxasset://sounds/impact_water.mp3",1,.5)
+        for k=1,(it.r=="SSR" and 3 or (it.r=="SR" and 2 or 1)) do
+            task.delay((k-1)*.13,function() sound("rbxasset://sounds/volume_slider.ogg",RARITY_PITCH[it.r]+(k-1)*.12,.7) end)
+        end
     end
     local w,h=gui.AbsoluteSize.X,gui.AbsoluteSize.Y
     local portrait=w<h
@@ -942,6 +952,17 @@ request=function(action,arg)
         if ok and data then
             local before=m and {m.skin,m.helmet}
             m=data;pending=nil;toast.Text=type(m.last)=="string" and m.last or "";redraw()
+            -- 設定の音量を音の部品に伝える(この端末の中だけ)
+            if type(m.volume)=="number" then player:SetAttribute("MinatoVolume",m.volume) end
+            if action=="pull" and type(m.last)=="table" then
+                -- ガチャ: いちばん高いレア度の音を、カードが出そろう頃に鳴らす
+                local best,order=1,{N=1,R=2,SR=3,SSR=4}
+                for _,v in ipairs(m.last) do local it=Meta.item(v.id);if it then best=math.max(best,order[it.r]) end end
+                Sfx.play("drumroll",.6)
+                task.delay(math.min(#m.last*.12,1)+.2,function() Sfx.play("gacha"..({"N","R","SR","SSR"})[best],.9) end)
+            elseif (action=="mail" or action=="mission") and type(m.last)=="string" and m.last:find("受け取り") then
+                Sfx.play("coin",.8)
+            end
             if action=="equip" and before and (m.skin~=before[1] or m.helmet~=before[2]) then
                 local it=Meta.item(m.skin~=before[1] and m.skin or m.helmet)
                 if it then toast.Text="";celebrate(it) end

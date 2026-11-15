@@ -1,5 +1,6 @@
 -- ホームとレース選択の部品(ブラウザ版の style.css の .tile / #btn-race / .mcard / #home-prof / .pill と同じ見た目)
 local TweenService = game:GetService("TweenService")
+local Sfx = require(game:GetService("ReplicatedStorage"):WaitForChild("Sfx"))
 local Ui = {}
 
 Ui.NAVY = Color3.fromRGB(11, 29, 58)
@@ -69,6 +70,10 @@ local function pressable(button)
     end)
     button.MouseLeave:Connect(function()
         scale.Scale = 1
+    end)
+    -- 押した時の音
+    button.Activated:Connect(function()
+        Sfx.play("click", 0.7)
     end)
     return button
 end

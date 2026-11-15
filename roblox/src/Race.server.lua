@@ -43,7 +43,9 @@ if studioMode == "ta" or studioMode == "gp" or studioMode == "single" then roomW
 local ENVS = {day=14, evening=17.4, night=20.5}
 local singleCfg = studioMode == "single" and {
     lane = math.clamp(math.floor(tonumber(workspace:GetAttribute("MinatoTestLane")) or 1),1,6),
-    tilt = 2, diff = 2, env = "day", seed = 1,
+    tilt = 2, diff = 2, seed = 1,
+    -- Studio の試し: 属性 MinatoTestEnv(day / evening / night)で時間帯を選べる
+    env = ({day="day", evening="evening", night="night"})[workspace:GetAttribute("MinatoTestEnv")] or "day",
 } or nil
 local singlePending = studioMode == "single"
 -- 大会(T17 ③): 大会の番号、段階(heat = 予選 / final = 優勝戦)、組、この会場で走り終えた数、次を始めてよいか、最新の記録

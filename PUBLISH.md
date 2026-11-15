@@ -23,7 +23,9 @@
    |---|---|
    | `roblox/assets/models/boat.fbx`（艇・選手・モーター）、`venue.fbx`（会場、同じフォルダ） | 手順8で `boat-import.json`・`venue-import.json` と `Boat.rbxmx`・`Venue.rbxmx` を生成。両方の場所が同じモデルを使う |
    | `assets/cards/` の `season.jpg`・`online.jpg`・`ta.jpg`・`friend.jpg`・`gp.jpg`・`event.jpg`・`single.jpg`・`practice.jpg` | `roblox/src/CardImages.lua` に拡張子を除いた同名の欄が8つある |
-   | `roblox/assets/engine-loop.wav` | `roblox/src/AudioConfig.lua` の `engineAssetId` |
+   | `roblox/assets/audio/minato-sfx.wav`(効果音を並べた物) | `roblox/src/AudioConfig.lua` の `sfx` |
+   | `roblox/assets/audio/minato-loops.wav`(エンジン・水切り・観客) | `roblox/src/AudioConfig.lua` の `loops` |
+   | `roblox/assets/audio/minato-music.wav`(ホームの BGM) | `roblox/src/AudioConfig.lua` の `music` |
    | `roblox/assets/venue/Crowd.png`・`Windows.png`・`Lamps.png` | `roblox/src/VenueImages.lua` の `Crowd`・`Windows`・`Lamps` |
 
 8. モデルは Studio で FBX を1つずつ開き、部品名を保ち、「シーン位置を使用して挿入」「ピボットをシーン起源に設定」を選んで取り込む。Explorer で取り込んだモデルだけを選び、右クリックの「Save to File…」で形式 **Roblox XML Model (.rbxmx)** を選ぶ。プロジェクトの一番上に `owner-boat.rbxmx`・`owner-venue.rbxmx` として保存し、次を実行する。名前が欠けていれば対象の部品が表示される。元の取り込みと同じ軸・単位を使う。出力モデルには元の可動部の中心が入る。[3D Importer](https://create.roblox.com/docs/studio/importer)

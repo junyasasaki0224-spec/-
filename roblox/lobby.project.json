@@ -138,6 +138,15 @@
       },
       "DisplayQuality": {
         "$path": "src/DisplayQuality.lua"
+      },
+      "Sfx": {
+        "$path": "src/Sfx.lua"
+      },
+      "AudioSheet": {
+        "$path": "src/AudioSheet.lua"
+      },
+      "AudioConfig": {
+        "$path": "src/AudioConfig.lua"
       }
     },
     "StarterGui": {
