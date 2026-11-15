@@ -15,10 +15,15 @@ local audioConfig = require(ReplicatedStorage:WaitForChild("AudioConfig"))
 local world = workspace:WaitForChild("Minato")
 local templates = ReplicatedStorage:WaitForChild("MinatoTemplates")
 local boat = templates:WaitForChild("Boat1")
+local updateVenue = require(ReplicatedStorage:WaitForChild("VenueDecor"))(world,templates)
 local visuals=require(ReplicatedStorage:WaitForChild("VisualModels"))
 local outfit=require(ReplicatedStorage:WaitForChild("Outfit"))
 local STUDS_PER_METRE = 3.5
-local BOAT_SCALE = STUDS_PER_METRE * (2.9 / 7)
+local Wake = require(ReplicatedStorage:WaitForChild("BoatWake"))
+local quality=require(ReplicatedStorage:WaitForChild("DisplayQuality"))
+local function applyQuality() quality.apply(player:GetAttribute("MinatoQuality")) end
+player:GetAttributeChangedSignal("MinatoQuality"):Connect(applyQuality)
+applyQuality()
 local camera = workspace.CurrentCamera
 local renderBoats, wakes, motion, latest = {}, {}, {}, {}
 for i = 1, 6 do
@@ -37,44 +42,7 @@ for i = 1, 6 do
     refreshOutfit()
     visual.Name = "VisualBoat"..i
     visual.Parent = workspace
-    local first = Instance.new("Attachment")
-    first.Position = Vector3.new(-1,0,3)*BOAT_SCALE
-    first.Parent = visual.PrimaryPart
-    local second = Instance.new("Attachment")
-    second.Position = Vector3.new(1,0,3)*BOAT_SCALE
-    second.Parent = visual.PrimaryPart
-    local trail = Instance.new("Trail")
-    trail.Attachment0,trail.Attachment1 = first,second
-    trail.Color = ColorSequence.new(Color3.fromRGB(220,244,245))
-    trail.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0,0.45),NumberSequenceKeypoint.new(1,1)})
-    trail.Lifetime = 1.2
-    trail.FaceCamera = true
-    trail.Enabled = false
-    trail.Parent = visual.PrimaryPart
-    local spray = Instance.new("ParticleEmitter")
-    spray.Texture = "rbxasset://textures/particles/smoke_main.dds"
-    spray.Color = ColorSequence.new(Color3.fromRGB(226,244,246))
-    spray.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0,0.4),NumberSequenceKeypoint.new(1,1)})
-    spray.Size = NumberSequence.new({NumberSequenceKeypoint.new(0,0.7*STUDS_PER_METRE),NumberSequenceKeypoint.new(1,2.5*STUDS_PER_METRE)})
-    spray.Lifetime = NumberRange.new(0.35,0.7)
-    spray.Speed = NumberRange.new(STUDS_PER_METRE,3*STUDS_PER_METRE)
-    spray.Rate = 0
-    spray.Parent = first
-    local fanAnchor = Instance.new("Attachment")
-    fanAnchor.Position = Vector3.new(0,0.15,3.3)*BOAT_SCALE
-    fanAnchor.Parent = visual.PrimaryPart
-    local fan = Instance.new("ParticleEmitter")
-    fan.Texture = "rbxasset://textures/particles/smoke_main.dds"
-    fan.Color = ColorSequence.new(Color3.fromRGB(233,248,250))
-    fan.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0,0.45),NumberSequenceKeypoint.new(1,1)})
-    fan.Size = NumberSequence.new({NumberSequenceKeypoint.new(0,0.3*STUDS_PER_METRE),NumberSequenceKeypoint.new(1,1.5*STUDS_PER_METRE)})
-    fan.Lifetime = NumberRange.new(0.7,1.2)
-    fan.Speed = NumberRange.new(5*STUDS_PER_METRE,12*STUDS_PER_METRE)
-    fan.Acceleration = Vector3.new(0,-9.8*STUDS_PER_METRE,0)
-    fan.EmissionDirection = Enum.NormalId.Front
-    fan.SpreadAngle = Vector2.new(18,35)
-    fan.Rate = 0
-    fan.Parent = fanAnchor
+    local foam = Wake.new(visual.PrimaryPart)
     local engine
     if audioConfig.engineAssetId ~= "" then
         engine = Instance.new("Sound")
@@ -85,7 +53,8 @@ for i = 1, 6 do
         engine.Parent = visual.PrimaryPart
         engine:Play()
     end
-    wakes[i] = {trail=trail,spray=spray,fan=fan,fanAnchor=fanAnchor,engine=engine}
+    foam.engine = engine
+    wakes[i] = foam
     motion[i] = {roll=0,yaw=0,pitch=0}
     renderBoats[i] = visual
 end
@@ -154,6 +123,13 @@ local function label(name, text, size, position, textSize)
     item.Font = Enum.Font.GothamBold
     item.TextSize = textSize
     item.Parent = gui
+    local function height()
+        local shift=math.clamp((player:GetAttribute("MinatoLever") or 40)-40,-40,math.max(0,gui.AbsoluteSize.Y-285))
+        item.Position=position-UDim2.fromOffset(0,shift)
+    end
+    player:GetAttributeChangedSignal("MinatoLever"):Connect(height)
+    gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(height)
+    height()
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0,8)
     corner.Parent = item
@@ -478,6 +454,13 @@ local function lever(name, caption, position, horizontal)
     item.BackgroundTransparency = 0.35
     item.AutoButtonColor = false
     item.Parent = gui
+    local function height()
+        local shift=math.clamp((player:GetAttribute("MinatoLever") or 40)-40,-40,math.max(0,gui.AbsoluteSize.Y-285))
+        item.Position=position-UDim2.fromOffset(0,shift)
+    end
+    player:GetAttributeChangedSignal("MinatoLever"):Connect(height)
+    gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(height)
+    height()
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0,18)
     corner.Parent = item
@@ -644,15 +627,8 @@ RunService.RenderStepped:Connect(function(dt)
             local plane = math.clamp((speed-2)/8,0,1)
             local pitch = 0.01+0.07*plane-0.028*math.clamp(speed/22.6,0,1)+0.05*turnIntensity
             view.pitch += (pitch-view.pitch)*(1-math.exp(-5*dt))
-            wakes[i].trail.Enabled = speed > 3
-            wakes[i].spray.Rate = math.clamp((speed-5)*3,0,45)
-            local side = math.abs(lateralSpeed)>0.1 and (lateralSpeed>0 and 1 or -1) or -turnSign
-            local fanDirection = Vector3.new(side*0.85,0.6,0.55)
-            wakes[i].fanAnchor.CFrame = CFrame.lookAt(wakes[i].fanAnchor.Position,wakes[i].fanAnchor.Position+fanDirection)
-            local visibility = i == boatNumber and 0.3 or 1
-            wakes[i].fan.Rate = math.min(140,420*sprayIntensity*(0.3+0.7*th)*(0.4+0.6*math.clamp(speed/22.6,0,1)))*visibility
             if wakes[i].engine then
-                wakes[i].engine.Volume = out=="" and (0.12 + 0.38*math.clamp(speed/22.6,0,1)) or 0
+                wakes[i].engine.Volume = out=="" and (0.12 + 0.38*math.clamp(speed/22.6,0,1))*(player:GetAttribute("MinatoVolume") or 80)/100 or 0
                 wakes[i].engine.PlaybackSpeed = 0.75 + 0.9*math.clamp(speed/22.6,0,1)
             end
             local sink=math.clamp(sinkTime/1.2,0,1)
@@ -662,6 +638,11 @@ RunService.RenderStepped:Connect(function(dt)
             local current = visual:GetPivot()
             if (current.Position-destination.Position).Magnitude > 30*STUDS_PER_METRE then visual:PivotTo(destination)
             else visual:PivotTo(current:Lerp(destination,1-math.exp(-12*dt))) end
+            local side = math.abs(lateralSpeed) > .1 and math.sign(lateralSpeed) or -turnSign
+            local followingLane = watching and not viewing.exited and viewing.lane or boatNumber
+            Wake.update(wakes[i], predictionRace, out, sinkTime, speed, th, sprayIntensity, side,
+                (camera.CFrame.Position-pos).Magnitude, i == followingLane,
+                (current.Position-destination.Position).Magnitude > 30*STUDS_PER_METRE, quality.scale)
             visuals.pose(visual,state[8],view.roll)
         end
     end
@@ -693,6 +674,7 @@ RunService.RenderStepped:Connect(function(dt)
     local time = world:GetAttribute("Time") or -8
     -- サーバーの時計を手元で進めた時刻(大時計と予想STを滑らかにする)
     local clock = (serverClock or time) + math.min(os.clock() - snapshotAt, 0.25)
+    updateVenue(clock, os.clock(), world:GetAttribute("Wind") or 0)
     -- 表示する艇: 自分の艇、観戦中は見ている艇
     local shownLane = (watching and not viewing.exited and viewing.lane) or (boatNumber > 0 and boatNumber) or nil
     local shown = shownLane and templates:FindFirstChild("Boat"..shownLane) or nil

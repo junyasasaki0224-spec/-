@@ -1,33 +1,16 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TeleportService = game:GetService("TeleportService")
-local Stats = require(script.Parent:WaitForChild("PlayerStats"))
-local config = require(script.Parent:WaitForChild("LobbyConfig"))
 local PAGE_SIZE = 50
 local MAX_PAGES = 5
 
 local remote = Instance.new("RemoteFunction")
 remote.Name = "MinatoLeaderboard"
 remote.Parent = ReplicatedStorage
-local practice = Instance.new("RemoteEvent")
-practice.Name = "MinatoPractice"
-practice.Parent = ReplicatedStorage
-local teleporting = {}
-local lastTeleport = {}
-practice.OnServerEvent:Connect(function(player)
-    if teleporting[player] then return end
-    local now=os.clock()
-    if lastTeleport[player] and now-lastTeleport[player]<5 then return end
-    lastTeleport[player]=now
-    if type(config.racePlaceId) ~= "number" or config.racePlaceId <= 0 then
-        practice:FireClient(player,"レース会場は準備中です")
-        return
-    end
-    teleporting[player]=true
-    local ok = pcall(function() TeleportService:TeleportAsync(config.racePlaceId,{player}) end)
-    if not ok then practice:FireClient(player,"移動できませんでした。もう一度お試しください") end
-    teleporting[player]=nil
-end)
+if game:GetService("RunService"):IsStudio() and game.GameId == 0 then
+    remote.OnServerInvoke = function() return {studio=true} end
+    return
+end
+local Stats = require(script.Parent:WaitForChild("PlayerStats"))
 
 local boards = {
     rating={entries={},ranks={},below={},ready=false,busy=false,lastStarted=-60},
@@ -140,7 +123,6 @@ end
 Players.PlayerAdded:Connect(initialize)
 Players.PlayerRemoving:Connect(function(player)
     profiles[player.UserId],lastRequest[player.UserId] = nil,nil
-    teleporting[player],lastTeleport[player] = nil,nil
 end)
 for _,player in ipairs(Players:GetPlayers()) do initialize(player) end
 task.spawn(function()

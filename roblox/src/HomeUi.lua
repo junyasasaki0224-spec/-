@@ -85,6 +85,12 @@ end
 
 -- 線画のアイコン(64×40 の枠の中を、太さ3の線の四角と丸で描く)。kind: gacha / garage / mission / ranking / online / howto
 local ICONS = {
+    timer = {{"ring",17,5,30,30},{"bar",31,10,3,12},{"bar",31,20,8,3},{"bar",25,0,14,3}},
+    flag = {{"bar",17,4,3,32},{"box",20,5,27,15,2},{"bar",23,8,9,5},{"bar",33,13,10,5}},
+    friend = {{"ring",13,5,13,13},{"ring",37,5,13,13},{"box",6,22,26,12,6},{"box",32,22,26,12,6}},
+    season = {{"box",9,21,13,13,2},{"box",25,9,14,25,2},{"box",42,25,13,9,2}},
+    single = {{"box",6,20,50,11,5},{"box",21,11,22,10,3},{"bar",34,4,3,9}},
+    event = {{"box",10,8,44,28,3},{"bar",10,15,44,3},{"bar",20,3,3,10},{"bar",41,3,3,10},{"box",29,21,9,9,2}},
     gacha = { { "box", 14, 4, 36, 32, 4 }, { "ring", 25, 9, 14, 14 }, { "bar", 26, 28, 12, 3 } },
     garage = { { "box", 8, 14, 48, 22, 2 }, { "bar", 18, 22, 28, 3 }, { "bar", 18, 28, 28, 3 }, { "roof", 8, 6, 48, 10 } },
     mission = { { "box", 12, 5, 40, 30, 3 }, { "bar", 30, 13, 16, 3 }, { "bar", 30, 25, 16, 3 }, { "ring", 18, 11, 7, 7 }, { "ring", 18, 23, 7, 7 } },
@@ -329,14 +335,21 @@ function Ui.modeCard(parent, name, title, image, description, tag, x, y, w, h, s
     t.TextXAlignment = Enum.TextXAlignment.Center
     place(t, 4, 0, w - 8, 42)
     local artH = math.max(60, h - 44 - 78)
-    if image and image ~= "" then
+    local icons={"season","online","timer","friend","ranking","event","single","flag"}
+    local iconScale=math.min(1.6,artH/60)
+    local drawing=Ui.icon(c,icons[tonumber(name:match("%d+"))],(w-64*iconScale)/2,44+(artH-40*iconScale)/2,iconScale)
+    if type(image)=="string" and image:match("^rbxassetid://[1-9]%d*$") then
         local art = Instance.new("ImageLabel")
         art.Name = "Art"
+        art.BackgroundTransparency=1
         art.Image = image
         art.ScaleType = Enum.ScaleType.Crop
         art.BorderSizePixel = 0
         place(art, 0, 44, w, artH)
         art.Parent = c
+        local function loaded() drawing.Visible=not art.IsLoaded end
+        art:GetPropertyChangedSignal("IsLoaded"):Connect(loaded)
+        loaded()
     end
     local d = Ui.text(c, "Description", description, w < 200 and 11 or 13, Ui.BOLD, Ui.PALE)
     d.TextXAlignment = Enum.TextXAlignment.Center

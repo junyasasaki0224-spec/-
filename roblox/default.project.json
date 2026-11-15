@@ -44,6 +44,33 @@
       },
       "RaceResult": {
         "$path": "src/RaceResult.lua"
+      },
+      "WaterRules": {
+        "$path": "src/WaterRules.lua"
+      },
+      "CourseWater": {
+        "$path": "src/CourseWater.lua"
+      },
+      "BoatWake": {
+        "$path": "src/BoatWake.lua"
+      },
+      "VenueBoard": {
+        "$path": "src/VenueBoard.lua"
+      },
+      "VenuePixels": {
+        "$path": "src/VenuePixels.lua"
+      },
+      "VenueImages": {
+        "$path": "src/VenueImages.lua"
+      },
+      "VenueArt": {
+        "$path": "src/VenueArt.lua"
+      },
+      "VenueDecor": {
+        "$path": "src/VenueDecor.lua"
+      },
+      "DisplayQuality": {
+        "$path": "src/DisplayQuality.lua"
       }
     },
     "ServerScriptService": {
@@ -118,6 +145,11 @@
     "Workspace": {
       "$properties": {
         "StreamingEnabled": false
+      }
+    },
+    "Lighting": {
+      "$properties": {
+        "LightingStyle": "Realistic"
       }
     }
   }
