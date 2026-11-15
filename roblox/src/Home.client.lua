@@ -119,6 +119,8 @@ end)
 local modes={"シーズン","オンライン","タイムアタック","フレンド","大会","イベント","フリーレース","スタート練習"}
 local descriptions={"級別を上げて頂点へ","6人で水面を競う","1艇・無風で自己ベスト","合言葉で仲間と集合","得点を重ねて優勝へ","日替わりの特別レース","気軽に走って練習","スタートを磨く"}
 local function go(p) page=p;redraw() end
+-- イベント内のランキング(サーバーから。30秒ごとに読み直す)
+local eventBoard,eventLoading=nil,false
 -- 大会: 一覧のタブ、サーバーから届いた一覧、作る画面の5項目、得点表を見ている大会、合言葉の入力
 local gpTab,gpList,gpLoading,gpBoard,gpCode="open",nil,false,nil,""
 local gpForm={name="",size=6,format="heats2",start=0,private=false}
@@ -330,6 +332,31 @@ function redraw()
             local ev=Meta.eventOf(Meta.today())
             y=row("今日のイベント　"..ev.name,ev.desc,y)
             y=row("コイン2倍","レートは変わりません。日本時間0時に入れ替わります",y)
+            -- 今日のイベント内のランキング(着順の得点 10・8・6・4・2・1 の合計)
+            local remoteEv=RS:FindFirstChild("MinatoEventBoard")
+            if remoteEv and (not eventBoard or os.clock()-eventBoard.at>30) and not eventLoading then
+                eventLoading=true
+                task.spawn(function()
+                    local ok,res=pcall(remoteEv.InvokeServer,remoteEv)
+                    eventLoading=false
+                    if ok and type(res)=="table" and not res.busy then eventBoard={at=os.clock(),data=res} end
+                    if page=="イベント" then redraw() end
+                end)
+            end
+            local ev2=eventBoard and eventBoard.data
+            local mine=ev2 and ev2.mine
+            y=row("今日のランキング",mine and (mine.rank.."位　"..mine.points.."点（"..mine.races.."レース）") or "イベントを走ると、着順の得点（10・8・6・4・2・1）がたまります",y)
+            for _,r in ipairs(ev2 and ev2.rows or {}) do
+                if r.rank>10 and not r.me then continue end
+                local line=frame(list,"EventRank"..r.rank,8,y,width-16,30)
+                line.BackgroundTransparency=r.me and .55 or .85
+                if r.me then line.BackgroundColor3=gold end
+                label(line,r.rank.."位",8,0,56,30,15)
+                label(line,r.name,66,0,width-190,30,15)
+                local pts=label(line,r.points.."点",width-110,0,90,30,15);pts.TextXAlignment=Enum.TextXAlignment.Right
+                y+=34
+            end
+            y+=8
         else
             y=row("シーズン戦","近いレートの選手から相手を探します",y)
         end

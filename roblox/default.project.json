@@ -82,6 +82,9 @@
       },
       "TournamentStore": {
         "$path": "src/TournamentStore.lua"
+      },
+      "EventBoard": {
+        "$path": "src/EventBoard.lua"
       }
     },
     "StarterPlayer": {

@@ -53,6 +53,12 @@
       },
       "TournamentLobby": {
         "$path": "src/TournamentLobby.server.lua"
+      },
+      "EventBoard": {
+        "$path": "src/EventBoard.lua"
+      },
+      "EventBoardLobby": {
+        "$path": "src/EventBoardLobby.server.lua"
       }
     },
     "StarterPlayer": {

@@ -44,6 +44,9 @@ local TRules = require(script.Parent:WaitForChild("TournamentRules"))
 local TStore = require(script.Parent:WaitForChild("TournamentStore"))
 local gpTid, gpStage, gpGroup, gpRace, gpPending, gpArrived, gpRecord = nil, nil, nil, 0, false, false, nil
 local todayEvent = nil
+-- イベント内のランキング(日替わり。得点を足すのはこのサーバーだけ)
+local EventBoard = require(script.Parent:WaitForChild("EventBoard"))
+local eventDay = nil
 local rankedLobbyPlace = nil
 local returning = {}
 local roomRemote = Instance.new("RemoteEvent")
@@ -391,7 +394,8 @@ local function reset()
     if ta then wind, windAngle, wave = 0, 0, 0 end
     -- オンライン対戦の空きは達人、フリーレースは今までどおり中級
     local diff = (ONLINE[kind] or kind == "gp") and RaceAI.DIFFS[4] or RaceAI.DIFFS[2]
-    todayEvent = kind == "event" and Meta.eventOf(Meta.today()) or nil
+    eventDay = kind == "event" and Meta.today() or nil
+    todayEvent = eventDay and Meta.eventOf(eventDay) or nil
     if todayEvent then
         wind, windAngle, wave = todayEvent.weather.wind, todayEvent.weather.windDir, todayEvent.weather.wave
     end
@@ -645,6 +649,17 @@ saveResults = function()
     if matchKind() == "ta" and taRecord then
         for _, boat in ipairs(boats) do
             if boat.humanUserId and boat.finished then submitTA(boat) end
+        end
+    end
+    -- イベント: その日のイベント内のランキングに得点を足す(レースを始めた日の分)
+    if matchKind() == "event" and eventDay then
+        local day = eventDay
+        for _, r in ipairs(results) do
+            local name = "選手"
+            for _, boat in ipairs(boats) do
+                if boat.humanUserId == r.userId then name = boat.model:GetAttribute("Racer") or name end
+            end
+            task.spawn(EventBoard.add, day, r.userId, name, EventBoard.points(r.place, r.out))
         end
     end
     -- 大会: 人間の着順(失格は0点)を大会の記録へ
