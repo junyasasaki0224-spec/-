@@ -2,7 +2,6 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TeleportService = game:GetService("TeleportService")
 local config = require(script.Parent:WaitForChild("LobbyConfig"))
-local rooms = require(script.Parent:WaitForChild("RoomService"))
 local remote = Instance.new("RemoteEvent")
 remote.Name = "MinatoRoomLobby"
 remote.Parent = ReplicatedStorage
@@ -13,7 +12,7 @@ local function setup(player)
         for _ = 1, 10 do
             if player.Parent ~= Players then return end
             local data = player:GetJoinData()
-            if type(data.LaunchData) == "string" and #data.LaunchData == 6 then
+            if type(data.LaunchData) == "string" and #data.LaunchData == 6 and data.LaunchData:match("^[A-HJ-NP-Z2-9]+$") then
                 player:SetAttribute("MinatoInviteCode", data.LaunchData)
                 return
             end
@@ -25,12 +24,17 @@ Players.PlayerAdded:Connect(setup)
 Players.PlayerRemoving:Connect(function(player) last[player]=nil; busy[player]=nil end)
 for _, player in ipairs(Players:GetPlayers()) do setup(player) end
 remote.OnServerEvent:Connect(function(player, action, suppliedCode)
-    if busy[player] or (last[player] and os.clock()-last[player] < 5) then return end
+    if busy[player] then return end
+    if last[player] and os.clock()-last[player] < 5 then
+        remote:FireClient(player,"少し待ってから、もう一度押してください")
+        return
+    end
     last[player]=os.clock()
     if action ~= "create" and action ~= "join" then return end
     if type(config.racePlaceId) ~= "number" or config.racePlaceId <= 0 then
         remote:FireClient(player,"レース会場は準備中です"); return
     end
+    local rooms = require(script.Parent:WaitForChild("RoomService"))
     busy[player]=true
     local code
     if action == "create" then code=rooms.create(player,config.racePlaceId)

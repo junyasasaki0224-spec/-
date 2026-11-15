@@ -2,7 +2,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local Lighting = game:GetService("Lighting")
+local water = require(ReplicatedStorage:WaitForChild("CourseWater"))
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local collision = require(script.Parent:WaitForChild("BoatCollision"))
@@ -95,10 +95,7 @@ local function part(parent, name, size, cf, color, material, shape, scale)
     return p
 end
 local function c(r,g,b) return Color3.fromRGB(r,g,b) end
-Lighting.ClockTime = 14
-Lighting.Brightness = 2
-Lighting.Ambient = c(135,150,160)
-part(world,"Water",Vector3.new(560,1,170),CFrame.new(0,-1,0),c(39,104,124),Enum.Material.Glass).Transparency = 0.24
+water.fill()
 part(world,"Stand",Vector3.new(440,14,35),CFrame.new(0,5,101),c(96,106,110),Enum.Material.Concrete)
 for i = 0, 5 do
     part(world,"Terrace",Vector3.new(440,2,5),CFrame.new(0,12+i*2,90+i*5),c(169,176,173),Enum.Material.Concrete)
@@ -127,6 +124,8 @@ templates.Parent = ReplicatedStorage
 local colors = {c(245,245,238),c(32,37,42),c(222,59,47),c(49,102,202),c(239,213,54),c(67,170,101)}
 local visuals=require(ReplicatedStorage:WaitForChild("VisualModels"))
 local venue=visuals.venue(world)
+local setEnvironment = water.configure(venue)
+setEnvironment("day", 1)
 if venue then
     for _,p in ipairs(world:GetChildren()) do
         if p.Name=="Stand" or p.Name=="Terrace" or p.Name=="Breakwater" then p:Destroy() end
@@ -358,6 +357,9 @@ local function assignPlayers()
             task.spawn(function()
                 local outfit=MetaService.get(player.UserId)
                 if outfit and raceNumber==round and boat.player==player then
+                    player:SetAttribute("MinatoVolume",outfit.volume)
+                    player:SetAttribute("MinatoLever",outfit.lever)
+                    player:SetAttribute("MinatoQuality",outfit.quality)
                     boat.model:SetAttribute("Skin",outfit.skin)
                     boat.model:SetAttribute("HelmetStyle",outfit.helmet)
                 end
@@ -433,7 +435,9 @@ local function reset()
     if todayEvent then
         wind, windAngle, wave = todayEvent.weather.wind, todayEvent.weather.windDir, todayEvent.weather.wave
     end
-    Lighting.ClockTime = todayEvent and ENVS[todayEvent.env] or ((kind == "single" and singleCfg) and ENVS[singleCfg.env]) or 14
+    local env = todayEvent and todayEvent.env or ((kind == "single" and singleCfg) and singleCfg.env) or "day"
+    setEnvironment(env, wave)
+    world:SetAttribute("Environment", env)
     world:SetAttribute("MatchMode", kind)
     world:SetAttribute("EventName", todayEvent and todayEvent.name or nil)
     world:SetAttribute("Wind",wind)

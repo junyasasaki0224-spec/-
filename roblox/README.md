@@ -135,3 +135,22 @@ Studio で確かめる時: ロビーの place では、会場への移動以外�
 公開版での確認の手順（オーナー）: 2つ以上のアカウントでロビーに入り、片方が「大会を作る」→ 人数6・そろったら・だれでも → もう片方が参加 → 主催者が「開始を早める」→ 両方が同じ組の会場へ移ること、予選2走の後に優勝戦の会場へ移ること、ロビーに優勝の知らせが出ることを確かめます。
 
 保存先は OrderedDataStore `MinatoTA0_v1`〜`MinatoTA5_v1`（コース別のタイム）と DataStore `MinatoTAGhost_v1`（コース別の世界1位の走り）です。データ削除の依頼があった時は、この2つからも該当するユーザーの記録を消してください（ゴーストは、そのユーザーの走りなら消す）。
+
+## T18 の水面・会場とオーナー用の画像設定
+
+① 水面・光・航跡の差分を最初に、② 会場の差分をその上に展開する。ロビーとレース会場をそれぞれの Rojo 設定から組み立てる。確認用の写真は review/t18/ にあり、公開する場所には同期しない。
+
+### 会場画像を用意する
+
+- `roblox/assets/venue/Crowd.png` は客席用の透明な3段の画像、`Windows.png` は窓枠の影・反射とブラインド、`Lamps.png` は照明塔のレンズ。元画像と、登録前に使う同じ画素の Luau データを同時に作り直せる。プロジェクトの一番上で実行する。
+
+```sh
+blender --background --factory-startup --python-exit-code 1 --python assets/blender/build_venue_images.py
+```
+
+- 登録する際は**オーナーが、公開先と同じ所有者（個人またはグループ）**を選び、Studio の Asset Manager から上記3枚をインポートする。PNG の寸法・透明部分を保つ。それぞれの審査が終わったら画像のアセット ID をコピーする。
+- `roblox/src/VenueImages.lua` の Crowd、Windows、Lamps に対応する値を `rbxassetid://数字` の形で入れる。両方の place に反映し、非公開のテスト先で別の端末から客席・スタンド・照明塔が見えることを確認する。読み込み権限・審査の状態も所有者側で確認する。
+- 空欄なら端末内で共通の小さい画像を最大3枚だけ組み立てる。端末やゲームの権限で画像を作れないときは、軽い観客・窓の影・照明の図形を使う。この手順で Mesh/Image API の権限を有効にする必要はない。登録した ID が誤っている場合は、正しい ID に直すか空欄に戻す。
+- 元の会場 FBX は部品を分割する時に窓の UV（画像を貼る座標）を保持しない。既存の窓枠の後ろと照明盤の正面だけに画像を合わせ、窓上部と縦枠に影を描いた。建物全体の頂点に陰影を焼き直す方式は採用していない。レース会場の大時計は黄色が12秒、黒が60秒で一周。会場の時刻が1.5秒に達したら黄色の針を消す。
+
+公式資料: [地形の水](https://create.roblox.com/docs/reference/engine/classes/Terrain)、[光](https://create.roblox.com/docs/reference/engine/classes/Lighting)、[粒](https://create.roblox.com/docs/reference/engine/classes/ParticleEmitter)、[航跡](https://create.roblox.com/docs/reference/engine/classes/Trail)、[部品上の表示](https://create.roblox.com/docs/reference/engine/classes/SurfaceGui)、[端末内の画像](https://create.roblox.com/docs/reference/engine/classes/EditableImage)、[アセット管理](https://create.roblox.com/docs/projects/assets/manager)。
