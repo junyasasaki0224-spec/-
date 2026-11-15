@@ -2,6 +2,8 @@ local Players=game:GetService("Players")
 local RS=game:GetService("ReplicatedStorage")
 local Run=game:GetService("RunService")
 local player=Players.LocalPlayer
+local cards=require(RS:WaitForChild("CardImages"))
+local visuals=require(RS:WaitForChild("VisualModels"))
 local Meta=require(RS:WaitForChild("Meta"))
 local outfit=require(RS:WaitForChild("Outfit"))
 local remote=RS:WaitForChild("MinatoMeta")
@@ -20,7 +22,7 @@ local function box(class,parent,name,text)
     local x=Instance.new(class);x.Name=name;x.Parent=parent
     x.BackgroundColor3=navy;x.BackgroundTransparency=.12;x.BorderSizePixel=0
     if x:IsA("TextLabel") or x:IsA("TextButton") then
-        x.Text=text or "";x.TextColor3=white;x.TextSize=16;x.Font=Enum.Font.GothamBold
+        x.Text=text or "";x.TextColor3=white;x.TextSize=18;x.Font=Enum.Font.GothamBold
         x.TextTruncate=Enum.TextTruncate.AtEnd
     end
     local corner=Instance.new("UICorner");corner.CornerRadius=UDim.new(0,12);corner.Parent=x
@@ -35,21 +37,35 @@ local function stroke(x,color,thickness)
 end
 local function button(parent,title,x,y,w,action,primary)
     local b=box("TextButton",parent,title,title);b.Position=UDim2.fromOffset(x,y);b.Size=UDim2.fromOffset(w,46)
-    stroke(b,primary and gold or pale)
+    stroke(b,gold,1)
     if primary then
         b.BackgroundTransparency=0;b.BackgroundColor3=white;b.TextColor3=Color3.fromRGB(26,18,0)
         local g=Instance.new("UIGradient");g.Color=ColorSequence.new(Color3.fromRGB(255,224,102),Color3.fromRGB(245,164,0));g.Rotation=90;g.Parent=b
     end
     b.Activated:Connect(action);return b
 end
+local function icon(parent,index)
+    local patterns={
+        {{4,10,22,18},{10,4,10,28},{4,18,22,2}},
+        {{3,9,24,20},{3,9,24,2},{14,9,2,20}},
+        {{6,3,20,26},{9,10,12,2},{9,17,12,2},{9,24,8,2}},
+        {{3,22,6,8},{12,14,6,16},{21,5,6,25}},
+    }
+    for _,r in ipairs(patterns[index]) do
+        local line=frame(parent,"Icon",r[1]+8,r[2]+7,r[3],r[4])
+        line.BackgroundTransparency=1;stroke(line,gold,1)
+    end
+end
 local function label(parent,text,x,y,w,h,size)
     local t=box("TextLabel",parent,"Text",text);t.BackgroundTransparency=1
-    t.Position=UDim2.fromOffset(x,y);t.Size=UDim2.fromOffset(w,h);t.TextSize=size or 16;t.TextXAlignment=Enum.TextXAlignment.Left;return t
+    t.Position=UDim2.fromOffset(x,y);t.Size=UDim2.fromOffset(w,h);t.TextSize=math.max(size or 18,16);t.TextXAlignment=Enum.TextXAlignment.Left;return t
 end
 local function part(parent,name,size,pos,color)
     local p=Instance.new("Part");p.Name=name;p.Size=size;p.CFrame=CFrame.new(pos);p.Color=color;p.Anchored=true;p.CanCollide=false;p.TopSurface=Enum.SurfaceType.Smooth;p.BottomSurface=Enum.SurfaceType.Smooth;p.Parent=parent;return p
 end
 local function boat(parent)
+    local imported=visuals.boat(parent)
+    if imported then return imported end
     local model=Instance.new("Model");model.Name="MyBoat";model.Parent=parent
     part(model,"Hull",Vector3.new(1.34,.22,2.65),Vector3.new(0,.1,0),white)
     local bow=Instance.new("WedgePart");bow.Name="Bow";bow.Size=Vector3.new(1.3,.22,.72);bow.CFrame=CFrame.new(0,.1,-1.65)*CFrame.Angles(0,math.pi,0);bow.Color=white;bow.Anchored=true;bow.Parent=model
@@ -62,15 +78,18 @@ local function boat(parent)
     return model
 end
 local scenery=Instance.new("Folder");scenery.Name="MinatoHomeScene";scenery.Parent=workspace
-local water=part(scenery,"Water",Vector3.new(500,.5,250),Vector3.new(0,-.5,0),Color3.fromRGB(23,100,127));water.Material=Enum.Material.Glass
-for i=1,8 do
+local water=part(scenery,"Water",Vector3.new(1900,.5,600),Vector3.new(0,-.5,0),Color3.fromRGB(23,100,127));water.Material=Enum.Material.Glass
+local detailedVenue=visuals.venue(scenery)
+for i=1,detailedVenue and 0 or 8 do
     part(scenery,"Terrace",Vector3.new(160,2,5),Vector3.new(0,i*1.5,53+i*4),Color3.fromRGB(137,158,169))
 end
-part(scenery,"Roof",Vector3.new(175,1,30),Vector3.new(0,22,72),navy)
-for i=-7,7 do
+if not detailedVenue then part(scenery,"Roof",Vector3.new(175,1,30),Vector3.new(0,22,72),navy) end
+for i=-7,detailedVenue and -8 or 7 do
     part(scenery,"Column",Vector3.new(.7,22,.7),Vector3.new(i*11,11,72),Color3.fromRGB(202,213,220))
 end
-local model=boat(scenery);model:ScaleTo(3.5)
+local model=boat(scenery)
+if not model:GetAttribute("Detailed") then model:ScaleTo(3.5) end
+model:PivotTo(CFrame.new(0,0,100))
 local root=box("Frame",gui,"Content");root.BackgroundTransparency=1;root.Size=UDim2.fromScale(1,1)
 local toast=label(gui,"読み込み中…",8,8,300,40,14);toast.TextColor3=gold
 local sceneClock=0
@@ -81,10 +100,10 @@ Run.RenderStepped:Connect(function(dt)
         cam.CameraType=Enum.CameraType.Scriptable
         local angle=.65+sceneClock*.012
         local portrait=gui.AbsoluteSize.X<gui.AbsoluteSize.Y
-        local dist=portrait and 20 or 14
-        cam.CFrame=CFrame.lookAt(Vector3.new(math.sin(angle)*dist,7,math.cos(angle)*dist),Vector3.new(0,1,0))
+        local dist=portrait and 24 or 14
+        cam.CFrame=CFrame.lookAt(Vector3.new(math.sin(angle)*dist,7,100+math.cos(angle)*dist),Vector3.new(0,1,100))
         if page=="倉庫" and not portrait then cam.CFrame=cam.CFrame*CFrame.new(-5,0,0) end
-        cam.Focus=CFrame.new(0,1,0)
+        cam.Focus=CFrame.new(0,1,100)
     end
 end)
 local modes={"シーズン","オンライン","タイムアタック","フレンド","大会","イベント","フリーレース","スタート練習"}
@@ -119,8 +138,19 @@ local function swatch(parent,it,x,y,w,h)
         f.BackgroundTransparency=0;f.BackgroundColor3=Color3.fromRGB(bit32.rshift(c,16),bit32.band(bit32.rshift(c,8),255),bit32.band(c,255))
     end
 end
-local function preview(parent,index,width)
-    local v=Instance.new("ViewportFrame");v.Size=UDim2.fromOffset(width,115);v.Position=UDim2.fromOffset(0,37)
+local function preview(parent,index,width,height)
+    height=height or 115
+    local names={"season","online","ta","friend","gp","event","single","practice"}
+    local id=cards[names[index]]
+    if id and id~="" then
+        local picture=Instance.new("ImageLabel")
+        picture.Name="SceneImage";picture.Image=id;picture.ScaleType=Enum.ScaleType.Crop
+        picture.Size=UDim2.fromOffset(width,height);picture.Position=UDim2.fromOffset(0,37)
+        picture.BorderSizePixel=0;picture.Parent=parent
+        local corner=Instance.new("UICorner");corner.CornerRadius=UDim.new(0,10);corner.Parent=picture
+        return
+    end
+    local v=Instance.new("ViewportFrame");v.Size=UDim2.fromOffset(width,height);v.Position=UDim2.fromOffset(0,37)
     v.BackgroundColor3=Color3.fromRGB(25+index*2,83,107);v.Ambient=white;v.LightColor=white;v.Parent=parent
     local w=Instance.new("WorldModel");w.Parent=v
     local b=boat(w);outfit(b,m and m.skin or "s0",m and m.helmet or "h0")
@@ -140,7 +170,7 @@ function redraw()
         local badge=frame(root,"GradeBadge",20,17,40,40)
         badge.Rotation=45;badge.BackgroundColor3=gold;stroke(badge,gold,2)
         label(root,g.name,22,17,42,40,20).TextColor3=navy
-        label(root,player.DisplayName,78,12,math.min(220,w-100),32,21).TextColor3=gold
+        label(root,Run:IsStudio() and "テストレーサー" or player.DisplayName,78,12,math.min(220,w-100),32,21).TextColor3=gold
         label(root,"RATE "..m.rate..(nextGrade and "　"..nextGrade.name.."まで あと"..(nextGrade.rate-m.rate).."点" or "　最高級"),78,46,math.min(310,w-90),24,14)
         local progress=frame(root,"RateProgress",14,76,180,4);progress.BackgroundColor3=pale
         local fill=frame(progress,"Fill",0,0,nextGrade and 180*math.clamp((m.rate-g.rate)/(nextGrade.rate-g.rate),0,1) or 180,4);fill.BackgroundColor3=gold
@@ -158,6 +188,15 @@ function redraw()
                 if n>0 then title=name.." "..n end
             end
             local tile=button(root,title,portrait and (8+(i-1)*(tw+8)) or (short and 14+((i-1)%2)*132 or 14),portrait and tileY or (short and tileY+math.floor((i-1)/2)*54 or tileY+(i-1)*58),tw,function() if name=="ランキング" then legacy() else go(name) end end)
+            if portrait then
+                tile.TextYAlignment=Enum.TextYAlignment.Bottom
+                local symbol=frame(tile,"Symbol",tw/2-10,-2,28,28)
+                symbol.BackgroundTransparency=1
+                local scale=Instance.new("UIScale");scale.Scale=.45;scale.Parent=symbol
+                icon(symbol,i)
+            else
+                tile.Text="        "..title;icon(tile,i)
+            end
             local accent=frame(tile,"Accent",1,9,3,28);accent.BackgroundColor3=gold
         end
         button(root,"通信対戦",portrait and 8 or w-186,portrait and h-139 or (short and h-164 or h-190),portrait and (w-24)/2 or 172,legacy)
@@ -184,19 +223,22 @@ function redraw()
     local y=0
     if page=="レースを選ぶ" then
         list.ScrollingDirection=Enum.ScrollingDirection.XY
+        local shortCard=h<450
         for i,name in ipairs(modes) do
-            local card=frame(list,"Mode"..i,(i-1)*222,0,210,math.max(330,h-110));stroke(card,mode==name and gold or pale,mode==name and 3 or 1)
-            label(card,name,10,0,190,36,20);preview(card,i,210)
-            label(card,descriptions[i],10,164,190,32,14)
-            button(card,mode==name and "選択中" or "選ぶ",8,204,194,function() mode=name;redraw() end,true)
-            button(card,"出走の準備",8,260,194,function()
+            local card=frame(list,"Mode"..i,(i-1)*222,0,210,shortCard and 204 or 330);stroke(card,gold,mode==name and 3 or 1)
+            label(card,name,12,0,154,36,20);preview(card,i,210,shortCard and 64 or 115)
+            local emblem=frame(card,"Emblem",174,3,32,32);emblem.BackgroundTransparency=1
+            local scale=Instance.new("UIScale");scale.Scale=.65;scale.Parent=emblem;icon(emblem,(i-1)%4+1)
+            label(card,descriptions[i],10,shortCard and 102 or 164,190,32,16)
+            if not shortCard then button(card,mode==name and "選択中" or "選ぶ",8,204,194,function() mode=name;redraw() end,true) end
+            button(card,"出走の準備",8,shortCard and 146 or 260,194,function()
                 mode=name
                 if name=="シーズン" or name=="オンライン" then go(name)
                 elseif name=="フレンド" or name=="フリーレース" then legacy()
                 else toast.Text=name.."の対戦機能は次回の作業で追加します" end
             end)
         end
-        list.CanvasSize=UDim2.fromOffset(8*222,math.max(330,h-110));return
+        list.CanvasSize=UDim2.fromOffset(8*222,shortCard and 204 or 330);return
     elseif page=="オンライン" or page=="シーズン" then
         local kind=page=="オンライン" and "online" or "ranked"
         if kind=="online" then

@@ -20,6 +20,21 @@
       },
       "Outfit": {
         "$path": "src/Outfit.lua"
+      },
+      "CardImages": {
+        "$path": "src/CardImages.lua"
+      },
+      "VisualModels": {
+        "$path": "src/VisualModels.lua"
+      },
+      "VisualAssets": {
+        "$className": "Folder",
+        "Boat": {
+          "$path": "assets/models/Boat.rbxmx"
+        },
+        "Venue": {
+          "$path": "assets/models/Venue.rbxmx"
+        }
       }
     },
     "ServerScriptService": {

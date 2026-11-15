@@ -15,6 +15,7 @@ local audioConfig = require(ReplicatedStorage:WaitForChild("AudioConfig"))
 local world = workspace:WaitForChild("Minato")
 local templates = ReplicatedStorage:WaitForChild("MinatoTemplates")
 local boat = templates:WaitForChild("Boat1")
+local visuals=require(ReplicatedStorage:WaitForChild("VisualModels"))
 local outfit=require(ReplicatedStorage:WaitForChild("Outfit"))
 local STUDS_PER_METRE = 3.5
 local BOAT_SCALE = STUDS_PER_METRE * (2.9 / 7)
@@ -24,9 +25,9 @@ for i = 1, 6 do
     local original = templates:WaitForChild("Boat"..i)
     local visual = original:Clone()
     local baseColors={}
-    for _,p in ipairs(visual:GetChildren()) do if p:IsA("BasePart") then baseColors[p.Name]=p.Color end end
+    for _,p in ipairs(visual:GetDescendants()) do if p:IsA("BasePart") then baseColors[p]=p.Color end end
     local function refreshOutfit()
-        for name,color in pairs(baseColors) do visual[name].Color=color end
+        for part,color in pairs(baseColors) do part.Color=color end
         local stripe=visual:FindFirstChild("HelmetStripe")
         if stripe then stripe:Destroy() end
         outfit(visual,original:GetAttribute("Skin"),original:GetAttribute("HelmetStyle"))
@@ -432,6 +433,7 @@ RunService.RenderStepped:Connect(function(dt)
             local current = visual:GetPivot()
             if (current.Position-destination.Position).Magnitude > 30*STUDS_PER_METRE then visual:PivotTo(destination)
             else visual:PivotTo(current:Lerp(destination,1-math.exp(-12*dt))) end
+            visuals.pose(visual,state[8],view.roll)
         end
     end
     local following=watching and not viewing.exited
