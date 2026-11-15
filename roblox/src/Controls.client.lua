@@ -229,9 +229,10 @@ rankedPanel.Visible = false
 rankedPanel.Parent = gui
 local function updateRanked()
     local phase=world:GetAttribute("RankedPhase")
-    rankedPanel.Visible = phase == "waiting" or phase == "finished" or phase == "incomplete"
-    local names = {ranked="シーズン", online="オンライン", event="イベント", ta="タイムアタック"}
+    rankedPanel.Visible = phase == "waiting" or phase == "finished" or phase == "incomplete" or phase == "between"
+    local names = {ranked="シーズン", online="オンライン", event="イベント", ta="タイムアタック", gp="大会"}
     rankedPanel.Text = phase == "finished" and "終了：ロビーに戻る" or phase == "incomplete" and "参加者が来ませんでした：ロビーに戻る"
+        or phase == "between" and "大会：次の走りの準備中"
         or (names[world:GetAttribute("MatchMode")] or "シーズン").."：参加者の到着を待っています"
 end
 world:GetAttributeChangedSignal("RankedPhase"):Connect(updateRanked)
@@ -282,6 +283,47 @@ end
 world:GetAttributeChangedSignal("RankedPhase"):Connect(updateTimeAttack)
 world:GetAttributeChangedSignal("MatchMode"):Connect(updateTimeAttack)
 updateTimeAttack()
+-- 大会の得点表(サーバーが会場の属性 GpBoard で配る)。レース中は隠し、レースの合間と終わりに出す
+local gpBoard = Instance.new("TextLabel")
+gpBoard.Name = "TournamentBoard"
+gpBoard.Size = UDim2.fromOffset(380,170)
+gpBoard.Position = UDim2.new(0.5,-190,0,96)
+gpBoard.BackgroundColor3 = Color3.fromRGB(11,29,58)
+gpBoard.BackgroundTransparency = 0.12
+gpBoard.TextColor3 = Color3.new(1,1,1)
+gpBoard.Font = Enum.Font.GothamBold
+gpBoard.TextSize = 15
+gpBoard.TextXAlignment = Enum.TextXAlignment.Left
+gpBoard.TextYAlignment = Enum.TextYAlignment.Top
+gpBoard.Visible = false
+gpBoard.Parent = gui
+do
+    local corner = Instance.new("UICorner"); corner.CornerRadius = UDim.new(0,12); corner.Parent = gpBoard
+    local pad = Instance.new("UIPadding"); pad.PaddingLeft = UDim.new(0,12); pad.PaddingTop = UDim.new(0,8); pad.Parent = gpBoard
+    local edge = Instance.new("UIStroke"); edge.Color = Color3.fromRGB(255,210,60); edge.Transparency = 0.3; edge.Parent = gpBoard
+end
+local watchFinal = again:Clone()
+watchFinal.Name = "WatchFinal"
+watchFinal.Text = "優勝戦を観戦する"
+watchFinal.Position = UDim2.new(0.5,-100,0,274)
+watchFinal.Visible = false
+watchFinal.Parent = gui
+watchFinal.Activated:Connect(function() roomRemote:FireServer("watchFinal") end)
+local function updateTournament()
+    local text = world:GetAttribute("GpBoard")
+    local phase = world:GetAttribute("RankedPhase")
+    gpBoard.Text = type(text) == "string" and text or ""
+    -- 行の数に合わせて高さを変える(余白を残さない)
+    local lines = 1
+    for _ in gpBoard.Text:gmatch("\n") do lines += 1 end
+    gpBoard.Size = UDim2.fromOffset(380, 18 + lines*20)
+    gpBoard.Visible = world:GetAttribute("MatchMode") == "gp" and gpBoard.Text ~= "" and phase ~= "racing"
+    watchFinal.Visible = player:GetAttribute("MinatoGp") == "eliminated"
+end
+world:GetAttributeChangedSignal("GpBoard"):Connect(updateTournament)
+world:GetAttributeChangedSignal("RankedPhase"):Connect(updateTournament)
+player:GetAttributeChangedSignal("MinatoGp"):Connect(updateTournament)
+updateTournament()
 roomRemote.OnClientEvent:Connect(function(kind, text)
     if kind == "ta" and type(text) == "string" then
         taResult.Text = text
@@ -379,7 +421,8 @@ local function drawResults(rows, mySeat, time)
         end
     else
         if time >= 0 then return false end
-        local title = world:GetAttribute("MatchMode") == "ta" and "タイムアタック" or world:GetAttribute("EventName")
+        local mode = world:GetAttribute("MatchMode")
+        local title = mode == "ta" and "タイムアタック" or (mode == "gp" and world:GetAttribute("TournamentName")) or world:GetAttribute("EventName")
         resultTitle.Text = (title and (title.."　") or "").."出走表"
         for i = 1, 6 do
             local b = templates:FindFirstChild("Boat"..i)

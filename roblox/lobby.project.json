@@ -44,6 +44,15 @@
       },
       "TimeAttackLobby": {
         "$path": "src/TimeAttackLobby.server.lua"
+      },
+      "TournamentRules": {
+        "$path": "src/TournamentRules.lua"
+      },
+      "TournamentStore": {
+        "$path": "src/TournamentStore.lua"
+      },
+      "TournamentLobby": {
+        "$path": "src/TournamentLobby.server.lua"
       }
     },
     "StarterPlayer": {

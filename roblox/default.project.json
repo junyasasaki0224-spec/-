@@ -76,6 +76,12 @@
       },
       "TimeTrialStore": {
         "$path": "src/TimeTrialStore.lua"
+      },
+      "TournamentRules": {
+        "$path": "src/TournamentRules.lua"
+      },
+      "TournamentStore": {
+        "$path": "src/TournamentStore.lua"
       }
     },
     "StarterPlayer": {

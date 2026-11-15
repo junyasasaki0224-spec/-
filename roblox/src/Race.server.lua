@@ -29,7 +29,7 @@ local Meta = require(ReplicatedStorage:WaitForChild("Meta"))
 -- 公開していない Studio では、ワークスペースの属性 MinatoTestMode(ranked / online / event)で
 -- オンライン対戦の会場と同じ AI・イベント・結果の表示を確かめられる(保存はしない)
 -- タイムアタックは ta(コースは属性 MinatoTestLane = 1〜6)
-local TEST_MODES = {ranked=true, online=true, event=true, ta=true}
+local TEST_MODES = {ranked=true, online=true, event=true, ta=true, gp=true}
 local studioMode = localPractice and TEST_MODES[workspace:GetAttribute("MinatoTestMode")] and workspace:GetAttribute("MinatoTestMode") or nil
 local function matchKind() return roomKind or studioMode end
 -- タイムアタック: 走るコース(0〜5)、入力の記録、次の走りを待っているか、ゴースト(世界1位の走りの再現)
@@ -38,7 +38,11 @@ local taPending = studioMode == "ta"
 local taRecord, taStep, taLast = nil, 0, nil
 local ghostRecord, ghostBoat, ghostIndex, ghostInput = nil, nil, 1, {0,0}
 -- Studio のタイムアタックも、会場と同じく「走る人がいたら -14秒から始める」流れにする
-if studioMode == "ta" then roomWaiting = true end
+if studioMode == "ta" or studioMode == "gp" then roomWaiting = true end
+-- 大会(T17 ③): 大会の番号、段階(heat = 予選 / final = 優勝戦)、組、この会場で走り終えた数、次を始めてよいか、最新の記録
+local TRules = require(script.Parent:WaitForChild("TournamentRules"))
+local TStore = require(script.Parent:WaitForChild("TournamentStore"))
+local gpTid, gpStage, gpGroup, gpRace, gpPending, gpArrived, gpRecord = nil, nil, nil, 0, false, false, nil
 local todayEvent = nil
 local rankedLobbyPlace = nil
 local returning = {}
@@ -156,6 +160,49 @@ local function preparePlayer(player)
     task.spawn(function()
         local join = player:GetJoinData()
         local data = join and join.TeleportData
+        -- 大会: 大会の記録で、この会場の組(または優勝戦)の人かを確かめる。ほかの人は観戦として入る
+        if type(data) == "table" and data.mode == "gp" then
+            -- 記録が一時的に読めない時は、少し待って3回まで読み直す
+            local record = nil
+            for attempt = 1, 3 do
+                record = type(data.tid) == "string" and TStore.get(data.tid) or nil
+                if record or player.Parent ~= Players then break end
+                task.wait(attempt)
+            end
+            local role = nil
+            if type(record) == "table" then
+                if data.stage == "final" then
+                    if record.status == "final" and record.finalPrivateId == game.PrivateServerId then
+                        role = (table.find(record.finalists or {}, player.UserId) and not data.watch) and "racer" or "watch"
+                    end
+                else
+                    local g = type(data.group) == "number" and record.groups and record.groups[data.group]
+                    if record.status == "running" and g and g.privateId == game.PrivateServerId then
+                        role = (table.find(g.members, player.UserId) and not data.watch) and "racer" or "watch"
+                    end
+                end
+                if role == "watch" and record.private and not TRules.findEntrant(record, player.UserId) then role = nil end
+            end
+            if not role or (roomKind and roomKind ~= "gp") or (gpTid and gpTid ~= data.tid) then
+                if player.Parent == Players then player:Kick("大会の会場に入れません。ロビーから入り直してください") end
+                return
+            end
+            if player.Parent ~= Players then return end
+            roomKind, gpTid, gpRecord = "gp", data.tid, record
+            gpStage = data.stage == "final" and "final" or "heat"
+            gpGroup = gpStage == "heat" and data.group or nil
+            if type(join.SourcePlaceId)=="number" and join.SourcePlaceId>0 then rankedLobbyPlace=rankedLobbyPlace or join.SourcePlaceId end
+            world:SetAttribute("MatchMode","gp")
+            world:SetAttribute("RoomMode",false)
+            world:SetAttribute("TournamentName",record.name)
+            if role == "racer" then
+                roomMembers[player] = true
+                rankedExpected = gpStage == "final" and #(record.finalists or {}) or #record.groups[gpGroup].members
+                rankedStartAt = rankedStartAt or os.clock()+20
+                if world:GetAttribute("RankedPhase") == nil then world:SetAttribute("RankedPhase","waiting") end
+            end
+            return
+        end
         -- タイムアタック: 予約した会場に1人だけ。コース(1〜6)はロビーのサーバーが決めて渡す
         if type(data) == "table" and data.mode == "ta" then
             local lane = data.lane
@@ -256,6 +303,12 @@ local function assignPlayers()
     local seats = {1,2,3,4,5,6}
     if todayEvent and todayEvent.lane == 5 then seats = {6,5,4,3,2,1} end
     if matchKind() == "ta" then seats = {taLane+1} end
+    -- 大会: 予選2走目は艇番を逆から、優勝戦は得点の高い順に1号艇から
+    if matchKind() == "gp" and gpStage == "heat" and gpRace == 1 then seats = {6,5,4,3,2,1} end
+    if matchKind() == "gp" and gpStage == "final" and gpRecord and gpRecord.finalists then
+        local order = gpRecord.finalists
+        table.sort(players, function(a,b) return (table.find(order,a.UserId) or 99) < (table.find(order,b.UserId) or 99) end)
+    end
     for k, i in ipairs(seats) do
         local boat = boats[i]
         local player = nil
@@ -337,7 +390,7 @@ local function reset()
     local ta = kind == "ta"
     if ta then wind, windAngle, wave = 0, 0, 0 end
     -- オンライン対戦の空きは達人、フリーレースは今までどおり中級
-    local diff = ONLINE[kind] and RaceAI.DIFFS[4] or RaceAI.DIFFS[2]
+    local diff = (ONLINE[kind] or kind == "gp") and RaceAI.DIFFS[4] or RaceAI.DIFFS[2]
     todayEvent = kind == "event" and Meta.eventOf(Meta.today()) or nil
     if todayEvent then
         wind, windAngle, wave = todayEvent.weather.wind, todayEvent.weather.windDir, todayEvent.weather.wave
@@ -386,7 +439,8 @@ local aloneSince, finalRows = nil,nil
 local accumulator = 0
 local dt = RaceStep.DT
 -- タイムアタックを始める(大時計の -14秒から)。記録とゴーストも最初から
-local function startTA()
+-- 同じ会場で次のレースを始める(タイムアタックの「もう一度」、大会の予選2走目・優勝戦)
+local function startRoomRace()
     reset()
     roomWaiting = false
     world:SetAttribute("RoomWaiting", false)
@@ -395,6 +449,9 @@ local function startTA()
     raceClock = elapsed
     raceId = HttpService:GenerateGUID(false)
     resultsSaved, aloneSince, finalRows = false, nil, nil
+end
+local function startTA()
+    startRoomRace()
     taRecord, taStep, taLast = {lane=taLane, tilt=2, inputs={}}, 0, nil
     ghostBoat, ghostIndex, ghostInput = nil, 1, {0,0}
     if ghostRecord and ghostRecord.lane == taLane then ghostBoat = RaceStep.soloBoat(ghostRecord.lane, ghostRecord.tilt) end
@@ -433,6 +490,138 @@ local function submitTA(human)
         if player and player.Parent == Players then roomRemote:FireClient(player, "ta", text) end
     end)
 end
+-- 大会の得点表(この組、または優勝戦の人だけ。得点の高い順)を文字にする
+local function boardText(rec, title)
+    local lines = {"大会「"..rec.name.."」　"..title}
+    local only = {}
+    if gpStage == "heat" and rec.groups and rec.groups[gpGroup] then
+        for _, id in ipairs(rec.groups[gpGroup].members) do only[id] = true end
+    else
+        for _, id in ipairs(rec.finalists or {}) do only[id] = true end
+    end
+    local n = 0
+    for _, st in ipairs(TRules.standings(rec)) do
+        if only[st.userId] and n < 6 then
+            n += 1
+            local marks = {}
+            for _, h in ipairs(st.history) do table.insert(marks, tostring(h)) end
+            table.insert(lines, string.format("%d. %s　%d点　%s", n, st.name, st.points, table.concat(marks,"・")))
+        end
+    end
+    return table.concat(lines, "\n")
+end
+local function announce(text)
+    world:SetAttribute("GpBoard", text)
+end
+-- 大会を終える(優勝戦の着順、または得点で優勝を決め、結果を残して全員に知らせる)
+local function finishTournament(finalList)
+    local rec = TStore.update(gpTid, function(old)
+        if type(old) ~= "table" or old.status == "done" or old.status == "canceled" then return nil end
+        TRules.finish(old, finalList, os.time())
+        return old
+    end) or TStore.get(gpTid)
+    if rec then gpRecord = rec end
+    if rec and rec.status == "done" then TStore.saveResult(rec) end
+    local champion = gpRecord and gpRecord.champion
+    announce(boardText(gpRecord, "結果")..(champion and ("\n優勝 "..champion.name) or ""))
+    world:SetAttribute("RankedPhase", "finished")
+end
+-- 予選を終えた組: ほかの組を待って優勝戦の会場を用意し、優勝戦に出る人を送る
+local function gatherFinal()
+    world:SetAttribute("RankedPhase", "between")
+    announce(boardText(gpRecord, "予選終了　ほかの組を待っています"))
+    local waitedFrom, rec = os.clock(), nil
+    while true do
+        rec = TStore.get(gpTid)
+        if type(rec) ~= "table" then break end
+        if rec.status ~= "running" then break end
+        if TRules.allHeatsDone(rec) or os.clock() - waitedFrom >= TRules.HEAT_WAIT then
+            local access, privateId = "studio", "studio-final"
+            if not localPractice then
+                local ok, a, pid = pcall(TeleportService.ReserveServerAsync, TeleportService, game.PlaceId)
+                access, privateId = ok and a or nil, ok and pid or nil
+            end
+            if access then
+                rec = TStore.update(gpTid, function(old)
+                    if type(old) ~= "table" or old.status ~= "running" then return nil end
+                    old.finalists = TRules.finalists(old)
+                    old.finalAccess, old.finalPrivateId, old.status = access, privateId, "final"
+                    return old
+                end) or TStore.get(gpTid)
+                break
+            end
+        end
+        task.wait(5)
+    end
+    if type(rec) ~= "table" or rec.status == "canceled" then
+        announce("大会は主催者により中止されました")
+        world:SetAttribute("RankedPhase", "finished")
+        return
+    end
+    gpRecord = rec
+    if rec.status ~= "final" then
+        world:SetAttribute("RankedPhase", "finished")
+        return
+    end
+    gpStage = "final"
+    announce(boardText(rec, "優勝戦に進む人"))
+    if localPractice then
+        -- Studio では会場を移らず、同じ会場で優勝戦を走る
+        gpGroup, gpRace = nil, 0
+        task.delay(12, function() gpPending = true end)
+        return
+    end
+    world:SetAttribute("RankedPhase", "finished")
+    for _, p in ipairs(Players:GetPlayers()) do
+        if roomMembers[p] and table.find(rec.finalists, p.UserId) then
+            local options = Instance.new("TeleportOptions")
+            options.ReservedServerAccessCode = rec.finalAccess
+            options:SetTeleportData({mode="gp", tid=gpTid, stage="final"})
+            task.spawn(pcall, TeleportService.TeleportAsync, TeleportService, game.PlaceId, {p}, options)
+        else
+            p:SetAttribute("MinatoGp", "eliminated")
+        end
+    end
+end
+-- 大会の1レースが終わった後(予選なら得点を足して次へ、優勝戦なら大会を終える)
+local function gpAfterRace(list)
+    gpRace += 1
+    if gpStage == "final" then
+        finishTournament(list)
+        return
+    end
+    local heat = gpRace
+    local rec = TStore.update(gpTid, function(old)
+        if type(old) ~= "table" or old.status ~= "running" then return nil end
+        if not TRules.addHeat(old, gpGroup, heat, list) then return nil end
+        return old
+    end) or TStore.get(gpTid)
+    if type(rec) == "table" then gpRecord = rec end
+    if not gpRecord or gpRecord.status == "canceled" then
+        announce("大会は主催者により中止されました")
+        world:SetAttribute("RankedPhase", "finished")
+        return
+    end
+    announce(boardText(gpRecord, "予選 "..heat.."走目まで"))
+    if heat < TRules.heatsPerGroup(gpRecord) then
+        world:SetAttribute("RankedPhase", "between")
+        task.delay(12, function()
+            local latest = TStore.get(gpTid)
+            if type(latest) == "table" and latest.status == "canceled" then
+                announce("大会は主催者により中止されました")
+                world:SetAttribute("RankedPhase", "finished")
+                return
+            end
+            gpPending = true
+        end)
+        return
+    end
+    if not TRules.needsFinal(gpRecord) then
+        finishTournament(nil)
+        return
+    end
+    gatherFinal()
+end
 saveResults = function()
     if resultsSaved or not assigned then return end
     resultsSaved = true
@@ -458,6 +647,12 @@ saveResults = function()
             if boat.humanUserId and boat.finished then submitTA(boat) end
         end
     end
+    -- 大会: 人間の着順(失格は0点)を大会の記録へ
+    if matchKind() == "gp" and gpTid then
+        local list = {}
+        for _, r in ipairs(results) do table.insert(list, {userId=r.userId, place=r.place, out=r.out}) end
+        task.spawn(gpAfterRace, list)
+    end
 end
 roomRemote.OnServerEvent:Connect(function(player, action)
     -- タイムアタック: 同じ会場でもう一度走る
@@ -467,8 +662,25 @@ roomRemote.OnServerEvent:Connect(function(player, action)
         world:SetAttribute("RankedPhase","waiting")
         return
     end
-    if action == "return" and (ONLINE[roomKind] or roomKind == "ta") and (world:GetAttribute("RankedPhase") == "finished" or world:GetAttribute("RankedPhase") == "incomplete")
-        and roomMembers[player] and rankedLobbyPlace and not returning[player] then
+    -- 大会: 予選で敗れた人・観戦の人が、優勝戦を観戦しに行く
+    if action == "watchFinal" and roomKind == "gp" and gpRecord and gpRecord.status == "final" and gpRecord.finalAccess
+        and not returning[player] then
+        returning[player] = true
+        task.spawn(function()
+            local options = Instance.new("TeleportOptions")
+            options.ReservedServerAccessCode = gpRecord.finalAccess
+            options:SetTeleportData({mode="gp", tid=gpTid, stage="final", watch=true})
+            local ok = pcall(TeleportService.TeleportAsync, TeleportService, game.PlaceId, {player}, options)
+            if not ok and player.Parent == Players then roomRemote:FireClient(player,"優勝戦の会場へ移動できません") end
+            returning[player] = nil
+        end)
+        return
+    end
+    local phase = world:GetAttribute("RankedPhase")
+    local over = phase == "finished" or phase == "incomplete"
+    local mayReturn = ((ONLINE[roomKind] or roomKind == "ta") and over and roomMembers[player])
+        or (roomKind == "gp" and (over or not roomMembers[player]))
+    if action == "return" and mayReturn and rankedLobbyPlace and not returning[player] then
         returning[player]=true
         task.spawn(function()
             local ok=pcall(TeleportService.TeleportAsync,TeleportService,rankedLobbyPlace,{player})
@@ -493,6 +705,39 @@ local function step()
         if not taPending or not present then return end
         taPending = false
         startTA()
+    end
+    if roomWaiting and matchKind() == "gp" then
+        -- Studio の大会: 自分1人の大会をこの会場の中だけに作る(保存しない)
+        if studioMode == "gp" and not gpTid then
+            local p = Players:GetPlayers()[1]
+            if not p then return end
+            local rec = TRules.new("studio-gp", p.UserId, "テストレーサー1", {name="Studio の大会", size=6, format="heats2", start=0, private=false}, os.time())
+            TRules.makeGroups(rec)
+            rec.status, rec.groups[1].privateId = "running", "studio"
+            TStore.update("studio-gp", function() return rec end)
+            gpTid, gpStage, gpGroup, gpRecord = "studio-gp", "heat", 1, rec
+            world:SetAttribute("TournamentName", rec.name)
+        end
+        -- 最初のレースは、予定の全員が来たら(または最初の人の到着から20秒で)始める
+        if not gpArrived and gpTid then
+            local arrived = 0
+            for _, p in ipairs(Players:GetPlayers()) do
+                if not isRoom or roomMembers[p] then arrived += 1 end
+            end
+            if studioMode == "gp" then
+                gpArrived, gpPending = arrived > 0, arrived > 0
+            elseif rankedStartAt and (os.clock() >= rankedStartAt or (rankedExpected > 0 and arrived >= rankedExpected)) then
+                gpArrived = true
+                if arrived == 0 then
+                    world:SetAttribute("RankedPhase","incomplete")
+                    return
+                end
+                gpPending = true
+            end
+        end
+        if not gpPending then return end
+        gpPending = false
+        startRoomRace()
     end
     if roomWaiting then
         local arrived = 0
@@ -596,6 +841,12 @@ local function step()
     local endEarly
     endEarly, aloneSince = Rules.shouldEnd(boats,elapsed,aloneSince)
     if endEarly or (finishTime and elapsed-finishTime > 45) or elapsed > 240 then
+        -- 大会は、次の段階(予選2走目・優勝戦・終わり)を大会の処理が決めるので、先に待ちにしておく
+        if matchKind() == "gp" then
+            roomWaiting=true
+            world:SetAttribute("RoomWaiting",true)
+            world:SetAttribute("RankedPhase","between")
+        end
         saveResults()
         if ONLINE[roomKind] or matchKind() == "ta" then
             roomWaiting=true
@@ -603,6 +854,7 @@ local function step()
             world:SetAttribute("RankedPhase","finished")
             return
         end
+        if matchKind() == "gp" then return end
         reset(); elapsed=-31; raceClock=elapsed; finishTime=nil; finishCount=0; assigned=false
         raceId = HttpService:GenerateGUID(false)
         resultsSaved = false

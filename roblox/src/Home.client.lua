@@ -21,7 +21,7 @@ local redraw,request
 local function box(class,parent,name,text)
     local x=Instance.new(class);x.Name=name;x.Parent=parent
     x.BackgroundColor3=navy;x.BackgroundTransparency=.12;x.BorderSizePixel=0
-    if x:IsA("TextLabel") or x:IsA("TextButton") then
+    if x:IsA("TextLabel") or x:IsA("TextButton") or x:IsA("TextBox") then
         x.Text=text or "";x.TextColor3=white;x.TextSize=18;x.Font=Enum.Font.GothamBold
         x.TextTruncate=Enum.TextTruncate.AtEnd
     end
@@ -119,6 +119,34 @@ end)
 local modes={"シーズン","オンライン","タイムアタック","フレンド","大会","イベント","フリーレース","スタート練習"}
 local descriptions={"級別を上げて頂点へ","6人で水面を競う","1艇・無風で自己ベスト","合言葉で仲間と集合","得点を重ねて優勝へ","日替わりの特別レース","気軽に走って練習","スタートを磨く"}
 local function go(p) page=p;redraw() end
+-- 大会: 一覧のタブ、サーバーから届いた一覧、作る画面の5項目、得点表を見ている大会、合言葉の入力
+local gpTab,gpList,gpLoading,gpBoard,gpCode="open",nil,false,nil,""
+local gpForm={name="",size=6,format="heats2",start=0,private=false}
+local GP_STARTS={[0]="人数がそろったら",[5]="5分後",[15]="15分後",[30]="30分後"}
+local GP_FORMATS={heats2="予選2走+優勝戦",single="1レース勝負"}
+-- 大会のサーバーへの問い合わせ(結果の文言は画面の上に出す)
+local function gpCall(action,arg,after)
+    local remoteGp=RS:FindFirstChild("MinatoTournament")
+    if not remoteGp then toast.Text="大会の準備中です";return end
+    task.spawn(function()
+        local ok,res=pcall(remoteGp.InvokeServer,remoteGp,action,arg)
+        if not ok or type(res)~="table" then toast.Text="通信を確かめられません";return end
+        if res.message then toast.Text=res.message end
+        if after then after(res) end
+        if page=="大会" or page=="大会を作る" or page=="大会の確認" or page=="大会の得点" then redraw() end
+    end)
+end
+local function gpRefresh()
+    if gpLoading then return end
+    gpLoading=true
+    gpCall("list",nil,function(res) gpLoading=false;if res.ok then gpList=res end end)
+    task.delay(4,function() gpLoading=false end)
+end
+-- 開始の表示(日本時間の時刻、または「人数がそろったら」)
+local function gpStartText(v)
+    if v.startAt then return os.date("!%H:%M",v.startAt+9*3600).." 開始" end
+    return "人数がそろったら開始"
+end
 -- タイムアタック: 選んだコース(1〜6)、コースごとのランキング(サーバーから)、読み込み中か
 local taLane,taBoards,taLoading,taMessage=1,{},{},""
 local LANE_COLORS={{Color3.fromRGB(242,242,240),Color3.fromRGB(17,17,17)},{Color3.fromRGB(22,22,26),white},
@@ -255,8 +283,8 @@ function redraw()
         button(root,"レース",portrait and 8 or w-250,h-54,portrait and w-16 or 236,function() go(waitingMode and matchNames[waitingMode] or "レースを選ぶ") end,true)
         return
     end
-    local side=page=="倉庫" or pageKinds[page]~=nil or page=="タイムアタック"
-    local panelWidth=side and math.min(w-16,(pageKinds[page] or page=="タイムアタック") and 460 or 640) or w-16
+    local side=page=="倉庫" or pageKinds[page]~=nil or page=="タイムアタック" or page=="大会" or page=="大会を作る" or page=="大会の確認" or page=="大会の得点"
+    local panelWidth=side and math.min(w-16,(pageKinds[page] or page=="タイムアタック") and 460 or (page=="倉庫" and 640 or 560)) or w-16
     -- 待ち合わせの画面はスマホ縦なら上半分だけにして、下に自分の艇を見せる
     local panelHeight=(pageKinds[page] and portrait) and math.min(h-16,math.floor(h*.55)) or h-16
     local panel=frame(root,"Panel",8,8,panelWidth,panelHeight);stroke(panel,white)
@@ -288,6 +316,7 @@ function redraw()
                 mode=name
                 if pageKinds[name] then go(name)
                 elseif name=="タイムアタック" then go(name)
+                elseif name=="大会" then gpList=nil;go(name)
                 elseif name=="フレンド" or name=="フリーレース" then legacy()
                 else toast.Text=name.."の対戦機能は次回の作業で追加します" end
             end)
@@ -380,6 +409,141 @@ function redraw()
                 y+=34
             end
         end
+    elseif page=="大会" then
+        -- タブ(受付中・開催中・終了)と「大会を作る」。カードは名前・主催者・人数・開始・形式・ボタン
+        if not gpList then gpRefresh() end
+        local tabs={{"open","受付中"},{"running","開催中"},{"done","終了"}}
+        local tw=math.floor((width-16-16)/3)
+        for i,t in ipairs(tabs) do
+            local b=button(list,t[2],8+(i-1)*(tw+8),y,tw,function() gpTab=t[1];redraw() end,gpTab==t[1])
+            b.Name="Tab_"..t[1]
+        end
+        y+=56
+        local createB=button(list,"大会を作る",8,y,math.min(width-16,200),function() go("大会を作る") end)
+        createB.Name="CreateTournament"
+        button(list,"更新",math.min(width-16,200)+16,y,90,function() gpList=nil;gpRefresh();redraw() end)
+        y+=58
+        local items=gpList and gpList.tabs and gpList.tabs[gpTab] or nil
+        if not items then
+            y=row("読み込んでいます","少し待ってください",y)
+        elseif #items==0 then
+            y=row(gpTab=="open" and "受付中の大会はありません" or (gpTab=="running" and "開催中の大会はありません" or "終わった大会はありません"),
+                gpTab=="open" and "「大会を作る」で開催できます" or "",y)
+        end
+        for i,v in ipairs(items or {}) do
+            local card=frame(list,"Tournament"..i,8,y,width-16,150);stroke(card,v.entrant and gold or white,v.entrant and 2 or 1)
+            label(card,v.name,12,6,width-150,28,17)
+            label(card,(v.private and "合言葉　" or "だれでも　")..v.count.."/"..v.size.." 人",width-150,6,130,28,15).TextColor3=gold
+            label(card,"主催 "..v.hostName.."　"..v.format.."　"..gpStartText(v),12,36,width-40,24,14).TextColor3=pale
+            if v.code then label(card,"合言葉 "..v.code,12,60,width-40,22,14).TextColor3=gold end
+            local bx=12
+            local function cb(text,fn,primary)
+                local b=button(card,text,bx,94,140,fn,primary);bx+=148;return b
+            end
+            if v.status=="open" or v.status=="starting" then
+                if v.host then
+                    cb("開始を早める",function() gpCall("startNow",v.id,function() gpList=nil;gpRefresh() end) end,true)
+                    cb("中止",function() gpCall("cancel",v.id,function() gpList=nil;gpRefresh() end) end)
+                elseif v.entrant then
+                    cb("参加をやめる",function() gpCall("leave",v.id,function() gpList=nil;gpRefresh() end) end)
+                else
+                    if v.private then
+                        local input=box("TextBox",card,"Code","");input.Position=UDim2.fromOffset(bx,94);input.Size=UDim2.fromOffset(110,46)
+                        input.PlaceholderText="合言葉";input.Text=gpCode;input.ClearTextOnFocus=false;stroke(input,white,1)
+                        input.FocusLost:Connect(function() gpCode=string.upper(input.Text) end)
+                        bx+=118
+                    end
+                    cb("参加する",function() gpCall("join",{id=v.id,code=v.private and gpCode or nil},function() gpList=nil;gpRefresh() end) end,true)
+                end
+            elseif v.status=="running" or v.status=="final" then
+                cb("得点表",function() gpBoard=v.id;go("大会の得点") end,true)
+                cb("観戦する",function() gpCall("watch",v.id) end)
+                if v.host then cb("中止",function() gpCall("cancel",v.id,function() gpList=nil;gpRefresh() end) end) end
+            else
+                label(card,v.status=="canceled" and "中止" or ("優勝 "..(v.champion or "")),12,98,width-180,36,17).TextColor3=gold
+                bx=width-170
+                cb("得点表",function() gpBoard=v.id;go("大会の得点") end)
+            end
+            y+=162
+        end
+    elseif page=="大会を作る" then
+        -- 5項目だけ(ほかは決まった値)。名前は20文字まで、サーバーが文字フィルターに通す
+        label(list,"1. 大会名（20文字まで）",8,y,width-16,26,15).TextColor3=pale
+        local nameBox=box("TextBox",list,"TournamentName","");nameBox.Position=UDim2.fromOffset(8,y+28);nameBox.Size=UDim2.fromOffset(math.min(width-16,360),46)
+        nameBox.PlaceholderText="例: 週末みなと杯";nameBox.Text=gpForm.name;nameBox.ClearTextOnFocus=false;stroke(nameBox,white,1)
+        nameBox.TextXAlignment=Enum.TextXAlignment.Left
+        local pad=Instance.new("UIPadding");pad.PaddingLeft=UDim.new(0,10);pad.Parent=nameBox
+        nameBox:GetPropertyChangedSignal("Text"):Connect(function() gpForm.name=nameBox.Text end)
+        y+=86
+        local function choices(title,key,options)
+            label(list,title,8,y,width-16,26,15).TextColor3=pale
+            y+=28
+            local bw=math.floor((width-16-8*(#options-1))/#options)
+            for i,o in ipairs(options) do
+                local b=button(list,o[2],8+(i-1)*(bw+8),y,bw,function() gpForm[key]=o[1];redraw() end,gpForm[key]==o[1])
+                b.Name=key.."_"..tostring(o[1])
+            end
+            y+=58
+        end
+        choices("2. 人数","size",{{6,"6人"},{12,"12人"},{18,"18人"},{24,"24人"}})
+        choices("3. 形式","format",{{"heats2","予選2走+優勝戦"},{"single","1レース勝負"}})
+        choices("4. 開始","start",{{0,"そろったら"},{5,"5分後"},{15,"15分後"},{30,"30分後"}})
+        choices("5. 公開","private",{{false,"だれでも"},{true,"合言葉"}})
+        label(list,"時間になって人数が足りなければ、空きを AI（達人）で埋めます",8,y,width-16,24,14).TextColor3=pale
+        y+=32
+        local nextB=button(list,"内容を確認する",8,y,math.min(width-16,240),function()
+            if (utf8.len(gpForm.name) or 0)<1 then toast.Text="大会名を入れてください";return end
+            if (utf8.len(gpForm.name) or 99)>20 then toast.Text="大会名は20文字までです";return end
+            go("大会の確認")
+        end,true)
+        nextB.Name="ToConfirm"
+        y+=58
+        button(list,"大会の一覧へ",8,y,math.min(width-16,240),function() go("大会") end);y+=58
+    elseif page=="大会の確認" then
+        -- 作る前に、設定のまとめを1枚で見せる
+        y=row("大会名",gpForm.name,y)
+        y=row("人数",gpForm.size.." 人（6人ずつの組で予選）",y)
+        y=row("形式",GP_FORMATS[gpForm.format],y)
+        y=row("開始",GP_STARTS[gpForm.start]..(gpForm.start>0 and "（足りなければ AI で埋める）" or ""),y)
+        y=row("公開",gpForm.private and "合言葉（6文字のコードを伝えた人だけ）" or "だれでも参加できる",y)
+        y=row("得点","予選の着順 10・8・6・4・2・1 点、得点の上位6人で優勝戦",y)
+        local ok=button(list,"この内容で開催",8,y,math.min(width-16,240),function()
+            gpCall("create",{name=gpForm.name,size=gpForm.size,format=gpForm.format,start=gpForm.start,private=gpForm.private},function(res)
+                if res.ok then gpForm.name="";gpList=nil;gpTab="open";page="大会";gpRefresh() end
+            end)
+        end,true)
+        ok.Name="CreateConfirm"
+        y+=58
+        button(list,"戻って直す",8,y,math.min(width-16,240),function() go("大会を作る") end);y+=58
+    elseif page=="大会の得点" then
+        -- 得点表(全員の予選の着順と得点)。優勝戦に進む人に印。観戦のボタン
+        local view=gpList and gpList.board
+        if not view or view.id~=gpBoard then
+            y=row("読み込んでいます","",y)
+            gpCall("board",gpBoard,function(res) if res.ok and gpList then gpList.board=res.view elseif res.ok then gpList={board=res.view} end end)
+        else
+            y=row(view.name,"主催 "..view.hostName.."　"..view.format.."　"..view.count.." 人",y)
+            if view.champion then y=row("優勝 "..view.champion,"",y) end
+            for i,st in ipairs(view.standings) do
+                local line=frame(list,"Standing"..i,8,y,width-16,32)
+                line.BackgroundTransparency=st.me and .55 or .85
+                if st.me then line.BackgroundColor3=gold end
+                local marks={}
+                for _,h in ipairs(st.history) do table.insert(marks,tostring(h)) end
+                label(line,i.."位",8,0,50,32,15)
+                label(line,st.name..(st.final and "　優勝戦" or ""),60,0,width-240,32,15)
+                label(line,table.concat(marks,"・"),width-180,0,80,32,14).TextColor3=pale
+                local pts=label(line,st.points.." 点",width-100,0,80,32,15);pts.TextXAlignment=Enum.TextXAlignment.Right
+                y+=36
+            end
+            if #view.standings==0 then y=row("まだ得点はありません","予選が終わると表示されます",y) end
+            y+=8
+            if view.status=="running" or view.status=="final" then
+                button(list,"観戦する",8,y,math.min(width-16,200),function() gpCall("watch",view.id) end,true);y+=58
+            end
+            button(list,"更新",8,y,math.min(width-16,200),function() if gpList then gpList.board=nil end;redraw() end);y+=58
+        end
+        button(list,"大会の一覧へ",8,y,math.min(width-16,200),function() gpList=nil;go("大会") end);y+=58
     elseif page=="ガチャ" then
         y=row("コインで見た目を集めよう","N 60%　R 28%　SR 10%　SSR 2%",y)
         y=row("ゲーム内コイン限定","コインはお金で買えません",y)
@@ -514,6 +678,16 @@ request=function(action,arg)
     end)
 end
 gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(function() if m then redraw() end end)
+-- 大会の知らせ(始まった・中止・優勝)を画面の上に6秒出す
+task.spawn(function()
+    local event=RS:WaitForChild("MinatoTournamentNotice",30)
+    if not event then return end
+    event.OnClientEvent:Connect(function(message)
+        if type(message)~="string" then return end
+        toast.Text=message
+        task.delay(6,function() if toast.Text==message then toast.Text="" end end)
+    end)
+end)
 player.PlayerGui.ChildAdded:Connect(function(child)
     if child.Name=="MinatoLobby" then child.Enabled=false end
 end)
