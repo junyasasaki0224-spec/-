@@ -6,6 +6,12 @@ local cards=require(RS:WaitForChild("CardImages"))
 local visuals=require(RS:WaitForChild("VisualModels"))
 local Meta=require(RS:WaitForChild("Meta"))
 local Ui=require(RS:WaitForChild("HomeUi"))
+local Roster=require(RS:WaitForChild("RaceRoster"))
+-- フリーレースの出走表: 乗る艇、チルト、難易度、時間帯、出走表の種(ページを開くたびに新しくする)
+local fr={lane=1,tilt=2,diff=2,env="day",seed=1}
+local TILT_INFO={{"-0.5°","出足・回り足",1.085,.965,1.065},{"0°","バランス",1,1,1},{"+1.5°","伸び寄り",.94,1.035,.945},{"+3.0°","伸び特化",.88,1.075,.89}}
+local LANE_COLORS2={{Color3.fromRGB(242,242,240),Color3.fromRGB(17,17,17)},{Color3.fromRGB(22,22,26),Color3.new(1,1,1)},
+    {Color3.fromRGB(217,30,46),Color3.new(1,1,1)},{Color3.fromRGB(27,80,212),Color3.new(1,1,1)},{Color3.fromRGB(243,210,27),Color3.fromRGB(17,17,17)},{Color3.fromRGB(24,162,76),Color3.new(1,1,1)}}
 local outfit=require(RS:WaitForChild("Outfit"))
 local remote=RS:WaitForChild("MinatoMeta")
 local gui=Instance.new("ScreenGui")
@@ -308,7 +314,8 @@ function redraw()
             if pageKinds[name] then go(name)
             elseif name=="タイムアタック" then go(name)
             elseif name=="大会" then gpList=nil;go(name)
-            elseif name=="フレンド" or name=="フリーレース" then legacy()
+            elseif name=="フリーレース" then fr.seed=math.random(1,1000000);go(name)
+            elseif name=="フレンド" then legacy()
             else toast.Text=name.."は準備中です" end
         end
         if portrait then
@@ -330,12 +337,14 @@ function redraw()
         end
         return
     end
+    local wide=page=="フリーレース"
     local side=page=="倉庫" or pageKinds[page]~=nil or page=="タイムアタック" or page=="大会" or page=="大会を作る" or page=="大会の確認" or page=="大会の得点"
-    local panelWidth=side and math.min(w-16,(pageKinds[page] or page=="タイムアタック") and 460 or (page=="倉庫" and 640 or 560)) or w-16
+    local panelWidth=wide and math.min(w-16,960) or side and math.min(w-16,(pageKinds[page] or page=="タイムアタック") and 460 or (page=="倉庫" and 640 or 560)) or w-16
     -- 待ち合わせの画面はスマホ縦なら上半分だけにして、下に自分の艇を見せる
     local panelHeight=(pageKinds[page] and portrait) and math.min(h-16,math.floor(h*.55)) or h-16
     -- ブラウザ版の .panel(紺の半透明・白の細枠・角丸18)と、上の「‹ ホーム」・題・コイン
-    local panel=frame(root,"Panel",8,8,panelWidth,panelHeight)
+    -- 広い画面(出走表)はブラウザ版と同じく真ん中に置く
+    local panel=frame(root,"Panel",wide and math.floor((w-panelWidth)/2) or 8,8,panelWidth,panelHeight)
     panel.BackgroundColor3=Color3.fromRGB(9,24,50);panel.BackgroundTransparency=.16
     panel:FindFirstChildOfClass("UICorner").CornerRadius=UDim.new(0,18)
     stroke(panel,white,1).Transparency=.78
@@ -602,6 +611,86 @@ function redraw()
             button(list,"更新",8,y,math.min(width-16,200),function() if gpList then gpList.board=nil end;redraw() end);y+=58
         end
         button(list,"大会の一覧へ",8,y,math.min(width-16,200),function() gpList=nil;go("大会") end);y+=58
+    elseif page=="フリーレース" then
+        -- ブラウザ版の出走表: 左に6艇(押すと乗る艇を選ぶ)と水面、右にチルト・難易度・時間帯と「出 走」
+        local racers=Roster.create(fr.seed)
+        local wind,dir,wave=Roster.weather(fr.seed)
+        local two=width>=700
+        local colW=two and math.floor((width-24)/2) or width-16
+        local leftX,rightX=8,two and (8+colW+16) or 8
+        local ly=y
+        Ui.place(Ui.text(list,"EntryHead","出走表　行を押して乗る艇を選ぶ",15,Ui.HEAVY,gold),leftX,ly,colW,24)
+        ly+=28
+        for i=1,6 do
+            local mine=i==fr.lane
+            local r=racers[i]
+            local rowB=Instance.new("TextButton");rowB.Name="Entry"..i;rowB.Text="";rowB.AutoButtonColor=false
+            rowB.Position=UDim2.fromOffset(leftX,ly);rowB.Size=UDim2.fromOffset(colW,54);rowB.Parent=list
+            rowB.BackgroundColor3=mine and Color3.fromRGB(70,58,20) or Color3.fromRGB(20,40,72);rowB.BackgroundTransparency=mine and .1 or .3
+            Ui.corner(rowB,10);Ui.stroke(rowB,mine and gold or white,mine and 2 or 1,mine and 0 or .8)
+            local chip=Ui.text(rowB,"Lane",tostring(i),18,Ui.HEAVY_ITALIC,LANE_COLORS2[i][2])
+            chip.TextXAlignment=Enum.TextXAlignment.Center;chip.BackgroundTransparency=0;chip.BackgroundColor3=LANE_COLORS2[i][1]
+            Ui.place(chip,8,11,32,32);Ui.corner(chip,6);Ui.stroke(chip,white,1,.2)
+            local who=mine and (Run:IsStudio() and "テストレーサー" or player.DisplayName) or r.racer.name
+            local nm=Ui.text(rowB,"Name",who,15,Ui.HEAVY);Ui.place(nm,50,6,colW-190,22)
+            if not mine then
+                local cls=Ui.text(rowB,"Class",r.racer.cls,11,Ui.HEAVY,Color3.fromRGB(26,18,0))
+                cls.TextXAlignment=Enum.TextXAlignment.Center;cls.BackgroundTransparency=0;cls.BackgroundColor3=Color3.fromRGB(207,220,243)
+                Ui.place(cls,50+math.min(colW-190,(utf8.len(who) or 4)*15+6),9,26,16);Ui.corner(cls,4)
+            end
+            local course=Ui.text(rowB,"Course",i.."コース・"..(i<=3 and "スロー" or "ダッシュ"),11,Ui.BOLD,pale)
+            course.TextXAlignment=Enum.TextXAlignment.Right;Ui.place(course,colW-140,6,130,18)
+            local detail=string.format("モーター2連率 %.1f%%",r.rate)
+            if not mine then detail..=string.format("　平均ST %.2f　得意 %s",r.racer.st,r.racer.style) end
+            detail..="　チルト "..(mine and TILT_INFO[fr.tilt][1] or "0°")
+            local st=Ui.text(rowB,"Stats",detail,11,Ui.BOLD,pale);Ui.place(st,50,30,colW-60,18)
+            rowB.Activated:Connect(function() fr.lane=i;redraw() end)
+            ly+=60
+        end
+        local wx=math.cos(dir)*wind
+        local wname=wind<0.5 and "無風" or ((math.abs(math.cos(dir))>math.abs(math.sin(dir)) and (math.cos(dir)>0 and "追い風" or "向かい風") or (math.sin(dir)>0 and "横風(スタンドへ)" or "横風(対岸へ)")).." "..math.floor(wind+.5).."m")
+        local water=Ui.text(list,"Water","水面状況　"..wname.."・波高 "..math.floor(wave+.5).."cm　"..(wx<-1.5 and "向かい風で助走が伸びにくい" or (wx>1.5 and "追い風でスタートが早くなりやすい" or "")),13,Ui.BOLD,pale)
+        Ui.place(water,leftX,ly+2,colW,22)
+        ly+=34
+        -- 右の列(縦持ちは下へ続ける)
+        local ry=two and y or ly
+        local function seg(title,note,key,options)
+            Ui.place(Ui.text(list,"Head_"..key,title..(note~="" and ("　"..note) or ""),15,Ui.HEAVY,gold),rightX,ry,colW,24)
+            ry+=28
+            local bw=math.floor((colW-6*(#options-1))/#options)
+            for k,o in ipairs(options) do
+                local sel=fr[key]==o[1]
+                local b=Instance.new("TextButton");b.Name=key.."_"..tostring(o[1]);b.Text="";b.AutoButtonColor=false
+                b.Position=UDim2.fromOffset(rightX+(k-1)*(bw+6),ry);b.Size=UDim2.fromOffset(bw,o[3] and 46 or 40);b.Parent=list
+                b.BackgroundColor3=sel and Color3.fromRGB(70,58,20) or Color3.fromRGB(20,40,72);b.BackgroundTransparency=sel and .1 or .3
+                Ui.corner(b,8);Ui.stroke(b,sel and gold or white,sel and 2 or 1,sel and 0 or .75)
+                local main=Ui.text(b,"Text",o[2],14,Ui.HEAVY);main.TextXAlignment=Enum.TextXAlignment.Center
+                Ui.place(main,0,o[3] and 4 or 0,bw,o[3] and 22 or 40)
+                if o[3] then local sub=Ui.text(b,"Note",o[3],10,Ui.BOLD,pale);sub.TextXAlignment=Enum.TextXAlignment.Center;Ui.place(sub,0,25,bw,16) end
+                b.Activated:Connect(function() fr[key]=o[1];redraw() end)
+            end
+            ry+=(options[1][3] and 46 or 40)+12
+        end
+        local tilts={}
+        for k,t in ipairs(TILT_INFO) do tilts[k]={k,t[1],t[2]} end
+        seg("チルト角度","モーターの取り付け角度","tilt",tilts)
+        local ti=TILT_INFO[fr.tilt]
+        local function pct(x) return (x>=1 and "+" or "−")..string.format("%.0f%%",math.abs((x-1)*100)) end
+        local info=fr.tilt==2 and "標準。最高速 約82km/h" or string.format("最高速 約%dkm/h　出足 %s　旋回グリップ %s",math.floor(81.9*math.sqrt(ti[4])+.5),pct(ti[3]),pct(ti[5]))
+        Ui.place(Ui.text(list,"TiltInfo",info,12,Ui.BOLD,pale),rightX,ry-8,colW,20)
+        ry+=18
+        seg("難易度","","diff",{{1,"初級"},{2,"中級"},{3,"上級"},{4,"達人"}})
+        seg("時間帯","","env",{{"day","デイ"},{"evening","薄暮"},{"night","ナイター"}})
+        Ui.raceButton(list,rightX,ry+4,colW,64,"出 走","自分だけの会場で AI と1レース",function()
+            local remoteFr=RS:FindFirstChild("MinatoFreeRace")
+            if not remoteFr then toast.Text="フリーレースの準備中です";return end
+            toast.Text="会場を探しています"
+            task.spawn(function()
+                local ok,res=pcall(remoteFr.InvokeServer,remoteFr,{lane=fr.lane,tilt=fr.tilt,diff=fr.diff,env=fr.env,seed=fr.seed})
+                toast.Text=ok and type(res)=="table" and res.message or "通信を確かめられません"
+            end)
+        end)
+        y=math.max(ly,ry+84)
     elseif page=="ガチャ" then
         y=row("コインで見た目を集めよう","N 60%　R 28%　SR 10%　SSR 2%",y)
         y=row("ゲーム内コイン限定","コインはお金で買えません",y)

@@ -339,6 +339,9 @@ end)
 -- レース中の表示(ブラウザ版と同じ配置。RaceHud.lua)
 local RaceHud = require(ReplicatedStorage:WaitForChild("RaceHud"))
 local hud = RaceHud.new(gui)
+-- レースの結果の画面(RaceResult.lua)。中身が変わった時だけ作り直す
+local RaceResult = require(ReplicatedStorage:WaitForChild("RaceResult"))
+local resultView = RaceResult.new(gui)
 hud:layout()
 gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(function() hud:layout() end)
 -- 出走表(スタート前)と結果(ゴール後)の表。艇番の色・着・名前・AI の札・塗装とヘルメットの色見本
@@ -699,7 +702,39 @@ RunService.RenderStepped:Connect(function(dt)
     local shownOut = shownLane and latest[shownLane] and latest[shownLane][17] or ""
     tiltButton.Visible = driving==true and time < 0
     tiltButton.Text = "チルト "..tiltNames[boat:GetAttribute("Tilt") or 2]
-    result.Visible=drawResults(resultRows, boatNumber, time)
+    -- ゴール後は大きな結果の画面、スタート前は右上の出走表
+    result.Visible = (not resultRows) and drawResults(nil, boatNumber, time) or false
+    local mode = world:GetAttribute("MatchMode")
+    local phase = world:GetAttribute("RankedPhase")
+    local eliminated = player:GetAttribute("MinatoGp") == "eliminated"
+    if resultRows then
+        local extra = ""
+        if mode == "ta" and taResult.Text ~= "" then extra = taResult.Text end
+        if mode == "gp" then extra = world:GetAttribute("GpBoard") or "" end
+        if mode == "gp" and phase == "between" then extra = extra.."\n次の走りの準備中です" end
+        if not mode then extra = "次のレースがまもなく始まります" end
+        local key = table.concat({tostring(predictionRace), #resultRows, extra, tostring(phase), tostring(eliminated), tostring(boatNumber)}, "|")
+        if resultView.key ~= key then
+            local buttons = {}
+            local function fire(action) return function() roomRemote:FireServer(action) end end
+            if (mode == "ta" or mode == "single") and phase == "finished" then
+                buttons = {{"Again","もう一度走る",true,fire("again")},{"Lobby","ロビーへ",false,fire("return")}}
+            elseif mode == "gp" and eliminated then
+                buttons = {{"WatchFinal","優勝戦を観戦する",true,fire("watchFinal")},{"Lobby","ロビーへ",false,fire("return")}}
+            elseif mode and phase == "finished" then
+                buttons = {{"Lobby","ロビーへ戻る",true,fire("return")}}
+            end
+            resultView:show(resultRows, boatNumber, extra, buttons, key)
+        end
+    elseif resultView.key then
+        resultView:hide()
+    end
+    local overlay = resultRows ~= nil
+    rankedPanel.Visible = rankedPanel.Visible and not overlay
+    again.Visible = again.Visible and not overlay
+    watchFinal.Visible = watchFinal.Visible and not overlay
+    taResult.Visible = taResult.Visible and not overlay
+    gpBoard.Visible = gpBoard.Visible and not overlay
     -- 周回の行(スタート前・周回・ゴール・観戦などの状態)
     local lapText
     if resultRows then lapText = "レース終了"

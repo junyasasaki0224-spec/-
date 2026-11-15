@@ -117,6 +117,7 @@
 - レース中の表示は `roblox/src/RaceHud.lua`、ホームとレース選択の部品は `roblox/src/HomeUi.lua`。このファイルの「レース中」「ホーム」「レースを選ぶ」の配置・色・文字の大きさをそのまま数字にしてある(ブラウザ版の style.css の #pos / #startbox / #rank / #speedo / #minimap / #wx / #msg / .tile / #btn-race / .mcard / .panel)
 - 数字は Gotham の太字の斜体(`Font.new(GothamSSm, Heavy, Italic)`)。日本語は Roblox が自動で日本語の書体にする。文字の影の代わりに、暗い縁取りを薄く付ける
 - Roblox の書体に無い記号(➤ など)は四角になるので使わない(矢印は ▲ を回す)
+- 結果の画面は `roblox/src/RaceResult.lua`(ブラウザ版の #result と同じ: 大きな着順、ひとこと、表、記録、ボタン)。レース中の表示より手前の専用の ScreenGui に出す。フリーレースの出走表はホームの「フリーレース」(ブラウザ版の #sheet と同じ2列)
 
 ## Robloxの今回の調整
 

@@ -59,6 +59,9 @@
       },
       "EventBoardLobby": {
         "$path": "src/EventBoardLobby.server.lua"
+      },
+      "FreeRaceLobby": {
+        "$path": "src/FreeRaceLobby.server.lua"
       }
     },
     "StarterPlayer": {
@@ -99,6 +102,9 @@
       },
       "HomeUi": {
         "$path": "src/HomeUi.lua"
+      },
+      "RaceRoster": {
+        "$path": "src/RaceRoster.lua"
       }
     },
     "StarterGui": {

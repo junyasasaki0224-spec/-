@@ -7,7 +7,7 @@ local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local collision = require(script.Parent:WaitForChild("BoatCollision"))
 local RaceAI = require(script.Parent:WaitForChild("RaceAI"))
-local createRoster = require(script.Parent:WaitForChild("RaceRoster"))
+local createRoster = require(ReplicatedStorage:WaitForChild("RaceRoster"))
 local RaceStep = require(script.Parent:WaitForChild("RaceStep"))
 local Rules = require(script.Parent:WaitForChild("ResultRules"))
 -- Unpublished Studio places cannot open a DataStore. Only a live result needs it.
@@ -29,7 +29,7 @@ local Meta = require(ReplicatedStorage:WaitForChild("Meta"))
 -- 公開していない Studio では、ワークスペースの属性 MinatoTestMode(ranked / online / event)で
 -- オンライン対戦の会場と同じ AI・イベント・結果の表示を確かめられる(保存はしない)
 -- タイムアタックは ta(コースは属性 MinatoTestLane = 1〜6)
-local TEST_MODES = {ranked=true, online=true, event=true, ta=true, gp=true}
+local TEST_MODES = {ranked=true, online=true, event=true, ta=true, gp=true, single=true}
 local studioMode = localPractice and TEST_MODES[workspace:GetAttribute("MinatoTestMode")] and workspace:GetAttribute("MinatoTestMode") or nil
 local function matchKind() return roomKind or studioMode end
 -- タイムアタック: 走るコース(0〜5)、入力の記録、次の走りを待っているか、ゴースト(世界1位の走りの再現)
@@ -38,7 +38,14 @@ local taPending = studioMode == "ta"
 local taRecord, taStep, taLast = nil, 0, nil
 local ghostRecord, ghostBoat, ghostIndex, ghostInput = nil, nil, 1, {0,0}
 -- Studio のタイムアタックも、会場と同じく「走る人がいたら -14秒から始める」流れにする
-if studioMode == "ta" or studioMode == "gp" then roomWaiting = true end
+if studioMode == "ta" or studioMode == "gp" or studioMode == "single" then roomWaiting = true end
+-- フリーレース(1人用): 乗る艇(1〜6)、チルト(1〜4)、難易度(1〜4)、時間帯、出走表の種。ロビーのサーバーが決めて渡す
+local ENVS = {day=14, evening=17.4, night=20.5}
+local singleCfg = studioMode == "single" and {
+    lane = math.clamp(math.floor(tonumber(workspace:GetAttribute("MinatoTestLane")) or 1),1,6),
+    tilt = 2, diff = 2, env = "day", seed = 1,
+} or nil
+local singlePending = studioMode == "single"
 -- 大会(T17 ③): 大会の番号、段階(heat = 予選 / final = 優勝戦)、組、この会場で走り終えた数、次を始めてよいか、最新の記録
 local TRules = require(script.Parent:WaitForChild("TournamentRules"))
 local TStore = require(script.Parent:WaitForChild("TournamentStore"))
@@ -206,6 +213,24 @@ local function preparePlayer(player)
             end
             return
         end
+        -- フリーレース: 予約した会場に1人だけ。値はすべて範囲を確かめる
+        if type(data) == "table" and data.mode == "single" then
+            local function int(v, lo, hi) return type(v) == "number" and v % 1 == 0 and v >= lo and v <= hi end
+            if (roomKind and roomKind ~= "single") or next(roomMembers) or not int(data.lane,1,6) or not int(data.tilt,1,4)
+                or not int(data.diff,1,4) or not ENVS[data.env] or not int(data.seed,1,1000000) then
+                player:Kick("フリーレースの会場に入れません。ロビーから入り直してください")
+                return
+            end
+            roomKind = "single"
+            singleCfg = {lane=data.lane, tilt=data.tilt, diff=data.diff, env=data.env, seed=data.seed}
+            if type(join.SourcePlaceId)=="number" and join.SourcePlaceId>0 then rankedLobbyPlace=rankedLobbyPlace or join.SourcePlaceId end
+            roomMembers[player] = true
+            world:SetAttribute("MatchMode","single")
+            world:SetAttribute("RoomMode",false)
+            world:SetAttribute("RankedPhase","waiting")
+            singlePending = true
+            return
+        end
         -- タイムアタック: 予約した会場に1人だけ。コース(1〜6)はロビーのサーバーが決めて渡す
         if type(data) == "table" and data.mode == "ta" then
             local lane = data.lane
@@ -306,6 +331,7 @@ local function assignPlayers()
     local seats = {1,2,3,4,5,6}
     if todayEvent and todayEvent.lane == 5 then seats = {6,5,4,3,2,1} end
     if matchKind() == "ta" then seats = {taLane+1} end
+    if matchKind() == "single" and singleCfg then seats = {singleCfg.lane} end
     -- 大会: 予選2走目は艇番を逆から、優勝戦は得点の高い順に1号艇から
     if matchKind() == "gp" and gpStage == "heat" and gpRace == 1 then seats = {6,5,4,3,2,1} end
     if matchKind() == "gp" and gpStage == "final" and gpRecord and gpRecord.finalists then
@@ -324,6 +350,10 @@ local function assignPlayers()
             boat.model:SetAttribute("Racer", RunService:IsStudio() and ("テストレーサー"..k) or player.DisplayName)
             commands[player] = {throttle=0, steer=0, last=0, sequence=0, applied=0}
             player:SetAttribute("MinatoBoat", i)
+            -- フリーレースは出走表で選んだチルトで出る
+            if matchKind() == "single" and singleCfg then applyTilt(boat, singleCfg.tilt) end
+            -- 人間の艇には AI の難易度の差を付けない(タイムアタックは全員 1.0 のまま)
+            if matchKind() ~= "ta" and boat.baseMotor then boat.motor = boat.baseMotor end
             local round=raceNumber
             task.spawn(function()
                 local outfit=MetaService.get(player.UserId)
@@ -388,18 +418,22 @@ local function reset()
     wave = ((raceNumber*7)%16)/10
     local wind = ((raceNumber*13)%41)/10
     local windAngle = ((raceNumber*47)%360)*math.pi/180
-    local racers = createRoster(raceNumber)
     local kind = matchKind()
+    -- フリーレースは出走表の種で選手・モーター・水面を決める(ロビーで見せた出走表と同じになる)
+    local racers = createRoster(kind == "single" and singleCfg and singleCfg.seed or raceNumber)
+    if kind == "single" and singleCfg then
+        wind, windAngle, wave = createRoster.weather(singleCfg.seed)
+    end
     local ta = kind == "ta"
     if ta then wind, windAngle, wave = 0, 0, 0 end
     -- オンライン対戦の空きは達人、フリーレースは今までどおり中級
-    local diff = (ONLINE[kind] or kind == "gp") and RaceAI.DIFFS[4] or RaceAI.DIFFS[2]
+    local diff = (ONLINE[kind] or kind == "gp") and RaceAI.DIFFS[4] or RaceAI.DIFFS[(kind == "single" and singleCfg) and singleCfg.diff or 2]
     eventDay = kind == "event" and Meta.today() or nil
     todayEvent = eventDay and Meta.eventOf(eventDay) or nil
     if todayEvent then
         wind, windAngle, wave = todayEvent.weather.wind, todayEvent.weather.windDir, todayEvent.weather.wave
     end
-    Lighting.ClockTime = todayEvent and ({day=14, evening=17.4, night=20.5})[todayEvent.env] or 14
+    Lighting.ClockTime = todayEvent and ENVS[todayEvent.env] or ((kind == "single" and singleCfg) and ENVS[singleCfg.env]) or 14
     world:SetAttribute("MatchMode", kind)
     world:SetAttribute("EventName", todayEvent and todayEvent.name or nil)
     world:SetAttribute("Wind",wind)
@@ -418,6 +452,8 @@ local function reset()
         b.player = nil
         b.humanUserId,b.finishTime = nil,nil
         b.windX,b.windZ = math.cos(windAngle)*wind,math.sin(windAngle)*wind
+        -- AI のモーターには難易度の差を足す。人間が乗った時は元のモーター(baseMotor)に戻す(ブラウザ版と同じ)
+        b.baseMotor = racers[i].motor
         b.motor,b.gripF,b.thrustF,b.inWake = racers[i].motor+(diff.motor-RaceAI.DIFFS[2].motor),1,1,0
         b.model:SetAttribute("Racer",racers[i].racer.name)
         b.model:SetAttribute("IsAI",true)
@@ -638,7 +674,8 @@ saveResults = function()
         -- 結果の表: 艇番、着(または F・沈・退出)、名前、AI か、塗装、ヘルメット
         finalRows[position] = {boat.number,boat.out or (boat.finished and tostring(boat.place) or "未完走"),
             boat.model:GetAttribute("Racer") or "",boat.humanUserId == nil,
-            boat.model:GetAttribute("Skin") or "",boat.model:GetAttribute("HelmetStyle") or ""}
+            boat.model:GetAttribute("Skin") or "",boat.model:GetAttribute("HelmetStyle") or "",
+            (not boat.out and boat.finished) and boat.finishTime or false, boat.startTime or false}
         if boat.humanUserId then table.insert(results,Rules.entry(boat,position)) end
     end
     -- レートは人間どうしの着順だけで決める(人間の数と、人間の中の順位をサーバーが付ける)
@@ -672,9 +709,9 @@ saveResults = function()
 end
 roomRemote.OnServerEvent:Connect(function(player, action)
     -- タイムアタック: 同じ会場でもう一度走る
-    if action == "again" and matchKind() == "ta" and roomWaiting and not taPending
+    if action == "again" and (matchKind() == "ta" or matchKind() == "single") and roomWaiting and not taPending and not singlePending
         and world:GetAttribute("RankedPhase") == "finished" and (not isRoom or roomMembers[player]) then
-        taPending = true
+        if matchKind() == "ta" then taPending = true else singlePending = true end
         world:SetAttribute("RankedPhase","waiting")
         return
     end
@@ -694,7 +731,7 @@ roomRemote.OnServerEvent:Connect(function(player, action)
     end
     local phase = world:GetAttribute("RankedPhase")
     local over = phase == "finished" or phase == "incomplete"
-    local mayReturn = ((ONLINE[roomKind] or roomKind == "ta") and over and roomMembers[player])
+    local mayReturn = ((ONLINE[roomKind] or roomKind == "ta" or roomKind == "single") and over and roomMembers[player])
         or (roomKind == "gp" and (over or not roomMembers[player]))
     if action == "return" and mayReturn and rankedLobbyPlace and not returning[player] then
         returning[player]=true
@@ -712,15 +749,21 @@ roomRemote.OnServerEvent:Connect(function(player, action)
     raceClock = elapsed
 end)
 local function step()
-    if roomWaiting and matchKind() == "ta" then
-        -- タイムアタックは、走る人がいて「もう一度」を待っている時に始める
+    if roomWaiting and (matchKind() == "ta" or matchKind() == "single") then
+        -- タイムアタックとフリーレースは、走る人がいて「もう一度」を待っている時に始める
         local present = false
         for _, p in ipairs(Players:GetPlayers()) do
             if not isRoom or roomMembers[p] then present = true; break end
         end
-        if not taPending or not present then return end
-        taPending = false
-        startTA()
+        if matchKind() == "ta" then
+            if not taPending or not present then return end
+            taPending = false
+            startTA()
+        else
+            if not singlePending or not present then return end
+            singlePending = false
+            startRoomRace()
+        end
     end
     if roomWaiting and matchKind() == "gp" then
         -- Studio の大会: 自分1人の大会をこの会場の中だけに作る(保存しない)
@@ -864,7 +907,7 @@ local function step()
             world:SetAttribute("RankedPhase","between")
         end
         saveResults()
-        if ONLINE[roomKind] or matchKind() == "ta" then
+        if ONLINE[roomKind] or matchKind() == "ta" or matchKind() == "single" then
             roomWaiting=true
             world:SetAttribute("RoomWaiting",true)
             world:SetAttribute("RankedPhase","finished")

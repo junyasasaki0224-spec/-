@@ -328,5 +328,7 @@ GPT が作った試作(Rojo 形式: `roblox/default.project.json`、サーバー
 - Studio で試す時: ロビーでは MemoryStore の代わりにサーバー内の表で動く(作る・参加・開始を早める・開催中・得点表・中止まで試せる。会場への移動はしない)。会場では `MinatoTestMode=gp` で、自分1人の大会を予選2走 → 優勝戦まで同じ会場で走る
 - 会場の最大人数: 観戦の人も入るので、レース会場の最大参加人数は12人以上にしておく(公開の設定)
 
+**フリーレース(1人用・2026-11-15 Claude)**: 以前は古いロビーの画面から、ほかの人もいる会場(公開サーバー)へ移っていた。ブラウザ版と同じく1人用にした。ホームの出走表で乗る艇・チルト・難易度・時間帯を選ぶと、ロビーのサーバー(`FreeRaceLobby.server.lua`)が値を確かめて自分だけの会場を予約して送る(TeleportData `{mode="single", lane, tilt, diff, env, seed}`)。出走表の6人・モーター・水面は「種(seed)」で決まり、ロビーと会場が同じ `RaceRoster`(ReplicatedStorage に移した)で同じ物を作る。人間の艇には AI の難易度のモーターの差を付けない(①で人間にも付いていた不具合を直した)。Studio では `MinatoTestMode=single`・`MinatoTestLane` で試せる
+
 **イベント内のランキング(T17。2026-11-15 Claude)**: イベントのレースの着順で 10・8・6・4・2・1 点(失格0)を、その日(日本時間)の合計で並べる。`EventBoard.lua` が MemoryStore のソート済みマップ `MinatoEventBoard_<日付>_v1` に置く(キー = ユーザー ID、並びの値 = -得点。2日で自動で消える)。得点を足すのはレース会場のサーバーだけ(`Race.server.lua`。レースを始めた日の分)。ロビーの `EventBoardLobby.server.lua` が上位20人と自分の順位を返し、ホームのイベントの画面に出す。Studio ではサーバー内の表で動き、確かめやすいように会場のワークスペースの属性 `MinatoEventBoardStudio` にも写す
 

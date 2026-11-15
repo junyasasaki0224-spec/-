@@ -38,6 +38,12 @@
       },
       "RaceHud": {
         "$path": "src/RaceHud.lua"
+      },
+      "RaceRoster": {
+        "$path": "src/RaceRoster.lua"
+      },
+      "RaceResult": {
+        "$path": "src/RaceResult.lua"
       }
     },
     "ServerScriptService": {
@@ -49,9 +55,6 @@
       },
       "RaceAI": {
         "$path": "src/RaceAI.lua"
-      },
-      "RaceRoster": {
-        "$path": "src/RaceRoster.lua"
       },
       "Rating": {
         "$path": "src/Rating.lua"
