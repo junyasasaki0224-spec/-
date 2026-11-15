@@ -70,6 +70,12 @@
       },
       "MetaService": {
         "$path": "src/MetaService.lua"
+      },
+      "RaceStep": {
+        "$path": "src/RaceStep.lua"
+      },
+      "TimeTrialStore": {
+        "$path": "src/TimeTrialStore.lua"
       }
     },
     "StarterPlayer": {
@@ -92,6 +98,11 @@
     "Players": {
       "$properties": {
         "CharacterAutoLoads": false
+      }
+    },
+    "Workspace": {
+      "$properties": {
+        "StreamingEnabled": false
       }
     }
   }

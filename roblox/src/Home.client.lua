@@ -112,13 +112,36 @@ Run.RenderStepped:Connect(function(dt)
         local portrait=gui.AbsoluteSize.X<gui.AbsoluteSize.Y
         local dist=portrait and 24 or 14
         cam.CFrame=CFrame.lookAt(Vector3.new(math.sin(angle)*dist,7,100+math.cos(angle)*dist),Vector3.new(0,1,100))
-        if (page=="倉庫" or page=="シーズン" or page=="オンライン" or page=="イベント") and not portrait then cam.CFrame=cam.CFrame*CFrame.new(-5,0,0) end
+        if (page=="倉庫" or page=="シーズン" or page=="オンライン" or page=="イベント" or page=="タイムアタック") and not portrait then cam.CFrame=cam.CFrame*CFrame.new(-5,0,0) end
         cam.Focus=CFrame.new(0,1,100)
     end
 end)
 local modes={"シーズン","オンライン","タイムアタック","フレンド","大会","イベント","フリーレース","スタート練習"}
 local descriptions={"級別を上げて頂点へ","6人で水面を競う","1艇・無風で自己ベスト","合言葉で仲間と集合","得点を重ねて優勝へ","日替わりの特別レース","気軽に走って練習","スタートを磨く"}
 local function go(p) page=p;redraw() end
+-- タイムアタック: 選んだコース(1〜6)、コースごとのランキング(サーバーから)、読み込み中か
+local taLane,taBoards,taLoading,taMessage=1,{},{},""
+local LANE_COLORS={{Color3.fromRGB(242,242,240),Color3.fromRGB(17,17,17)},{Color3.fromRGB(22,22,26),white},
+    {Color3.fromRGB(217,30,46),white},{Color3.fromRGB(27,80,212),white},{Color3.fromRGB(243,210,27),Color3.fromRGB(17,17,17)},{Color3.fromRGB(24,162,76),white}}
+-- タイムを 1'40"2 の形にする
+local function formatTime(t)
+    if type(t)~="number" then return "記録なし" end
+    local tenths=math.floor(t*10+.5)
+    return string.format("%d'%02d\"%d",tenths//600,(tenths//10)%60,tenths%10)
+end
+-- コースのランキングをサーバーに聞く(1分以内に聞いた物はそのまま使う)
+local function loadBoard(lane,force)
+    local remoteTA=RS:FindFirstChild("MinatoTimeAttack")
+    local cached=taBoards[lane]
+    if not remoteTA or taLoading[lane] or (cached and not force and os.clock()-cached.at<60) then return end
+    taLoading[lane]=true
+    task.spawn(function()
+        local ok,data=pcall(remoteTA.InvokeServer,remoteTA,"board",lane)
+        taLoading[lane]=nil
+        if ok and type(data)=="table" and not data.busy then taBoards[lane]={at=os.clock(),data=data} end
+        if page=="タイムアタック" then redraw() end
+    end)
+end
 local function legacy()
     local old=player.PlayerGui:FindFirstChild("MinatoLobby")
     if old then old.Enabled=true;gui.Enabled=false else toast.Text="通信機能を準備中です" end
@@ -232,8 +255,8 @@ function redraw()
         button(root,"レース",portrait and 8 or w-250,h-54,portrait and w-16 or 236,function() go(waitingMode and matchNames[waitingMode] or "レースを選ぶ") end,true)
         return
     end
-    local side=page=="倉庫" or pageKinds[page]~=nil
-    local panelWidth=side and math.min(w-16,pageKinds[page] and 460 or 640) or w-16
+    local side=page=="倉庫" or pageKinds[page]~=nil or page=="タイムアタック"
+    local panelWidth=side and math.min(w-16,(pageKinds[page] or page=="タイムアタック") and 460 or 640) or w-16
     -- 待ち合わせの画面はスマホ縦なら上半分だけにして、下に自分の艇を見せる
     local panelHeight=(pageKinds[page] and portrait) and math.min(h-16,math.floor(h*.55)) or h-16
     local panel=frame(root,"Panel",8,8,panelWidth,panelHeight);stroke(panel,white)
@@ -264,6 +287,7 @@ function redraw()
             button(card,"出走の準備",8,shortCard and 146 or 260,194,function()
                 mode=name
                 if pageKinds[name] then go(name)
+                elseif name=="タイムアタック" then go(name)
                 elseif name=="フレンド" or name=="フリーレース" then legacy()
                 else toast.Text=name.."の対戦機能は次回の作業で追加します" end
             end)
@@ -298,6 +322,63 @@ function redraw()
             end
         else
             y=row("受付の準備中","通信の準備ができると参加できます",y)
+        end
+    elseif page=="タイムアタック" then
+        -- コースを選ぶ → 自己ベスト・世界1位・フレンド1位 → 走る → 上位のランキング
+        label(list,"コースを選ぶ（1艇・無風で3周）",8,y,width-16,26,15).TextColor3=pale
+        y+=30
+        local bw=math.min(64,math.floor((width-16-5*6)/6))
+        for lane=1,6 do
+            local b=box("TextButton",list,"Lane"..lane,tostring(lane))
+            b.Position=UDim2.fromOffset(8+(lane-1)*(bw+6),y);b.Size=UDim2.fromOffset(bw,48)
+            b.BackgroundTransparency=0;b.BackgroundColor3=LANE_COLORS[lane][1];b.TextColor3=LANE_COLORS[lane][2];b.TextSize=20
+            stroke(b,lane==taLane and gold or white,lane==taLane and 3 or 1)
+            b.Activated:Connect(function() taLane=lane;taMessage="";redraw() end)
+        end
+        y+=60
+        loadBoard(taLane)
+        local entry=taBoards[taLane]
+        local data=entry and entry.data
+        local best=m.ta and m.ta[tostring(taLane-1)]
+        local world,friend=data and data.worldTop,data and data.friendTop
+        y=row("自己ベスト　"..formatTime(best),data and data.mine and ("世界 "..data.mine.rank.."位") or "世界ランキングは上位100位まで",y)
+        if data and data.offline then
+            y=row("世界ランキング","公開したゲームで表示されます（Studio では保存しません）",y)
+        elseif data and data.failed then
+            y=row("世界ランキング","読み込めませんでした。少し待ってから開き直してください",y)
+        elseif data then
+            y=row("世界1位　"..(world and formatTime(world.ms/1000) or "記録なし"),world and world.name or "最初の記録を残そう",y)
+            y=row("フレンド1位　"..(friend and formatTime(friend.ms/1000) or "記録なし"),friend and (friend.name.."　世界 "..friend.rank.."位") or "上位100位にいるフレンドを表示します",y)
+        else
+            y=row("世界ランキング","読み込んでいます",y)
+        end
+        if world then y=row("ゴースト","世界1位の走りが半透明の艇で一緒に走ります",y) end
+        button(list,"このコースで走る",8,y,math.min(width-16,240),function()
+            local remoteTA=RS:FindFirstChild("MinatoTimeAttack")
+            if not remoteTA then return end
+            taMessage="会場を探しています"
+            redraw()
+            task.spawn(function()
+                local ok,res=pcall(remoteTA.InvokeServer,remoteTA,"run",taLane)
+                taMessage=ok and type(res)=="table" and (res.message or "") or "通信を確認できません"
+                if page=="タイムアタック" then redraw() end
+            end)
+        end,true)
+        y+=56
+        if taMessage~="" then label(list,taMessage,8,y,width-16,24,14).TextColor3=gold;y+=30 end
+        if data and data.top and #data.top>0 then
+            label(list,"世界ランキング　"..taLane.."コース",8,y,width-16,28,16).TextColor3=gold
+            y+=32
+            for _,r in ipairs(data.top) do
+                local line=frame(list,"Rank"..r.rank,8,y,width-16,30)
+                line.BackgroundTransparency=r.me and .55 or .85
+                if r.me then line.BackgroundColor3=gold end
+                label(line,r.rank.."位",8,0,56,30,15)
+                local who=label(line,r.name..(r.friend and "　フレンド" or ""),66,0,width-200,30,15)
+                if r.friend then who.TextColor3=pale end
+                local t=label(line,formatTime(r.ms/1000),width-120,0,100,30,15);t.TextXAlignment=Enum.TextXAlignment.Right
+                y+=34
+            end
         end
     elseif page=="ガチャ" then
         y=row("コインで見た目を集めよう","N 60%　R 28%　SR 10%　SSR 2%",y)

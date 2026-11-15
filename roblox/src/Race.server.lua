@@ -8,12 +8,14 @@ local TeleportService = game:GetService("TeleportService")
 local collision = require(script.Parent:WaitForChild("BoatCollision"))
 local RaceAI = require(script.Parent:WaitForChild("RaceAI"))
 local createRoster = require(script.Parent:WaitForChild("RaceRoster"))
-local stepBoat = require(ReplicatedStorage:WaitForChild("BoatPhysics"))
+local RaceStep = require(script.Parent:WaitForChild("RaceStep"))
 local Rules = require(script.Parent:WaitForChild("ResultRules"))
 -- Unpublished Studio places cannot open a DataStore. Only a live result needs it.
 local localPractice = RunService:IsStudio() and game.GameId == 0
 local PlayerStats = not localPractice and require(script.Parent:WaitForChild("PlayerStats"))
 local isRoom = game.PrivateServerId ~= "" and game.PrivateServerOwnerId == 0
+-- タイムアタックの記録の保存(世界ランキングとゴースト)。公開していない Studio では使わない
+local TimeTrial = not localPractice and require(script.Parent:WaitForChild("TimeTrialStore"))
 local RoomService = isRoom and require(script.Parent:WaitForChild("RoomService"))
 local MatchQueue = isRoom and require(script.Parent:WaitForChild("MatchQueue"))
 local roomMembers, roomHost, roomCode = {}, nil, nil
@@ -26,8 +28,17 @@ local ONLINE = {ranked=true, online=true, event=true}
 local Meta = require(ReplicatedStorage:WaitForChild("Meta"))
 -- 公開していない Studio では、ワークスペースの属性 MinatoTestMode(ranked / online / event)で
 -- オンライン対戦の会場と同じ AI・イベント・結果の表示を確かめられる(保存はしない)
-local studioMode = localPractice and ONLINE[workspace:GetAttribute("MinatoTestMode")] and workspace:GetAttribute("MinatoTestMode") or nil
+-- タイムアタックは ta(コースは属性 MinatoTestLane = 1〜6)
+local TEST_MODES = {ranked=true, online=true, event=true, ta=true}
+local studioMode = localPractice and TEST_MODES[workspace:GetAttribute("MinatoTestMode")] and workspace:GetAttribute("MinatoTestMode") or nil
 local function matchKind() return roomKind or studioMode end
+-- タイムアタック: 走るコース(0〜5)、入力の記録、次の走りを待っているか、ゴースト(世界1位の走りの再現)
+local taLane = studioMode == "ta" and math.clamp(math.floor(tonumber(workspace:GetAttribute("MinatoTestLane")) or 1),1,6)-1 or 0
+local taPending = studioMode == "ta"
+local taRecord, taStep, taLast = nil, 0, nil
+local ghostRecord, ghostBoat, ghostIndex, ghostInput = nil, nil, 1, {0,0}
+-- Studio のタイムアタックも、会場と同じく「走る人がいたら -14秒から始める」流れにする
+if studioMode == "ta" then roomWaiting = true end
 local todayEvent = nil
 local rankedLobbyPlace = nil
 local returning = {}
@@ -131,19 +142,11 @@ end
 local MetaService=require(script.Parent:WaitForChild("MetaService"))
 local commands = {}
 local raceNumber = 0
-local tilts = {
-    {acc=1.085,top=0.965,grip=1.065},
-    {acc=1,top=1,grip=1},
-    {acc=0.94,top=1.035,grip=0.945},
-    {acc=0.88,top=1.075,grip=0.89},
-}
+local tilts = RaceStep.TILTS
 local raceClock = -31
 local wave = 0
 local function applyTilt(boat, index)
-    local tilt=tilts[index]
-    boat.tilt=index
-    boat.accF,boat.topF=tilt.acc,tilt.top
-    boat.gripSet=tilt.grip*(1-wave*0.006)
+    RaceStep.applyTilt(boat, index, wave)
 end
 local nextFirst = 1
 local saveResults
@@ -153,6 +156,26 @@ local function preparePlayer(player)
     task.spawn(function()
         local join = player:GetJoinData()
         local data = join and join.TeleportData
+        -- タイムアタック: 予約した会場に1人だけ。コース(1〜6)はロビーのサーバーが決めて渡す
+        if type(data) == "table" and data.mode == "ta" then
+            local lane = data.lane
+            if (roomKind and roomKind ~= "ta") or next(roomMembers) or type(lane) ~= "number" or lane % 1 ~= 0 or lane < 1 or lane > 6 then
+                player:Kick("タイムアタックの会場に入れません。ロビーから入り直してください")
+                return
+            end
+            roomKind, taLane = "ta", lane - 1
+            if type(join.SourcePlaceId)=="number" and join.SourcePlaceId>0 then rankedLobbyPlace=rankedLobbyPlace or join.SourcePlaceId end
+            roomMembers[player] = true
+            world:SetAttribute("MatchMode","ta")
+            world:SetAttribute("RoomMode",false)
+            world:SetAttribute("RankedPhase","waiting")
+            -- 世界1位の走りを読んでおき、ゴーストとして一緒に走らせる
+            local ghost = TimeTrial and TimeTrial.ghost(taLane)
+            if ghost and RaceStep.replay(ghost) then ghostRecord = ghost end
+            -- ゴーストを読み終えてから走り始める
+            taPending = true
+            return
+        end
         if type(data) == "table" and ONLINE[data.mode] then
             if rankedStarted or (roomKind and roomKind ~= data.mode) then
                 player:Kick("対戦会場に入れません。ロビーから入り直してください")
@@ -232,6 +255,7 @@ local function assignPlayers()
     -- イベント「大外まくり指令」では、人間を6号艇から順に乗せる(ほかは1号艇から)
     local seats = {1,2,3,4,5,6}
     if todayEvent and todayEvent.lane == 5 then seats = {6,5,4,3,2,1} end
+    if matchKind() == "ta" then seats = {taLane+1} end
     for k, i in ipairs(seats) do
         local boat = boats[i]
         local player = nil
@@ -264,7 +288,8 @@ input.OnServerEvent:Connect(function(player, throttle, steer, sequence, round)
     if sequence ~= sequence or sequence%1 ~= 0 or sequence <= command.sequence or sequence > 2147483647 then return end
     local now = os.clock()
     if now - command.last < 0.04 then return end
-    command.throttle, command.steer, command.last, command.sequence = math.clamp(throttle,0,1), steer, now, sequence
+    -- 1000分の1にそろえる(タイムアタックの入力を保存して読み直しても同じ走りになるように)
+    command.throttle, command.steer, command.last, command.sequence = RaceStep.quantize(math.clamp(throttle,0,1)), RaceStep.quantize(steer), now, sequence
 end)
 setup.OnServerEvent:Connect(function(player, index, round)
     if roomWaiting or round ~= raceNumber then return end
@@ -309,6 +334,8 @@ local function reset()
     local windAngle = ((raceNumber*47)%360)*math.pi/180
     local racers = createRoster(raceNumber)
     local kind = matchKind()
+    local ta = kind == "ta"
+    if ta then wind, windAngle, wave = 0, 0, 0 end
     -- オンライン対戦の空きは達人、フリーレースは今までどおり中級
     local diff = ONLINE[kind] and RaceAI.DIFFS[4] or RaceAI.DIFFS[2]
     todayEvent = kind == "event" and Meta.eventOf(Meta.today()) or nil
@@ -322,8 +349,8 @@ local function reset()
     world:SetAttribute("Wave",wave)
     for i,b in ipairs(boats) do
         local lane = i-1
-        local startX = lane < 3 and -106-lane*4 or -182-(lane-3)*5
-        b.x,b.z,b.h,b.vx,b.vz,b.w = startX,11+lane*5.5,0,0,0,0
+        local startX, startZ = RaceStep.startPosition(lane)
+        b.x,b.z,b.h,b.vx,b.vz,b.w = startX,startZ,0,0,0,0
         b.laneZ = b.z
         b.throttle,b.steer,b.lap,b.checkpoint,b.finished,b.speed = 0,0,0,0,false,0
         b.started,b.flying,b.place,b.startTime = false,false,0,nil
@@ -339,6 +366,11 @@ local function reset()
         b.trail,b.trailTimer = {},0
         applyTilt(b,2)
         RaceAI.init(b,i-1,1000+raceNumber*37+i*7919,racers[i].racer,diff)
+        -- タイムアタックは自分の1艇だけ。ほかの艇は最初からいない扱い(当たらず、映らない)。モーターは全員同じ
+        local absent = ta and i ~= taLane+1
+        b.model:SetAttribute("Absent", absent or nil)
+        if absent then b.out, b.outAt = "TA", 0 end
+        if ta and not absent then b.motor = 1 end
     end
     commands = {}
     for _, player in ipairs(Players:GetPlayers()) do player:SetAttribute("MinatoBoat", 0) end
@@ -352,13 +384,63 @@ local raceId = HttpService:GenerateGUID(false)
 local resultsSaved = false
 local aloneSince, finalRows = nil,nil
 local accumulator = 0
-local dt = 1/120
+local dt = RaceStep.DT
+-- タイムアタックを始める(大時計の -14秒から)。記録とゴーストも最初から
+local function startTA()
+    reset()
+    roomWaiting = false
+    world:SetAttribute("RoomWaiting", false)
+    world:SetAttribute("RankedPhase", "racing")
+    elapsed, finishTime, finishCount, assigned = -14, nil, 0, false
+    raceClock = elapsed
+    raceId = HttpService:GenerateGUID(false)
+    resultsSaved, aloneSince, finalRows = false, nil, nil
+    taRecord, taStep, taLast = {lane=taLane, tilt=2, inputs={}}, 0, nil
+    ghostBoat, ghostIndex, ghostInput = nil, 1, {0,0}
+    if ghostRecord and ghostRecord.lane == taLane then ghostBoat = RaceStep.soloBoat(ghostRecord.lane, ghostRecord.tilt) end
+    world:SetAttribute("Ghost", ghostBoat ~= nil)
+end
+-- タイムを 1'40"2 の形にする
+local function formatTime(t)
+    local tenths = math.floor(t*10+0.5)
+    return string.format("%d'%02d\"%d", tenths//600, (tenths//10)%60, tenths%10)
+end
+-- タイムアタックのゴール後: 記録した入力から走りを再現して同じタイムになるか確かめ、合えば登録する
+local function submitTA(human)
+    local record, player = taRecord, human.player
+    local replayed, reason = RaceStep.replay(record)
+    local matches = replayed ~= nil and math.abs(replayed - human.finishTime) < 1e-6
+    task.spawn(function()
+        local text
+        if not matches then
+            warn("Minato time attack replay mismatch: "..tostring(replayed).." / "..tostring(human.finishTime).." "..tostring(reason))
+            text = formatTime(human.finishTime).."　記録を確かめられませんでした（登録していません）"
+        elseif TimeTrial then
+            local result = TimeTrial.submit(human.humanUserId, taLane, human.finishTime, record)
+            if result then
+                text = formatTime(human.finishTime)..(result.improved and "　自己ベスト更新" or "")
+                    ..(result.rank and ("　世界 "..result.rank.."位") or "　世界 100位より下")
+            else
+                text = formatTime(human.finishTime).."　記録の保存を確認できません"
+            end
+        else
+            text = formatTime(human.finishTime).."　記録を確かめました（Studio では登録しません）"
+            -- Studio では世界1位の代わりに、確かめた直前の走りを次のゴーストにする
+            if not ghostRecord or replayed < (ghostRecord.time or math.huge) then
+                ghostRecord = {lane=record.lane, tilt=record.tilt, inputs=record.inputs, time=replayed}
+            end
+        end
+        if player and player.Parent == Players then roomRemote:FireClient(player, "ta", text) end
+    end)
+end
 saveResults = function()
     if resultsSaved or not assigned then return end
     resultsSaved = true
     local results = {}
     finalRows = {}
-    for position, boat in ipairs(orderBoats()) do
+    for _, boat in ipairs(orderBoats()) do
+        if boat.out == "TA" then continue end
+        local position = #finalRows + 1
         -- 結果の表: 艇番、着(または F・沈・退出)、名前、AI か、塗装、ヘルメット
         finalRows[position] = {boat.number,boat.out or (boat.finished and tostring(boat.place) or "未完走"),
             boat.model:GetAttribute("Racer") or "",boat.humanUserId == nil,
@@ -371,9 +453,21 @@ saveResults = function()
         -- The mode was established only after server-side admission.
         PlayerStats.recordRace(raceId,results,roomKind)
     end
+    if matchKind() == "ta" and taRecord then
+        for _, boat in ipairs(boats) do
+            if boat.humanUserId and boat.finished then submitTA(boat) end
+        end
+    end
 end
 roomRemote.OnServerEvent:Connect(function(player, action)
-    if action == "return" and ONLINE[roomKind] and (world:GetAttribute("RankedPhase") == "finished" or world:GetAttribute("RankedPhase") == "incomplete")
+    -- タイムアタック: 同じ会場でもう一度走る
+    if action == "again" and matchKind() == "ta" and roomWaiting and not taPending
+        and world:GetAttribute("RankedPhase") == "finished" and (not isRoom or roomMembers[player]) then
+        taPending = true
+        world:SetAttribute("RankedPhase","waiting")
+        return
+    end
+    if action == "return" and (ONLINE[roomKind] or roomKind == "ta") and (world:GetAttribute("RankedPhase") == "finished" or world:GetAttribute("RankedPhase") == "incomplete")
         and roomMembers[player] and rankedLobbyPlace and not returning[player] then
         returning[player]=true
         task.spawn(function()
@@ -390,6 +484,16 @@ roomRemote.OnServerEvent:Connect(function(player, action)
     raceClock = elapsed
 end)
 local function step()
+    if roomWaiting and matchKind() == "ta" then
+        -- タイムアタックは、走る人がいて「もう一度」を待っている時に始める
+        local present = false
+        for _, p in ipairs(Players:GetPlayers()) do
+            if not isRoom or roomMembers[p] then present = true; break end
+        end
+        if not taPending or not present then return end
+        taPending = false
+        startTA()
+    end
     if roomWaiting then
         local arrived = 0
         for member in pairs(roomMembers) do
@@ -422,7 +526,6 @@ local function step()
     if not assigned then return end
     for i,b in ipairs(boats) do
         if b.out then continue end
-        local previousX, previousZ = b.x, b.z
         local throttle, steer = 0,0
         if not b.finished and not b.flying then
             if b.player then
@@ -435,46 +538,37 @@ local function step()
                 throttle,steer = RaceAI.update(b,boats,elapsed,dt,collision.units)
             end
         end
-        stepBoat(b, throttle, steer, dt)
-        collision.walls(b,elapsed)
-        collision.obstacles(b,elapsed)
-        if b.out then
-            if b.player then commands[b.player]=nil end
-            continue
-        end
-        b.speed = math.sqrt(b.vx*b.vx+b.vz*b.vz)
-        b.trailTimer += dt
-        if b.trailTimer >= 0.06 then
-            b.trailTimer -= 0.06
-            b.trail[#b.trail+1] = {x=b.x-math.cos(b.h)*2,z=b.z-math.sin(b.h)*2,time=elapsed}
-            while #b.trail>0 and elapsed-b.trail[1].time>2.6 do table.remove(b.trail,1) end
-        end
-        if not b.started and previousX < 0 and b.x >= 0 and b.z > 4 then
-            b.started = true
-            local fraction = (0-previousX)/math.max(b.x-previousX,0.000001)
-            b.startTime = elapsed-dt*(1-fraction)
-            if b.startTime < 0 then
-                collision.disqualify(b,"F",elapsed)
-                if b.player then commands[b.player]=nil end
-                continue
+        -- タイムアタック: 実際に使った入力とチルトが変わった時だけ記録する(歩の番号つき)
+        if taRecord and b.player then
+            local tq, sq = math.floor(throttle*1000+0.5), math.floor(steer*1000+0.5)
+            if not taLast or taLast[1] ~= tq or taLast[2] ~= sq or taLast[3] ~= b.tilt then
+                taLast = {tq, sq, b.tilt}
+                table.insert(taRecord.inputs, {taStep, tq, sq, b.tilt})
             end
         end
-        -- The mark crossings enforce the correct side and sequence.
-        if b.checkpoint == 0 and previousX < 150 and b.x >= 150 and b.z > 8 then b.checkpoint=1 end
-        if b.checkpoint == 1 and previousZ > 8 and b.z <= 8 and b.x > 150 then b.checkpoint=2 end
-        if b.checkpoint == 2 and previousX > 150 and b.x <= 150 and b.z < 8 then b.checkpoint=3 end
-        if b.checkpoint == 3 and previousX > -150 and b.x <= -150 and b.z < 0 then b.checkpoint=4 end
-        if b.checkpoint == 4 and previousZ < 0 and b.z >= 0 and b.x < -150 then b.checkpoint=5 end
-        if b.checkpoint == 5 and previousX < -150 and b.x >= -150 and b.z > 0 then b.checkpoint=0; b.lap += 1 end
-        if not b.finished and not b.flying and b.lap >= 3 and previousX < 0 and b.x >= 0 and b.z > 4 then
-            b.finished=true
+        local event = RaceStep.advance(b, throttle, steer, elapsed, dt)
+        if event == "out" then
             if b.player then commands[b.player]=nil end
-            b.finishTime = math.max(0.001,elapsed-(b.startTime or 0))
+            continue
+        elseif event == "finish" then
+            if b.player then commands[b.player]=nil end
             finishCount += 1
             b.place = finishCount
             finishTime=finishTime or elapsed
         end
     end
+    -- ゴースト: 世界1位の記録を同じ歩の番号で進める(ほかの艇には当たらない)
+    if ghostBoat and not ghostBoat.finished and not ghostBoat.out then
+        local item = ghostRecord.inputs[ghostIndex]
+        while item and item[1] <= taStep do
+            ghostInput = {item[2]/1000, item[3]/1000}
+            if item[4] and item[4] ~= ghostBoat.tilt and tilts[item[4]] then RaceStep.applyTilt(ghostBoat, item[4], 0) end
+            ghostIndex += 1
+            item = ghostRecord.inputs[ghostIndex]
+        end
+        RaceStep.advance(ghostBoat, ghostInput[1], ghostInput[2], elapsed, dt)
+    end
+    if taRecord then taStep += 1 end
     for i = 1, #boats - 1 do
         for j = i + 1, #boats do
             collision.boats(boats[i], boats[j])
@@ -503,7 +597,7 @@ local function step()
     endEarly, aloneSince = Rules.shouldEnd(boats,elapsed,aloneSince)
     if endEarly or (finishTime and elapsed-finishTime > 45) or elapsed > 240 then
         saveResults()
-        if ONLINE[roomKind] then
+        if ONLINE[roomKind] or matchKind() == "ta" then
             roomWaiting=true
             world:SetAttribute("RoomWaiting",true)
             world:SetAttribute("RankedPhase","finished")
@@ -543,12 +637,14 @@ RunService.Heartbeat:Connect(function(frame)
     if snapshotTimer >= 1/15 then
         snapshotTimer %= 1/15
         local states = {}
+        -- ゴーストの位置(x, z, 向き, ハンドル, ゴールしたか)
+        local ghost = ghostBoat and {ghostBoat.x, ghostBoat.z, ghostBoat.h, ghostBoat.steer, ghostBoat.finished or ghostBoat.out ~= nil} or nil
         for i, b in ipairs(boats) do
             states[i] = {b.x,b.z,b.h,b.vx,b.vz,b.w,b.throttle,b.steer,b.accF,b.topF,b.gripSet,b.gripF,b.thrustF,b.windX,b.windZ,b.motor,b.out or "",b.outAt or 0,b.finished,b.place}
         end
         for _, player in ipairs(Players:GetPlayers()) do
             local command = commands[player]
-            snapshots:FireClient(player, states, assigned and not roomWaiting, command and command.applied or 0, raceNumber, elapsed, player:GetAttribute("MinatoBoat") or 0, finalRows)
+            snapshots:FireClient(player, states, assigned and not roomWaiting, command and command.applied or 0, raceNumber, elapsed, player:GetAttribute("MinatoBoat") or 0, finalRows, ghost)
         end
     end
 end)

@@ -19,6 +19,13 @@ function Rules.apply(value, result, raceId, change)
     data.meta=Meta.normalize(data.meta)
     Meta.daily(data.meta,result.day)
     Meta.result(data.meta,result)
+    -- タイムアタック(1艇だけ)は、出走数・1着・ベストタイム・レートに入れない(自己ベストは meta.ta に入る)
+    if result.mode == "ta" then
+        data.version += 1
+        table.insert(data.recentRaces,raceId)
+        if #data.recentRaces > 128 then table.remove(data.recentRaces,1) end
+        return data
+    end
     data.races += 1
     if result.won then data.wins += 1 end
     if result.time and (not data.bestTime or result.time < data.bestTime) then data.bestTime = result.time end

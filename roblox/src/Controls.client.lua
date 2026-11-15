@@ -96,19 +96,29 @@ local sentThrottle, sentSteer = 0,0
 local pendingSteps = {}
 local predictionRace = nil
 local viewing, serverClock, seatNumber, resultRows
-local resultText=""
 local roundChanged = false
-snapshotRemote.OnClientEvent:Connect(function(states, active, acknowledged, raceNumber, clock, seat, results)
-    if predictionRace ~= raceNumber then roundChanged=true end
-    if results and (not resultRows or predictionRace~=raceNumber) then
-        local lines={"レース結果"}
-        for _,row in ipairs(results) do
-            local place=tonumber(row[2])
-            table.insert(lines,string.format("%s　%d号艇",place and (place.."着") or row[2],row[1]))
-        end
-        resultText=table.concat(lines,"\n")
+-- タイムアタックのゴースト(世界1位の走り)。半透明の艇で見せる。サーバーから位置だけが届く
+local ghostState
+local ghostVisual = boat:Clone()
+ghostVisual.Name = "GhostBoat"
+for _, p in ipairs(ghostVisual:GetDescendants()) do
+    if p:IsA("BasePart") then
+        p.Transparency = p.Transparency >= 1 and 1 or 0.4
+        p.CastShadow = false
+        p.Color = p.Color:Lerp(Color3.fromRGB(170,230,255), 0.55)
     end
+end
+-- 水面の上でも見分けやすいように、水色の輪郭を付ける
+local ghostOutline = Instance.new("Highlight")
+ghostOutline.FillTransparency = 1
+ghostOutline.OutlineColor = Color3.fromRGB(150,225,255)
+ghostOutline.OutlineTransparency = 0.1
+ghostOutline.DepthMode = Enum.HighlightDepthMode.Occluded
+ghostOutline.Parent = ghostVisual
+snapshotRemote.OnClientEvent:Connect(function(states, active, acknowledged, raceNumber, clock, seat, results, ghost)
+    if predictionRace ~= raceNumber then roundChanged=true end
     serverClock,seatNumber,resultRows=clock,seat,results
+    ghostState = type(ghost) == "table" and ghost or nil
     latest, running = states, active
     local number = seat
     local state = states[number]
@@ -220,7 +230,7 @@ rankedPanel.Parent = gui
 local function updateRanked()
     local phase=world:GetAttribute("RankedPhase")
     rankedPanel.Visible = phase == "waiting" or phase == "finished" or phase == "incomplete"
-    local names = {ranked="シーズン", online="オンライン", event="イベント"}
+    local names = {ranked="シーズン", online="オンライン", event="イベント", ta="タイムアタック"}
     rankedPanel.Text = phase == "finished" and "終了：ロビーに戻る" or phase == "incomplete" and "参加者が来ませんでした：ロビーに戻る"
         or (names[world:GetAttribute("MatchMode")] or "シーズン").."：参加者の到着を待っています"
 end
@@ -230,7 +240,56 @@ rankedPanel.Activated:Connect(function()
     local phase=world:GetAttribute("RankedPhase")
     if phase=="finished" or phase=="incomplete" then roomRemote:FireServer("return") end
 end)
-roomRemote.OnClientEvent:Connect(function(message) rankedPanel.Text=message end)
+-- タイムアタックの結果(タイム・自己ベスト更新・世界の順位)と「もう一度走る」
+local taResult = Instance.new("TextLabel")
+taResult.Name = "TimeAttackResult"
+taResult.Size = UDim2.fromOffset(360,40)
+taResult.Position = UDim2.new(0.5,-180,0,50)
+taResult.BackgroundColor3 = Color3.fromRGB(11,29,58)
+taResult.BackgroundTransparency = 0.12
+taResult.TextColor3 = Color3.fromRGB(255,210,60)
+taResult.Font = Enum.Font.GothamBold
+taResult.TextSize = 16
+taResult.TextTruncate = Enum.TextTruncate.AtEnd
+taResult.Visible = false
+taResult.Parent = gui
+do local corner = Instance.new("UICorner"); corner.CornerRadius = UDim.new(0,10); corner.Parent = taResult end
+local again = Instance.new("TextButton")
+again.Name = "Again"
+again.Size = UDim2.fromOffset(200,44)
+again.Position = UDim2.new(0.5,-100,0,96)
+again.BackgroundColor3 = Color3.new(1,1,1)
+again.TextColor3 = Color3.fromRGB(26,18,0)
+again.Font = Enum.Font.GothamBold
+again.TextSize = 16
+again.Text = "もう一度走る"
+again.Visible = false
+again.Parent = gui
+do
+    local corner = Instance.new("UICorner"); corner.CornerRadius = UDim.new(0,10); corner.Parent = again
+    local g = Instance.new("UIGradient"); g.Color = ColorSequence.new(Color3.fromRGB(255,224,102),Color3.fromRGB(245,164,0)); g.Rotation = 90; g.Parent = again
+end
+again.Activated:Connect(function()
+    taResult.Visible = false
+    roomRemote:FireServer("again")
+end)
+local function updateTimeAttack()
+    local ta = world:GetAttribute("MatchMode") == "ta"
+    local phase = world:GetAttribute("RankedPhase")
+    again.Visible = ta and phase == "finished"
+    if ta and phase == "racing" then taResult.Visible = false end
+end
+world:GetAttributeChangedSignal("RankedPhase"):Connect(updateTimeAttack)
+world:GetAttributeChangedSignal("MatchMode"):Connect(updateTimeAttack)
+updateTimeAttack()
+roomRemote.OnClientEvent:Connect(function(kind, text)
+    if kind == "ta" and type(text) == "string" then
+        taResult.Text = text
+        taResult.Visible = true
+    elseif type(kind) == "string" then
+        rankedPanel.Text = kind
+    end
+end)
 
 local status = label("Status","みなとグランプリ",UDim2.fromOffset(180,75),UDim2.fromOffset(12,12),16)
 -- 出走表(スタート前)と結果(ゴール後)の表。艇番の色・着・名前・AI の札・塗装とヘルメットの色見本
@@ -307,27 +366,34 @@ end
 local function drawResults(rows, mySeat, time)
     -- 右上の大時計(幅約100)をよけて、その左に置く。狭い画面では大時計の下へ
     result.Position = gui.AbsoluteSize.X >= 700 and UDim2.new(1,-372,0,58) or UDim2.new(1,-268,0,160)
+    local count = 0
     if rows then
         resultTitle.Text = "レース結果"
         for i = 1, 6 do
             local row = rows[i]
             if row then
+                count += 1
                 local place = tonumber(row[2])
-                drawLine(i, row[1], place and (place.."着") or tostring(row[2]), row[3] or "", row[4] == true, row[5] or "", row[6] or "", row[1] == mySeat)
+                drawLine(count, row[1], place and (place.."着") or tostring(row[2]), row[3] or "", row[4] == true, row[5] or "", row[6] or "", row[1] == mySeat)
             end
         end
-        return true
-    end
-    if time >= 0 then return false end
-    resultTitle.Text = (world:GetAttribute("EventName") and (world:GetAttribute("EventName").."　") or "").."出走表"
-    for i = 1, 6 do
-        local b = templates:FindFirstChild("Boat"..i)
-        if b then
-            drawLine(i, i, "", b:GetAttribute("Racer") or "", b:GetAttribute("IsAI") ~= false,
-                b:GetAttribute("Skin") or "", b:GetAttribute("HelmetStyle") or "", i == mySeat)
+    else
+        if time >= 0 then return false end
+        local title = world:GetAttribute("MatchMode") == "ta" and "タイムアタック" or world:GetAttribute("EventName")
+        resultTitle.Text = (title and (title.."　") or "").."出走表"
+        for i = 1, 6 do
+            local b = templates:FindFirstChild("Boat"..i)
+            -- タイムアタックでいない艇は出さない
+            if b and not b:GetAttribute("Absent") then
+                count += 1
+                drawLine(count, i, "", b:GetAttribute("Racer") or "", b:GetAttribute("IsAI") ~= false,
+                    b:GetAttribute("Skin") or "", b:GetAttribute("HelmetStyle") or "", i == mySeat)
+            end
         end
     end
-    return true
+    for i = 1, 6 do resultLines[i].frame.Visible = i <= count end
+    result.Size = UDim2.fromOffset(260,34+count*30)
+    return count > 0
 end
 local tiltButton = Instance.new("TextButton")
 tiltButton.Name = "Tilt"
@@ -470,7 +536,8 @@ RunService.RenderStepped:Connect(function(dt)
         nextSend = 0
         inputSequence += 1
         currentSequence = inputSequence
-        sentThrottle,sentSteer = throttle,steer
+        -- サーバーと同じく1000分の1にそろえて送る(予測とサーバーの計算をそろえる)
+        sentThrottle,sentSteer = math.floor(throttle*1000+0.5)/1000, math.floor(steer*1000+0.5)/1000
         remote:FireServer(sentThrottle,sentSteer,currentSequence,predictionRace)
     end
     if running and predicted and predictedNumber == boatNumber then
@@ -530,6 +597,17 @@ RunService.RenderStepped:Connect(function(dt)
             else visual:PivotTo(current:Lerp(destination,1-math.exp(-12*dt))) end
             visuals.pose(visual,state[8],view.roll)
         end
+    end
+    -- ゴースト(タイムアタックの世界1位の走り)
+    if ghostState and not ghostState[5] then
+        if ghostVisual.Parent ~= workspace then ghostVisual.Parent = workspace end
+        local pos = Vector3.new(ghostState[1],0.5,ghostState[2])*STUDS_PER_METRE
+        local destination = CFrame.lookAt(pos,pos+Vector3.new(math.cos(ghostState[3]),0,math.sin(ghostState[3])))
+        local current = ghostVisual:GetPivot()
+        if (current.Position-destination.Position).Magnitude > 30*STUDS_PER_METRE then ghostVisual:PivotTo(destination)
+        else ghostVisual:PivotTo(current:Lerp(destination,1-math.exp(-12*dt))) end
+    elseif ghostVisual.Parent then
+        ghostVisual.Parent = nil
     end
     local following=watching and not viewing.exited
     local visibleBoat = renderBoats[following and viewing.lane or math.max(boatNumber,1)]

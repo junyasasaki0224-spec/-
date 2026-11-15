@@ -38,6 +38,12 @@
       },
       "MetaLobby": {
         "$path": "src/MetaLobby.server.lua"
+      },
+      "TimeTrialStore": {
+        "$path": "src/TimeTrialStore.lua"
+      },
+      "TimeAttackLobby": {
+        "$path": "src/TimeAttackLobby.server.lua"
       }
     },
     "StarterPlayer": {
@@ -86,6 +92,11 @@
     "Players": {
       "$properties": {
         "CharacterAutoLoads": false
+      }
+    },
+    "Workspace": {
+      "$properties": {
+        "StreamingEnabled": false
       }
     }
   }

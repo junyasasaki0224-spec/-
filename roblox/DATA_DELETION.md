@@ -13,8 +13,9 @@ Roblox から削除依頼を受けた場合の運用手順です。公開担当�
 | `MinatoRating_v1` | Ordered | レート順位 |
 | `MinatoWins_v1` | Ordered | １着数順位 |
 | `MinatoBestTimeMs_v1` | Ordered | ベストタイム順位 |
+| `MinatoTA0_v1`〜`MinatoTA5_v1` | Ordered | タイムアタックのコース別タイム（6つ。T17 ②） |
 
-3. Studio の API アクセスを有効にして試験したことがあり、試験用の記録も残っている場合は、上の４つに加えて `MinatoStats_studio_v1`、`MinatoRating_studio_v1`、`MinatoWins_studio_v1`、`MinatoBestTimeMs_studio_v1` にも同じ種類・キー・スコープで設定します。実際に使った保存先の名前を `PlayerStats.lua` と Dashboard で照合してください。
+3. Studio の API アクセスを有効にして試験したことがあり、試験用の記録も残っている場合は、上の保存先に加えて `MinatoTA0_studio_v1`〜`MinatoTA5_studio_v1` と、 `MinatoStats_studio_v1`、`MinatoRating_studio_v1`、`MinatoWins_studio_v1`、`MinatoBestTimeMs_studio_v1` にも同じ種類・キー・スコープで設定します。実際に使った保存先の名前を `PlayerStats.lua` と Dashboard で照合してください。
 4. 作成した全テンプレートを保存・公開し、Dashboard で反映を確認します。以後 Roblox の削除依頼は公式の仕組みで処理されます。対象、処理状況、失敗時の対応は公開担当者が公式画面と通知で確認してください。
 
 ## 依頼を受けたとき
@@ -36,3 +37,13 @@ Roblox から削除依頼を受けた場合の運用手順です。公開担当�
 `MinatoRankQueue_v1`（Studio 試験時は `MinatoRankQueue_studio_v1`）は、`queue` という一つの項目の `players` に、ユーザー ID・レート・待機時刻・一時的な会場情報を保持します。通常、待機中の情報は接続がなくなってから25秒、選ばれた情報は120秒で無効になり、次の更新で取り除かれます。更新が止まった場合は最後の更新から15分で項目全体が期限切れになります。DataStore の削除テンプレートとは別に取り扱ってください。
 
 削除依頼で直ちに消す必要がある場合は、対象者の待機と書き込みの再試行を止め、対象の本番・試験マップの `queue` を `MemoryStoreSortedMap:UpdateAsync` で更新し、`players` の対象 ID だけを削除します。他の人のデータを消さないよう、`queue` 全体を削除せず、処理後に対象 ID がなくなったことを確認します。通信失敗時は再試行し、ID や会場情報を公開ログに出力しないでください。実際の削除は行っていません。
+
+## タイムアタックのゴースト
+
+`MinatoTAGhost_v1`（Studio 試験時は `MinatoTAGhost_studio_v1`）は、コースごとの世界1位の走り（`lane0`〜`lane5` の6つのキー）を保存します。値にはその記録を出した人のユーザー ID（`userId`）と入力の列が入ります。キーがユーザー ID ではないので、上の削除テンプレートでは消えません。
+
+削除依頼を受けたら、6つのキーを `GetAsync` で確認し、`userId` が対象 ID のキーだけを `RemoveAsync` で削除します（次に誰かが記録を出すと、新しい世界1位の走りが入ります）。タイムの記録（`MinatoTA0_v1`〜`MinatoTA5_v1`）とゴーストは別の場所にあるので、両方を消してください。ID や記録を公開ログに出力しないでください。実際の削除は行っていません。
+
+## オンライン・イベントの待機に関する一時情報
+
+T17 ① から、待ち行列の項目は `queue`（シーズン）に加えて `online` と `event` の3つになりました。中身と期限は上の「ランク戦の待機」と同じです。直ちに消す必要がある場合は、3つの項目すべてで対象 ID だけを取り除いてください。

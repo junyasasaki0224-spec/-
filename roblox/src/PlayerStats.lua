@@ -157,7 +157,7 @@ function Stats.recordRace(raceId, participants, kind)
         end
         local changes = ranked and calculateRating(eligible) or {}
         for i, result in ipairs(participants) do
-            result.mode=ranked and "season" or "race"
+            result.mode=ranked and "season" or (kind=="ta" and "ta" or "race")
             result.event=kind=="event"
             result.day=os.date("!%Y-%m-%d",os.time()+9*3600)
             queueResult(result,raceId,changes[i] or 0)
