@@ -105,6 +105,7 @@ for i=1,6 do
     boats[i] = {number=i,model=model, x=-95, z=14+i*5, h=0, vx=0, vz=0, w=0, throttle=0, steer=0, lap=0, checkpoint=0, finished=false, speed=0}
 end
 
+local MetaService=require(script.Parent:WaitForChild("MetaService"))
 local commands = {}
 local raceNumber = 0
 local tilts = {
@@ -129,14 +130,15 @@ local function preparePlayer(player)
     task.spawn(function()
         local join = player:GetJoinData()
         local data = join and join.TeleportData
-        if type(data) == "table" and data.mode == "ranked" then
-            if rankedStarted or (roomKind and roomKind ~= "ranked") or not MatchQueue.accept(player.UserId,game.PrivateServerId)
-                or rankedStarted or (roomKind and roomKind ~= "ranked") then
-                if player.Parent == Players then player:Kick("ランク戦に入れません。ロビーから入り直してください") end
+        if type(data) == "table" and (data.mode == "ranked" or data.mode == "online") then
+            if rankedStarted or (roomKind and roomKind ~= data.mode) or not MatchQueue.accept(player.UserId,game.PrivateServerId,data.mode)
+                or rankedStarted or (roomKind and roomKind ~= data.mode) then
+                if player.Parent == Players then player:Kick("対戦会場に入れません。ロビーから入り直してください") end
                 return
             end
             if player.Parent ~= Players then return end
-            roomKind="ranked"
+            roomKind=data.mode
+            world:SetAttribute("MatchMode",roomKind)
             if type(join.SourcePlaceId)=="number" and join.SourcePlaceId>0 then rankedLobbyPlace=rankedLobbyPlace or join.SourcePlaceId end
             roomMembers[player]=true
             rankedStartAt=rankedStartAt or os.clock()+20
@@ -207,6 +209,14 @@ local function assignPlayers()
         if player then
             commands[player] = {throttle=0, steer=0, last=0, sequence=0, applied=0}
             player:SetAttribute("MinatoBoat", i)
+            local round=raceNumber
+            task.spawn(function()
+                local outfit=MetaService.get(player.UserId)
+                if outfit and raceNumber==round and boat.player==player then
+                    boat.model:SetAttribute("Skin",outfit.skin)
+                    boat.model:SetAttribute("HelmetStyle",outfit.helmet)
+                end
+            end)
         end
     end
     if #players > 6 then nextFirst = ((nextFirst+5) % #players)+1 else nextFirst = 1 end
@@ -273,6 +283,8 @@ local function reset()
         b.throttle,b.steer,b.lap,b.checkpoint,b.finished,b.speed = 0,0,0,0,false,0
         b.started,b.flying,b.place,b.startTime = false,false,0,nil
         b.out,b.outAt,b.sunk = nil,nil,false
+        b.model:SetAttribute("Skin",nil)
+        b.model:SetAttribute("HelmetStyle",nil)
         b.player = nil
         b.humanUserId,b.finishTime = nil,nil
         b.windX,b.windZ = math.cos(windAngle)*wind,math.sin(windAngle)*wind
@@ -310,7 +322,7 @@ saveResults = function()
     end
 end
 roomRemote.OnServerEvent:Connect(function(player, action)
-    if action == "return" and roomKind == "ranked" and world:GetAttribute("RankedPhase") == "finished"
+    if action == "return" and (roomKind == "ranked" or roomKind == "online") and (world:GetAttribute("RankedPhase") == "finished" or world:GetAttribute("RankedPhase") == "incomplete")
         and roomMembers[player] and rankedLobbyPlace and not returning[player] then
         returning[player]=true
         task.spawn(function()
@@ -328,8 +340,18 @@ roomRemote.OnServerEvent:Connect(function(player, action)
 end)
 local function step()
     if roomWaiting then
-        if roomKind == "ranked" and not rankedStarted and rankedStartAt and os.clock() >= rankedStartAt then
+        if (roomKind == "ranked" or roomKind == "online") and not rankedStarted and rankedStartAt and os.clock() >= rankedStartAt then
             rankedStarted = true
+            if roomKind == "online" then
+                local count = 0
+                for member in pairs(roomMembers) do
+                    if member.Parent == Players then count += 1 end
+                end
+                if count < 6 then
+                    world:SetAttribute("RankedPhase","incomplete")
+                    return
+                end
+            end
             roomWaiting = false
             elapsed = -14
             raceClock = elapsed
@@ -428,7 +450,7 @@ local function step()
     endEarly, aloneSince = Rules.shouldEnd(boats,elapsed,aloneSince)
     if endEarly or (finishTime and elapsed-finishTime > 45) or elapsed > 240 then
         saveResults()
-        if roomKind == "ranked" then
+        if roomKind == "ranked" or roomKind == "online" then
             roomWaiting=true
             world:SetAttribute("RoomWaiting",true)
             world:SetAttribute("RankedPhase","finished")

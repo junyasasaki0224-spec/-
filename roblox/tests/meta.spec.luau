@@ -1,0 +1,53 @@
+local M=require("../src/Meta")
+local Rules=require("../src/ResultRules")
+assert(#M.ITEMS==23 and #M.MISSIONS==4)
+local m=M.new()
+M.daily(m,"2026-11-15")
+assert(#m.mail==2)
+M.daily(m,"2026-11-15")
+M.daily(m,"2026-11-14")
+assert(#m.mail==2 and m.day=="2026-11-15")
+M.action(m,"mail","welcome")
+M.action(m,"mail","welcome")
+assert(m.coins==500)
+m.token="a"
+local data={meta=m}
+local first=M.transact(data,"a","pull",1,"2026-11-15",{0,.01},"b")
+local replay=M.transact(first,"a","pull",1,"2026-11-15",{.9,.9},"c")
+assert(first.meta.pulls==1 and replay.meta.pulls==1 and replay.meta.token=="b")
+assert(data.meta.pulls==0 and first.meta.coins==400)
+assert(first.meta.last[1].id=="s11")
+local dupe=M.transact(first,"b","pull",1,"2026-11-15",{0,0},"c")
+assert(dupe.meta.coins==700 and dupe.meta.last[1].dupe==400)
+local before=m.coins
+M.action(m,"pull",0)
+assert(m.coins==before)
+assert(not M.item("forged"))
+M.action(m,"equip","s12")
+assert(m.skin=="s0")
+m.coins=900
+local rolls=M.action(m,"pull",10,function() return .99 end)
+assert(#rolls==10 and m.pulls==10 and m.coins==135)
+local poor=M.new()
+assert(type(M.action(poor,"pull",10))=="string" and poor.pulls==0)
+for i,coins in ipairs({60,40,30,20,15,15}) do
+ local n=M.new();M.result(n,{mode="race",place=i,st=.2})
+ assert(n.coins==coins and n.mis.race1==1 and n.mis.st20==1)
+end
+local n=M.new();n.rate=290;n.xp=90
+M.result(n,{mode="season",place=1,st=.1})
+assert(n.rate==320 and n.tier==1 and #n.mail==3 and n.mail[2].coins==200)
+M.action(n,"mission","race1");M.action(n,"mission","race1")
+assert(n.coins==110)
+local p={meta=M.new()}
+local r={mode="season",out="沈",place=6,day="2026-11-15"}
+local a=Rules.apply(p,r,"race",0)
+local b=Rules.apply(a,r,"race",0)
+assert(a.meta.coins==5 and a.meta.xp==6 and b.meta.coins==5)
+assert(p.meta.coins==0)
+local t=M.new();M.result(t,{mode="ta",place=1,lane=0,time=100})
+M.result(t,{mode="ta",place=1,lane=0,time=101})
+assert(t.coins==70 and t.ta["0"]==100)
+M.result(t,{mode="practice",place=1})
+assert(t.coins==70)
+print("meta catalog, rewards, transactions and retry checks passed")

@@ -72,6 +72,14 @@ local function scheduleRankingSync(userId, profile)
     end)
 end
 
+function Stats.mutate(userId,transform)
+    return retry(function()
+        return profiles:UpdateAsync(tostring(userId),function(value,info)
+            return transform(rules.normalize(value)),userId>0 and {userId} or {},info and info:GetMetadata() or {}
+        end)
+    end)
+end
+
 function Stats.load(userId)
     local key = tostring(userId)
     local value, err = retry(function() return profiles:GetAsync(key) end)
@@ -147,6 +155,8 @@ function Stats.recordRace(raceId, participants, ranked)
         end
         local changes = ranked and calculateRating(eligible) or {}
         for i, result in ipairs(participants) do
+            result.mode=ranked and "season" or "race"
+            result.day=os.date("!%Y-%m-%d",os.time()+9*3600)
             queueResult(result,raceId,changes[i] or 0)
         end
         pending -= 1

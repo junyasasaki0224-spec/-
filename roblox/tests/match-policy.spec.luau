@@ -60,3 +60,20 @@ local count=0
 for _ in pairs(capped.players) do count += 1 end
 assert(count==60,"queue capacity is bounded")
 print("match policy checks passed")
+
+-- Online waits for six real entrants even after the ranked timeout.
+local entrants={}
+for i=1,5 do entrants[tostring(i)]=candidate(1000*i,"online-"..i) end
+local online=nil
+for now=0,60,10 do
+    online=policy.update(online,now,entrants,{},"too-early","online")
+    for _,entry in pairs(online.players) do assert(not entry.match) end
+end
+entrants["6"]=candidate(0,"sixth")
+online=policy.update(online,61,entrants,{},"six-online","online")
+for _,entry in pairs(online.players) do assert(entry.match=="six-online") end
+local admitted=policy.assign(online,"six-online","key","venue")
+assert(not policy.accept(admitted,62,1,"other-venue"))
+assert(not policy.accept(admitted,62,7,"venue"))
+local once=assert(policy.accept(admitted,62,1,"venue"))
+assert(not policy.accept(once,62,1,"venue"))

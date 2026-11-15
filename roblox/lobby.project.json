@@ -32,13 +32,40 @@
       },
       "RoomLobby": {
         "$path": "src/RoomLobby.server.lua"
+      },
+      "MetaService": {
+        "$path": "src/MetaService.lua"
+      },
+      "MetaLobby": {
+        "$path": "src/MetaLobby.server.lua"
       }
     },
     "StarterPlayer": {
       "StarterPlayerScripts": {
         "Lobby": {
           "$path": "src/Lobby.client.lua"
+        },
+        "Home": {
+          "$path": "src/Home.client.lua"
         }
+      },
+      "$properties": {
+        "DevTouchMovementMode": "Scriptable",
+        "DevComputerMovementMode": "Scriptable"
+      }
+    },
+    "ReplicatedStorage": {
+      "Meta": {
+        "$path": "src/Meta.lua"
+      },
+      "Outfit": {
+        "$path": "src/Outfit.lua"
+      }
+    },
+    "StarterGui": {
+      "$className": "StarterGui",
+      "$properties": {
+        "ScreenOrientation": "Sensor"
       }
     }
   }

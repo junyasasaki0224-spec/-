@@ -1,3 +1,4 @@
+local Meta = if script then require(game:GetService("ReplicatedStorage"):WaitForChild("Meta")) else require("./Meta")
 local Rules = {}
 
 function Rules.normalize(value)
@@ -15,6 +16,9 @@ end
 function Rules.apply(value, result, raceId, change)
     local data = Rules.normalize(value)
     for _, id in ipairs(data.recentRaces) do if id == raceId then return data end end
+    data.meta=Meta.normalize(data.meta)
+    Meta.daily(data.meta,result.day)
+    Meta.result(data.meta,result)
     data.races += 1
     if result.won then data.wins += 1 end
     if result.time and (not data.bestTime or result.time < data.bestTime) then data.bestTime = result.time end
@@ -40,7 +44,7 @@ function Rules.shouldEnd(boats, clock, aloneSince)
 end
 
 function Rules.entry(b, position)
-    return {userId=b.humanUserId, place=b.out and 6 or position,
+    return {userId=b.humanUserId, place=b.out and 6 or position, out=b.out, st=b.startTime, lane=(b.number or 1)-1,
         won=not b.out and b.finished and b.place==1,
         time=not b.out and b.finished and b.finishTime or nil}
 end
