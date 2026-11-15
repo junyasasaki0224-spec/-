@@ -15,6 +15,7 @@ local audioConfig = require(ReplicatedStorage:WaitForChild("AudioConfig"))
 local world = workspace:WaitForChild("Minato")
 local templates = ReplicatedStorage:WaitForChild("MinatoTemplates")
 local boat = templates:WaitForChild("Boat1")
+local outfit=require(ReplicatedStorage:WaitForChild("Outfit"))
 local STUDS_PER_METRE = 3.5
 local BOAT_SCALE = STUDS_PER_METRE * (2.9 / 7)
 local camera = workspace.CurrentCamera
@@ -22,6 +23,17 @@ local renderBoats, wakes, motion, latest = {}, {}, {}, {}
 for i = 1, 6 do
     local original = templates:WaitForChild("Boat"..i)
     local visual = original:Clone()
+    local baseColors={}
+    for _,p in ipairs(visual:GetChildren()) do if p:IsA("BasePart") then baseColors[p.Name]=p.Color end end
+    local function refreshOutfit()
+        for name,color in pairs(baseColors) do visual[name].Color=color end
+        local stripe=visual:FindFirstChild("HelmetStripe")
+        if stripe then stripe:Destroy() end
+        outfit(visual,original:GetAttribute("Skin"),original:GetAttribute("HelmetStyle"))
+    end
+    original:GetAttributeChangedSignal("Skin"):Connect(refreshOutfit)
+    original:GetAttributeChangedSignal("HelmetStyle"):Connect(refreshOutfit)
+    refreshOutfit()
     visual.Name = "VisualBoat"..i
     visual.Parent = workspace
     local first = Instance.new("Attachment")
@@ -206,13 +218,15 @@ rankedPanel.Visible = false
 rankedPanel.Parent = gui
 local function updateRanked()
     local phase=world:GetAttribute("RankedPhase")
-    rankedPanel.Visible = phase == "waiting" or phase == "finished"
-    rankedPanel.Text = phase == "finished" and "終了：ロビーに戻る" or "ランク戦：参加者を待っています"
+    rankedPanel.Visible = phase == "waiting" or phase == "finished" or phase == "incomplete"
+    rankedPanel.Text = phase == "finished" and "終了：ロビーに戻る" or phase == "incomplete" and "6人未到着：ロビーに戻る"
+        or world:GetAttribute("MatchMode")=="online" and "オンライン：参加者を待っています" or "ランク戦：参加者を待っています"
 end
 world:GetAttributeChangedSignal("RankedPhase"):Connect(updateRanked)
 updateRanked()
 rankedPanel.Activated:Connect(function()
-    if world:GetAttribute("RankedPhase") == "finished" then roomRemote:FireServer("return") end
+    local phase=world:GetAttribute("RankedPhase")
+    if phase=="finished" or phase=="incomplete" then roomRemote:FireServer("return") end
 end)
 roomRemote.OnClientEvent:Connect(function(message) rankedPanel.Text=message end)
 

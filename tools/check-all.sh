@@ -14,16 +14,14 @@ r=$(node tools/guide-bot.mjs 2>&1) && say "$r" || { say "ガイドボット: 失
 node tools/meta-test.mjs >/dev/null 2>&1 && say "コイン・ガチャ・レートの計算: OK" || { say "コイン・ガチャ・レートの計算: 失敗"; fail=1; }
 
 say "== Roblox 版"
-if command -v luau-compile >/dev/null 2>&1; then
-  bad=0; n=0
-  for f in roblox/src/*.lua roblox/tests/*.luau roblox/tools/simulation.lua; do
-    n=$((n+1)); luau-compile --text "$f" >/dev/null 2>/tmp/check-luau.log || { say "文法エラー: $f"; head -3 /tmp/check-luau.log; bad=1; }
-  done
-  [ $bad = 0 ] && say "文法: $n ファイル OK" || fail=1
+if command -v luau >/dev/null 2>&1; then
+  "${PYTHON:-python3}" roblox/tools/check_syntax.py || fail=1
   for t in roblox/tests/*.luau; do
     luau "$t" >/tmp/check-spec.log 2>&1 && say "テスト OK: $(basename "$t")" || { say "テスト失敗: $t"; tail -4 /tmp/check-spec.log; fail=1; }
   done
-  python3 -I roblox/tools/run_sim.py 60 2>&1 | grep -E "Lane|Finished|contacts" | tr '\n' ' ' | sed 's/^/60レース: /'; echo
+  if "${PYTHON:-python3}" -I roblox/tools/run_sim.py 60 >/tmp/check-sim.log 2>&1; then
+    grep -E "Lane|Finished|contacts|Sunk" /tmp/check-sim.log
+  else cat /tmp/check-sim.log; fail=1; fi
 else
   say "luau / luau-compile が見つからないため Roblox 版は未確認"
 fi

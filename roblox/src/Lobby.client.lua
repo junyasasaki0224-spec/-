@@ -8,6 +8,7 @@ local rankedRemote = ReplicatedStorage:WaitForChild("MinatoRankedLobby")
 
 local gui = Instance.new("ScreenGui")
 gui.Name="MinatoLobby"
+gui.Enabled=false
 gui.ResetOnSpawn=false
 gui.Parent=player:WaitForChild("PlayerGui")
 local panel=Instance.new("Frame")
@@ -185,4 +186,12 @@ task.spawn(function()
         render()
         task.wait(10)
     end
+end)
+
+local home=Instance.new("TextButton")
+home.Text="ホーム";home.Size=UDim2.fromOffset(96,44);home.Position=UDim2.new(1,-108,0,8);home.Parent=panel
+home.Activated:Connect(function()
+    gui.Enabled=false
+    local main=player.PlayerGui:FindFirstChild("MinatoHome")
+    if main then main.Enabled=true end
 end)

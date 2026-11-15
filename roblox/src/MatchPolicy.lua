@@ -10,7 +10,7 @@ Policy.ASSIGN_TTL = ASSIGN_TTL
 local function range(wait)
     return 100 * (1 + math.floor(math.max(0,wait)/10))
 end
-function Policy.update(previous, now, localEntries, cancellations, matchId)
+function Policy.update(previous, now, localEntries, cancellations, matchId, mode)
     local old = type(previous) == "table" and previous or {}
     local players = {}
     for id, entry in pairs(old.players or {}) do
@@ -53,13 +53,13 @@ function Policy.update(previous, now, localEntries, cancellations, matchId)
         for _, candidate in ipairs(waiting) do
             if candidate ~= anchor then
                 local delta=math.abs(anchor.entry.rating-candidate.entry.rating)
-                if delta <= range(now-anchor.entry.joined) and delta <= range(now-candidate.entry.joined) then
+                if mode == "online" or (delta <= range(now-anchor.entry.joined) and delta <= range(now-candidate.entry.joined)) then
                     table.insert(selected,candidate)
                     if #selected == 6 then break end
                 end
             end
         end
-        if #selected == 6 or now-anchor.entry.joined >= 30 then
+        if #selected == 6 or (mode ~= "online" and now-anchor.entry.joined >= 30) then
             for _, item in ipairs(selected) do
                 item.entry.match=matchId
                 item.entry.matchedAt=now

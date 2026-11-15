@@ -14,3 +14,8 @@ local existing = {rating=1500,races=2,wins=1,version=2,otherField="preserved"}
 local migrated = rules.apply(existing,{won=false},"race-5",0)
 assert(migrated.otherField=="preserved" and migrated.races==3,"unrelated stored data must survive updates")
 print("result checks passed")
+
+local seasonal=rules.apply(nil,{mode="season",place=1,won=true,time=100},"seasonal",10)
+local casual=rules.apply(seasonal,{mode="race",place=1,won=true,time=98},"casual",0)
+assert(casual.rating==seasonal.rating and casual.meta.rate==seasonal.meta.rate)
+assert(casual.races==seasonal.races+1 and casual.meta.coins==seasonal.meta.coins+60)
