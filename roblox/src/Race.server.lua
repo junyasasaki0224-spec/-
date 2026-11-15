@@ -403,6 +403,7 @@ local function reset()
     world:SetAttribute("MatchMode", kind)
     world:SetAttribute("EventName", todayEvent and todayEvent.name or nil)
     world:SetAttribute("Wind",wind)
+    world:SetAttribute("WindDir",windAngle)
     world:SetAttribute("Wave",wave)
     for i,b in ipairs(boats) do
         local lane = i-1

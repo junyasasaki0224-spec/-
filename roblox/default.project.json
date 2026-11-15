@@ -35,6 +35,9 @@
         "Venue": {
           "$path": "assets/models/Venue.rbxmx"
         }
+      },
+      "RaceHud": {
+        "$path": "src/RaceHud.lua"
       }
     },
     "ServerScriptService": {

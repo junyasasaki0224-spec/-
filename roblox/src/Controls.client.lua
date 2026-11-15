@@ -96,6 +96,8 @@ local sentThrottle, sentSteer = 0,0
 local pendingSteps = {}
 local predictionRace = nil
 local viewing, serverClock, seatNumber, resultRows
+-- 最後にサーバーの時計を受け取った時刻(その間の時計は手元で進める)
+local snapshotAt = os.clock()
 local roundChanged = false
 -- タイムアタックのゴースト(世界1位の走り)。半透明の艇で見せる。サーバーから位置だけが届く
 local ghostState
@@ -118,6 +120,7 @@ ghostOutline.Parent = ghostVisual
 snapshotRemote.OnClientEvent:Connect(function(states, active, acknowledged, raceNumber, clock, seat, results, ghost)
     if predictionRace ~= raceNumber then roundChanged=true end
     serverClock,seatNumber,resultRows=clock,seat,results
+    snapshotAt = os.clock()
     ghostState = type(ghost) == "table" and ghost or nil
     latest, running = states, active
     local number = seat
@@ -333,7 +336,11 @@ roomRemote.OnClientEvent:Connect(function(kind, text)
     end
 end)
 
-local status = label("Status","みなとグランプリ",UDim2.fromOffset(180,75),UDim2.fromOffset(12,12),16)
+-- レース中の表示(ブラウザ版と同じ配置。RaceHud.lua)
+local RaceHud = require(ReplicatedStorage:WaitForChild("RaceHud"))
+local hud = RaceHud.new(gui)
+hud:layout()
+gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(function() hud:layout() end)
 -- 出走表(スタート前)と結果(ゴール後)の表。艇番の色・着・名前・AI の札・塗装とヘルメットの色見本
 -- 名前・AI か・装備はサーバーが艇の属性と結果の行で配る(クライアントの申告は使わない)
 local Meta = require(ReplicatedStorage:WaitForChild("Meta"))
@@ -407,7 +414,7 @@ end
 -- スタート前の出走表(艇の属性から)と、ゴール後の結果(サーバーの結果の行から)を描き分ける
 local function drawResults(rows, mySeat, time)
     -- 右上の大時計(幅約100)をよけて、その左に置く。狭い画面では大時計の下へ
-    result.Position = gui.AbsoluteSize.X >= 700 and UDim2.new(1,-372,0,58) or UDim2.new(1,-268,0,160)
+    result.Position = gui.AbsoluteSize.X >= 760 and UDim2.new(1,-276,0,62) or UDim2.new(1,-268,0,86)
     local count = 0
     if rows then
         resultTitle.Text = "レース結果"
@@ -442,7 +449,8 @@ local tiltButton = Instance.new("TextButton")
 tiltButton.Name = "Tilt"
 tiltButton.Size = UDim2.fromOffset(112,40)
 tiltButton.Position = UDim2.new(1,-124,0,12)
-tiltButton.BackgroundColor3 = Color3.fromRGB(15,32,43)
+tiltButton.BackgroundColor3 = Color3.fromRGB(11,29,58)
+do local edge = Instance.new("UIStroke"); edge.Color = Color3.fromRGB(255,210,60); edge.Transparency = 0.2; edge.ApplyStrokeMode = Enum.ApplyStrokeMode.Border; edge.Parent = tiltButton end
 tiltButton.TextColor3 = Color3.new(1,1,1)
 tiltButton.Font,tiltButton.TextSize = Enum.Font.GothamBold,16
 tiltButton.Parent = gui
@@ -450,27 +458,12 @@ local tiltCorner = Instance.new("UICorner")
 tiltCorner.CornerRadius = UDim.new(0,8)
 tiltCorner.Parent = tiltButton
 local tiltNames = {"-0.5°","0°","+1.5°","+3.0°"}
-local clockFace = Instance.new("Frame")
-clockFace.Size = UDim2.fromOffset(64,64)
-clockFace.Position = UDim2.new(1,-88,0,60)
-clockFace.BackgroundColor3 = Color3.fromRGB(237,239,230)
-clockFace.Parent = gui
-local faceCorner = Instance.new("UICorner")
-faceCorner.CornerRadius = UDim.new(1,0)
-faceCorner.Parent = clockFace
-local hand = Instance.new("Frame")
-hand.Size = UDim2.fromOffset(3,27)
-hand.Position = UDim2.new(0.5,0,0.5,0)
-hand.AnchorPoint = Vector2.new(0.5,1)
-hand.BackgroundColor3 = Color3.fromRGB(209,54,45)
-hand.Parent = clockFace
-local clockText = label("Clock","",UDim2.fromOffset(82,24),UDim2.new(1,-97,0,128),14)
 tiltButton.Activated:Connect(function()
     if running and predicted and (serverClock or 0)<0 then
         setupRemote:FireServer(((boat:GetAttribute("Tilt") or 2)%4)+1,predictionRace)
     end
 end)
-local help = label("Help","W / S でスロットル　A / D で旋回",UDim2.fromOffset(310,34),UDim2.new(0.5,-155,1,-45),14)
+local helpText = "W / S でスロットル　A / D でハンドル"
 local controls = {steer=0, throttle=0}
 local activeTouches = {}
 local function lever(name, caption, position, horizontal)
@@ -478,13 +471,17 @@ local function lever(name, caption, position, horizontal)
     item.Name, item.Text = name, ""
     item.Size = horizontal and UDim2.fromOffset(150,74) or UDim2.fromOffset(74,150)
     item.Position = position
-    item.BackgroundColor3 = Color3.fromRGB(20,52,67)
-    item.BackgroundTransparency = 0.25
+    item.BackgroundColor3 = Color3.fromRGB(8,24,48)
+    item.BackgroundTransparency = 0.35
     item.AutoButtonColor = false
     item.Parent = gui
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0,18)
     corner.Parent = item
+    local edge = Instance.new("UIStroke")
+    edge.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    edge.Color, edge.Transparency = Color3.new(1,1,1), 0.55
+    edge.Parent = item
     local knob = Instance.new("Frame")
     knob.Size = UDim2.fromOffset(44,44)
     knob.AnchorPoint = Vector2.new(0.5,0.5)
@@ -493,7 +490,9 @@ local function lever(name, caption, position, horizontal)
     local knobCorner = Instance.new("UICorner")
     knobCorner.CornerRadius = UDim.new(1,0)
     knobCorner.Parent = knob
-    local title = label(name.."Label",caption,UDim2.new(1,0,0,24),UDim2.new(0,0,0,-28),14)
+    local title = label(name.."Label",caption,UDim2.new(1,0,0,22),UDim2.new(0,0,0,-26),13)
+    title.BackgroundTransparency = 1
+    title.TextStrokeTransparency = 0.5
     title.Parent = item
     local function updateKnob()
         if horizontal then knob.Position=UDim2.new(0.15+(1-controls.steer)*0.35,0,0.5,0)
@@ -541,7 +540,32 @@ end)
 UserInputService.WindowFocusReleased:Connect(function()
     for input, handler in pairs(activeTouches) do handler.release(); activeTouches[input]=nil end
 end)
-if UserInputService.TouchEnabled then help.Text = "左で旋回　右でスロットル" end
+if UserInputService.TouchEnabled then helpText = "左のレバーでハンドル　右でスロットル" end
+-- スタートの予想(今から全開で走ったら、何秒でスタートラインに着くか)。0.1秒ごとに計算する
+local predictedST, stTimer = nil, 0
+local function predictStart(state, clock)
+    if not state or state.x >= 0 then return nil end
+    local b = {x=state.x,z=state.z,h=state.h,vx=state.vx,vz=state.vz,w=state.w,throttle=state.throttle,steer=state.steer,
+        accF=state.accF,topF=state.topF,gripSet=state.gripSet,gripF=state.gripF,thrustF=state.thrustF,windX=state.windX,windZ=state.windZ,motor=state.motor}
+    local t, step = 0, 1/30
+    while t < 20 do
+        stepBoat(b, 1, 0, step)
+        t += step
+        if b.x >= 0 then return clock + t end
+    end
+    return nil
+end
+-- 風の言葉(ブラウザ版の windLabel と同じ: ホームストレッチを基準に)
+local function windText()
+    local wind, dir, wave = world:GetAttribute("Wind") or 0, world:GetAttribute("WindDir") or 0, world:GetAttribute("Wave") or 0
+    local wavePart = string.format("　波 %dcm", math.floor(wave+0.5))
+    if wind < 0.5 then return "無風"..wavePart end
+    local wx, wz = math.cos(dir), math.sin(dir)
+    local name = math.abs(wx) > math.abs(wz) and (wx > 0 and "追い風" or "向かい風") or (wz > 0 and "横風(スタンドへ)" or "横風(対岸へ)")
+    return string.format("%s %dm", name, math.floor(wind+0.5))..wavePart
+end
+-- 大きな知らせのための、前のフレームの状態
+local lastStart, lastLap, lastFinished, lastOut, lastRace = nil, nil, false, "", nil
 local function held(key) return UserInputService:IsKeyDown(key) end
 local nextSend = 0
 RunService.RenderStepped:Connect(function(dt)
@@ -560,9 +584,6 @@ RunService.RenderStepped:Connect(function(dt)
     viewing.update(watching,latest)
     gui.Steering.Visible=driving==true
     gui.Throttle.Visible=driving==true
-    help.Visible=driving==true
-    clockText.Visible=driving==true
-    clockFace.Visible=driving==true
     boat = templates:FindFirstChild("Boat"..math.max(boatNumber,1)) or boat
     local left = held(Enum.KeyCode.A) or held(Enum.KeyCode.Left)
     local right = held(Enum.KeyCode.D) or held(Enum.KeyCode.Right)
@@ -667,25 +688,111 @@ RunService.RenderStepped:Connect(function(dt)
         camera.Focus=CFrame.new(cf.Position)
     end
     local time = world:GetAttribute("Time") or -8
-    hand.Rotation = (time*30)%360
-    local startTime = boat:GetAttribute("StartTime")
-    clockText.Text = startTime and string.format("ST %.2f",startTime) or string.format("%.1f 秒",time)
-    local speed = boat:GetAttribute("Speed") or 0
-    local lap = boat:GetAttribute("Lap") or 1
-    local rank = boat:GetAttribute("Rank") or 1
+    -- サーバーの時計を手元で進めた時刻(大時計と予想STを滑らかにする)
+    local clock = (serverClock or time) + math.min(os.clock() - snapshotAt, 0.25)
+    -- 表示する艇: 自分の艇、観戦中は見ている艇
+    local shownLane = (watching and not viewing.exited and viewing.lane) or (boatNumber > 0 and boatNumber) or nil
+    local shown = shownLane and templates:FindFirstChild("Boat"..shownLane) or nil
+    local startTime = shown and shown:GetAttribute("StartTime")
+    local lap = shown and shown:GetAttribute("Lap") or 1
+    local finished = shown and shown:GetAttribute("Finished") or false
+    local shownOut = shownLane and latest[shownLane] and latest[shownLane][17] or ""
     tiltButton.Visible = driving==true and time < 0
     tiltButton.Text = "チルト "..tiltNames[boat:GetAttribute("Tilt") or 2]
-    local message = time < -14 and string.format("参加受付中　あと %d 秒",math.ceil(-14-time)) or (time < 0 and string.format("スタートまで %.1f",-time) or string.format("%d / 3 周　　%d km/h",lap,speed))
-    if boat:GetAttribute("Finished") then message=string.format("ゴール！　%d 着",boat:GetAttribute("Place") or 0) end
-    if boat:GetAttribute("Flying") then message="フライング失格" end
-    if boatNumber == 0 and time >= -14 then message="観戦中・次のレースから参加\n"..message end
-    if boatNumber > 0 then message=boatNumber.."号艇　"..rank.."位\n"..message end
-    if reason~="" then message=reason=="F" and "フライング失格" or (reason=="沈" and "沈没失格" or "途中退出") end
-    if watching then message=viewing.exited and "待合　次のレースから参加" or (viewing.lane.."号艇を観戦中") end
     result.Visible=drawResults(resultRows, boatNumber, time)
-    if resultRows then
-        message="レース終了"
+    -- 周回の行(スタート前・周回・ゴール・観戦などの状態)
+    local lapText
+    if resultRows then lapText = "レース終了"
+    elseif watching then lapText = viewing.exited and "待合　次のレースから参加" or (viewing.lane.."号艇を観戦中")
+    elseif boatNumber == 0 then lapText = time < -14 and string.format("参加受付中　あと %d 秒",math.ceil(-14-time)) or "観戦中・次のレースから参加"
+    elseif time < -14 then lapText = string.format("参加受付中　あと %d 秒",math.ceil(-14-time))
+    elseif shownOut ~= "" then lapText = shownOut=="F" and "フライング失格" or (shownOut=="沈" and "沈没失格" or "途中退出")
+    elseif finished then lapText = "ゴール"
+    elseif not startTime then lapText = "スタート前"
+    else lapText = string.format("%d / 3 周", lap) end
+    -- 予想ST(自分が走っていて、まだスタートしていない時だけ)
+    local pre = driving == true and not startTime and time >= -14
+    stTimer -= dt
+    if pre and stTimer <= 0 then
+        stTimer = 0.1
+        local st = predicted and predictStart(predicted, clock)
+        predictedST = st
+    elseif not pre then predictedST = nil end
+    -- 順位表(結果や出走表を出している時は隠す)
+    local order = nil
+    if not result.Visible then
+        local list = {}
+        for i = 1, 6 do
+            local t = templates:FindFirstChild("Boat"..i)
+            if t and not t:GetAttribute("Absent") then
+                local out = latest[i] and latest[i][17] or ""
+                table.insert(list, {lane=i, rank=t:GetAttribute("Rank") or i, name=t:GetAttribute("Racer") or "", out=out~="" and out or nil, me=i==shownLane})
+            end
+        end
+        table.sort(list, function(a,b) return a.rank < b.rank end)
+        for k, o in ipairs(list) do o.mark = o.out and (o.out=="F" and "F" or (o.out=="沈" and "沈" or "退")) or tostring(k) end
+        order = list
     end
-    status.TextColor3=reason~="" and not watching and Color3.fromRGB(255,90,77) or Color3.new(1,1,1)
-    status.Text = "みなとグランプリ\n"..message
+    -- ミニマップの点
+    local dots = {}
+    for i = 1, 6 do
+        local st = latest[i]
+        local t = templates:FindFirstChild("Boat"..i)
+        if st then
+            local x, z, h = st[1], st[2], st[3]
+            if i == boatNumber and predicted then x, z, h = predicted.x, predicted.z, predicted.h end
+            local sinkTime = st[17]=="沈" and math.max(0,(serverClock or 0)-(st[18] or 0)) or 0
+            dots[i] = {x=x, z=z, h=h, me=i==shownLane, hidden=(t and t:GetAttribute("Absent")) or (st[17]~="" and (st[17]~="沈" or sinkTime>=8))}
+        end
+    end
+    -- 風の矢印を画面の向きに合わせる
+    local dir = world:GetAttribute("WindDir") or 0
+    local wv = Vector3.new(math.cos(dir), 0, math.sin(dir))
+    local right, look = camera.CFrame.RightVector, camera.CFrame.LookVector
+    local fwd = Vector3.new(look.X, 0, look.Z)
+    local sx, sy = wv:Dot(Vector3.new(right.X,0,right.Z).Unit), fwd.Magnitude > 0 and wv:Dot(fwd.Unit) or 0
+    -- 大きな知らせ(ST・周回・ゴール・フライング・沈没)。自分の艇だけ
+    local raceKey = predictionRace
+    if raceKey ~= lastRace then lastRace, lastStart, lastLap, lastFinished, lastOut = raceKey, nil, nil, false, "" end
+    if boatNumber > 0 and not watching then
+        local myStart = boat:GetAttribute("StartTime")
+        if myStart and not lastStart then
+            hud:flash(string.format("ST %.2f", myStart), myStart < 0 and "フライング" or (myStart <= 0.15 and "好スタート！" or ""),
+                myStart < 0 and Color3.fromRGB(255,90,77) or (myStart <= 0.15 and Color3.fromRGB(255,210,60) or Color3.new(1,1,1)))
+        end
+        lastStart = myStart
+        local myLap = boat:GetAttribute("Lap")
+        if myLap and lastLap and myLap > lastLap and not boat:GetAttribute("Finished") then
+            hud:flash(myLap == 3 and "最終周" or (myLap.."周目"), "", Color3.new(1,1,1), 1.6)
+        end
+        lastLap = myLap
+        local myFinished = boat:GetAttribute("Finished") == true
+        if myFinished and not lastFinished then
+            local place = boat:GetAttribute("Place") or 0
+            hud:flash("ゴール", place.."着", place == 1 and Color3.fromRGB(255,210,60) or Color3.new(1,1,1), 3)
+        end
+        lastFinished = myFinished
+        if reason ~= "" and lastOut == "" then
+            hud:flash(reason=="F" and "フライング" or (reason=="沈" and "沈没" or "退出"), "失格", Color3.fromRGB(255,90,77), 3)
+        end
+        lastOut = reason
+    end
+    hud:update({
+        visible = not (watching and viewing.exited),
+        rank = shown and not resultRows and shownOut == "" and (finished and shown:GetAttribute("Place") or shown:GetAttribute("Rank")) or nil,
+        out = shown and shownOut ~= "" and (shownOut=="F" and "F" or (shownOut=="沈" and "沈" or "退")) or nil,
+        lapText = lapText,
+        time = startTime and math.max(0, clock) or (time >= 0 and clock or 0),
+        pre = pre,
+        clock = clock,
+        dist = predicted and -predicted.x or nil,
+        st = predictedST,
+        hint = helpText,
+        order = order,
+        boats = dots,
+        myLane = shownLane,
+        speed = shown and shown:GetAttribute("Speed") or nil,
+        wind = windText(),
+        windRotation = -math.deg(math.atan2(sy, sx)),
+    })
 end)

@@ -5,6 +5,7 @@ local player=Players.LocalPlayer
 local cards=require(RS:WaitForChild("CardImages"))
 local visuals=require(RS:WaitForChild("VisualModels"))
 local Meta=require(RS:WaitForChild("Meta"))
+local Ui=require(RS:WaitForChild("HomeUi"))
 local outfit=require(RS:WaitForChild("Outfit"))
 local remote=RS:WaitForChild("MinatoMeta")
 local gui=Instance.new("ScreenGui")
@@ -43,18 +44,6 @@ local function button(parent,title,x,y,w,action,primary)
         local g=Instance.new("UIGradient");g.Color=ColorSequence.new(Color3.fromRGB(255,224,102),Color3.fromRGB(245,164,0));g.Rotation=90;g.Parent=b
     end
     b.Activated:Connect(action);return b
-end
-local function icon(parent,index)
-    local patterns={
-        {{4,10,22,18},{10,4,10,28},{4,18,22,2}},
-        {{3,9,24,20},{3,9,24,2},{14,9,2,20}},
-        {{6,3,20,26},{9,10,12,2},{9,17,12,2},{9,24,8,2}},
-        {{3,22,6,8},{12,14,6,16},{21,5,6,25}},
-    }
-    for _,r in ipairs(patterns[index]) do
-        local line=frame(parent,"Icon",r[1]+8,r[2]+7,r[3],r[4])
-        line.BackgroundTransparency=1;stroke(line,gold,1)
-    end
 end
 local function label(parent,text,x,y,w,h,size)
     local t=box("TextLabel",parent,"Text",text);t.BackgroundTransparency=1
@@ -117,7 +106,6 @@ Run.RenderStepped:Connect(function(dt)
     end
 end)
 local modes={"シーズン","オンライン","タイムアタック","フレンド","大会","イベント","フリーレース","スタート練習"}
-local descriptions={"級別を上げて頂点へ","6人で水面を競う","1艇・無風で自己ベスト","合言葉で仲間と集合","得点を重ねて優勝へ","日替わりの特別レース","気軽に走って練習","スタートを磨く"}
 local function go(p) page=p;redraw() end
 -- イベント内のランキング(サーバーから。30秒ごとに読み直す)
 local eventBoard,eventLoading=nil,false
@@ -209,24 +197,6 @@ local function swatch(parent,it,x,y,w,h)
         f.BackgroundTransparency=0;f.BackgroundColor3=Color3.fromRGB(bit32.rshift(c,16),bit32.band(bit32.rshift(c,8),255),bit32.band(c,255))
     end
 end
-local function preview(parent,index,width,height)
-    height=height or 115
-    local names={"season","online","ta","friend","gp","event","single","practice"}
-    local id=cards[names[index]]
-    if id and id~="" then
-        local picture=Instance.new("ImageLabel")
-        picture.Name="SceneImage";picture.Image=id;picture.ScaleType=Enum.ScaleType.Crop
-        picture.Size=UDim2.fromOffset(width,height);picture.Position=UDim2.fromOffset(0,37)
-        picture.BorderSizePixel=0;picture.Parent=parent
-        local corner=Instance.new("UICorner");corner.CornerRadius=UDim.new(0,10);corner.Parent=picture
-        return
-    end
-    local v=Instance.new("ViewportFrame");v.Size=UDim2.fromOffset(width,height);v.Position=UDim2.fromOffset(0,37)
-    v.BackgroundColor3=Color3.fromRGB(25+index*2,83,107);v.Ambient=white;v.LightColor=white;v.Parent=parent
-    local w=Instance.new("WorldModel");w.Parent=v
-    local b=boat(w);outfit(b,m and m.skin or "s0",m and m.helmet or "h0")
-    local c=Instance.new("Camera");local angle=index*.62;c.CFrame=CFrame.lookAt(Vector3.new(math.sin(angle)*4,2+index*.15,math.cos(angle)*4),Vector3.new(0,.3,0));c.Parent=v;v.CurrentCamera=c
-end
 function redraw()
     waitLabel=nil
     for _,c in ipairs(root:GetChildren()) do if c:IsA("GuiObject") then c:Destroy() end end
@@ -239,60 +209,141 @@ function redraw()
     toast.ZIndex=10
     local grade=Meta.grade(m.rate);local g=Meta.GRADES[grade];local nextGrade=Meta.GRADES[grade+1]
     if page=="ホーム" then
-        local badge=frame(root,"GradeBadge",20,17,40,40)
-        badge.Rotation=45;badge.BackgroundColor3=gold;stroke(badge,gold,2)
-        label(root,g.name,22,17,42,40,20).TextColor3=navy
-        label(root,Run:IsStudio() and "テストレーサー" or player.DisplayName,78,12,math.min(220,w-100),32,21).TextColor3=gold
-        label(root,"RATE "..m.rate..(nextGrade and "　"..nextGrade.name.."まで あと"..(nextGrade.rate-m.rate).."点" or "　最高級"),78,46,math.min(310,w-90),24,14)
-        local progress=frame(root,"RateProgress",14,76,180,4);progress.BackgroundColor3=pale
-        local fill=frame(progress,"Fill",0,0,nextGrade and 180*math.clamp((m.rate-g.rate)/(nextGrade.rate-g.rate),0,1) or 180,4);fill.BackgroundColor3=gold
-        label(root,"● "..m.coins.." コイン",portrait and 14 or w-420,portrait and 92 or 12,190,32,20).TextColor3=gold
-        button(root,"パス "..m.tier.."段",portrait and w-150 or (h<450 and w-272 or w-220),portrait and 90 or 6,136,function() go("シーズンパス") end)
-        button(root,"設定",w-126,portrait and 199 or (h<450 and 60 or 116),112,function() go("設定") end)
-        button(root,"メール "..#m.mail,w-126,portrait and 145 or (h<450 and 6 or 64),112,function() go("メール") end)
+        -- ブラウザ版のホームと同じ配置(左上: 選手の札・コイン・パス / 上中央: 題字 / 右上: メール・設定 /
+        -- 左: タイル4つ / 右: タイル2つ / 右下: 今のモードと「レース」)。縦持ちはタイルを下に横並び
         local short=not portrait and h<450
-        local tileY=portrait and h-196 or (short and h-110 or 130)
-        local tw=portrait and (w-40)/4 or (short and 124 or 172)
-        for i,name in ipairs({"ガチャ","倉庫","ミッション","ランキング"}) do
-            local title=name
-            if name=="ミッション" then
-                local n=0;for _,mis in ipairs(Meta.MISSIONS) do if not m.misDone[mis.id] and (m.mis[mis.id] or 0)>=mis.goal then n+=1 end end
-                if n>0 then title=name.." "..n end
+        local misCount=0
+        for _,mis in ipairs(Meta.MISSIONS) do if not m.misDone[mis.id] and (m.mis[mis.id] or 0)>=mis.goal then misCount+=1 end end
+        local stats="RATE "..m.rate..(nextGrade and "　"..nextGrade.name.."まで あと"..(nextGrade.rate-m.rate).."点" or "　最高級")
+        local progress=nextGrade and (m.rate-g.rate)/(nextGrade.rate-g.rate) or 1
+        local name=Run:IsStudio() and "テストレーサー" or player.DisplayName
+        if portrait then
+            Ui.profile(root,12,8,w-24-152,g.name,name,stats,progress)
+            Ui.headButton(root,"Mail","メール",w-12-140,17,70,function() go("メール") end,#m.mail)
+            Ui.headButton(root,"Settings","設定",w-12-64,17,64,function() go("設定") end)
+            Ui.pill(root,"Coins",tostring(m.coins),12,78,110,34,nil,true)
+            Ui.pill(root,"Pass","シーズンパス "..m.tier.."段",130,78,160,34,function() go("シーズンパス") end)
+            Ui.logo(root,0,122,w,30)
+            local raceH=72
+            local raceY=h-18-raceH
+            local tileH=72
+            local tileY=raceY-34-tileH
+            local tw=(w-24-3*8)/4
+            for i,t in ipairs({{"ガチャ","gacha"},{"倉庫","garage"},{"ミッション","mission"},{"ランキング","ranking"}}) do
+                local tile=Ui.tile(root,t[1],t[2],t[1],"",12+(i-1)*(tw+8),tileY,tw,tileH,true,function() if t[1]=="ランキング" then legacy() else go(t[1]) end end)
+                if t[1]=="ミッション" then Ui.badge(tile,misCount,tw-14,-8) end
             end
-            local tile=button(root,title,portrait and (8+(i-1)*(tw+8)) or (short and 14+((i-1)%2)*132 or 14),portrait and tileY or (short and tileY+math.floor((i-1)/2)*54 or tileY+(i-1)*58),tw,function() if name=="ランキング" then legacy() else go(name) end end)
-            if portrait then
-                tile.TextYAlignment=Enum.TextYAlignment.Bottom
-                local symbol=frame(tile,"Symbol",tw/2-10,-2,28,28)
-                symbol.BackgroundTransparency=1
-                local scale=Instance.new("UIScale");scale.Scale=.45;scale.Parent=symbol
-                icon(symbol,i)
+            local sw=(w-24-8)/2
+            Ui.tile(root,"通信対戦","online","通信対戦","オンライン・フレンド",12,tileY-8-52,sw,52,false,legacy)
+            Ui.tile(root,"遊び方","howto","遊び方","スタートとターンのコツ",20+sw,tileY-8-52,sw,52,false,function() go("遊び方") end)
+            if waitingMode then
+                local chip=frame(root,"Waiting",12,raceY-30-56,w-24,48);stroke(chip,gold,1)
+                label(chip,matchNames[waitingMode].." 待機中",10,0,140,24,14).TextColor3=gold
+                waitLabel=label(chip,waitText(),10,22,190,24,14)
+                button(chip,"取り消し",w-24-108,1,100,function() matchEvent:FireServer("cancel") end)
             else
-                tile.Text="        "..title;icon(tile,i)
+                local nowW=math.min(w-24,40+(utf8.len(mode) or 4)*13)
+                Ui.pill(root,"Now",mode.."・オンライン対戦",w/2-nowW/2-40,raceY-30,nowW+80,24)
             end
-            local accent=frame(tile,"Accent",1,9,3,28);accent.BackgroundColor3=gold
+            Ui.raceButton(root,12,raceY,w-24,raceH,"レース","モードを選んで出走",function() go(waitingMode and matchNames[waitingMode] or "レースを選ぶ") end)
+            return
         end
-        button(root,"通信対戦",portrait and 8 or w-186,portrait and h-139 or (short and h-164 or h-190),portrait and (w-24)/2 or 172,legacy)
-        button(root,"遊び方",portrait and w/2+4 or w-186,portrait and h-139 or (short and h-110 or h-132),portrait and (w-24)/2 or 172,function() go("遊び方") end)
+        local pw=short and 210 or 236
+        Ui.profile(root,16,short and 8 or 14,pw,g.name,name,stats,progress)
+        Ui.pill(root,"Coins",tostring(m.coins),16+pw+12,short and 20 or 26,96,36,nil,true)
+        Ui.pill(root,"Pass","シーズンパス "..m.tier.."段",16+pw+116,short and 20 or 26,156,36,function() go("シーズンパス") end)
+        Ui.headButton(root,"Settings","設定",w-16-72,short and 8 or 14,72,function() go("設定") end)
+        Ui.headButton(root,"Mail","メール",w-16-72-8-92,short and 8 or 14,92,function() go("メール") end,#m.mail)
+        -- 題字は、左の札と右のボタンの間に入る時だけ
+        local logoLeft,logoRight=16+pw+280,w-16-180
+        if logoRight-logoLeft>=300 then Ui.logo(root,logoLeft,short and 4 or 8,logoRight-logoLeft,short and 30 or 40) end
+        local tw,th,gap=short and 186 or 214,short and 52 or 66,short and 7 or 12
+        local total=4*th+3*gap
+        local top=math.max(short and 78 or 96,math.floor(h/2-total/2+12))
+        for i,t in ipairs({{"ガチャ","gacha","塗装とヘルメットを集める"},{"倉庫","garage","艇の見た目を着せ替える"},{"ミッション","mission","毎日の目標でコイン"},{"ランキング","ranking","レート・タイム・戦績"}}) do
+            local tile=Ui.tile(root,t[1],t[2],t[1],t[3],16,top+(i-1)*(th+gap),tw,th,false,function() if t[1]=="ランキング" then legacy() else go(t[1]) end end)
+            if t[1]=="ミッション" then Ui.badge(tile,misCount,tw-14,-8) end
+        end
+        Ui.tile(root,"通信対戦","online","通信対戦","オンライン・フレンド",w-16-tw,short and 70 or 96,tw,th,false,legacy)
+        Ui.tile(root,"遊び方","howto","遊び方","スタートとターンのコツ",w-16-tw,(short and 70 or 96)+th+gap,tw,th,false,function() go("遊び方") end)
+        local rw=math.min(300,math.floor(w*.44))
+        local rh=short and 60 or 76
+        local rx,ry=w-16-rw,h-18-rh-6
         if waitingMode then
-            -- 待っている間もホームの艇は見えたまま。人数と残り秒数、取り消しをレースボタンの上に出す
-            local chip=frame(root,"Waiting",portrait and 8 or w-558,portrait and h-250 or h-54,portrait and w-16 or 300,48);stroke(chip,gold,1)
+            -- 待っている間もホームの艇は見えたまま。人数と残り秒数、取り消しをレースボタンの左に出す
+            local chip=frame(root,"Waiting",rx-316,ry+rh-48,300,48);stroke(chip,gold,1)
             label(chip,matchNames[waitingMode].." 待機中",10,0,140,24,14).TextColor3=gold
             waitLabel=label(chip,waitText(),10,22,190,24,14)
-            button(chip,"取り消し",portrait and w-124 or 196,1,100,function() matchEvent:FireServer("cancel") end)
-        else
-            label(root,mode,w-214,h-79,200,24,14)
+            button(chip,"取り消し",196,1,100,function() matchEvent:FireServer("cancel") end)
         end
-        button(root,"レース",portrait and 8 or w-250,h-54,portrait and w-16 or 236,function() go(waitingMode and matchNames[waitingMode] or "レースを選ぶ") end,true)
+        local nowText=waitingMode and (matchNames[waitingMode].." 待機中") or mode
+        local nowW=math.min(rw,40+(utf8.len(nowText) or 4)*13)
+        Ui.pill(root,"Now",nowText,rx+rw-nowW,ry-32,nowW,24)
+        Ui.raceButton(root,rx,ry,rw,rh,"レース","モードを選んで出走",function() go(waitingMode and matchNames[waitingMode] or "レースを選ぶ") end)
+        return
+    end
+    if page=="レースを選ぶ" then
+        -- 横に流して選ぶカード8枚(ブラウザ版の .mcard)。カードを押すとそのモードへ進む
+        -- 後ろの水面を少し暗くして、カードを読みやすくする
+        local dim=frame(root,"Dim",0,0,w,h);dim.BackgroundColor3=Color3.fromRGB(4,14,32);dim.BackgroundTransparency=.45
+        dim:FindFirstChildOfClass("UICorner"):Destroy()
+        Ui.headButton(root,"Back","‹ ホーム",16,14,100,function() go("ホーム") end)
+        local title=Ui.text(root,"PageTitle","レースを選ぶ",30,Ui.HEAVY_ITALIC,gold)
+        title.TextXAlignment=Enum.TextXAlignment.Center
+        Ui.place(title,130,14,w-260,44)
+        local scroller=Instance.new("ScrollingFrame")
+        scroller.Name="List";scroller.BackgroundTransparency=1;scroller.BorderSizePixel=0
+        scroller.ScrollBarThickness=4;scroller.ScrollBarImageColor3=gold
+        scroller.Position=UDim2.fromOffset(0,68);scroller.Size=UDim2.new(1,0,1,-74)
+        scroller.Parent=root
+        local names={"season","online","ta","friend","gp","event","single","practice"}
+        local texts={
+            {"ランク戦。着順でレートと級が動く","B2 → A1 を目指す"},{"6人のカジュアル戦。レートなし","空きは AI（達人）"},
+            {"枠を選んで1艇で3周。ベストを狙う","コースごとに記録"},{"合言葉で部屋を作って対戦","フレンドと"},
+            {"予選2走＋優勝戦。自分で開催も","優勝を目指す"},{"日替わりの特別レース","コイン2倍"},
+            {"好きな枠で気軽に1レース","気軽に"},{"スタートだけを何度でも","STを磨く"},
+        }
+        local function open(name)
+            mode=name
+            if pageKinds[name] then go(name)
+            elseif name=="タイムアタック" then go(name)
+            elseif name=="大会" then gpList=nil;go(name)
+            elseif name=="フレンド" or name=="フリーレース" then legacy()
+            else toast.Text=name.."は準備中です" end
+        end
+        if portrait then
+            local cw,ch,gap=w-32,250,14
+            for i,name in ipairs(modes) do
+                Ui.modeCard(scroller,"Mode"..i,name,cards[names[i]],texts[i][1],texts[i][2],16,(i-1)*(ch+gap),cw,ch,mode==name,function() open(name) end)
+            end
+            scroller.ScrollingDirection=Enum.ScrollingDirection.Y
+            scroller.CanvasSize=UDim2.fromOffset(0,8*(ch+gap)+16)
+        else
+            local ch=math.min(400,h-90)
+            local cw=math.min(270,math.max(170,math.floor(w*.3)))
+            local gap=w<900 and 14 or 24
+            for i,name in ipairs(modes) do
+                Ui.modeCard(scroller,"Mode"..i,name,cards[names[i]],texts[i][1],texts[i][2],16+(i-1)*(cw+gap),4,cw,ch,mode==name,function() open(name) end)
+            end
+            scroller.ScrollingDirection=Enum.ScrollingDirection.X
+            scroller.CanvasSize=UDim2.fromOffset(32+8*cw+7*gap,0)
+        end
         return
     end
     local side=page=="倉庫" or pageKinds[page]~=nil or page=="タイムアタック" or page=="大会" or page=="大会を作る" or page=="大会の確認" or page=="大会の得点"
     local panelWidth=side and math.min(w-16,(pageKinds[page] or page=="タイムアタック") and 460 or (page=="倉庫" and 640 or 560)) or w-16
     -- 待ち合わせの画面はスマホ縦なら上半分だけにして、下に自分の艇を見せる
     local panelHeight=(pageKinds[page] and portrait) and math.min(h-16,math.floor(h*.55)) or h-16
-    local panel=frame(root,"Panel",8,8,panelWidth,panelHeight);stroke(panel,white)
-    button(panel,"ホーム",8,8,88,function() go("ホーム") end)
-    label(panel,page,108,8,math.max(90,panelWidth-220),44,portrait and 16 or 22)
-    label(panel,"● "..m.coins,panelWidth-105,8,97,44,16).TextColor3=gold
+    -- ブラウザ版の .panel(紺の半透明・白の細枠・角丸18)と、上の「‹ ホーム」・題・コイン
+    local panel=frame(root,"Panel",8,8,panelWidth,panelHeight)
+    panel.BackgroundColor3=Color3.fromRGB(9,24,50);panel.BackgroundTransparency=.16
+    panel:FindFirstChildOfClass("UICorner").CornerRadius=UDim.new(0,18)
+    stroke(panel,white,1).Transparency=.78
+    Ui.headButton(panel,"ホーム","‹ ホーム",10,10,96,function() go("ホーム") end)
+    local head=Ui.text(panel,"PageTitle",page,portrait and 17 or 21,Ui.HEAVY,white)
+    head.TextXAlignment=Enum.TextXAlignment.Center
+    Ui.place(head,112,10,math.max(90,panelWidth-224),44)
+    Ui.pill(panel,"Coins",tostring(m.coins),panelWidth-106,14,96,36,nil,true)
     local list=box("ScrollingFrame",panel,"List")
     list.Position=UDim2.fromOffset(8,98);list.Size=UDim2.new(1,-16,1,-106);list.BackgroundTransparency=1
     list.ScrollBarThickness=4
@@ -304,27 +355,7 @@ function redraw()
         return y+(action and 125 or 75)
     end
     local y=0
-    if page=="レースを選ぶ" then
-        list.ScrollingDirection=Enum.ScrollingDirection.XY
-        local shortCard=h<450
-        for i,name in ipairs(modes) do
-            local card=frame(list,"Mode"..i,(i-1)*222,0,210,shortCard and 204 or 330);stroke(card,gold,mode==name and 3 or 1)
-            label(card,name,12,0,154,36,20);preview(card,i,210,shortCard and 64 or 115)
-            local emblem=frame(card,"Emblem",174,3,32,32);emblem.BackgroundTransparency=1
-            local scale=Instance.new("UIScale");scale.Scale=.65;scale.Parent=emblem;icon(emblem,(i-1)%4+1)
-            label(card,descriptions[i],10,shortCard and 102 or 164,190,32,16)
-            if not shortCard then button(card,mode==name and "選択中" or "選ぶ",8,204,194,function() mode=name;redraw() end,true) end
-            button(card,"出走の準備",8,shortCard and 146 or 260,194,function()
-                mode=name
-                if pageKinds[name] then go(name)
-                elseif name=="タイムアタック" then go(name)
-                elseif name=="大会" then gpList=nil;go(name)
-                elseif name=="フレンド" or name=="フリーレース" then legacy()
-                else toast.Text=name.."の対戦機能は次回の作業で追加します" end
-            end)
-        end
-        list.CanvasSize=UDim2.fromOffset(8*222,shortCard and 204 or 330);return
-    elseif pageKinds[page] then
+    if pageKinds[page] then
         local kind=pageKinds[page]
         if kind=="online" then
             y=row("6人で対戦","着順でレートは変わりません",y)

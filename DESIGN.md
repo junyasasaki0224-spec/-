@@ -113,6 +113,11 @@
 - Roblox 版の PC 操作も同じにする
 
 
+## Roblox 版の部品(2026-11-15 Claude)
+- レース中の表示は `roblox/src/RaceHud.lua`、ホームとレース選択の部品は `roblox/src/HomeUi.lua`。このファイルの「レース中」「ホーム」「レースを選ぶ」の配置・色・文字の大きさをそのまま数字にしてある(ブラウザ版の style.css の #pos / #startbox / #rank / #speedo / #minimap / #wx / #msg / .tile / #btn-race / .mcard / .panel)
+- 数字は Gotham の太字の斜体(`Font.new(GothamSSm, Heavy, Italic)`)。日本語は Roblox が自動で日本語の書体にする。文字の影の代わりに、暗い縁取りを薄く付ける
+- Roblox の書体に無い記号(➤ など)は四角になるので使わない(矢印は ▲ を回す)
+
 ## Robloxの今回の調整
 
 モードカードはassets/cardsの8枚をImageLabelで表示する。スマホ横の高さが450未満では画像を64に縮め、出走準備ボタン1つにまとめて画面内に収める。通常は画像115、カード330。ホームのタイルは金枠と線画、縦持ちは線画を文字の上に置く。Studioのレビュー時は表示名をテストレーサーにする。
