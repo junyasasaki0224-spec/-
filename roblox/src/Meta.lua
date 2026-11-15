@@ -41,7 +41,7 @@ function Meta.grade(rate)
     return index
 end
 function Meta.new()
-    return {coins=0,own={"s0","h0"},skin="s0",helmet="h0",rate=0,peak=0,seasonRaces=0,
+    return {volume=80,lever=40,quality="auto",coins=0,own={"s0","h0"},skin="s0",helmet="h0",rate=0,peak=0,seasonRaces=0,
         seasonWins=0,xp=0,tier=0,ta={},day="",mis={},misDone={},pulls=0,mailSeq=1,
         mail={{id="welcome",title="ようこそ みなとグランプリへ",body="出走の記念に、ガチャ5回ぶんのコインを贈ります。",coins=500}}}
 end
@@ -62,7 +62,15 @@ function Meta.daily(m,day)
     Meta.sendMail(m,"ログインボーナス",day.." の出走ボーナスです。",100)
 end
 function Meta.action(m,action,arg,rnd)
-    if action=="mail" then
+    if action=="settings" and type(arg)=="string" then
+        local key,value=arg:match("^(%a+)=(%w+)$")
+        local n=tonumber(value)
+        if key=="volume" and n and n>=0 and n<=100 and n%5==0 then m.volume=n
+        elseif key=="lever" and n and n>=0 and n<=140 and n%10==0 then m.lever=n
+        elseif key=="quality" and ({auto=true,high=true,medium=true,low=true})[value] then m.quality=value
+        else return "設定を確認してください" end
+        return "設定を保存しました"
+    elseif action=="mail" then
         for i,v in ipairs(m.mail) do
             if v.id==arg then m.coins+=v.coins;table.remove(m.mail,i);return "受け取りました" end
         end

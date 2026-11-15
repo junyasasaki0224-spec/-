@@ -24,6 +24,14 @@ local white=Color3.new(1,1,1)
 local rarity={N=white,R=Color3.fromRGB(57,140,255),SR=Color3.fromRGB(172,110,255),SSR=gold}
 local mode="シーズン"
 local m,page,pending=nil,"ホーム",nil
+local Practice=require(RS:WaitForChild("StartPractice"))
+local quality=require(RS:WaitForChild("DisplayQuality"))
+local practiceActive=false
+local practiceLane=1
+local roomCode=player:GetAttribute("MinatoInviteCode") or ""
+if roomCode~="" then page="フレンド" end
+local roomStatus=""
+local board,boardStatus,boardBusy,boardAt,boardKind=nil,"",false,-60,"rating"
 local redraw,request
 local function box(class,parent,name,text)
     local x=Instance.new(class);x.Name=name;x.Parent=parent
@@ -73,8 +81,11 @@ local function boat(parent)
     return model
 end
 local scenery=Instance.new("Folder");scenery.Name="MinatoHomeScene";scenery.Parent=workspace
-local water=part(scenery,"Water",Vector3.new(1900,.5,600),Vector3.new(0,-.5,0),Color3.fromRGB(23,100,127));water.Material=Enum.Material.Glass
+local water = require(RS:WaitForChild("CourseWater"))
+water.fill()
 local detailedVenue=visuals.venue(scenery)
+water.configure(detailedVenue)("day", 1)
+local updateVenue = require(RS:WaitForChild("VenueDecor"))(scenery,nil)
 for i=1,detailedVenue and 0 or 8 do
     part(scenery,"Terrace",Vector3.new(160,2,5),Vector3.new(0,i*1.5,53+i*4),Color3.fromRGB(137,158,169))
 end
@@ -98,9 +109,10 @@ local function waitText()
 end
 Run.RenderStepped:Connect(function(dt)
     sceneClock+=dt
+    updateVenue(0,sceneClock,1)
     local cam=workspace.CurrentCamera
     if waitLabel and waitLabel.Parent then waitLabel.Text=waitText() end
-    if gui.Enabled then
+    if gui.Enabled and not practiceActive then
         cam.CameraType=Enum.CameraType.Scriptable
         local t=math.clamp((sceneClock-spinStart)/SPIN_TIME,0,1)
         local angle=.65+sceneClock*.012+math.pi*2*(t*t*(3-2*t))
@@ -166,9 +178,44 @@ local function loadBoard(lane,force)
         if page=="タイムアタック" then redraw() end
     end)
 end
-local function legacy()
-    local old=player.PlayerGui:FindFirstChild("MinatoLobby")
-    if old then old.Enabled=true;gui.Enabled=false else toast.Text="通信機能を準備中です" end
+local function refreshBoard(force)
+    if boardBusy or not force and os.clock()-boardAt<10 then return end
+    boardBusy=true
+    boardAt=os.clock()
+    task.spawn(function()
+        local remoteBoard=RS:WaitForChild("MinatoLeaderboard",5)
+        local ok,data=pcall(function() return remoteBoard:InvokeServer() end)
+        boardBusy=false
+        if ok and data then board=data;boardStatus=""
+        else boardStatus="順位を取得できません。少し待って更新してください" end
+        if page=="ランキング" and m then redraw() end
+    end)
+end
+local function bindRoom(event)
+    if event.Name~="MinatoRoomLobby" then return end
+    event.OnClientEvent:Connect(function(message)
+        roomStatus=message
+        if page=="フレンド" then redraw() end
+    end)
+end
+RS.ChildAdded:Connect(bindRoom)
+if RS:FindFirstChild("MinatoRoomLobby") then bindRoom(RS.MinatoRoomLobby) end
+player:GetAttributeChangedSignal("MinatoInviteCode"):Connect(function()
+    roomCode=player:GetAttribute("MinatoInviteCode") or ""
+    if roomCode~="" then page="フレンド" end
+    if page=="フレンド" and m then redraw() end
+end)
+local function startPractice()
+    if practiceActive then return end
+    practiceActive=true
+    root.Visible=false
+    toast.Visible=false
+    Practice.start(gui,model,practiceLane,m.lever,function()
+        practiceActive=false
+        root.Visible=true
+        toast.Visible=true
+        go("スタート練習")
+    end)
 end
 local matchEvent
 local waitingMode
@@ -203,10 +250,15 @@ local function swatch(parent,it,x,y,w,h)
         f.BackgroundTransparency=0;f.BackgroundColor3=Color3.fromRGB(bit32.rshift(c,16),bit32.band(bit32.rshift(c,8),255),bit32.band(c,255))
     end
 end
+local drawnPage
 function redraw()
+    local oldList=drawnPage==page and root:FindFirstChild("List",true)
+    local oldScroll=oldList and oldList.CanvasPosition
+    drawnPage=page
     waitLabel=nil
     for _,c in ipairs(root:GetChildren()) do if c:IsA("GuiObject") then c:Destroy() end end
     if not m then return end
+    if quality.choice~=m.quality then quality.apply(m.quality) end
     outfit(model,m.skin,m.helmet)
     local w,h=gui.AbsoluteSize.X,gui.AbsoluteSize.Y
     local portrait=w<h
@@ -233,23 +285,23 @@ function redraw()
             local raceH=72
             local raceY=h-18-raceH
             local tileH=72
-            local tileY=raceY-34-tileH
+            local tileY=raceY-(waitingMode and 66 or 34)-tileH
             local tw=(w-24-3*8)/4
             for i,t in ipairs({{"ガチャ","gacha"},{"倉庫","garage"},{"ミッション","mission"},{"ランキング","ranking"}}) do
-                local tile=Ui.tile(root,t[1],t[2],t[1],"",12+(i-1)*(tw+8),tileY,tw,tileH,true,function() if t[1]=="ランキング" then legacy() else go(t[1]) end end)
+                local tile=Ui.tile(root,t[1],t[2],t[1],"",12+(i-1)*(tw+8),tileY,tw,tileH,true,function() go(t[1]) end)
                 if t[1]=="ミッション" then Ui.badge(tile,misCount,tw-14,-8) end
             end
             local sw=(w-24-8)/2
-            Ui.tile(root,"通信対戦","online","通信対戦","オンライン・フレンド",12,tileY-8-52,sw,52,false,legacy)
+            Ui.tile(root,"通信対戦","online","通信対戦","オンライン・フレンド",12,tileY-8-52,sw,52,false,function() go("通信対戦") end)
             Ui.tile(root,"遊び方","howto","遊び方","スタートとターンのコツ",20+sw,tileY-8-52,sw,52,false,function() go("遊び方") end)
             if waitingMode then
-                local chip=frame(root,"Waiting",12,raceY-30-56,w-24,48);stroke(chip,gold,1)
+                local chip=frame(root,"Waiting",12,raceY-58,w-24,48);stroke(chip,gold,1)
                 label(chip,matchNames[waitingMode].." 待機中",10,0,140,24,14).TextColor3=gold
                 waitLabel=label(chip,waitText(),10,22,190,24,14)
                 button(chip,"取り消し",w-24-108,1,100,function() matchEvent:FireServer("cancel") end)
             else
                 local nowW=math.min(w-24,40+(utf8.len(mode) or 4)*13)
-                Ui.pill(root,"Now",mode.."・オンライン対戦",w/2-nowW/2-40,raceY-30,nowW+80,24)
+                Ui.pill(root,"Now",mode,w/2-nowW/2-40,raceY-30,nowW+80,24)
             end
             Ui.raceButton(root,12,raceY,w-24,raceH,"レース","モードを選んで出走",function() go(waitingMode and matchNames[waitingMode] or "レースを選ぶ") end)
             return
@@ -267,10 +319,10 @@ function redraw()
         local total=4*th+3*gap
         local top=math.max(short and 78 or 96,math.floor(h/2-total/2+12))
         for i,t in ipairs({{"ガチャ","gacha","塗装とヘルメットを集める"},{"倉庫","garage","艇の見た目を着せ替える"},{"ミッション","mission","毎日の目標でコイン"},{"ランキング","ranking","レート・タイム・戦績"}}) do
-            local tile=Ui.tile(root,t[1],t[2],t[1],t[3],16,top+(i-1)*(th+gap),tw,th,false,function() if t[1]=="ランキング" then legacy() else go(t[1]) end end)
+            local tile=Ui.tile(root,t[1],t[2],t[1],t[3],16,top+(i-1)*(th+gap),tw,th,false,function() go(t[1]) end)
             if t[1]=="ミッション" then Ui.badge(tile,misCount,tw-14,-8) end
         end
-        Ui.tile(root,"通信対戦","online","通信対戦","オンライン・フレンド",w-16-tw,short and 70 or 96,tw,th,false,legacy)
+        Ui.tile(root,"通信対戦","online","通信対戦","オンライン・フレンド",w-16-tw,short and 70 or 96,tw,th,false,function() go("通信対戦") end)
         Ui.tile(root,"遊び方","howto","遊び方","スタートとターンのコツ",w-16-tw,(short and 70 or 96)+th+gap,tw,th,false,function() go("遊び方") end)
         local rw=math.min(300,math.floor(w*.44))
         local rh=short and 60 or 76
@@ -315,7 +367,7 @@ function redraw()
             elseif name=="タイムアタック" then go(name)
             elseif name=="大会" then gpList=nil;go(name)
             elseif name=="フリーレース" then fr.seed=math.random(1,1000000);go(name)
-            elseif name=="フレンド" then legacy()
+            elseif name=="フレンド" or name=="スタート練習" then go(name)
             else toast.Text=name.."は準備中です" end
         end
         if portrait then
@@ -359,12 +411,81 @@ function redraw()
     local width=panelWidth-24
     local function row(title,body,y,action,caption)
         label(list,title,8,y,width-16,30,17)
-        label(list,body,8,y+31,width-16,28,14).TextColor3=pale
-        if action then button(list,caption or "受け取る",8,y+65,math.min(width-16,170),action,true) end
-        return y+(action and 125 or 75)
+        local bodyHeight=math.max(28,math.ceil((utf8.len(body) or #body)*17/math.max(50,width-16))*23+4)
+        local detail=label(list,body,8,y+31,width-16,bodyHeight,14)
+        detail.TextWrapped=true;detail.TextTruncate=Enum.TextTruncate.None;detail.TextColor3=pale
+        if action then button(list,caption or "受け取る",8,y+bodyHeight+37,math.min(width-16,190),action,true) end
+        return y+bodyHeight+(action and 97 or 47)
     end
     local y=0
-    if pageKinds[page] then
+    if page=="通信対戦" then
+        for _,entry in {{"オンライン","先に集まった人と気軽に走る"},{"フレンド","合言葉で同じ会場に集まる"},{"シーズン","レートの近い人と競う"}} do
+            y=row(entry[1],entry[2],y,function() go(entry[1]) end,"選ぶ")
+        end
+    elseif page=="フレンド" then
+        local function send(action)
+            if action=="join" and (#roomCode~=6 or not roomCode:match("^[A-HJ-NP-Z2-9]+$")) then
+                roomStatus="合言葉は英数字6文字です";redraw();return
+            end
+            local event=RS:FindFirstChild("MinatoRoomLobby")
+            roomStatus=event and "会場に問い合わせています" or "通信を準備しています"
+            if event then event:FireServer(action,roomCode) end
+            redraw()
+        end
+        y=row("部屋を作る","会場に移ったら、招待ボタンか6文字の合言葉で友達を呼べます。",y,function() send("create") end,"部屋を作る")
+        y=row("合言葉で入る","招待から来た時は合言葉が自動で入ります。",y)
+        local field=box("TextBox",list,"RoomCode",roomCode)
+        field.PlaceholderText="合言葉（6文字）";field.ClearTextOnFocus=false
+        Ui.place(field,8,y,width-16,46);y+=54
+        field:GetPropertyChangedSignal("Text"):Connect(function() roomCode=field.Text:upper():sub(1,6);if field.Text~=roomCode then field.Text=roomCode end end)
+        button(list,"この部屋に入る",8,y,width-16,function() send("join") end,true);y+=58
+        button(list,"合言葉で友達を招待",8,y,width-16,function()
+            local code=roomCode
+            if #code~=6 or not code:match("^[A-HJ-NP-Z2-9]+$") then roomStatus="招待する部屋の合言葉を入れてください";redraw();return end
+            local social=game:GetService("SocialService")
+            local ok,can=pcall(social.CanSendGameInviteAsync,social,player)
+            if ok and can then
+                local options=Instance.new("ExperienceInviteOptions");options.LaunchData=code
+                ok=pcall(social.PromptGameInvite,social,player,options)
+            end
+            if not ok or not can then roomStatus="招待を開けません。合言葉を友達に伝えてください";if page=="フレンド" then redraw() end end
+        end);y+=58
+        if roomStatus~="" then y=row("部屋の案内",roomStatus,y) end
+    elseif page=="ランキング" then
+        refreshBoard(false)
+        local bw=math.floor((width-32)/3)
+        for i,tab in {{"rating","レート"},{"wins","勝利数"},{"bestTime","タイム"}} do
+            button(list,tab[2],8+(i-1)*(bw+8),y,bw,function() boardKind=tab[1];redraw() end,boardKind==tab[1])
+        end
+        y+=56
+        local info=board and board.boards and board.boards[boardKind]
+        if info then
+            local profile=board.profile
+            if profile then
+                y=row("自分の成績",string.format("レート %d　出走 %d　1着 %d　ベスト %s",profile.rating,profile.races,profile.wins,formatTime(profile.bestTime)),y)
+            end
+            local own=info.rank and info.rank.."位" or info.below and info.below.."位以下"
+                or info.error and "読み込み待ち" or info.busy and "集計中"
+                or profile and boardKind=="bestTime" and not profile.bestTime and "未記録" or "更新待ち"
+            y=row("自分の順位",own,y)
+            for i,e in ipairs(info.entries) do
+                local display=Run:IsStudio() and ("選手 "..i) or e.name or "選手"
+                y=row(i.."位　"..display,boardKind=="bestTime" and formatTime(e.value) or tostring(e.value),y)
+            end
+            if info.error then y=row("読み込み待ち","時間を置いて更新してください",y)
+            elseif #info.entries==0 then y=row("順位表",info.ready and "まだ記録がありません" or "集計しています",y) end
+        else
+            y=row("順位表",board and board.studio and "公開したゲームで順位を表示します" or boardStatus~="" and boardStatus or "読み込んでいます",y)
+        end
+        button(list,"更新",8,y,140,function() refreshBoard(true) end);y+=58
+    elseif page=="スタート練習" then
+        y=row("スタートラインで大時計の0秒を狙う","1艇で練習します。1〜3コースはスロー、4〜6コースはダッシュです。",y)
+        local bw=math.floor((width-32)/3)
+        for lane=1,6 do
+            button(list,lane.."コース",8+((lane-1)%3)*(bw+8),y+math.floor((lane-1)/3)*54,bw,function() practiceLane=lane;redraw() end,lane==practiceLane)
+        end
+        y+=112;button(list,"練習開始",8,y,width-16,startPractice,true);y+=58
+    elseif pageKinds[page] then
         local kind=pageKinds[page]
         if kind=="online" then
             y=row("6人で対戦","着順でレートは変わりません",y)
@@ -749,17 +870,35 @@ function redraw()
                 not done and function() request("mission",v.id) end or nil, "受け取る")
         end
     elseif page=="設定" then
-        y=row("画面","Robloxのメニューから音量・画質を調整できます",y)
-        y=row("日付の切り替え","ミッションとログインは日本時間の0時に更新",y)
+        for _,item in {{"音量","volume",5,100,"%"},{"レバーの高さ","lever",10,140," px"}} do
+            local value=m[item[2]]
+            y=row(item[1],tostring(value)..item[5],y)
+            local bw=math.floor((width-24)/2)
+            for i,delta in {-item[3],item[3]} do
+                button(list,delta>0 and "＋" or "－",8+(i-1)*(bw+8),y,bw,function()
+                    request("settings",item[2].."="..math.clamp(value+delta,0,item[4]))
+                end)
+            end
+            y+=58
+        end
+        y=row("画質","自動ではタッチ端末の光と水しぶきを軽くします。",y)
+        for i,q in {{"auto","自動"},{"low","低"},{"medium","中"},{"high","高"}} do
+            local bw=math.floor((width-40)/4)
+            button(list,q[2],8+(i-1)*(bw+8),y,bw,function() request("settings","quality="..q[1]) end,m.quality==q[1])
+        end
+        y+=58
     elseif page=="シーズンパス" then
         y=row("現在 "..m.tier.."段","経験値 "..m.xp.."　次の段まで "..((m.tier+1)*100-m.xp),y)
         for tier=m.tier+1,m.tier+10 do y=row(tier.."段",(tier*100).." XP　"..(tier%5==0 and 300 or 100).." コイン（メールに届きます）",y) end
     else
-        y=row("レースの準備","レースを選び、出走表から会場へ進みます",y)
-        y=row("コインを集める","レース・ミッション・メールで獲得できます",y)
-        y=row("見た目を変える","倉庫の装備はホームとレースに反映されます",y)
+        y=row("1　スタート","大時計が0を指してから1秒以内にラインを通過しましょう。早いとフライングです。",y)
+        y=row("2　ターン","左回りで3周。マークの手前でレバーを落とし、小さく回ってから全開にします。",y)
+        y=row("3　引き波と接触","他艇の引き波では艇が流れます。マークやポールに強く当たると沈没します。",y)
+        y=row("4　操作","スマホは左でハンドル、右でスロットル。レバーを離すと開度を保ちます。キーボードは矢印キーで操作できます。",y)
+        button(list,"スタート練習へ",8,y,width-16,function() go("スタート練習") end,true);y+=58
     end
     list.CanvasSize=UDim2.fromOffset(0,y+12)
+    if oldScroll then list.CanvasPosition=oldScroll end
 end
 -- 装備した瞬間の演出: しぶきの粒、レア度の色で光る知らせ(2秒)、レア度に合わせた音、カメラの1周
 local RARITY_PITCH={N=1,R=1.12,SR=1.26,SSR=1.45}
@@ -772,7 +911,7 @@ sparks.Acceleration=Vector3.new(0,-18,0);sparks.Size=NumberSequence.new(.5,.1)
 sparks.Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0),NumberSequenceKeypoint.new(1,1)})
 sparks.Parent=splash
 local function sound(id,pitch,volume)
-    local s=Instance.new("Sound");s.SoundId=id;s.PlaybackSpeed=pitch;s.Volume=volume;s.Parent=gui
+    local s=Instance.new("Sound");s.SoundId=id;s.PlaybackSpeed=pitch;s.Volume=volume*(m and m.volume or 80)/100;s.Parent=gui
     s.Ended:Connect(function() s:Destroy() end);s:Play()
 end
 local function celebrate(it)
@@ -835,11 +974,6 @@ task.spawn(function()
         task.delay(6,function() if toast.Text==message then toast.Text="" end end)
     end)
 end)
-player.PlayerGui.ChildAdded:Connect(function(child)
-    if child.Name=="MinatoLobby" then child.Enabled=false end
-end)
-local old=player.PlayerGui:FindFirstChild("MinatoLobby")
-if old then old.Enabled=false end
 task.spawn(function()
     while not m do request("get");task.wait(6) end
 end)
