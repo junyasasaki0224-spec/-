@@ -25,6 +25,8 @@
 | T19 | Roblox公開への仕上げ（T18の計測・全画面・公開手順） | GPT（Claudeは最後の取り込み） | 公開先での確認待ち | T18を含む差分。Studioと自動検証済み。オーナーの素材登録・公開・実機と複数人の確認は PUBLISH.md |
 | T18 | **Roblox: 水面・光・水しぶき・会場の飾りをブラウザ版に近づける**(詳しくは下の「T18 の詳細」) | GPT(仕上げ: Claude) | 確認待ち | ①・②ともGPT実装。出走表→順位、時計、登録なしでの画像表示をStudioで確認。実機速度と公開権限は未確認。下の詳細、DESIGN.md、ブラウザ版の src/gfx/water.js・spray.js・venue.js・stage.js |
 | T20 | **Roblox の見た目をブラウザ版に近づける**(詳しくは下の「T20 の詳細」。水の色、カードの絵、ターンマーク、空と光、しぶき、操作部、文字) | PC の Claude か GPT(仕上げ: Claude) | 未着手 | 下の詳細、DESIGN.md |
+| T21 | **Roblox: AI の強さの配分と接触の多さを直す**(T7 の続き。詳しくは下の「T21 の詳細」) | GPT(仕上げ: Claude) | 未着手 | `roblox/src/RaceAI.lua`、`roblox/tools/run_sim.py` |
+| T22 | **Roblox: オープニング演出と専用BGM**(ブラウザ版 T13 の Roblox 版。詳しくは下の「T22 の詳細」) | GPT(つなぎ込み: Claude) | 未着手 | 新しいファイル `roblox/src/Opening.lua`、`roblox/tools/make_audio.py` |
 | T11 | **判断**: 練習レース(AI 相手)の1着・ベストタイムもランキングに入れてよいか。AI 相手で勝ち数を稼げてしまうため、人間が2人以上いたレースだけを数える案もある | オーナー | 完了 | 2026-11-15 オーナーの方針で決着: AI がいたレースはレートを人間どうしの着順だけで計算する(HANDOFF 25章) |
 | T6 | 1周600m・レースタイム1分50秒前後に合わせるか決める(会場モデルと Roblox 版にも影響) | オーナー | 判断待ち | Claude の調査結果(会話) |
 
@@ -235,6 +237,57 @@ Studio で直して、**同じ視点・同じ時間帯のブラウザ版の写�
 7. **文字の大きさ**: PC でホームの文字とタイルが画面に対して小さい。ブラウザ版の大きさ(タイルの題 17px 相当)に合わせる
 
 **できない所(差があってよい)**: 水面に建物がくっきり映る表現(ブラウザ版は水面に会場をもう一度描いている。Roblox の水では同じにはできない)
+
+### T21 の詳細(2026-11-16 Claude → GPT。Claude は同じ時期に画面・HUD・ホーム・音を触るので、ここに書いたファイル以外は変えない)
+
+**今の様子**: `python -I roblox/tools/run_sim.py 60`(中級)で 1〜6号艇の1着が 31・18・9・2・0・0、完走 351/360、沈没 9、フライング 0。5・6コースが1度も勝たず、1号艇が強すぎる。強い接触も1レース約15回とブラウザ版より多い(T7)。
+
+**目標**(AI 同士・60レース以上。中級と達人(引数 4)の両方で):
+- 1着率: 1コース 50〜60%、2コース 10〜18%、3コース 10〜18%、4コース 6〜12%、5・6コース 各2〜8%
+- 強い接触(艇どうしの速さの差が大きい当たり)を1レース平均 8回以下に。数え方は `run_sim.py` / `tools/simulation.lua` に足して、毎回表示する(何を「強い」とするかの基準も書く)
+- 完走率と沈没の回数は今と同じくらい(沈没は1レース 0.1〜0.3回)、フライングは 0 のまま
+- 1レースのタイムが大きく変わらない(先頭の3周タイムを今と並べて表示し、±3% 以内)
+
+**変えてよい所**: `roblox/src/RaceAI.lua`(AI の判断: 1マークまでの進路、差し・まくりの選び方、前の艇を避ける動き)。どうしても必要なら `BoatCollision.lua` の当たりの強さ。**`BoatPhysics.lua` と `RaceStep.lua` は変えない**(人が操作する艇の手ごたえと、タイムアタックの記録の再現が変わるため)。AI に人間より有利な力(速さの上乗せ)を足して調整しない。ブラウザ版の `src/sim/ai.js` の考え方を参考にしてよい
+
+**返す前に確かめること**: `python -I roblox/tools/check_syntax.py`、`roblox/tests/*.luau` 全部、中級・達人それぞれ 120レースの結果(1着数・完走・沈没・フライング・強い接触・先頭タイム)を、変える前と後で並べて WORKLOG に書く。乱数で数字がぶれるので、1回だけでなく別の種(seed)でも回す
+
+### T22 の詳細(2026-11-16 Claude → GPT。ブラウザ版 T13 と同じ流れを Roblox に。**画面への組み込み(Controls.client.lua と Race.server.lua)は Claude がやる**ので、GPT は独立した部品として作る)
+
+**作る物 1: `roblox/src/Opening.lua`**(ReplicatedStorage に置く ModuleScript。プレイヤー側でだけ動く。見た目だけで、レースの計算には一切さわらない)
+
+使い方(この形を守る):
+```lua
+local Opening = require(ReplicatedStorage.Opening)
+local show = Opening.play({
+    camera = workspace.CurrentCamera,
+    venue = workspace:FindFirstChild("Minato"),       -- 会場のフォルダ(建物・ピット)
+    boats = { [1] = model1, ..., [6] = model6 },      -- 艇の見た目のモデル(PrimaryPart あり)。欠けていてもよい
+    finalCFrames = { [1] = CFrame, ... },             -- 大時計が回り始める時の各艇の位置と向き(ここにぴったり止める)
+    rows = { {number = 1, name = "…", cls = "A1"}, ... }, -- 出走表(艇番・名前・級別)
+    title = "みなとグランプリ 第3R",
+    duration = 24,                                    -- 秒。短い版は 10
+    gui = playerGui,                                  -- 文字を出す場所
+})
+show.Done:Connect(function() ... end)   -- 終わった(またはスキップした)
+show:skip()      -- すぐ終える。艇を finalCFrames に置き、文字・カメラを元に戻す
+show:destroy()   -- 途中で消す(会場を出る時など)
+```
+**流れ**(ブラウザ版 TASKS T13 の「流れ」と同じ): ① 会場を空からゆっくり見せ、大会名と6艇の出走表を順に出す ② ピット(会場の西の端)から1号艇から順に少しずつずらして水面へ出る ③ スタート前の位置へ回り込み、最後は `finalCFrames` にぴったり止まる。カメラは艇の近く・横・高い所を切り替える ④ 終わったらカメラを `Enum.CameraType.Custom` に戻し、作った物をすべて片付ける
+- ピットの位置は会場のモデルから探す(名前は `roblox/src/VisualModels.lua` と会場の組み立てを読んで確かめる)。見つからない時は、各艇の `finalCFrames` の 60m ほど後ろから出す
+- 艇の動きは滑らかな曲線(ベジェなど)で、向きは進む方向へ。艇の速さに合わせて水しぶき(`BoatWake.lua` の使い方を読んでそのまま使う)が出ると良い
+- 画面のどこかを触る・クリックする・Enter キーで `skip`。右上に小さく「スキップ」ボタン
+- 文字は日本語。部品と色は `roblox/src/HomeUi.lua`・`RaceHud.lua` と同じ作り(字体 GothamSSm、角丸、艇番の色は `RaceHud.lua` の表の色)。スマホ縦・横で文字が切れない・重ならない。画面中央を長くふさがない
+- 重くしない: 新しい大きなモデルや画像を足さない。粒子は数を抑える
+
+**作る物 2: オープニングの専用BGM**(`roblox/tools/make_audio.py` に関数を足して、新しいファイル `roblox/assets/audio/minato-opening.wav` を作る)
+- 今ある3つの音(`minato-sfx.wav`・`minato-loops.wav`・`minato-music.wav`)と `AudioSheet.lua` の中身は**変えない**(これから Roblox に登録するため)。足すのは新しいファイル1つと、`AudioSheet.lua` に `openingLength`(秒)の1行だけ
+- 行進曲風で華やか、20〜30秒でループできる。今の作り方と同じ numpy の合成。**既存の曲・実在の競走場の曲に似せない完全なオリジナル**。音割れしない(最大 -1dB 以下)
+- `roblox/src/AudioConfig.lua` に `opening = ""` を足す。`Sfx.lua` に `Sfx.opening(on)`(流す/1〜2秒で消す)を足す。ID が空なら何もしない
+
+**守ること**: 実在の競走場名・選手名・「BOAT RACE」の文字・ロゴは使わない。読み上げ・字幕の実況は使わない。上に書いたファイル以外は変えない(`Controls.client.lua`・`Race.server.lua`・`RaceHud.lua`・`Home.client.lua` は Claude が同時に触っているので、触ると合体で衝突する)
+
+**返す前に確かめること**: `python -I roblox/tools/check_syntax.py`、テスト全部。Studio が使えれば、空の place に会場と艇を置いて `Opening.play` を呼ぶ小さな確認用スクリプト(`roblox/tools/` に置く。ゲームには入れない)で、最後まで見た時とスキップした時の両方で艇が `finalCFrames` にぴったり止まり、カメラが戻り、作った物が残らないことを確かめる。音は耳で確かめられなければ「未確認」と書く
 
 ## あとでやること
 
