@@ -21,12 +21,22 @@ AI.DIFFS = {
     {name="上級",skill=1.015,st=-0.01,motor=0.006},
     {name="達人",skill=1.08,st=-0.06,motor=0.035},
 }
+-- Seconds of start-line margin for slow and dash approaches (by course).
+local START_MARGIN={-.014,.075,.018,-.003,.036,-.025}
+local FAST_MARGIN={-.008,.004,-.01,.037,.004,.003}
 function AI.init(boat, lane, seed, racer, diff)
     local ai = {lane=lane,seed=seed,skill=1,going=false,firstTurn=true,planMark=0,refined=false,effLane=lane,makuri=0,k=1,dodge=0,wob=0,stuck=0}
     racer = racer or {skill=1,st=0.12,sashi=0.4}
     diff = diff or AI.DIFFS[2]
     ai.skill = racer.skill*diff.skill*(0.985+0.03*rand(ai))
-    ai.stTarget = math.max(0.02,racer.st+diff.st+(rand(ai)-0.4)*0.17)
+    -- The inner boat can line up early. Outside boats judge a longer approach.
+    local caution=START_MARGIN[lane+1]
+    -- Fast entries leave less room to cross three inside boats on the first dash lane.
+    local pace=math.clamp((diff.skill-AI.DIFFS[2].skill)/(AI.DIFFS[4].skill-AI.DIFFS[2].skill),0,1)
+    caution+=pace*FAST_MARGIN[lane+1]
+    ai.headway=12+2*pace
+    local spread = lane==0 and .18 or 1
+    ai.stTarget=math.max(lane>=3 and .025 or .07,racer.st+diff.st+rand(ai)^2*spread-.06+caution)
     ai.sashi = lane > 0 and rand(ai) < racer.sashi
     boat.ai = ai
 end
@@ -47,12 +57,12 @@ local function makePlan(b, mark, boats)
     local approach,close,exit
     if ai.firstTurn and mark==1 then
         n=math.max(n,ai.refined and 0 or ai.effLane)
-        approach=8+3.4*ai.effLane
-        if ai.sashi then close=3.8+math.min(n,2)+rand(ai); exit=12+2*n+rand(ai)*4
+        approach=8+2.6*ai.effLane
+        if ai.sashi then close=1.8+math.min(n,2)+rand(ai); exit=12+2*n+rand(ai)*4
         else close=3.8+1.7*n+rand(ai); exit=14+2.4*n+rand(ai)*4 end
     else
         approach=clamp(math.max(v0,6),11+1.5*n,20+2*n)+(rand(ai)-0.5)*3
-        close=3.8+2*n+rand(ai)*1.2
+        close=(ai.sashi and (1.00-.40*math.clamp((ai.skill-1)*8,0,1)) or 3.8)+2*n+rand(ai)*1.2
         exit=14+2.8*n+rand(ai)*6
     end
     if ai.refined then approach=clamp(v0,7,maxV) end
@@ -155,12 +165,21 @@ function AI.update(b, boats, clock, dt, units)
     end
     local ch,sh=math.cos(b.h),math.sin(b.h)
     local dodge=0
-    if b.checkpoint==0 or b.checkpoint==3 then
-        for _,other in ipairs(boats) do
-            if other~=b and not other.out then
-                local rx,rz=other.x-b.x,other.z-b.z
-                local ahead,side=rx*ch+rz*sh,-rx*sh+rz*ch
-                if ahead>0.5 and ahead<12 and math.abs(side)<3.2 and b.speed>other.speed-1 then dodge=side>0 and -3.2 or 3.2 end
+    local risk=0
+    for _,other in ipairs(boats) do
+        if other~=b and not other.out then
+            local rx,rz=other.x-b.x,other.z-b.z
+            local ahead,side=rx*ch+rz*sh,-rx*sh+rz*ch
+            if ahead>0 and ahead<20 then
+                local dvx,dvz=other.vx-b.vx,other.vz-b.vz
+                local futureSide=side+.65*(-dvx*sh+dvz*ch)
+                local futureAhead=ahead+.65*(dvx*ch+dvz*sh)
+                local headway=ai.firstTurn and 12 or ai.headway
+                local proximity=clamp((headway-futureAhead)/8,0,1)*clamp((4.5-math.abs(futureSide))/3,0,1)
+                if proximity>risk then
+                    risk=proximity
+                    dodge=(side>=0 and -1 or 1)*5*proximity
+                end
             end
         end
     end
@@ -169,21 +188,23 @@ function AI.update(b, boats, clock, dt, units)
     local ox,oz = b.x+1.05*ch, b.z+1.05*sh
     local mx,mz = plan.mx-ox,plan.mz-oz
     local d = distance(mx,mz)
-    if uNow < 1.5 and d > 2 and d < 45 then
-        local alpha,beta = math.asin(2/d), math.atan2(mz,mx)
+    local markClearance=ai.sashi and 1.52 or 2
+    if uNow < 1.5 and d > markClearance and d < 45 then
+        local alpha,beta = math.asin(markClearance/d), math.atan2(mz,mx)
         local delta = wrap(math.atan2(tz-oz,tx-ox)-beta)
         if delta < alpha and delta > -alpha*0.5 then
             local reach = distance(tx-ox,tz-oz)
             tx,tz = ox+math.cos(beta+alpha)*reach,oz+math.sin(beta+alpha)*reach
         end
     end
+    local clearance=ai.sashi and 1.65 or 2.6
     for _,u in ipairs(units) do
         local rx,rz = tx-u.x,tz-u.z
         if math.abs(rx*u.dx+rz*u.dz) <= u.length/2+2 then
             local lateral = -rx*u.dz+rz*u.dx
             local side = -(b.x-u.x)*u.dz+(b.z-u.z)*u.dx >= 0 and 1 or -1
-            if side*lateral < 2.6 then
-                local push = 2.6*side-lateral
+            if side*lateral < clearance then
+                local push = clearance*side-lateral
                 tx,tz = tx-u.dz*push,tz+u.dx*push
             end
         end
@@ -202,15 +223,24 @@ function AI.update(b, boats, clock, dt, units)
         if ai.firstTurn and ai.sashi then entry=entry*0.93 end
         if b.speed*b.speed-entry*entry>2*6.2*dTurn then throttle=dTurn>TURN_IN and 0.05 or ARC_THR end
     end
+    if k >= plan.turnStart-1 and k <= plan.turnStart+12 then throttle=math.max(throttle,ARC_THR) end
     for _,other in ipairs(boats) do
         if other~=b and not other.out then
             local rx,rz=other.x-b.x,other.z-b.z
             local ahead,side=rx*ch+rz*sh,-rx*sh+rz*ch
-            if ahead>0.3 and ahead<6 and math.abs(side)<3.2 then throttle=math.min(throttle,0.25+0.1*ahead) end
+            local dvx,dvz=other.vx-b.vx,other.vz-b.vz
+            local closing=-(dvx*ch+dvz*sh)
+            local crossing=side+clamp(ahead/math.max(1,closing),0,0.75)*(-dvx*sh+dvz*ch)
+            if ahead>0.1 and ahead<6.8+math.max(0,closing)*1.2 and math.abs(crossing)<3.2 then
+                throttle=math.min(throttle,0.08)
+            end
         end
     end
-    if k >= plan.turnStart-1 and k <= plan.turnStart+12 then throttle=math.max(throttle,ARC_THR) end
-    if b.speed<1.5 then ai.stuck=ai.stuck+dt; if ai.stuck>1.2 then throttle=1 end else ai.stuck=0 end
+    throttle=math.min(throttle,1-.95*risk)
+    if b.speed<3.5 then
+        ai.stuck+=dt
+        if ai.stuck>1 and (risk<.6 or ai.stuck>2+ai.lane*.25) then throttle=1 end
+    else ai.stuck=0 end
     return throttle,steer
 end
 return AI

@@ -99,4 +99,30 @@ function Sfx.music(on, volume)
     musicTarget = on and (volume or 0.32) or 0
 end
 
+local openingSound, fade
+function Sfx.opening(on)
+    if not ready(config.opening) then return end
+    if fade then fade:Cancel(); fade=nil end
+    if on then
+        if not openingSound then
+            openingSound=Instance.new("Sound")
+            openingSound.Name="OpeningMusic"
+            openingSound.SoundId=config.opening
+            openingSound.Looped=true
+            openingSound.Parent=folder
+        end
+        openingSound.Volume=.42*Sfx.master()
+        if not openingSound.IsPlaying then openingSound:Play() end
+    elseif openingSound then
+        local sound=openingSound
+        local tween=game:GetService("TweenService"):Create(sound,TweenInfo.new(1.4),{Volume=0})
+        fade=tween
+        tween.Completed:Once(function(state)
+            if state==Enum.PlaybackState.Completed and fade==tween then
+                sound:Destroy(); openingSound=nil; fade=nil
+            end
+        end)
+        tween:Play()
+    end
+end
 return Sfx

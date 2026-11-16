@@ -5,7 +5,8 @@ local finishes,flights=0,0
 local sunk, sinkRaces = 0,0
 local contacts=0
 local dt=1/120
-for race=1,NUM_RACES do
+local timeSum,winners=0,0
+for race=FIRST_SEED,FIRST_SEED+NUM_RACES-1 do
     local boats={}
     local wave=((race*7)%16)/10
     local wind=((race*13)%41)/10
@@ -50,6 +51,7 @@ for race=1,NUM_RACES do
                 b.started=true
                 local fraction=(0-oldX)/math.max(b.x-oldX,0.000001)
                 local startTime=clock-dt*(1-fraction)
+                b.startTime=startTime
                 b.flying=startTime<0
                 startSums[i]=startSums[i]+startTime
                 startCounts[i]=startCounts[i]+1
@@ -66,7 +68,12 @@ for race=1,NUM_RACES do
             if b.checkpoint==5 and oldX< -150 and b.x>= -150 and b.z>0 then b.checkpoint=0; b.lap=b.lap+1 end
             if not b.finished and not b.flying and b.lap>=3 and oldX<0 and b.x>=0 and b.z>4 then
                 b.finished=true; count=count+1; finishes=finishes+1
-                if not firstTime then wins[i]=wins[i]+1; firstTime=clock end
+                if not firstTime then
+                    wins[i]+=1
+                    firstTime=clock
+                    local finishCrossing=clock-dt*b.x/math.max(.0000001,b.x-oldX)
+                    timeSum+=finishCrossing-b.startTime
+                end
             end
         end
         for i=1,5 do
@@ -96,6 +103,7 @@ for race=1,NUM_RACES do
         end
         if count==6 or (firstTime and clock-firstTime>45) then break end
     end
+    if firstTime then winners+=1 end
     sunk+=sinksThisRace
     if sinksThisRace>0 then sinkRaces+=1 end
     for i,b in ipairs(boats) do
@@ -109,7 +117,15 @@ for i=1,6 do
 end
 print(string.format("Sunk: %d boats in %d/%d races",sunk,sinkRaces,NUM_RACES))
 print(string.format("Finished: %d/%d; flying: %d",finishes,NUM_RACES*6,flights))
-print(string.format("Strong contacts per race: %.2f",contacts/NUM_RACES))
+if winners>0 then
+    local mean=timeSum/winners
+    print(string.format("Winner time (3 laps): %.3f s",mean))
+    if BASELINE_TIME then
+        print(string.format("Baseline c720e4b: %.3f s, change %+.2f%%",BASELINE_TIME,100*(mean/BASELINE_TIME-1)))
+    end
+end
+-- Count each pair per step when its normal collision impulse exceeds 0.35.
+print(string.format("Strong contacts per race: %.2f (pair impulse > 0.35 per step)",contacts/NUM_RACES))
 for i=1,6 do
     if racerCounts[i]>0 then print(string.format("Racer %d mean ST: %.3f",i,racerSums[i]/racerCounts[i])) end
 end
