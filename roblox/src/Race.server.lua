@@ -381,6 +381,7 @@ local function assignPlayers()
         if player then
             -- 名前はサーバーが決めて配る。Studio では画面写真にアカウント名が写らないよう伏せる
             boat.model:SetAttribute("Racer", RunService:IsStudio() and ("テストレーサー"..k) or player.DisplayName)
+            boat.model:SetAttribute("Class", nil)
             commands[player] = {throttle=0, steer=0, last=0, sequence=0, applied=0}
             player:SetAttribute("MinatoBoat", i)
             -- フリーレースは出走表で選んだチルトで出る
@@ -496,6 +497,7 @@ local function reset()
         b.baseMotor = racers[i].motor
         b.motor,b.gripF,b.thrustF,b.inWake = racers[i].motor+(diff.motor-RaceAI.DIFFS[2].motor),1,1,0
         b.model:SetAttribute("Racer",racers[i].racer.name)
+        b.model:SetAttribute("Class",racers[i].racer.cls)
         b.model:SetAttribute("IsAI",true)
         b.trail,b.trailTimer = {},0
         applyTilt(b,2)
@@ -519,6 +521,27 @@ local resultsSaved = false
 local aloneSince, finalRows = nil,nil
 local accumulator = 0
 local dt = RaceStep.DT
+-- 出走前のオープニング(見た目だけ。プレイヤー側の Opening.lua が見せる)。
+-- この間は艇を出走の位置に止めておき、-14秒から大時計が回る。最初のレースは長く、2走目からは短く
+local OPENING_FULL, OPENING_SHORT = 24, 10
+local openingShown = false
+local assignAt = -14
+-- 会場に1人だけの時は、その人の画面のオープニングが終わるまで -14秒の手前で待つ(読み込みで前半を見逃さないように)。
+-- 待つのは長くても「オープニングの長さ + 20秒」まで
+local openingHold = nil
+local function beginOpening()
+    local length = 0
+    if not (practiceMode or matchKind() == "ta") then
+        length = openingShown and OPENING_SHORT or OPENING_FULL
+    end
+    openingShown = openingShown or length > 0
+    elapsed = -14 - length
+    raceClock = elapsed
+    -- 出走表の名前を最初から出すため、艇への割り当てはオープニングの初めに行う
+    assignAt = elapsed
+    world:SetAttribute("Opening", length > 0 and length or nil)
+    openingHold = length > 0 and os.clock() + length + 20 or nil
+end
 -- タイムアタックを始める(大時計の -14秒から)。記録とゴーストも最初から
 -- 同じ会場で次のレースを始める(タイムアタックの「もう一度」、大会の予選2走目・優勝戦)
 local function startRoomRace()
@@ -526,8 +549,8 @@ local function startRoomRace()
     roomWaiting = false
     world:SetAttribute("RoomWaiting", false)
     world:SetAttribute("RankedPhase", "racing")
-    elapsed, finishTime, finishCount, assigned = -14, nil, 0, false
-    raceClock = elapsed
+    finishTime, finishCount, assigned = nil, 0, false
+    beginOpening()
     raceId = HttpService:GenerateGUID(false)
     resultsSaved, aloneSince, finalRows = false, nil, nil
 end
@@ -763,6 +786,15 @@ saveResults = function()
     end
 end
 roomRemote.OnServerEvent:Connect(function(player, action)
+    -- オープニングのスキップ: 会場に1人だけの時は、すぐ大時計の場面へ進める(大勢の時は各自の画面だけ飛ばす)
+    if action == "skipOpening" then
+        if assigned and elapsed < -14 and #Players:GetPlayers() == 1 then
+            elapsed = -14
+            raceClock = elapsed
+            openingHold = nil
+        end
+        return
+    end
     -- タイムアタック: 同じ会場でもう一度走る
     if action == "again" and (matchKind() == "ta" or matchKind() == "single") and roomWaiting and not taPending and not singlePending
         and world:GetAttribute("RankedPhase") == "finished" and (not isRoom or roomMembers[player]) then
@@ -800,8 +832,7 @@ roomRemote.OnServerEvent:Connect(function(player, action)
     if not isRoom or roomKind ~= "room" or action ~= "start" or not roomWaiting or not roomMembers[player] or player.UserId ~= roomHost then return end
     roomWaiting = false
     world:SetAttribute("RoomWaiting", false)
-    elapsed = -14
-    raceClock = elapsed
+    beginOpening()
 end)
 local function step()
     if roomWaiting and (matchKind() == "ta" or matchKind() == "single") then
@@ -869,20 +900,30 @@ local function step()
             -- 会場のモードが決まったので、AI の強さとイベントの水面を決め直す
             reset()
             roomWaiting = false
-            elapsed = -14
-            raceClock = elapsed
+            beginOpening()
             world:SetAttribute("RoomWaiting",false)
             world:SetAttribute("RankedPhase","racing")
         else return end
     end
     elapsed += dt
     raceClock = elapsed
-    if not assigned and elapsed >= -14 then
+    if not assigned and elapsed >= assignAt then
         assigned = true
         finalRows = nil
         assignPlayers()
     end
     if not assigned then return end
+    -- オープニング中は艇を止めておく
+    if elapsed < -14 then return end
+    if openingHold then
+        if os.clock() < openingHold and #Players:GetPlayers() == 1 then
+            elapsed = -14 - dt
+            raceClock = elapsed
+            return
+        end
+        openingHold = nil
+    end
+    if world:GetAttribute("Opening") then world:SetAttribute("Opening", nil) end
     for i,b in ipairs(boats) do
         if b.out then continue end
         local throttle, steer = 0,0
@@ -978,7 +1019,7 @@ local function step()
             return
         end
         if matchKind() == "gp" then return end
-        reset(); elapsed=-31; raceClock=elapsed; finishTime=nil; finishCount=0; assigned=false
+        reset(); elapsed=-31; raceClock=elapsed; finishTime=nil; finishCount=0; assigned=false; assignAt=-14
         raceId = HttpService:GenerateGUID(false)
         resultsSaved = false
         aloneSince = nil
@@ -1019,7 +1060,7 @@ RunService.Heartbeat:Connect(function(frame)
         end
         for _, player in ipairs(Players:GetPlayers()) do
             local command = commands[player]
-            snapshots:FireClient(player, states, assigned and not roomWaiting, command and command.applied or 0, raceNumber, elapsed, player:GetAttribute("MinatoBoat") or 0, finalRows, ghost)
+            snapshots:FireClient(player, states, assigned and not roomWaiting and elapsed >= -14, command and command.applied or 0, raceNumber, elapsed, player:GetAttribute("MinatoBoat") or 0, finalRows, ghost)
         end
     end
 end)

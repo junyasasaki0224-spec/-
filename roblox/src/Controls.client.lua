@@ -21,6 +21,7 @@ local outfit=require(ReplicatedStorage:WaitForChild("Outfit"))
 local STUDS_PER_METRE = 3.5
 local Wake = require(ReplicatedStorage:WaitForChild("BoatWake"))
 local quality=require(ReplicatedStorage:WaitForChild("DisplayQuality"))
+local Opening=require(ReplicatedStorage:WaitForChild("Opening"))
 local function applyQuality() quality.apply(player:GetAttribute("MinatoQuality")) end
 player:GetAttributeChangedSignal("MinatoQuality"):Connect(applyQuality)
 applyQuality()
@@ -554,7 +555,43 @@ local waterLoop, crowdLoop = Sfx.loop("water"), Sfx.loop("crowd")
 local lastBeep, fanfareRace, lastVelocity, lastHit = nil, nil, nil, 0
 local function held(key) return UserInputService:IsKeyDown(key) end
 local nextSend = 0
+-- オープニング(出走前の演出)。サーバーが Opening を出している間に1回だけ見せる
+local openingShow, openingRace = nil, nil
+local function startOpening(duration)
+    local boatsShown, goals, rows = {}, {}, {}
+    for i = 1, 6 do
+        local t, state = templates:FindFirstChild("Boat"..i), latest[i]
+        if t and state and not t:GetAttribute("Absent") then
+            local pos = Vector3.new(state[1], 0.5, state[2])*STUDS_PER_METRE
+            boatsShown[i] = renderBoats[i]
+            goals[i] = CFrame.lookAt(pos, pos+Vector3.new(math.cos(state[3]), 0, math.sin(state[3])))
+            renderBoats[i].Parent = workspace
+            table.insert(rows, {number = i, name = t:GetAttribute("Racer") or "", cls = t:GetAttribute("Class") or ""})
+        end
+    end
+    local name = world:GetAttribute("TournamentName") or world:GetAttribute("EventName") or "みなとグランプリ"
+    gui.Enabled = false
+    resultView:hide()
+    openingShow = Opening.play({
+        camera = camera, venue = world, boats = boatsShown, finalCFrames = goals, rows = rows,
+        title = name.."　第"..tostring(predictionRace).."R", duration = duration, gui = player.PlayerGui,
+    })
+    openingShow.Done:Connect(function()
+        openingShow = nil
+        gui.Enabled = true
+        -- 会場に1人だけなら、サーバーもすぐ大時計の場面へ進む
+        if (serverClock or 0) < -14 then roomRemote:FireServer("skipOpening") end
+    end)
+end
 RunService.RenderStepped:Connect(function(dt)
+    local openingClock = (serverClock or 0) + math.min(os.clock() - snapshotAt, 0.25)
+    -- 会場に1人なら、サーバーが待ってくれるので最初から全部見せる。大勢なら残りの時間だけ
+    local solo = #Players:GetPlayers() == 1
+    if not openingShow and world:GetAttribute("Opening") and openingRace ~= predictionRace and (solo or openingClock < -16.5) and next(latest) then
+        openingRace = predictionRace
+        startOpening(solo and world:GetAttribute("Opening") or -14 - openingClock)
+    end
+    if openingShow then return end
     if roundChanged then
         viewing.reset()
         controls.throttle,controls.steer=0,0
