@@ -31,5 +31,6 @@ return {
         water = {9.6, 12.6},
         crowd = {21.9, 27.9},
     },
+    openingLength = 24,
     musicLength = 36.923,
 }

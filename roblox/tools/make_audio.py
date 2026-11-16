@@ -454,6 +454,33 @@ def music():
 
 
 # ---------------- 書き出し ----------------
+def opening():
+    """Twelve bars in 4/4 at 120 BPM, with alternating bass and brass answers."""
+    mix = np.zeros((24 * SR, 2))
+    drum = np.random.default_rng(217)
+    def voice(start, duration, pitch, gain, pan, snare=False):
+        x = t(duration)
+        phase = 2 * np.pi * note(pitch) * x
+        wavelet = (np.sin(phase) + .32*np.sin(2*phase) + .2*np.sin(3*phase))
+        if snare:
+            wavelet = drum.standard_normal(len(x)) * np.exp(-28*x)
+        envelope = np.minimum(x/.018, 1) * np.minimum((duration-x)/.055, 1)
+        samples = wavelet * envelope * gain
+        pos = round(start*SR)
+        mix[pos:pos+len(x)] += samples[:,None] * np.array([1-pan,1+pan])
+    for bar, root in enumerate([50,55,52,57,54,55,59,57,55,52,57,50]):
+        for beat in range(4):
+            at = 2*bar+.5*beat
+            voice(at,.36,root-12+(7 if beat==2 else 0),.21,-.15)
+            third = 3 if root in (52,54,59) else 4
+            lead = ([7,12,third+12,14],[12,third+12,7,9],[14,7,12,third])[bar%3][beat]
+            voice(at,.28,root+lead,.24,.15)
+            voice(at+.31,.16,root+(third if beat%2 else 7),.13,-.28)
+            if beat%2:
+                voice(at,.14,50,.12,.2,True)
+    return mix * (.82/np.abs(mix).max())
+
+
 def write_wav(path, data):
     data = np.clip(data, -1, 1)
     pcm = (data * 32767).astype("<i2")
@@ -500,6 +527,7 @@ def main():
         at += 3 * d + 0.3
     write_wav(OUT / "minato-loops.wav", np.concatenate(parts))
 
+    write_wav(OUT / "minato-opening.wav", opening())
     bgm = music()
     write_wav(OUT / "minato-music.wav", bgm)
 
@@ -509,7 +537,7 @@ def main():
     lines += ["    },", "    loops = {"]
     for name, (a, b) in loop_regions.items():
         lines.append(f"        {name} = {{{a}, {b}}},")
-    lines += ["    },", f"    musicLength = {round(len(bgm) / SR, 3)},", "}", ""]
+    lines += ["    },", "    openingLength = 24,", f"    musicLength = {round(len(bgm) / SR, 3)},", "}", ""]
     (ROOT / "src" / "AudioSheet.lua").write_text("\n".join(lines), encoding="utf-8", newline="\n")
     for f in sorted(OUT.glob("minato-*.wav")):
         print(f.name, f"{f.stat().st_size / 1024:.0f} KB")
@@ -517,4 +545,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    if sys.argv[1:] == ["--opening-only"]:
+        OUT.mkdir(parents=True, exist_ok=True)
+        write_wav(OUT / "minato-opening.wav", opening())
+    else:
+        main()
