@@ -239,6 +239,7 @@ function Hud.new(gui)
         tick.Rotation = i * 30
         tick.BackgroundColor3 = Color3.fromRGB(17, 17, 17)
         tick.BorderSizePixel = 0
+        tick.ZIndex = 2
         tick.Parent = face
     end
     for _, i in ipairs({ 0, 3, 6, 9 }) do
@@ -249,34 +250,43 @@ function Hud.new(gui)
         n.Size = UDim2.fromOffset(16, 14)
         n.Position = UDim2.new(0.5, math.sin(a) * 24, 0.5, -math.cos(a) * 24)
         n.Text = tostring(i)
+        n.ZIndex = 2
     end
-    -- 0〜1秒の緑の範囲(真上から右へ30°)
-    local zone = Instance.new("Frame")
-    zone.Name = "GoodZone"
-    zone.AnchorPoint = Vector2.new(0.5, 1)
-    zone.Position = UDim2.fromScale(0.5, 0.5)
-    zone.Size = UDim2.fromOffset(4, 30)
-    zone.Rotation = 15
-    zone.BackgroundColor3 = Color3.fromRGB(40, 180, 90)
-    zone.BackgroundTransparency = 0.35
-    zone.BorderSizePixel = 0
-    zone.Parent = face
-    local hand = Instance.new("Frame")
-    hand.Name = "Hand"
-    hand.AnchorPoint = Vector2.new(0.5, 1)
-    hand.Position = UDim2.fromScale(0.5, 0.5)
-    hand.Size = UDim2.fromOffset(5, 36)
-    hand.BackgroundColor3 = Color3.fromRGB(244, 163, 0)
-    hand.BorderSizePixel = 0
-    hand.ZIndex = 2
-    hand.Parent = face
-    corner(hand, 3)
+    -- 中心から外へ伸びる棒。文字盤と同じ大きさの透明な枠ごと回すので、必ず中心の軸で回る
+    -- (Frame の Rotation は自分の真ん中で回るため、棒だけを回すと軸がずれる)
+    local function spoke(name, angle, length, width, color, z)
+        local holder = Instance.new("Frame")
+        holder.Name = name
+        holder.AnchorPoint = Vector2.new(0.5, 0.5)
+        holder.Position = UDim2.fromScale(0.5, 0.5)
+        holder.Size = UDim2.fromScale(1, 1)
+        holder.BackgroundTransparency = 1
+        holder.Rotation = angle
+        holder.ZIndex = z
+        holder.Parent = face
+        local bar = Instance.new("Frame")
+        bar.AnchorPoint = Vector2.new(0.5, 1)
+        bar.Position = UDim2.fromScale(0.5, 0.5)
+        bar.Size = UDim2.fromOffset(width, length)
+        bar.BackgroundColor3 = color
+        bar.BorderSizePixel = 0
+        bar.ZIndex = z
+        bar.Parent = holder
+        return holder, bar
+    end
+    -- 0〜1秒の緑の扇形(真上から右へ30°。ブラウザ版と同じ)。細い棒を少しずつ回して並べ、扇の形にする
+    for k = 0, 16 do
+        spoke("GoodZone" .. k, k * 30 / 16, 35, 3, Color3.fromRGB(166, 222, 184), 1)
+    end
+    -- 12秒針(0秒で真上)
+    local hand, needle = spoke("Hand", 0, 36, 5, Color3.fromRGB(244, 163, 0), 3)
+    corner(needle, 3)
     local pin = Instance.new("Frame")
     pin.AnchorPoint = Vector2.new(0.5, 0.5)
     pin.Position = UDim2.fromScale(0.5, 0.5)
     pin.Size = UDim2.fromOffset(12, 12)
     pin.BackgroundColor3 = Color3.fromRGB(34, 34, 34)
-    pin.ZIndex = 3
+    pin.ZIndex = 4
     pin.Parent = face
     corner(pin, 6)
     self.hand = hand
