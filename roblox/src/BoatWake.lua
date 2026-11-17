@@ -35,15 +35,25 @@ end
 function Wake.new(root)
     local stern = attachment(root,"PropWash",Vector3.new(0,-.75,4.8),Vector3.new(0,.85,1))
     local fan = attachment(root,"TurnSheet",Vector3.new(0,-.8,4.4),Vector3.new(1,.7,.55))
-    local jet = drops(stern,"SternDrops",NumberRange.new(9,17),Vector2.new(14,17))
+    local jet = drops(stern,"SternDrops",NumberRange.new(10,20),Vector2.new(16,18))
+    jet.Size = sequence(1.1,2.2,.9)
     local sheet = drops(fan,"SheetDrops",NumberRange.new(17,34),Vector2.new(30,20))
     -- ターンの外側へ飛ぶ扇形のしぶきは、大きく白く(ブラウザ版の見せ場)
-    sheet.Size = sequence(1.3,2.6,1.4)
+    sheet.Size = sequence(1.7,3.4,1.9)
     sheet.Lifetime = NumberRange.new(.6,1.05)
     local mist = drops(stern,"Spindrift",NumberRange.new(3,6),Vector2.new(30,20))
     mist.Orientation = Enum.ParticleOrientation.FacingCamera
     mist.Squash, mist.Size = NumberSequence.new(0), sequence(1,2.1,4.2)
     mist.Acceleration, mist.Transparency = Vector3.new(0,1,0), sequence(.78,.83,1)
+    -- 両舷から薄く横へ広がるしぶき(滑走中ずっと出る)
+    local sides = {}
+    for _, s in {-1,1} do
+        local a = attachment(root,"HullSpray",Vector3.new(s*1.9,-.9,.6),Vector3.new(s,.55,.35))
+        local p = drops(a,"HullDrops",NumberRange.new(6,13),Vector2.new(25,12))
+        p.Size = sequence(.6,1.2,.5)
+        p.Lifetime = NumberRange.new(.35,.6)
+        table.insert(sides,p)
+    end
     local crown = drops(stern,"ImpactCrown",NumberRange.new(16,36),Vector2.new(62,62))
     crown.EmissionDirection = Enum.NormalId.Top
     -- Separate upright attachment for the radial burst.
@@ -65,22 +75,23 @@ function Wake.new(root)
         trail.Parent = root
         table.insert(ribbons,trail)
     end
-    return {jet=jet, sheet=sheet, mist=mist, crown=crown, fan=fan, ribbons=ribbons}
+    return {jet=jet, sheet=sheet, mist=mist, crown=crown, fan=fan, ribbons=ribbons, sides=sides}
 end
 
 function Wake.update(e, race, out, age, speed, throttle, slip, side, distance, following, jump, scale)
     scale=scale or 1
     if e.race ~= race or jump then
         for _, trail in e.ribbons do trail:Clear() end
-        for _, p in {e.jet,e.sheet,e.mist,e.crown} do p:Clear() end
+        for _, p in {e.jet,e.sheet,e.mist,e.crown,e.sides[1],e.sides[2]} do p:Clear() end
         if e.race ~= race then e.sunk = false end
         e.race = race
     end
-    local jet, sheet, mist = 0,0,0
+    local jet, sheet, mist, hull = 0,0,0,0
     if out == "" then
-        jet, sheet, mist = Rules.rates(speed, throttle, slip, distance, following)
+        jet, sheet, mist, hull = Rules.rates(speed, throttle, slip, distance, following)
     end
     e.jet.Rate, e.sheet.Rate, e.mist.Rate = jet*scale, sheet*scale, scale>.35 and mist*scale or 0
+    for _, p in e.sides do p.Rate = hull*scale/2 end
     for _, trail in e.ribbons do trail.Enabled = out == "" and speed > 3 and not jump end
     if sheet > 0 and side ~= e.side then
         local origin = Vector3.new(side*.85,-.8,4.4)

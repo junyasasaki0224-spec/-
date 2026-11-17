@@ -556,6 +556,13 @@ local lastBeep, fanfareRace, lastVelocity, lastHit = nil, nil, nil, 0
 local function held(key) return UserInputService:IsKeyDown(key) end
 local nextSend = 0
 -- オープニング(出走前の演出)。サーバーが Opening を出している間に1回だけ見せる
+-- 追尾カメラ(ブラウザ版 src/gfx/camera.js の「追尾」と同じ距離・高さ・視野・傾き)
+local chase = {init=false, race=nil, dir=0, ti=0, pos=Vector3.zero, look=Vector3.zero, catch=0}
+local chaseBoat = nil
+local function angLerp(a, b, t)
+    local d = (b - a + math.pi) % (2*math.pi) - math.pi
+    return a + d*t
+end
 local openingShow, openingRace = nil, nil
 -- この会場で何走目か(出走表の「第N R」。サーバーの番号は待ち時間の区切りでも増えるので使わない)
 local openingCount = 0
@@ -580,6 +587,7 @@ local function startOpening(duration)
     })
     openingShow.Done:Connect(function()
         openingShow = nil
+        chase.init = false
         gui.Enabled = true
         -- 会場に1人だけなら、サーバーもすぐ大時計の場面へ進む
         if (serverClock or 0) < -14 then roomRemote:FireServer("skipOpening") end
@@ -659,6 +667,9 @@ RunService.RenderStepped:Connect(function(dt)
             local forwardSpeed = vx*math.cos(h)+vz*math.sin(h)
             local lateralSpeed = -vx*math.sin(h)+vz*math.cos(h)
             local turnIntensity = math.clamp(math.abs(w)*speed/12,0,1)
+            if i == math.max(boatNumber,1) then
+                chaseBoat = {h=h, w=w, vx=vx, vz=vz, speed=speed, ti=turnIntensity}
+            end
             local sprayIntensity = math.clamp(math.abs(lateralSpeed)/5+math.abs(w)*speed/28,0,1)
             local view = motion[i]
             local turnSign = w < 0 and -1 or 1
@@ -704,19 +715,51 @@ RunService.RenderStepped:Connect(function(dt)
     local visibleBoat = renderBoats[following and viewing.lane or math.max(boatNumber,1)]
     local cf = visibleBoat:GetPivot()
     camera.CameraType = Enum.CameraType.Scriptable
-    local forward = Vector3.new(cf.LookVector.X,0,cf.LookVector.Z).Unit
-    local desired = cf.Position - forward*(15*STUDS_PER_METRE) + Vector3.new(0,7*STUDS_PER_METRE,0)
-    local target = CFrame.lookAt(desired,cf.Position+forward*(15*STUDS_PER_METRE)+Vector3.new(0,STUDS_PER_METRE,0))
     if following then
         local pose,focus=viewing.camera(cf)
         camera.CFrame,camera.Focus=pose,focus
-    elseif not (watching and viewing.exited) then
-        camera.CFrame=camera.CFrame:Lerp(target,1-math.exp(-5*dt))
-        camera.Focus=CFrame.new(cf.Position)
-        -- 速いほど視野を少し広げて、スピード感を出す(70° → 最大 82°)
-        local own = predicted and math.sqrt(predicted.vx*predicted.vx+predicted.vz*predicted.vz) or 0
-        local fov = 70 + 12*math.clamp(own/22.6,0,1)^1.5
-        camera.FieldOfView += (fov-camera.FieldOfView)*math.min(1,dt*2.5)
+    elseif not (watching and viewing.exited) and chaseBoat then
+        -- 追尾カメラ: 艇の後ろ 6.4m・高さ 2.4m(速いと少し引き、ターン中は低く近く)。進む向きと艇の向きの間から見る
+        local b = chaseBoat
+        local f = math.clamp(b.speed/22.6,0,1)
+        if chase.race ~= predictionRace then chase.race = predictionRace; chase.init = false end
+        chase.ti += (b.ti-chase.ti)*math.min(1,dt*5)
+        local ti = chase.ti
+        local velA = b.speed > 3 and math.atan2(b.vz,b.vx) or b.h
+        local want = angLerp(velA,b.h,0.45)
+        if not chase.init then chase.dir = want end
+        chase.dir = angLerp(chase.dir,want,1-math.exp(-dt*4.2))
+        local cx, cz = math.cos(chase.dir), math.sin(chase.dir)
+        local bx, bz = cf.Position.X/STUDS_PER_METRE, cf.Position.Z/STUDS_PER_METRE
+        local back = 6.4 + 1.5*f - 1.5*ti
+        local up = 2.35 + 0.3*f - 0.75*ti
+        local wantPos = Vector3.new(bx-cx*back, 0.4+up, bz-cz*back)*STUDS_PER_METRE
+        local wantLook = Vector3.new(bx+cx*6, 1.4, bz+cz*6)*STUDS_PER_METRE
+        if not chase.init then
+            -- オープニングや前のカメラの位置から、1.5秒かけて追いつく
+            chase.init = true
+            chase.pos = camera.CFrame.Position
+            chase.look = camera.CFrame.Position + camera.CFrame.LookVector*(20*STUDS_PER_METRE)
+            chase.catch = 1.5
+        end
+        chase.catch = math.max(0, chase.catch-dt)
+        local slow = chase.catch > 0 and 1-chase.catch/1.5 or 1
+        chase.pos = chase.pos:Lerp(wantPos, 1-math.exp(-dt*(3+11*slow)))
+        chase.look = chase.look:Lerp(wantLook, 1-math.exp(-dt*(3+9*slow)))
+        -- 速さとターンで細かく揺らす
+        local s = (0.012*f*f + 0.02*ti)*STUDS_PER_METRE
+        local shake = Vector3.new((math.random()-0.5)*s, (math.random()-0.5)*s*1.4, (math.random()-0.5)*s)
+        local eye = chase.pos + shake
+        if eye.Y < 0.45*STUDS_PER_METRE then eye = Vector3.new(eye.X, 0.45*STUDS_PER_METRE, eye.Z) end
+        local roll = math.clamp(b.w*(0.035+0.05*f)*(1+ti),-0.2,0.2)
+        camera.CFrame = CFrame.lookAt(eye, chase.look) * CFrame.Angles(0,0,roll)
+        camera.Focus = CFrame.new(cf.Position)
+        -- 視野: 速いほど・ターンほど広く。縦長の画面では横が狭くなるので少し広げる
+        local fov = 60 + 13*f*f + 13*ti
+        local v = camera.ViewportSize
+        local aspect = v.Y > 0 and v.X/v.Y or 1.6
+        if aspect < 1.2 then fov *= 1 + 0.32*math.clamp((1.2-aspect)/0.7,0,1) end
+        camera.FieldOfView += (fov-camera.FieldOfView)*math.min(1,dt*5)
     end
     local time = world:GetAttribute("Time") or -8
     -- サーバーの時計を手元で進めた時刻(大時計と予想STを滑らかにする)
