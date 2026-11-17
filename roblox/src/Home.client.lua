@@ -887,6 +887,19 @@ function redraw()
             button(list,q[2],8+(i-1)*(bw+8),y,bw,function() request("settings","quality="..q[1]) end,m.quality==q[1])
         end
         y+=58
+        -- 押してオン・オフを切り替える設定(保存される。レースの中で使う)
+        local toggles={
+            {"assist","スタートの予想バー","練習・フリーレース・フレンド・タイムアタックで、全開のST(スタートの目安)を出します。シーズン・オンライン・大会では出ません。"},
+            {"shake","画面の揺れ","速い時の揺れと、ターンの傾きを止めます。酔いやすい時はオフにしてください。"},
+        }
+        for _,item in toggles do
+            local on=m[item[1]]~=false
+            y=row(item[2],item[3],y)
+            local bw=math.floor((width-24)/2)
+            button(list,"オン",8,y,bw,function() request("settings",item[1].."=on") end,on)
+            button(list,"オフ",8+bw+8,y,bw,function() request("settings",item[1].."=off") end,not on)
+            y+=58
+        end
     elseif page=="シーズンパス" then
         y=row("現在 "..m.tier.."段","経験値 "..m.xp.."　次の段まで "..((m.tier+1)*100-m.xp),y)
         for tier=m.tier+1,m.tier+10 do y=row(tier.."段",(tier*100).." XP　"..(tier%5==0 and 300 or 100).." コイン（メールに届きます）",y) end

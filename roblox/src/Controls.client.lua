@@ -817,7 +817,8 @@ RunService.RenderStepped:Connect(function(dt)
         chase.pos = chase.pos:Lerp(wantPos, 1-math.exp(-dt*14))
         chase.look = chase.look:Lerp(wantLook, 1-math.exp(-dt*12))
         -- 速さとターンで細かく揺らす
-        local s = (0.012*f*f + 0.02*ti)*STUDS_PER_METRE
+        local shakeOn = player:GetAttribute("MinatoShake") ~= false
+        local s = shakeOn and (0.012*f*f + 0.02*ti)*STUDS_PER_METRE or 0
         local shake = Vector3.new((math.random()-0.5)*s, (math.random()-0.5)*s*1.4, (math.random()-0.5)*s)
         local eye, look = chase.pos + shake, chase.look
         if chase.catch > 0 then
@@ -827,7 +828,7 @@ RunService.RenderStepped:Connect(function(dt)
             look = chase.fromLook:Lerp(chase.look, a)
         end
         if eye.Y < 0.45*STUDS_PER_METRE then eye = Vector3.new(eye.X, 0.45*STUDS_PER_METRE, eye.Z) end
-        local roll = math.clamp(b.w*(0.035+0.05*f)*(1+ti),-0.2,0.2)
+        local roll = shakeOn and math.clamp(b.w*(0.035+0.05*f)*(1+ti),-0.2,0.2) or 0
         camera.CFrame = CFrame.lookAt(eye, look) * CFrame.Angles(0,0,roll)
         camera.Focus = CFrame.new(cf.Position)
         -- 視野: 速いほど・ターンほど広く。縦長の画面では横が狭くなるので少し広げる
@@ -931,7 +932,10 @@ RunService.RenderStepped:Connect(function(dt)
     local pre = driving == true and not startTime and time >= -14
     -- 毎コマ計算し(ブラウザ版と同じ)、表示は少しだけならす
     -- 予想STのバーはスタート練習だけ(シーズン・オンライン・大会などは大時計だけ)
-    local assist = world:GetAttribute("Practice") == true
+    -- 予想STのバー: シーズン・オンライン・大会は出さない(対戦のイメージ)。
+    -- 練習・フリーレース・フレンド・タイムアタックは、本人の設定(オン・オフ)で決める
+    local barModes = {single=true, room=true, ta=true}
+    local assist = barModes[world:GetAttribute("MatchMode") or ""] == true and player:GetAttribute("MinatoAssist") ~= false
     if pre and assist then
         local st = predicted and predictStart(predicted, clock)
         if st and shownST and math.abs(st - shownST) < 0.3 then
