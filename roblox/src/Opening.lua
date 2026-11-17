@@ -58,6 +58,50 @@ local function letterbox(gui, top)
         {Position = UDim2.fromScale(0, top and 0.085 or 0.915)}):Play()
 end
 
+-- 待機行動の通り道(ブラウザ版 src/opening.js の buildRoute と同じ。単位は m、Roblox では 3.5倍)。
+-- ピットを出て、スタンド寄りを東へ → 右へUターン → バックストレッチを西へ → 右へUターン → 自分のコースへ。
+-- 桟橋・マーク・消波装置・ほかの艇と十分離れることをブラウザ版で確かめてある(tools/opening-test.mjs)
+local PIT_X, LANE_A, U1X, U1R = -261.8, 30, -110, 21
+local BACK_Z = LANE_A - 2*U1R
+local function buildRoute(i0, gx, gz, short)
+    local pts = {}
+    local function push(x, z) pts[#pts+1] = Vector2.new(x, z) end
+    if short then
+        -- 短い版(2走目から): 自分のコースの60m後ろからまっすぐ
+        push(gx-60, gz)
+        for x = gx-58, gx-0.01, 2 do push(x, gz) end
+        push(gx, gz)
+    else
+        local x0, x1, z0 = PIT_X, -150, -12 + i0*10
+        push(x0, z0)
+        for k = 1, 60 do local t = k/60; local e = t*t*(3-2*t); push(x0+(x1-x0)*t, z0+(LANE_A-z0)*e) end
+        for x = x1+2, U1X, 2 do push(x, LANE_A) end
+        local c1 = LANE_A - U1R
+        for k = 1, 48 do local a = math.pi/2 - math.pi*k/48; push(U1X+U1R*math.cos(a), c1+U1R*math.sin(a)) end
+        local u2x = i0 < 3 and -178 or -212
+        for x = U1X-2, u2x+0.01, -2 do push(x, BACK_Z) end
+        push(u2x, BACK_Z)
+        local r2 = (gz - BACK_Z)/2
+        local c2, n2 = BACK_Z + r2, math.max(16, math.ceil(math.pi*r2/2))
+        for k = 1, n2 do local a = -math.pi/2 - math.pi*k/n2; push(u2x+r2*math.cos(a), c2+r2*math.sin(a)) end
+        for x = u2x+2, gx-0.01, 2 do push(x, gz) end
+        push(gx, gz)
+    end
+    local cum = {0}
+    for k = 2, #pts do cum[k] = cum[k-1] + (pts[k]-pts[k-1]).Magnitude end
+    return {pts=pts, cum=cum, len=cum[#cum]}
+end
+-- 道のり s の位置(m)
+local function routeAt(route, s)
+    local pts, cum = route.pts, route.cum
+    if s <= 0 then return pts[1] end
+    if s >= route.len then return pts[#pts] end
+    local lo, hi = 1, #cum
+    while hi - lo > 1 do local m = (lo+hi)//2; if cum[m] <= s then lo = m else hi = m end end
+    local f = (s - cum[lo]) / math.max(cum[hi]-cum[lo], 1e-6)
+    return pts[lo]:Lerp(pts[hi], f)
+end
+
 function Opening.play(options)
     local camera = options.camera
     local original,focus = camera.CFrame,camera.Focus
@@ -156,12 +200,6 @@ function Opening.play(options)
     ring.Parent = skip
     local cardShown, cardHidden = false, false
     local shownRows = 0
-    local pit
-    if options.venue then
-        for _,part in options.venue:GetDescendants() do
-            if part:IsA("BasePart") and part.Name:match("^Pit__Blue__") then pit=part.Position;break end
-        end
-    end
     local spray=Instance.new("Folder")
     spray.Name="MinatoOpeningSpray"
     spray.Parent=workspace
@@ -170,10 +208,12 @@ function Opening.play(options)
         local boat,goal=options.boats[i],options.finalCFrames[i]
         if boat and goal then
             local last=goal.Position
-            local dir=goal.LookVector
-            local start=pit and Vector3.new(pit.X+8,last.Y,pit.Z+(i-3.5)*25)
-                or last-dir*210
-            paths[i]={boat=boat,goal=goal,start=start,a=start+dir*80+goal.RightVector*28,b=last-dir*64}
+            local route=buildRoute(i-1,last.X/3.5,last.Z/3.5,(options.duration or 24)<15)
+            local first=routeAt(route,0)
+            local start=Vector3.new(first.X*3.5,last.Y-.42,first.Y*3.5)
+            local second=routeAt(route,2)
+            -- 止まっている時と同じく、艇を少し水に沈める(レースの表示と同じ 0.12m)
+            paths[i]={boat=boat,goal=goal-Vector3.new(0,.42,0),start=start,route=route,y=last.Y-.42}
             local anchor=Instance.new("Part")
             anchor.Anchored=true
             anchor.CanCollide,anchor.CanTouch,anchor.CanQuery=false,false,false
@@ -183,7 +223,7 @@ function Opening.play(options)
             paths[i].wake=Wake.new(anchor)
             paths[i].last=start
             leader=leader or i
-            boat:PivotTo(CFrame.lookAt(start,paths[i].a))
+            boat:PivotTo(CFrame.lookAt(start,Vector3.new(second.X*3.5,last.Y-.42,second.Y*3.5)))
         end
     end
     local links={}
@@ -253,12 +293,18 @@ function Opening.play(options)
         end
         caption.Text = t < .3 and "" or (t < .65 and "ピット離れ" or "待機行動")
         for i,p in paths do
-            local delay=.28+(i-1)*.034
-            local u=math.clamp((t-delay)/(.97-delay),0,1)
-            u=u*u*(3-2*u)
-            local v=1-u
-            local pos=p.start*v^3+p.a*(3*v*v*u)+p.b*(3*v*u*u)+p.goal.Position*u^3
-            local heading=(p.a-p.start)*v*v+(p.b-p.a)*(2*v*u)+(p.goal.Position-p.b)*u*u
+            -- 1号艇から順にピットを出る。出だしと止まる所だけゆっくり(速さの山が高くなりすぎないよう、直線と半々)
+            -- ブラウザ版と同じ決まり: どの艇も同じ時間をかけて走り、出るのも着くのも1号艇から少しずつずらす
+            -- (着く時刻をそろえると、後の艇ほど速くなって前の艇に追いついて重なる)
+            local delay=.133+(i-1)*.0217
+            local u=math.clamp((t-delay)/.729,0,1)
+            u=.5*u+.5*u*u*(3-2*u)
+            local s=u*p.route.len
+            local here=routeAt(p.route,s)
+            local ahead=routeAt(p.route,math.min(s+1.5,p.route.len))
+            local behind=routeAt(p.route,math.max(s-1.5,0))
+            local pos=Vector3.new(here.X*3.5,p.y,here.Y*3.5)
+            local heading=Vector3.new(ahead.X-behind.X,0,ahead.Y-behind.Y)
             -- 終わり近くで、進む向きから待機の向きへ少しずつ回す(最後に向きが飛ばないように)
             local k=math.clamp((u-.8)/.2,0,1)
             k=k*k*(3-2*k)

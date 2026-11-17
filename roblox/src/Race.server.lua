@@ -486,6 +486,7 @@ local function reset()
         b.x,b.z,b.h,b.vx,b.vz,b.w = startX,startZ,0,0,0,0
         b.laneZ = b.z
         b.throttle,b.steer,b.lap,b.checkpoint,b.finished,b.speed = 0,0,0,0,false,0
+        b.passed = 0
         b.started,b.flying,b.place,b.startTime = false,false,0,nil
         b.out,b.outAt,b.sunk = nil,nil,false
         b.model:SetAttribute("Skin",nil)
@@ -1039,7 +1040,7 @@ RunService.Heartbeat:Connect(function(frame)
     while accumulator >= dt do step(); accumulator -= dt end
     for i,b in ipairs(boats) do
         b.model:SetAttribute("Speed",math.floor(b.speed*3.6+0.5))
-        b.model:SetAttribute("Lap",math.min(b.lap+1,3))
+        b.model:SetAttribute("Lap",math.min((b.passed or 0)+1,3))
         b.model:SetAttribute("Finished",b.finished)
         b.model:SetAttribute("Flying",b.flying)
         b.model:SetAttribute("Place",b.place)

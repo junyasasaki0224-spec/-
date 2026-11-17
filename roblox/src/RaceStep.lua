@@ -79,6 +79,11 @@ function Step.advance(b, throttle, steer, elapsed, dt)
         b.checkpoint = 0
         b.lap += 1
     end
+    -- 表示の周回は、ゴールの線(スタートライン)を通った時に数える(ブラウザ版と同じ)。
+    -- 2マークを回った時点の b.lap は順番の確認用で、表示には使わない
+    if previousX < 0 and b.x >= 0 and b.z > 4 and (b.passed or 0) < b.lap then
+        b.passed = b.lap
+    end
     if not b.finished and not b.flying and b.lap >= 3 and previousX < 0 and b.x >= 0 and b.z > 4 then
         b.finished = true
         b.finishTime = math.max(0.001, elapsed - (b.startTime or 0))
@@ -91,7 +96,7 @@ end
 function Step.soloBoat(lane, tilt)
     local x, z = Step.startPosition(lane)
     local b = {
-        x = x, z = z, h = 0, vx = 0, vz = 0, w = 0, throttle = 0, steer = 0, lap = 0, checkpoint = 0,
+        x = x, z = z, h = 0, vx = 0, vz = 0, w = 0, throttle = 0, steer = 0, lap = 0, passed = 0, checkpoint = 0,
         finished = false, speed = 0, started = false, flying = false, place = 0, laneZ = z,
         windX = 0, windZ = 0, motor = 1, gripF = 1, thrustF = 1, inWake = 0, trail = {}, trailTimer = 0,
     }

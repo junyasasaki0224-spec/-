@@ -571,10 +571,11 @@ UserInputService.WindowFocusReleased:Connect(function()
 end)
 if UserInputService.TouchEnabled then helpText = "左のレバーでハンドル　右でスロットル" end
 -- スタートの予想(今から全開で走ったら、何秒でスタートラインに着くか)。0.1秒ごとに計算する
-local predictedST, stTimer = nil, 0
+local predictedST, shownST = nil, nil
+local smoothClock = nil
 local function predictStart(state, clock)
-    if not state or state.x >= 0 then return nil end
-    local b = {x=state.x,z=state.z,h=state.h,vx=state.vx,vz=state.vz,w=state.w,throttle=state.throttle,steer=state.steer,
+    if not state or state.x + predOff.x >= 0 then return nil end
+    local b = {x=state.x+predOff.x,z=state.z+predOff.z,h=state.h,vx=state.vx,vz=state.vz,w=state.w,throttle=state.throttle,steer=state.steer,
         accF=state.accF,topF=state.topF,gripSet=state.gripSet,gripF=state.gripF,thrustF=state.thrustF,windX=state.windX,windZ=state.windZ,motor=state.motor}
     local t, step = 0, 1/30
     while t < 20 do
@@ -730,6 +731,17 @@ RunService.RenderStepped:Connect(function(dt)
             local plane = math.clamp((speed-2)/8,0,1)
             local pitch = 0.01+0.07*plane-0.028*math.clamp(speed/22.6,0,1)+0.05*turnIntensity
             view.pitch += (pitch-view.pitch)*(1-math.exp(-5*dt))
+            -- 浮き沈み(ブラウザ版 boat.js と同じ): 止まっている時は少し沈み、滑走で浮く。艇底が波を叩く上下動と、ゆるい揺れ
+            local f = math.clamp(speed/22.6,0,1)
+            view.poundT = (view.poundT or 0.5) - dt*(1.5+7*f)
+            if view.poundT <= 0 then
+                view.poundT = 0.5 + math.random()
+                view.poundV = (view.poundV or 0) + (0.25+math.random()*0.5)*f
+            end
+            view.poundV = (view.poundV or 0) + (-(view.poundY or 0)*90 - (view.poundV or 0)*9)*dt
+            view.poundY = (view.poundY or 0) + view.poundV*dt
+            local bob = math.sin(os.clock()*1.7 + i)*0.02*(1-f)
+            local lift = -0.12 + bob + math.max(view.poundY,-0.05) + 0.085*plane
             if wakes[i].engine then
                 -- 回転数は速さとスロットルで上がる。自分の艇は少し大きく
                 local ratio = math.clamp(speed/22.6,0,1)
@@ -738,9 +750,9 @@ RunService.RenderStepped:Connect(function(dt)
                 wakes[i].engine.PlaybackSpeed = 0.62 + 0.62*ratio + 0.2*th
             end
             local sink=math.clamp(sinkTime/1.2,0,1)
-            local pos = Vector3.new(x,0.5-0.3*sink-math.max(0,sinkTime-2.5)*0.26,z)*STUDS_PER_METRE
+            local pos = Vector3.new(x,0.5+lift-0.3*sink-math.max(0,sinkTime-2.5)*0.26,z)*STUDS_PER_METRE
             local destination = CFrame.lookAt(pos,pos+Vector3.new(math.cos(h),0,math.sin(h)))
-                * CFrame.Angles(0,-view.yaw,0) * CFrame.Angles(view.pitch+0.4*sink,0,view.roll+1.2*sink)
+                * CFrame.Angles(0,-view.yaw,0) * CFrame.Angles(view.pitch+view.poundY*0.35+0.4*sink,0,view.roll+1.2*sink)
             local current = visual:GetPivot()
             if (current.Position-destination.Position).Magnitude > 30*STUDS_PER_METRE then visual:PivotTo(destination)
             else visual:PivotTo(current:Lerp(destination,1-math.exp(-12*dt))) end
@@ -821,7 +833,16 @@ RunService.RenderStepped:Connect(function(dt)
     end
     local time = world:GetAttribute("Time") or -8
     -- サーバーの時計を手元で進めた時刻(大時計と予想STを滑らかにする)
-    local clock = (serverClock or time) + math.min(os.clock() - snapshotAt, 0.25)
+    -- サーバーの時計は1秒に15回、通信の遅れつきで届く。手元ではコマごとに進め、届いた時計へ少しずつ寄せる
+    -- (届くたびに大時計や予想STの印が前後に跳ねないように)
+    local rawClock = (serverClock or time) + math.min(os.clock() - snapshotAt, 0.25)
+    if not smoothClock or math.abs(rawClock - smoothClock) > 0.5 then
+        smoothClock = rawClock
+    else
+        smoothClock += dt
+        smoothClock += (rawClock - smoothClock)*math.min(1, dt*2)
+    end
+    local clock = smoothClock
     updateVenue(clock, os.clock(), world:GetAttribute("Wind") or 0)
     -- 表示する艇: 自分の艇、観戦中は見ている艇
     local shownLane = (watching and not viewing.exited and viewing.lane) or (boatNumber > 0 and boatNumber) or nil
@@ -902,12 +923,16 @@ RunService.RenderStepped:Connect(function(dt)
     else lapText = string.format("%d / 3 周", lap) end
     -- 予想ST(自分が走っていて、まだスタートしていない時だけ)
     local pre = driving == true and not startTime and time >= -14
-    stTimer -= dt
-    if pre and stTimer <= 0 then
-        stTimer = 0.1
+    -- 毎コマ計算し(ブラウザ版と同じ)、表示は少しだけならす
+    if pre then
         local st = predicted and predictStart(predicted, clock)
-        predictedST = st
-    elseif not pre then predictedST = nil end
+        if st and shownST and math.abs(st - shownST) < 0.3 then
+            shownST += (st - shownST)*math.min(1, dt*18)
+        else
+            shownST = st
+        end
+        predictedST = shownST
+    else predictedST, shownST = nil, nil end
     -- 順位表(結果や出走表を出している時は隠す)
     local order = nil
     if not result.Visible then
