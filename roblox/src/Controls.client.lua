@@ -84,8 +84,43 @@ ghostOutline.OutlineColor = Color3.fromRGB(150,225,255)
 ghostOutline.OutlineTransparency = 0.1
 ghostOutline.DepthMode = Enum.HighlightDepthMode.Occluded
 ghostOutline.Parent = ghostVisual
+-- ほかの艇(と予測していない時の自分の艇)は、位置が1秒に15回しか届かない。届いた状態から手元でも同じ物理で進め、
+-- 次に届いた位置とのずれは表示の上で少しずつ消す(届くたびに速さが揺れて、かくついて見えるのを防ぐ)
+local remoteSims = {}
+local predOff = {x=0, z=0, h=0}
+local function wrapAngle(a) return (a + math.pi) % (2*math.pi) - math.pi end
+local function syncRemote(states, raceNumber)
+    for i, state in states do
+        local old = remoteSims[i]
+        local sim = reconcile(state, {}, 0, stepBoat)
+        local off = {x=0, z=0, h=0}
+        if old and old.race == raceNumber and old.out == "" and state[17] == "" then
+            off.x = old.sim.x + old.off.x - sim.x
+            off.z = old.sim.z + old.off.z - sim.z
+            off.h = wrapAngle(old.sim.h + old.off.h - sim.h)
+            -- 大きく離れた時(衝突で弾かれた・場所の入れ替え)はそのまま新しい位置へ
+            if off.x*off.x + off.z*off.z > 36 then off = {x=0, z=0, h=0} end
+        end
+        remoteSims[i] = {sim=sim, off=off, race=raceNumber, out=state[17], throttle=state[7], steer=state[8], acc=0}
+    end
+end
+local function advanceRemote(dt, moving)
+    local fade = math.exp(-dt*7)
+    for _, r in remoteSims do
+        if moving and r.out == "" then
+            r.acc = math.min(r.acc + dt, 0.25)
+            while r.acc >= 1/120 do
+                stepBoat(r.sim, r.throttle, r.steer, 1/120)
+                r.acc -= 1/120
+            end
+        end
+        r.off.x *= fade; r.off.z *= fade; r.off.h *= fade
+    end
+    predOff.x *= fade; predOff.z *= fade; predOff.h *= fade
+end
 snapshotRemote.OnClientEvent:Connect(function(states, active, acknowledged, raceNumber, clock, seat, results, ghost)
     if predictionRace ~= raceNumber then roundChanged=true end
+    syncRemote(states, raceNumber)
     serverClock,seatNumber,resultRows=clock,seat,results
     snapshotAt = os.clock()
     ghostState = type(ghost) == "table" and ghost or nil
@@ -103,7 +138,17 @@ snapshotRemote.OnClientEvent:Connect(function(states, active, acknowledged, race
         predictionRace = raceNumber
         predictionAccumulator = 0
     end
+    local before = predicted
     predicted,pendingSteps = reconcile(state,pendingSteps,acknowledged,stepBoat)
+    -- 予測の直し分も、表示の上で少しずつ消す
+    if before then
+        local dx, dz = before.x + predOff.x - predicted.x, before.z + predOff.z - predicted.z
+        if dx*dx + dz*dz < 9 then
+            predOff = {x=dx, z=dz, h=wrapAngle(before.h + predOff.h - predicted.h)}
+        else
+            predOff = {x=0, z=0, h=0}
+        end
+    end
 end)
 
 local gui = Instance.new("ScreenGui")
@@ -557,7 +602,7 @@ local function held(key) return UserInputService:IsKeyDown(key) end
 local nextSend = 0
 -- オープニング(出走前の演出)。サーバーが Opening を出している間に1回だけ見せる
 -- 追尾カメラ(ブラウザ版 src/gfx/camera.js の「追尾」と同じ距離・高さ・視野・傾き)
-local chase = {init=false, race=nil, dir=0, ti=0, pos=Vector3.zero, look=Vector3.zero, catch=0}
+local chase = {init=false, race=nil, dir=0, ti=0, pos=Vector3.zero, look=Vector3.zero, catch=0, fromPos=Vector3.zero, fromLook=Vector3.zero}
 local chaseBoat = nil
 local function angLerp(a, b, t)
     local d = (b - a + math.pi) % (2*math.pi) - math.pi
@@ -651,12 +696,19 @@ RunService.RenderStepped:Connect(function(dt)
             predictionAccumulator -= 1/120
         end
     end
+    -- 届いた艇の状態を手元で進める(大時計の -14秒より前は、サーバーも艇を止めている)
+    advanceRemote(dt, (serverClock or -100) >= -14)
     for i, visual in ipairs(renderBoats) do
         local state = latest[i]
         if state then
             local x,z,h,w,vx,vz,th = state[1],state[2],state[3],state[6],state[4],state[5],state[7]
+            local r = remoteSims[i]
+            if r and r.out == "" then
+                x,z,h = r.sim.x+r.off.x, r.sim.z+r.off.z, r.sim.h+r.off.h
+                w,vx,vz,th = r.sim.w, r.sim.vx, r.sim.vz, r.sim.throttle
+            end
             if i == boatNumber and predicted then
-                x,z,h,w,vx,vz,th = predicted.x,predicted.z,predicted.h,predicted.w,predicted.vx,predicted.vz,predicted.throttle
+                x,z,h,w,vx,vz,th = predicted.x+predOff.x,predicted.z+predOff.z,predicted.h+predOff.h,predicted.w,predicted.vx,predicted.vz,predicted.throttle
             end
             local out=state[17]
             local sinkTime=out=="沈" and math.max(0,serverClock-state[18]) or 0
@@ -736,23 +788,29 @@ RunService.RenderStepped:Connect(function(dt)
         local wantPos = Vector3.new(bx-cx*back, 0.4+up, bz-cz*back)*STUDS_PER_METRE
         local wantLook = Vector3.new(bx+cx*6, 1.4, bz+cz*6)*STUDS_PER_METRE
         if not chase.init then
-            -- オープニングや前のカメラの位置から、1.5秒かけて追いつく
+            -- オープニングや前のカメラの位置から、1.5秒かけてなめらかに(ゆっくり動き出して、ゆっくり止まる)追いつく
             chase.init = true
-            chase.pos = camera.CFrame.Position
-            chase.look = camera.CFrame.Position + camera.CFrame.LookVector*(20*STUDS_PER_METRE)
+            chase.fromPos = camera.CFrame.Position
+            chase.fromLook = camera.Focus.Position
+            chase.pos, chase.look = wantPos, wantLook
             chase.catch = 1.5
         end
         chase.catch = math.max(0, chase.catch-dt)
-        local slow = chase.catch > 0 and 1-chase.catch/1.5 or 1
-        chase.pos = chase.pos:Lerp(wantPos, 1-math.exp(-dt*(3+11*slow)))
-        chase.look = chase.look:Lerp(wantLook, 1-math.exp(-dt*(3+9*slow)))
+        chase.pos = chase.pos:Lerp(wantPos, 1-math.exp(-dt*14))
+        chase.look = chase.look:Lerp(wantLook, 1-math.exp(-dt*12))
         -- 速さとターンで細かく揺らす
         local s = (0.012*f*f + 0.02*ti)*STUDS_PER_METRE
         local shake = Vector3.new((math.random()-0.5)*s, (math.random()-0.5)*s*1.4, (math.random()-0.5)*s)
-        local eye = chase.pos + shake
+        local eye, look = chase.pos + shake, chase.look
+        if chase.catch > 0 then
+            local a = 1 - chase.catch/1.5
+            a = a*a*(3-2*a)
+            eye = chase.fromPos:Lerp(chase.pos, a)
+            look = chase.fromLook:Lerp(chase.look, a)
+        end
         if eye.Y < 0.45*STUDS_PER_METRE then eye = Vector3.new(eye.X, 0.45*STUDS_PER_METRE, eye.Z) end
         local roll = math.clamp(b.w*(0.035+0.05*f)*(1+ti),-0.2,0.2)
-        camera.CFrame = CFrame.lookAt(eye, chase.look) * CFrame.Angles(0,0,roll)
+        camera.CFrame = CFrame.lookAt(eye, look) * CFrame.Angles(0,0,roll)
         camera.Focus = CFrame.new(cf.Position)
         -- 視野: 速いほど・ターンほど広く。縦長の画面では横が狭くなるので少し広げる
         local fov = 60 + 13*f*f + 13*ti

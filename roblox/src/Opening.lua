@@ -198,25 +198,32 @@ function Opening.play(options)
         fitLink:Disconnect()
         for _,p in paths do if p.boat.Parent then p.boat:PivotTo(p.goal) end end
         -- カメラは最後の場面のまま渡す(呼び出し側がそこから滑らかに戻す)。途中で消した時だけ元へ
-        if not reachedEnd then camera.CFrame,camera.Focus=original,focus end
-        camera.CameraType=Enum.CameraType.Custom
+        -- 最後まで見た・スキップした時は、レースのカメラ(スクリプトで動かす)がそのまま引き継ぐ。
+        -- 標準のカメラへ戻すと、その1コマだけカメラが飛ぶ
+        if not reachedEnd then
+            camera.CFrame,camera.Focus=original,focus
+            camera.CameraType=Enum.CameraType.Custom
+        end
         Sfx.opening(false)
         spray:Destroy()
         gui:Destroy()
         event:Fire()
         task.delay(.2,function() event:Destroy() end)
     end
-    show.skip,show.destroy=finish,finish
-    table.insert(links,skip.Activated:Connect(finish))
+    -- スキップは今の場面から、レースのカメラへなめらかにつなぐ(元のカメラへは戻さない)
+    local function skipNow() reachedEnd=true; finish() end
+    show.skip,show.destroy=skipNow,finish
+    table.insert(links,skip.Activated:Connect(skipNow))
     table.insert(links,Input.InputBegan:Connect(function(key)
         if key.UserInputType==Enum.UserInputType.Touch or key.UserInputType==Enum.UserInputType.MouseButton1
-            or key.KeyCode==Enum.KeyCode.Return or key.KeyCode==Enum.KeyCode.KeypadEnter then finish() end
+            or key.KeyCode==Enum.KeyCode.Return or key.KeyCode==Enum.KeyCode.KeypadEnter then skipNow() end
     end))
     camera.CameraType=Enum.CameraType.Scriptable
     local duration=math.max(.01,options.duration or 24)
     local started=os.clock()
     Sfx.opening(true)
-    table.insert(links,Run.Heartbeat:Connect(function(dt)
+    -- 画面を描く直前に動かす(艇とカメラが同じ瞬間の位置になり、かくつかない)
+    table.insert(links,Run.RenderStepped:Connect(function(dt)
         local t=(os.clock()-started)/duration
         if t>=1 then reachedEnd=true;finish();return end
         -- 出走表のカード: 初めに滑り込み、1行ずつ出して、ピット離れの前に左へ下がる
@@ -252,7 +259,11 @@ function Opening.play(options)
             local v=1-u
             local pos=p.start*v^3+p.a*(3*v*v*u)+p.b*(3*v*u*u)+p.goal.Position*u^3
             local heading=(p.a-p.start)*v*v+(p.b-p.a)*(2*v*u)+(p.goal.Position-p.b)*u*u
-            local pose=u==1 and p.goal or CFrame.lookAt(pos,pos+heading)
+            -- 終わり近くで、進む向きから待機の向きへ少しずつ回す(最後に向きが飛ばないように)
+            local k=math.clamp((u-.8)/.2,0,1)
+            k=k*k*(3-2*k)
+            local turn=heading.Magnitude>1e-4 and CFrame.lookAt(pos,pos+heading).Rotation or p.goal.Rotation
+            local pose=CFrame.new(pos)*turn:Lerp(p.goal.Rotation,k)
             if p.boat.Parent then p.boat:PivotTo(pose) end
             p.anchor.CFrame=pose
             local speed=(pos-p.last).Magnitude/(3.5*math.max(dt,.001))
