@@ -750,7 +750,8 @@ RunService.RenderStepped:Connect(function(dt)
                 wakes[i].engine.PlaybackSpeed = 0.62 + 0.62*ratio + 0.2*th
             end
             local sink=math.clamp(sinkTime/1.2,0,1)
-            local pos = Vector3.new(x,0.5+lift-0.3*sink-math.max(0,sinkTime-2.5)*0.26,z)*STUDS_PER_METRE
+            -- 0.16m: 艇の基準点から艇底まで約0.14m。止まると艇底が約0.1m水に入り、モーターの足は水の中
+            local pos = Vector3.new(x,0.16+lift-0.3*sink-math.max(0,sinkTime-2.5)*0.26,z)*STUDS_PER_METRE
             local destination = CFrame.lookAt(pos,pos+Vector3.new(math.cos(h),0,math.sin(h)))
                 * CFrame.Angles(0,-view.yaw,0) * CFrame.Angles(view.pitch+view.poundY*0.35+0.4*sink,0,view.roll+1.2*sink)
             local current = visual:GetPivot()
@@ -767,7 +768,7 @@ RunService.RenderStepped:Connect(function(dt)
     -- ゴースト(タイムアタックの世界1位の走り)
     if ghostState and not ghostState[5] then
         if ghostVisual.Parent ~= workspace then ghostVisual.Parent = workspace end
-        local pos = Vector3.new(ghostState[1],0.5,ghostState[2])*STUDS_PER_METRE
+        local pos = Vector3.new(ghostState[1],0.1,ghostState[2])*STUDS_PER_METRE
         local destination = CFrame.lookAt(pos,pos+Vector3.new(math.cos(ghostState[3]),0,math.sin(ghostState[3])))
         local current = ghostVisual:GetPivot()
         if (current.Position-destination.Position).Magnitude > 30*STUDS_PER_METRE then ghostVisual:PivotTo(destination)
@@ -797,8 +798,8 @@ RunService.RenderStepped:Connect(function(dt)
         local bx, bz = cf.Position.X/STUDS_PER_METRE, cf.Position.Z/STUDS_PER_METRE
         local back = 6.4 + 1.5*f - 1.5*ti
         local up = 2.35 + 0.3*f - 0.75*ti
-        local wantPos = Vector3.new(bx-cx*back, 0.4+up, bz-cz*back)*STUDS_PER_METRE
-        local wantLook = Vector3.new(bx+cx*6, 1.4, bz+cz*6)*STUDS_PER_METRE
+        local wantPos = Vector3.new(bx-cx*back, up, bz-cz*back)*STUDS_PER_METRE
+        local wantLook = Vector3.new(bx+cx*6, 1.0, bz+cz*6)*STUDS_PER_METRE
         if not chase.init then
             -- オープニングや前のカメラの位置から、1.5秒かけてなめらかに(ゆっくり動き出して、ゆっくり止まる)追いつく
             chase.init = true

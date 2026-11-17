@@ -33,8 +33,8 @@ local function drops(anchor, name, speed, spread)
 end
 
 function Wake.new(root)
-    local stern = attachment(root,"PropWash",Vector3.new(0,-.75,4.8),Vector3.new(0,.85,1))
-    local fan = attachment(root,"TurnSheet",Vector3.new(0,-.8,4.4),Vector3.new(1,.7,.55))
+    local stern = attachment(root,"PropWash",Vector3.new(0,-.15,4.8),Vector3.new(0,.85,1))
+    local fan = attachment(root,"TurnSheet",Vector3.new(0,-.15,4.4),Vector3.new(1,.7,.55))
     local jet = drops(stern,"SternDrops",NumberRange.new(10,20),Vector2.new(16,18))
     jet.Size = sequence(1.1,2.2,.9)
     local sheet = drops(fan,"SheetDrops",NumberRange.new(17,34),Vector2.new(30,20))
@@ -48,7 +48,7 @@ function Wake.new(root)
     -- 両舷から薄く横へ広がるしぶき(滑走中ずっと出る)
     local sides = {}
     for _, s in {-1,1} do
-        local a = attachment(root,"HullSpray",Vector3.new(s*1.9,-.9,.6),Vector3.new(s,.55,.35))
+        local a = attachment(root,"HullSpray",Vector3.new(s*1.9,-.15,.6),Vector3.new(s,.55,.35))
         local p = drops(a,"HullDrops",NumberRange.new(6,13),Vector2.new(25,12))
         p.Size = sequence(.6,1.2,.5)
         p.Lifetime = NumberRange.new(.35,.6)
@@ -57,13 +57,13 @@ function Wake.new(root)
     local crown = drops(stern,"ImpactCrown",NumberRange.new(16,36),Vector2.new(62,62))
     crown.EmissionDirection = Enum.NormalId.Top
     -- Separate upright attachment for the radial burst.
-    crown.Parent = attachment(root,"Impact",Vector3.new(0,-.7,0),Vector3.new(0,0,-1))
+    crown.Parent = attachment(root,"Impact",Vector3.new(0,-.15,0),Vector3.new(0,0,-1))
     local ribbons = {}
     for _, side in {-1,1} do
         local trail = Instance.new("Trail")
         trail.Name = "PropFoam"
-        trail.Attachment0 = attachment(root,"FoamInner",Vector3.new(side*.14,-1.15,4.7),Vector3.zAxis)
-        trail.Attachment1 = attachment(root,"FoamOuter",Vector3.new(side*2.6,-1.15,4.8),Vector3.zAxis)
+        trail.Attachment0 = attachment(root,"FoamInner",Vector3.new(side*.14,-.05,4.7),Vector3.zAxis)
+        trail.Attachment1 = attachment(root,"FoamOuter",Vector3.new(side*2.6,-.05,4.8),Vector3.zAxis)
         trail.Texture = "rbxasset://textures/particles/smoke_main.dds"
         trail.TextureMode, trail.TextureLength = Enum.TextureMode.Wrap, 8
         trail.FaceCamera = false
@@ -94,7 +94,7 @@ function Wake.update(e, race, out, age, speed, throttle, slip, side, distance, f
     for _, p in e.sides do p.Rate = hull*scale/2 end
     for _, trail in e.ribbons do trail.Enabled = out == "" and speed > 3 and not jump end
     if sheet > 0 and side ~= e.side then
-        local origin = Vector3.new(side*.85,-.8,4.4)
+        local origin = Vector3.new(side*.85,-.15,4.4)
         e.fan.CFrame = CFrame.lookAt(origin,origin + Vector3.new(side,.73,.53))
         e.side = side
     end

@@ -210,10 +210,10 @@ function Opening.play(options)
             local last=goal.Position
             local route=buildRoute(i-1,last.X/3.5,last.Z/3.5,(options.duration or 24)<15)
             local first=routeAt(route,0)
-            local start=Vector3.new(first.X*3.5,last.Y-.42,first.Y*3.5)
+            local start=Vector3.new(first.X*3.5,.14,first.Y*3.5)
             local second=routeAt(route,2)
-            -- 止まっている時と同じく、艇を少し水に沈める(レースの表示と同じ 0.12m)
-            paths[i]={boat=boat,goal=goal-Vector3.new(0,.42,0),start=start,route=route,y=last.Y-.42}
+            -- 止まっている時と同じ高さ(艇底が少し水に入る。レースの表示と同じ)
+            paths[i]={boat=boat,goal=goal-Vector3.new(0,goal.Y-.14,0),start=start,route=route,y=.14}
             local anchor=Instance.new("Part")
             anchor.Anchored=true
             anchor.CanCollide,anchor.CanTouch,anchor.CanQuery=false,false,false
@@ -223,7 +223,7 @@ function Opening.play(options)
             paths[i].wake=Wake.new(anchor)
             paths[i].last=start
             leader=leader or i
-            boat:PivotTo(CFrame.lookAt(start,Vector3.new(second.X*3.5,last.Y-.42,second.Y*3.5)))
+            boat:PivotTo(CFrame.lookAt(start,Vector3.new(second.X*3.5,.14,second.Y*3.5)))
         end
     end
     local links={}
