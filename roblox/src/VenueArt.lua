@@ -36,40 +36,32 @@ end
 
 local Art = {}
 local available = {}
+-- Roblox に保存・公開した体験では、プログラムで作った画像(EditableImage)は設定で許可しないと
+-- 表示されず、市松模様(画像なしの印)になる。なので手描きの絵は保存前の Studio(PlaceId 0)だけで使う
+local drawable = game.PlaceId == 0
+
+-- 部品に会場の絵を貼る。登録した画像があればそれを、なければ手描きの絵を使う。どちらもなければ nil
+-- (呼ぶ側が形だけの絵を描く)。返した ImageLabel の切り抜きや並べ方は呼ぶ側が決める
 function Art.put(parent,name)
-    if available[name] == nil then
+    local id=ids[name]
+    local label=Instance.new("ImageLabel")
+    label.Name=name
+    label.Size=UDim2.fromScale(1,1)
+    label.BackgroundTransparency=1
+    if type(id)=="string" and id:match("^rbxassetid://[1-9]%d*$") then
+        label.Image=id
+        label.Parent=parent
+        return label
+    end
+    if drawable and available[name] == nil then
         available[name] = content(name) or false
     end
-    local id=ids[name]
-    -- Keep the local drawing (or the caller's silhouettes) while an owner image loads.
-    local base
-    if available[name] then
-        base=Instance.new("ImageLabel")
-        base.Name=name
-        base.Size=UDim2.fromScale(1,1)
-        base.BackgroundTransparency=1
-        base.ImageContent=available[name]
-        base.Parent=parent
+    if drawable and available[name] then
+        label.ImageContent=available[name]
+        label.Parent=parent
+        return label
     end
-    if type(id)=="string" and id:match("^rbxassetid://[1-9]%d*$") then
-        local overlay=Instance.new("ImageLabel")
-        overlay.Name=name.."Owner"
-        overlay.Size=UDim2.fromScale(1,1)
-        overlay.BackgroundTransparency=1
-        overlay.ZIndex=3
-        overlay.Image=id
-        overlay.Parent=parent
-        if base then
-            for _,key in {"ScaleType","TileSize","ImageRectSize","ImageRectOffset"} do
-                base:GetPropertyChangedSignal(key):Connect(function() overlay[key]=base[key] end)
-            end
-        elseif name=="Windows" then
-            overlay.ScaleType=Enum.ScaleType.Tile
-            overlay.TileSize=UDim2.fromOffset(64,48)
-        elseif name=="Crowd" then
-            overlay.ImageRectSize=Vector2.new(520,22)
-        end
-    end
-    return base
+    label:Destroy()
+    return nil
 end
 return Art

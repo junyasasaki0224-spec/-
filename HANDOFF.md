@@ -357,4 +357,6 @@ GPT が作った試作(Rojo 形式: `roblox/default.project.json`、サーバー
 
 - 音4つは Studio の MCP から Open Cloud で登録した(`AudioConfig.lua`)。登録には Studio のアシスタント設定 → MCP権限 で `roblox/assets/audio` を許可する必要があり、その画面は **Roblox に保存した場所** でしか使えない。そのため練習用の会場の場所を非公開で「Minato GP Dev」として保存した(チーム制作・データ共有はオフ)
 - 保存した場所ではアシスタントの HTTP 許可一覧が効くので、手元の配信(127.0.0.1:8765)を使う DevSync は止められる。この場所へは Rojo のプラグインで同期するか、変えたスクリプトだけ直接書き換える
-- 保存した体験では EditableImage(手描きの会場の絵を作る仕組み)が既定で使えず、書き込みで失敗して画面の仕組みごと止まっていた。`VenueArt.lua` で失敗したら絵を使わず、元の形(シルエット)にするよう直した。手描きの絵を出したい時は Game Settings → Security で画像の API を許可するか、`VenueImages.lua` に画像を登録する
+- 保存した体験では EditableImage(手描きの会場の絵を作る仕組み)が既定で使えず、観客席や窓が市松模様(画像なしの印)になっていた。会場の絵3枚(`assets/venue`)を画像として登録して `VenueImages.lua` に入れ、`VenueArt.lua` は登録した画像を先に使う。手描きの絵は保存前の Studio(PlaceId 0)だけで使う
+- 「Studio かどうか」を「GameId が 0 か」で見ていたため、保存した場所では Studio の試し方(Workspace の属性 MinatoTestMode)が効かず、オープニングも出なかった。**Studio では常に保存しないテスト扱い**にし、保存を試す時だけ Workspace の属性 `MinatoLiveData` を true にする(Race・MetaService・EventBoard・MatchQueue・TournamentStore・Leaderboard)
+- 開発用の場所は Rojo のプラグイン(`rojo serve roblox/default.project.json --port 34872`)で同期する

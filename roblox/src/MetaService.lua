@@ -2,7 +2,7 @@ local RunService=game:GetService("RunService")
 local HttpService=game:GetService("HttpService")
 local Meta=require(game:GetService("ReplicatedStorage"):WaitForChild("Meta"))
 local Service={}
-local practice=RunService:IsStudio() and game.GameId==0
+local practice=RunService:IsStudio() and (game.GameId == 0 or not workspace:GetAttribute("MinatoLiveData"))
 local memory={}
 local Stats=not practice and require(script.Parent:WaitForChild("PlayerStats"))
 local function update(userId,fn)

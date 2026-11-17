@@ -27,7 +27,7 @@
    | `roblox/assets/audio/minato-loops.wav`(エンジン・水切り・観客) | `roblox/src/AudioConfig.lua` の `loops` |
    | `roblox/assets/audio/minato-music.wav`(ホームの BGM) | `roblox/src/AudioConfig.lua` の `music` |
    | `roblox/assets/audio/minato-opening.wav`(オープニングの曲) | `roblox/src/AudioConfig.lua` の `opening` |
-   | `roblox/assets/venue/Crowd.png`・`Windows.png`・`Lamps.png` | `roblox/src/VenueImages.lua` の `Crowd`・`Windows`・`Lamps`(登録しない時、手描きの絵は Game Settings → Security で画像の API を許可した時だけ出る。許可しなくても形だけで動く) |
+   | `roblox/assets/venue/Crowd.png`・`Windows.png`・`Lamps.png` | `roblox/src/VenueImages.lua` の `Crowd`・`Windows`・`Lamps`(2026-11-17 に登録済み) |
 
 8. モデルは Studio で FBX を1つずつ開き、部品名を保ち、「シーン位置を使用して挿入」「ピボットをシーン起源に設定」を選んで取り込む。Explorer で取り込んだモデルだけを選び、右クリックの「Save to File…」で形式 **Roblox XML Model (.rbxmx)** を選ぶ。プロジェクトの一番上に `owner-boat.rbxmx`・`owner-venue.rbxmx` として保存し、次を実行する。名前が欠けていれば対象の部品が表示される。元の取り込みと同じ軸・単位を使う。出力モデルには元の可動部の中心が入る。[3D Importer](https://create.roblox.com/docs/studio/importer)
 
@@ -41,7 +41,7 @@
 
 ## 公開範囲・質問票・データ
 
-10. Roblox で動く本番の保存はサーバーが行う。Studio でも保存を試す場合は、**別に作ったテスト用ゲーム**を開き、Experience Settings → Security → Enable Studio Access to API Services をオンにして保存する。本番とテストで同じデータに書き込まないよう、テスト用ロビーにはテスト用会場の ID を入れる。外部 HTTP や第三者ゲームへの移動は今回の機能には不要。[Data Stores](https://create.roblox.com/docs/cloud-services/data-stores)
+10. Roblox で動く本番の保存はサーバーが行う。Studio でも保存を試す場合は、**別に作ったテスト用ゲーム**を開き、Experience Settings → Security → Enable Studio Access to API Services をオンにし、Workspace の属性 `MinatoLiveData` を true にして保存する(付けないと Studio では保存しない)。本番とテストで同じデータに書き込まないよう、テスト用ロビーにはテスト用会場の ID を入れる。外部 HTTP や第三者ゲームへの移動は今回の機能には不要。[Data Stores](https://create.roblox.com/docs/cloud-services/data-stores)
 11. Dashboard のゲームの Content Ratings 質問票を開き、実際に表示される内容に沿って回答する。描写には艇の衝突・沈没、交流には大会名や招待がある。抽選に使うのは遊んで得る無料コインで、コイン・抽選券の Robux 販売、着順への賭け、換金はない。公開する最終版に追加した購入や描写があれば回答にも反映する。対象年齢は提出後の判定を確認する。[質問票](https://create.roblox.com/docs/production/promotion/content-ratings)・[ランダムアイテム](https://create.roblox.com/docs/production/monetization/paid-random-items)
 12. ゲームの説明文の例。「架空のみなと競艇場で、6艇の3周レース。スタートを練習して、友達との対戦や大会に挑もう。塗装とヘルメットのガチャには遊んで貯めたゲーム内コインだけを使います。Robuxでの販売や、着順に賭ける仕組みはありません。」
 13. Dashboard の Data Stores Manager → RTBF Deletion で、同梱の [削除設定と依頼対応](roblox/DATA_DELETION.md) の表を順に登録する。世界1位の走りなど、複数人で共有するキーの確認手順も読む。[削除テンプレート](https://create.roblox.com/docs/cloud-services/data-stores/right-to-be-forgotten)

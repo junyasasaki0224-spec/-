@@ -557,6 +557,8 @@ local function held(key) return UserInputService:IsKeyDown(key) end
 local nextSend = 0
 -- オープニング(出走前の演出)。サーバーが Opening を出している間に1回だけ見せる
 local openingShow, openingRace = nil, nil
+-- この会場で何走目か(出走表の「第N R」。サーバーの番号は待ち時間の区切りでも増えるので使わない)
+local openingCount = 0
 local function startOpening(duration)
     local boatsShown, goals, rows = {}, {}, {}
     for i = 1, 6 do
@@ -574,7 +576,7 @@ local function startOpening(duration)
     resultView:hide()
     openingShow = Opening.play({
         camera = camera, venue = world, boats = boatsShown, finalCFrames = goals, rows = rows,
-        title = name.."　第"..tostring(predictionRace).."R", duration = duration, gui = player.PlayerGui,
+        title = name.."　第"..tostring(openingCount).."R", duration = duration, gui = player.PlayerGui,
     })
     openingShow.Done:Connect(function()
         openingShow = nil
@@ -589,6 +591,7 @@ RunService.RenderStepped:Connect(function(dt)
     local solo = #Players:GetPlayers() == 1
     if not openingShow and world:GetAttribute("Opening") and openingRace ~= predictionRace and (solo or openingClock < -16.5) and next(latest) then
         openingRace = predictionRace
+        openingCount += 1
         startOpening(solo and world:GetAttribute("Opening") or -14 - openingClock)
     end
     if openingShow then return end

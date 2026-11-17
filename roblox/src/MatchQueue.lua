@@ -4,7 +4,7 @@ local MemoryStoreService = game:GetService("MemoryStoreService")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local policy = require(script.Parent:WaitForChild("MatchPolicy"))
-local localOnly = RunService:IsStudio() and game.GameId == 0
+local localOnly = RunService:IsStudio() and (game.GameId == 0 or not workspace:GetAttribute("MinatoLiveData"))
 local map = not localOnly
     and MemoryStoreService:GetSortedMap(RunService:IsStudio() and "MinatoRankQueue_studio_v1" or "MinatoRankQueue_v1")
 local memory = {}

@@ -3,7 +3,7 @@
 -- 公開していない Studio ではサーバー内の表で同じように動く。
 local MemoryStoreService = game:GetService("MemoryStoreService")
 local RunService = game:GetService("RunService")
-local localOnly = RunService:IsStudio() and game.GameId == 0
+local localOnly = RunService:IsStudio() and (game.GameId == 0 or not workspace:GetAttribute("MinatoLiveData"))
 local suffix = RunService:IsStudio() and "_studio_v1" or "_v1"
 local LIFETIME = 2 * 24 * 60 * 60
 local Board = { POINTS = { 10, 8, 6, 4, 2, 1 }, TOP = 100 }

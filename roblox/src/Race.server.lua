@@ -10,8 +10,8 @@ local RaceAI = require(script.Parent:WaitForChild("RaceAI"))
 local createRoster = require(ReplicatedStorage:WaitForChild("RaceRoster"))
 local RaceStep = require(script.Parent:WaitForChild("RaceStep"))
 local Rules = require(script.Parent:WaitForChild("ResultRules"))
--- Unpublished Studio places cannot open a DataStore. Only a live result needs it.
-local localPractice = RunService:IsStudio() and game.GameId == 0
+-- Studio では保存しない(Roblox に保存した開発用の場所でも)。保存を試す時だけ Workspace の属性 MinatoLiveData を true にする
+local localPractice = RunService:IsStudio() and (game.GameId == 0 or not workspace:GetAttribute("MinatoLiveData"))
 local PlayerStats = not localPractice and require(script.Parent:WaitForChild("PlayerStats"))
 local isRoom = game.PrivateServerId ~= "" and game.PrivateServerOwnerId == 0
 -- タイムアタックの記録の保存(世界ランキングとゴースト)。公開していない Studio では使わない

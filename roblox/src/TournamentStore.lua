@@ -4,7 +4,7 @@
 local MemoryStoreService = game:GetService("MemoryStoreService")
 local DataStoreService = game:GetService("DataStoreService")
 local RunService = game:GetService("RunService")
-local localOnly = RunService:IsStudio() and game.GameId == 0
+local localOnly = RunService:IsStudio() and (game.GameId == 0 or not workspace:GetAttribute("MinatoLiveData"))
 local suffix = RunService:IsStudio() and "_studio_v1" or "_v1"
 local map = not localOnly and MemoryStoreService:GetSortedMap("MinatoTournaments" .. suffix)
 local results = not localOnly and DataStoreService:GetDataStore("MinatoTournamentResults" .. suffix)

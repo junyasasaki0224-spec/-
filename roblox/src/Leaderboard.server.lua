@@ -6,7 +6,7 @@ local MAX_PAGES = 5
 local remote = Instance.new("RemoteFunction")
 remote.Name = "MinatoLeaderboard"
 remote.Parent = ReplicatedStorage
-if game:GetService("RunService"):IsStudio() and game.GameId == 0 then
+if game:GetService("RunService"):IsStudio() and (game.GameId == 0 or not workspace:GetAttribute("MinatoLiveData")) then
     remote.OnServerInvoke = function() return {studio=true} end
     return
 end
