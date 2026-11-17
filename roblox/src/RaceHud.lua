@@ -214,102 +214,185 @@ function Hud.new(gui)
         self.orderRows[i] = { frame = row, mark = mark, chip = c, name = name }
     end
 
-    -- 上中央: スタート前の大時計と予想ST(スタートアシスト)
-    local start = panel(root, "StartBox")
+    -- 上中央: スタート前の大時計。スタート練習だけ、右に予想STのバー(スタートアシスト)を並べる
+    -- 大時計: 黒に近い文字盤・シャンパンゴールドの縁・細い目盛り(1秒ごとに金、0.2秒ごとに細い白)。12秒で1周、0秒で真上
+    local FACE = Color3.fromRGB(16, 19, 26)
+    local CHAMPAGNE = Color3.fromRGB(222, 190, 128)
+    local IVORY = Color3.fromRGB(240, 236, 226)
+    local DIAL_FONT = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Medium, Enum.FontStyle.Normal)
+    local start = Instance.new("Frame")
+    start.Name = "StartBox"
+    start.BackgroundTransparency = 1
     start.AnchorPoint = Vector2.new(0.5, 0)
     start.Position = UDim2.new(0.5, 0, 0, 10)
-    start.Size = UDim2.fromOffset(392, 104)
-    corner(start, 14)
+    start.Parent = root
     self.start = start
+    -- 練習用の板(バーと文字を載せる)
+    local plate = panel(start, "AssistPlate", 0.15)
+    plate.BackgroundColor3 = Color3.fromRGB(12, 15, 22)
+    plate.Size = UDim2.fromScale(1, 1)
+    corner(plate, 18)
+    stroke(plate, CHAMPAGNE, 1, 0.55)
+    self.plate = plate
+    -- 文字盤(大きさは枠に合わせて伸び縮みするよう、中身はすべて割合で置く)
+    local dial = Instance.new("Frame")
+    dial.Name = "Dial"
+    dial.BackgroundTransparency = 1
+    dial.Parent = start
+    self.dial = dial
+    local round = Instance.new("UICorner")
+    round.CornerRadius = UDim.new(0.5, 0)
+    local shadow = Instance.new("Frame")
+    shadow.Name = "Shadow"
+    shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+    shadow.Position = UDim2.new(0.5, 0, 0.5, 3)
+    shadow.Size = UDim2.fromScale(1.04, 1.04)
+    shadow.BackgroundColor3 = Color3.new(0, 0, 0)
+    shadow.BackgroundTransparency = 0.6
+    shadow.BorderSizePixel = 0
+    shadow.Parent = dial
+    round:Clone().Parent = shadow
+    self.shadow = shadow
     local face = Instance.new("Frame")
     face.Name = "Clock"
-    face.Position = UDim2.fromOffset(6, 6)
-    face.Size = UDim2.fromOffset(92, 92)
-    face.BackgroundColor3 = Color3.fromRGB(251, 251, 246)
-    face.Parent = start
-    corner(face, 46)
-    stroke(face, Color3.fromRGB(17, 17, 17), 4)
-    for i = 0, 11 do
+    face.Size = UDim2.fromScale(1, 1)
+    face.BackgroundColor3 = FACE
+    face.BorderSizePixel = 0
+    face.ZIndex = 2
+    face.Parent = dial
+    round:Clone().Parent = face
+    local sheen = Instance.new("UIGradient")
+    sheen.Color = ColorSequence.new(Color3.fromRGB(52, 58, 72), Color3.fromRGB(12, 14, 19))
+    sheen.Rotation = 120
+    sheen.Parent = face
+    stroke(face, CHAMPAGNE, 3)
+    -- 内側の細い輪
+    local ring = Instance.new("Frame")
+    ring.AnchorPoint = Vector2.new(0.5, 0.5)
+    ring.Position = UDim2.fromScale(0.5, 0.5)
+    ring.Size = UDim2.fromScale(0.78, 0.78)
+    ring.BackgroundTransparency = 1
+    ring.ZIndex = 3
+    ring.Parent = face
+    round:Clone().Parent = ring
+    stroke(ring, CHAMPAGNE, 1, 0.6)
+    -- 中心から角度 angle の方向へ、割合 radius の位置に置く(部品は自分の真ん中で回すので、向きもそろう)
+    local function onRim(item, angle, radius)
+        local r = math.rad(angle)
+        item.AnchorPoint = Vector2.new(0.5, 0.5)
+        item.Position = UDim2.fromScale(0.5 + math.sin(r) * radius, 0.5 - math.cos(r) * radius)
+        item.Rotation = angle
+    end
+    -- 0〜1秒の範囲: 縁に沿った細い緑の弧
+    for k = 0, 20 do
+        local seg = Instance.new("Frame")
+        seg.Size = UDim2.fromScale(0.03, 0.045)
+        seg.BackgroundColor3 = Color3.fromRGB(70, 200, 120)
+        seg.BorderSizePixel = 0
+        seg.ZIndex = 3
+        onRim(seg, k * 30 / 20, 0.455)
+        seg.Parent = face
+    end
+    -- 目盛り
+    for i = 0, 59 do
+        local major = i % 5 == 0
+        if i == 0 then continue end
         local tick = Instance.new("Frame")
         tick.Name = "Tick" .. i
-        tick.AnchorPoint = Vector2.new(0.5, 0.5)
-        tick.Size = UDim2.fromOffset(i == 0 and 4 or 2, i % 3 == 0 and 11 or 7)
-        local a = i / 12 * math.pi * 2
-        tick.Position = UDim2.new(0.5, math.sin(a) * 37, 0.5, -math.cos(a) * 37)
-        tick.Rotation = i * 30
-        tick.BackgroundColor3 = Color3.fromRGB(17, 17, 17)
+        tick.Size = major and UDim2.fromScale(0.022, 0.085) or UDim2.fromScale(0.008, 0.04)
+        tick.BackgroundColor3 = major and CHAMPAGNE or IVORY
+        tick.BackgroundTransparency = major and 0 or 0.55
         tick.BorderSizePixel = 0
-        tick.ZIndex = 2
+        tick.ZIndex = 4
+        onRim(tick, i * 6, major and 0.4 or 0.42)
         tick.Parent = face
     end
-    for _, i in ipairs({ 0, 3, 6, 9 }) do
-        local n = text(face, "N" .. i, 12, NUMBER_FONT, Color3.fromRGB(17, 17, 17))
-        n.TextStrokeTransparency = 1
-        local a = i / 12 * math.pi * 2
-        n.AnchorPoint = Vector2.new(0.5, 0.5)
-        n.Size = UDim2.fromOffset(16, 14)
-        n.Position = UDim2.new(0.5, math.sin(a) * 24, 0.5, -math.cos(a) * 24)
-        n.Text = tostring(i)
-        n.ZIndex = 2
+    -- 0秒(真上)だけ、金の目盛りを2本並べて目印にする(数字は置かず、すっきりさせる)
+    for _, side in ipairs({ -1, 1 }) do
+        local zero = Instance.new("Frame")
+        zero.Name = "Zero"
+        zero.AnchorPoint = Vector2.new(0.5, 0.5)
+        zero.Position = UDim2.fromScale(0.5 + side * 0.022, 0.5 - 0.395)
+        zero.Size = UDim2.fromScale(0.02, 0.1)
+        zero.BackgroundColor3 = CHAMPAGNE
+        zero.BorderSizePixel = 0
+        zero.ZIndex = 4
+        zero.Parent = face
     end
-    -- 中心から外へ伸びる棒。文字盤と同じ大きさの透明な枠ごと回すので、必ず中心の軸で回る
-    -- (Frame の Rotation は自分の真ん中で回るため、棒だけを回すと軸がずれる)
-    local function spoke(name, angle, length, width, color, z)
-        local holder = Instance.new("Frame")
-        holder.Name = name
-        holder.AnchorPoint = Vector2.new(0.5, 0.5)
-        holder.Position = UDim2.fromScale(0.5, 0.5)
-        holder.Size = UDim2.fromScale(1, 1)
-        holder.BackgroundTransparency = 1
-        holder.Rotation = angle
-        holder.ZIndex = z
-        holder.Parent = face
-        local bar = Instance.new("Frame")
-        bar.AnchorPoint = Vector2.new(0.5, 1)
-        bar.Position = UDim2.fromScale(0.5, 0.5)
-        bar.Size = UDim2.fromOffset(width, length)
-        bar.BackgroundColor3 = color
-        bar.BorderSizePixel = 0
-        bar.ZIndex = z
-        bar.Parent = holder
-        return holder, bar
-    end
-    -- 0〜1秒の緑の扇形(真上から右へ30°。ブラウザ版と同じ)。細い棒を少しずつ回して並べ、扇の形にする
-    for k = 0, 16 do
-        spoke("GoodZone" .. k, k * 30 / 16, 35, 3, Color3.fromRGB(166, 222, 184), 1)
-    end
-    -- 12秒針(0秒で真上)
-    local hand, needle = spoke("Hand", 0, 36, 5, Color3.fromRGB(244, 163, 0), 3)
-    corner(needle, 3)
-    local pin = Instance.new("Frame")
-    pin.AnchorPoint = Vector2.new(0.5, 0.5)
-    pin.Position = UDim2.fromScale(0.5, 0.5)
-    pin.Size = UDim2.fromOffset(12, 12)
-    pin.BackgroundColor3 = Color3.fromRGB(34, 34, 34)
-    pin.ZIndex = 4
-    pin.Parent = face
-    corner(pin, 6)
+    -- 残り秒数の小窓(文字盤の下側)
+    local digital = text(face, "Digital", 14, DIAL_FONT, IVORY)
+    digital.TextStrokeTransparency = 1
+    digital.TextScaled = true
+    digital.AnchorPoint = Vector2.new(0.5, 0.5)
+    digital.Position = UDim2.fromScale(0.5, 0.69)
+    digital.Size = UDim2.fromScale(0.36, 0.11)
+    digital.TextXAlignment = Enum.TextXAlignment.Center
+    digital.ZIndex = 4
+    self.digital = digital
+    -- 針: 文字盤と同じ大きさの透明な枠ごと回す(Frame の Rotation は自分の真ん中で回るため)。反対側に短い尾
+    local hand = Instance.new("Frame")
+    hand.Name = "Hand"
+    hand.AnchorPoint = Vector2.new(0.5, 0.5)
+    hand.Position = UDim2.fromScale(0.5, 0.5)
+    hand.Size = UDim2.fromScale(1, 1)
+    hand.BackgroundTransparency = 1
+    hand.ZIndex = 5
+    hand.Parent = face
+    local needle = Instance.new("Frame")
+    needle.AnchorPoint = Vector2.new(0.5, 1)
+    needle.Position = UDim2.fromScale(0.5, 0.58)
+    needle.Size = UDim2.fromScale(0.022, 0.5)
+    needle.BackgroundColor3 = CHAMPAGNE
+    needle.BorderSizePixel = 0
+    needle.ZIndex = 5
+    needle.Parent = hand
+    corner(needle, 2)
+    local cap = Instance.new("Frame")
+    cap.AnchorPoint = Vector2.new(0.5, 0.5)
+    cap.Position = UDim2.fromScale(0.5, 0.5)
+    cap.Size = UDim2.fromScale(0.09, 0.09)
+    cap.BackgroundColor3 = CHAMPAGNE
+    cap.BorderSizePixel = 0
+    cap.ZIndex = 6
+    cap.Parent = face
+    round:Clone().Parent = cap
+    local dot = Instance.new("Frame")
+    dot.AnchorPoint = Vector2.new(0.5, 0.5)
+    dot.Position = UDim2.fromScale(0.5, 0.5)
+    dot.Size = UDim2.fromScale(0.4, 0.4)
+    dot.BackgroundColor3 = FACE
+    dot.BorderSizePixel = 0
+    dot.ZIndex = 7
+    dot.Parent = cap
+    round:Clone().Parent = dot
     self.hand = hand
-    self.cd = text(start, "Countdown", 22, NUMBER_FONT)
-    self.cd.Position = UDim2.fromOffset(110, 6)
-    self.cd.Size = UDim2.fromOffset(270, 26)
+    self.champagne, self.ivory = CHAMPAGNE, IVORY
+    -- 練習用の文字とバー
+    local info = Instance.new("Frame")
+    info.Name = "AssistInfo"
+    info.BackgroundTransparency = 1
+    info.Position = UDim2.fromOffset(134, 12)
+    info.Size = UDim2.new(1, -146, 1, -24)
+    info.Parent = start
+    self.assistInfo = info
+    self.cd = text(info, "Countdown", 22, NUMBER_FONT)
+    self.cd.Size = UDim2.new(1, 0, 0, 26)
     self.cd.TextXAlignment = Enum.TextXAlignment.Left
-    self.dist = text(start, "Distance", 13, BOLD_FONT, SUB)
-    self.dist.Position = UDim2.fromOffset(110, 32)
-    self.dist.Size = UDim2.fromOffset(270, 18)
+    self.dist = text(info, "Distance", 13, BOLD_FONT, SUB)
+    self.dist.Position = UDim2.fromOffset(0, 28)
+    self.dist.Size = UDim2.new(1, 0, 0, 18)
     self.dist.TextXAlignment = Enum.TextXAlignment.Left
     local bar = Instance.new("Frame")
     bar.Name = "AssistBar"
-    bar.Position = UDim2.fromOffset(110, 56)
-    bar.Size = UDim2.fromOffset(262, 14)
+    bar.Position = UDim2.fromOffset(0, 58)
+    bar.Size = UDim2.new(1, -6, 0, 10)
     bar.BackgroundColor3 = WHITE
     bar.ClipsDescendants = false
-    bar.Parent = start
-    corner(bar, 7)
-    stroke(bar, WHITE, 1, 0.2)
+    bar.Parent = info
+    corner(bar, 5)
     -- 色の帯: フライング(赤) / ST 0〜0.25(緑) / 0.25〜0.5(黄) / 遅い(灰)。ブラウザ版と同じ割合
     local g = Instance.new("UIGradient")
-    local red, green, yellow, gray = Color3.fromRGB(217, 48, 37), Color3.fromRGB(47, 191, 113), Color3.fromRGB(224, 178, 26), Color3.fromRGB(107, 114, 128)
+    local red, green, yellow, gray = Color3.fromRGB(200, 52, 44), Color3.fromRGB(56, 178, 110), Color3.fromRGB(214, 172, 40), Color3.fromRGB(92, 98, 112)
     g.Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, red), ColorSequenceKeypoint.new(0.332, red),
         ColorSequenceKeypoint.new(0.334, green), ColorSequenceKeypoint.new(0.499, green),
@@ -321,17 +404,18 @@ function Hud.new(gui)
     marker.Name = "Marker"
     marker.AnchorPoint = Vector2.new(0.5, 0.5)
     marker.Position = UDim2.fromScale(0.5, 0.5)
-    marker.Size = UDim2.fromOffset(4, 24)
-    marker.BackgroundColor3 = WHITE
+    marker.Size = UDim2.fromOffset(4, 22)
+    marker.BackgroundColor3 = IVORY
     marker.ZIndex = 2
     marker.Parent = bar
     corner(marker, 2)
     stroke(marker, Color3.new(0, 0, 0), 1, 0.4)
     self.marker = marker
-    self.assist = text(start, "Assist", 13)
-    self.assist.Position = UDim2.fromOffset(110, 76)
-    self.assist.Size = UDim2.fromOffset(270, 20)
+    self.assist = text(info, "Assist", 13)
+    self.assist.Position = UDim2.fromOffset(0, 80)
+    self.assist.Size = UDim2.new(1, 0, 0, 20)
     self.assist.TextXAlignment = Enum.TextXAlignment.Left
+    self:setAssist(false)
 
     -- 右下: 速度計(大きな斜体の数字と、色の付いた棒)
     local speed = Instance.new("Frame")
@@ -446,6 +530,23 @@ function Hud:layout()
     self.wx.Position = UDim2.new(0.5, 0, 1, portrait and -100 or -14)
 end
 
+-- スタート前の枠の形: 練習(時計 + 予想STのバー)か、時計だけ(シーズン・オンライン・大会など)
+function Hud:setAssist(on)
+    self.assistMode = on
+    self.plate.Visible = on
+    self.assistInfo.Visible = on
+    self.shadow.Visible = not on
+    if on then
+        self.start.Size = UDim2.fromOffset(400, 128)
+        self.dial.Position = UDim2.fromOffset(8, 8)
+        self.dial.Size = UDim2.fromOffset(112, 112)
+    else
+        self.start.Size = UDim2.fromOffset(136, 136)
+        self.dial.Position = UDim2.fromOffset(0, 0)
+        self.dial.Size = UDim2.fromOffset(136, 136)
+    end
+end
+
 -- 毎フレームの更新。info の中身は Controls.client.lua が作る
 function Hud:update(info)
     self.root.Visible = info.visible
@@ -472,7 +573,12 @@ function Hud:update(info)
     self.start.Visible = info.pre == true
     if info.pre then
         local t = info.clock or 0
+        if (info.assist == true) ~= self.assistMode then
+            self:setAssist(info.assist == true)
+        end
         self.hand.Rotation = (t / 12) * 360
+        self.digital.Text = t < 0 and string.format("%.1f", -t) or string.format("+%.1f", t)
+        self.digital.TextColor3 = t > -3 and self.champagne or self.ivory
         self.cd.Text = t < 0 and string.format("スタートまで %.1f", -t) or string.format("+%.2f", t)
         self.cd.TextColor3 = t > -3 and GOLD or WHITE
         self.dist.Text = info.dist and string.format("スタートラインまで %d m", math.max(0, math.floor(info.dist + 0.5))) or ""

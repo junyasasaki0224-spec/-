@@ -579,9 +579,14 @@ local function predictStart(state, clock)
         accF=state.accF,topF=state.topF,gripSet=state.gripSet,gripF=state.gripF,thrustF=state.thrustF,windX=state.windX,windZ=state.windZ,motor=state.motor}
     local t, step = 0, 1/30
     while t < 20 do
+        local before = b.x
         stepBoat(b, 1, 0, step)
         t += step
-        if b.x >= 0 then return clock + t end
+        if b.x >= 0 then
+            -- 線を越えた刻みの中の、どの時点で越えたかを割合で求める(1/30秒ずつ跳ねないように)
+            local f = (0 - before) / math.max(b.x - before, 1e-6)
+            return clock + t - step + step*math.clamp(f, 0, 1)
+        end
     end
     return nil
 end
@@ -925,10 +930,12 @@ RunService.RenderStepped:Connect(function(dt)
     -- 予想ST(自分が走っていて、まだスタートしていない時だけ)
     local pre = driving == true and not startTime and time >= -14
     -- 毎コマ計算し(ブラウザ版と同じ)、表示は少しだけならす
-    if pre then
+    -- 予想STのバーはスタート練習だけ(シーズン・オンライン・大会などは大時計だけ)
+    local assist = world:GetAttribute("Practice") == true
+    if pre and assist then
         local st = predicted and predictStart(predicted, clock)
         if st and shownST and math.abs(st - shownST) < 0.3 then
-            shownST += (st - shownST)*math.min(1, dt*18)
+            shownST += (st - shownST)*math.min(1, dt*10)
         else
             shownST = st
         end
@@ -1075,6 +1082,7 @@ RunService.RenderStepped:Connect(function(dt)
         clock = clock,
         dist = predicted and -predicted.x or nil,
         st = predictedST,
+        assist = assist,
         hint = helpText,
         order = order,
         boats = dots,
