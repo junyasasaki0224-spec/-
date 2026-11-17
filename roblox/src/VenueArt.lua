@@ -14,7 +14,11 @@ local function content(name)
     local allowed, image = pcall(function()
         return AssetService:CreateEditableImage({Size=size})
     end)
-    if allowed and image then
+    if not (allowed and image) then
+        return nil
+    end
+    -- 体験の設定で画像の書き込みが許されていない時は、作れても書き込みで失敗する。その時は手描きの絵を使わない
+    local written = pcall(function()
         local bytes = buffer.create(size.X*size.Y*4)
         for y,row in rows do
             for x = 1,#row do
@@ -22,9 +26,12 @@ local function content(name)
             end
         end
         image:WritePixelsBuffer(Vector2.zero,size,bytes)
-        return Content.fromObject(image)
+    end)
+    if not written then
+        image:Destroy()
+        return nil
     end
-    return nil
+    return Content.fromObject(image)
 end
 
 local Art = {}
