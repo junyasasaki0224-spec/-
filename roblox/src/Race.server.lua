@@ -87,6 +87,8 @@ local returning = {}
 local roomRemote = Instance.new("RemoteEvent")
 roomRemote.Name = "MinatoRoomRace"
 roomRemote.Parent = ReplicatedStorage
+-- 一時停止(1人で走るフリーレースだけ。対戦では止められない)
+local racePaused = false
 local roomInfo = Instance.new("RemoteFunction")
 roomInfo.Name = "MinatoRoomInfo"
 roomInfo.Parent = ReplicatedStorage
@@ -540,6 +542,8 @@ local function reset()
         b.model:SetAttribute("TiltLocked",nil)
         b.model:SetAttribute("AdviceLift",nil)
         b.adviceLift = nil
+        racePaused = false
+        world:SetAttribute("Paused", nil)
         b.model:SetAttribute("SinkCause",nil)
         b.sinkCause = nil
         b.model:SetAttribute("Skin",nil)
@@ -864,6 +868,19 @@ saveResults = function()
     end
 end
 roomRemote.OnServerEvent:Connect(function(player, action)
+    -- 一時停止: 会場に1人だけのフリーレース(スタート練習を含む)で、スタートの後・ゴール前だけ
+    if action == "pause" or action == "resume" then
+        local solo = matchKind() == "single" and #Players:GetPlayers() == 1 and (roomMembers[player] or not isRoom)
+        if action == "pause" and solo and assigned and not roomWaiting and elapsed >= 0
+            and world:GetAttribute("RankedPhase") ~= "finished" then
+            racePaused = true
+            world:SetAttribute("Paused", true)
+        elseif action == "resume" and racePaused then
+            racePaused = false
+            world:SetAttribute("Paused", nil)
+        end
+        return
+    end
     -- オープニングのスキップ: 会場に1人だけの時は、すぐ大時計の場面へ進める(大勢の時は各自の画面だけ飛ばす)
     if action == "skipOpening" then
         -- スキップは票。1人なら押した時点で、大勢なら全員(見ない設定の人も自動で票になる)がそろった時に進む
@@ -897,6 +914,7 @@ roomRemote.OnServerEvent:Connect(function(player, action)
     local phase = world:GetAttribute("RankedPhase")
     local over = phase == "finished" or phase == "incomplete"
     local mayReturn = ((ONLINE[roomKind] or roomKind == "ta" or roomKind == "single") and over and roomMembers[player])
+        or (racePaused and roomKind == "single" and roomMembers[player])
         or (roomKind == "gp" and (over or not roomMembers[player]))
     if action == "return" and mayReturn and rankedLobbyPlace and not returning[player] then
         returning[player]=true
@@ -1128,6 +1146,8 @@ end)
 local snapshotTimer = 0
 RunService.Heartbeat:Connect(function(frame)
     accumulator = math.min(accumulator+frame,0.25)
+    -- 一時停止中(1人で走るフリーレースだけ)は、時計も艇も進めない
+    if racePaused then accumulator = 0 end
     while accumulator >= dt do step(); accumulator -= dt end
     for i,b in ipairs(boats) do
         b.model:SetAttribute("Speed",math.floor(b.speed*3.6+0.5))

@@ -522,6 +522,52 @@ UserInputService.InputBegan:Connect(function(input, processed)
 end)
 -- 中継カメラの場所(メートル): スタンドの屋根 / 1マークの奥 / 対岸 / 2マークの奥。4つ目は望遠の強さ
 local TV_SPOTS = {{20,27,80,13},{257,8,-14,8.5},{44,12,-85,12},{-265,7.5,50,8.5}}
+-- 一時停止(ブラウザ版の ⏸)。1人で走るフリーレースだけ。P キーでも止める・再開する
+local pauseButton = tiltButton:Clone()
+pauseButton.Name = "Pause"
+pauseButton.Size = UDim2.fromOffset(112,40)
+pauseButton.Text = "一時停止"
+pauseButton.Visible = false
+pauseButton.Parent = gui
+local pauseScreen = Instance.new("Frame")
+pauseScreen.Name = "PauseScreen"
+pauseScreen.Size = UDim2.fromScale(1,1)
+pauseScreen.BackgroundColor3 = Color3.fromRGB(4,12,28)
+pauseScreen.BackgroundTransparency = 0.35
+pauseScreen.Visible = false
+pauseScreen.ZIndex = 30
+pauseScreen.Parent = gui
+local pauseTitle = Instance.new("TextLabel")
+pauseTitle.BackgroundTransparency = 1
+pauseTitle.AnchorPoint = Vector2.new(0.5,0.5)
+pauseTitle.Position = UDim2.fromScale(0.5,0.38)
+pauseTitle.Size = UDim2.fromOffset(320,50)
+pauseTitle.Font, pauseTitle.TextSize = Enum.Font.GothamBlack, 34
+pauseTitle.TextColor3 = Color3.fromRGB(255,210,60)
+pauseTitle.Text = "一時停止中"
+pauseTitle.ZIndex = 31
+pauseTitle.Parent = pauseScreen
+local function pauseChoice(name, text, x, action)
+    local b = tiltButton:Clone()
+    b.Name = name
+    b.Text = text
+    b.AnchorPoint = Vector2.new(0.5,0.5)
+    b.Position = UDim2.new(0.5,x,0.52,0)
+    b.Size = UDim2.fromOffset(180,48)
+    b.ZIndex = 31
+    b.Visible = true
+    b.Parent = pauseScreen
+    b.Activated:Connect(function() roomRemote:FireServer(action) end)
+    return b
+end
+pauseChoice("Resume","再開する",-96,"resume")
+pauseChoice("Quit","ロビーへ戻る",96,"return")
+pauseButton.Activated:Connect(function() roomRemote:FireServer("pause") end)
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed or input.KeyCode ~= Enum.KeyCode.P then return end
+    if world:GetAttribute("Paused") then roomRemote:FireServer("resume")
+    elseif pauseButton.Visible then roomRemote:FireServer("pause") end
+end)
 -- 「▼ レバーを落とす」の合図(ブラウザ版の #lift)。ターンの手前で全開のままの時に、右下で点滅する
 local liftHint = Instance.new("TextLabel")
 liftHint.Name = "LiftHint"
@@ -775,7 +821,8 @@ RunService.RenderStepped:Connect(function(dt)
     if running and predicted and predictedNumber == boatNumber then
         local localThrottle,localSteer=sentThrottle,sentSteer
         if boat:GetAttribute("Finished") or boat:GetAttribute("Flying") then localThrottle=0; localSteer=0 end
-        predictionAccumulator = math.min(predictionAccumulator + dt,0.1)
+        -- 一時停止中は手元の予測も止める(サーバーも止まっている)
+        predictionAccumulator = world:GetAttribute("Paused") and 0 or math.min(predictionAccumulator + dt,0.1)
         while predictionAccumulator >= 1/120 do
             stepBoat(predicted, localThrottle, localSteer, 1/120)
             if currentSequence > 0 then
@@ -786,7 +833,7 @@ RunService.RenderStepped:Connect(function(dt)
         end
     end
     -- 届いた艇の状態を手元で進める(大時計の -14秒より前は、サーバーも艇を止めている)
-    advanceRemote(dt, (serverClock or -100) >= -14)
+    advanceRemote(world:GetAttribute("Paused") and 0 or dt, (serverClock or -100) >= -14)
     for i, visual in ipairs(renderBoats) do
         local state = latest[i]
         if state then
@@ -980,7 +1027,7 @@ RunService.RenderStepped:Connect(function(dt)
     if not smoothClock or math.abs(rawClock - smoothClock) > 0.5 then
         smoothClock = rawClock
     else
-        smoothClock += dt
+        if not world:GetAttribute("Paused") then smoothClock += dt end
         smoothClock += (rawClock - smoothClock)*math.min(1, dt*2)
     end
     local clock = smoothClock
@@ -997,6 +1044,12 @@ RunService.RenderStepped:Connect(function(dt)
     local screenW = gui.AbsoluteSize.X
     camButton.Visible = driving==true and (time >= 0 or screenW >= 840)
     camButton.Position = time < 0 and UDim2.new(1,-244,0,12) or UDim2.new(1,-124,0,12)
+    -- 一時停止: 1人で走るフリーレースの、スタートの後・ゴール前だけ(視点のボタンの左)
+    local paused = world:GetAttribute("Paused") == true
+    pauseScreen.Visible = paused
+    pauseButton.Visible = driving==true and time >= 0 and not paused and world:GetAttribute("MatchMode") == "single"
+        and #Players:GetPlayers() == 1
+    pauseButton.Position = UDim2.new(1,-244,0,12)
     -- レバーを落とす合図: 練習の補助と同じく、フリーレース・フレンド・タイムアタックで、設定がオンの時だけ
     local helpModes = {single=true, room=true, ta=true}
     local liftOn = driving==true and time >= 0 and helpModes[world:GetAttribute("MatchMode") or ""] == true
