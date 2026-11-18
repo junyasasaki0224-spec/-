@@ -253,10 +253,21 @@ function Opening.play(options)
     -- スキップは今の場面から、レースのカメラへなめらかにつなぐ(元のカメラへは戻さない)
     local function skipNow() reachedEnd=true; finish() end
     show.skip,show.destroy=skipNow,finish
-    table.insert(links,skip.Activated:Connect(skipNow))
+    -- スキップの文字を変える(みんなの票の数など)
+    function show.setSkipText(words) skip.Text = words end
+    local voted=false
+    local function pressSkip()
+        if not options.onSkip then skipNow(); return end
+        if voted then return end
+        voted=true
+        skip.Text="待機中…"
+        skip.BackgroundTransparency=0.55
+        options.onSkip()
+    end
+    table.insert(links,skip.Activated:Connect(pressSkip))
     table.insert(links,Input.InputBegan:Connect(function(key)
         if key.UserInputType==Enum.UserInputType.Touch or key.UserInputType==Enum.UserInputType.MouseButton1
-            or key.KeyCode==Enum.KeyCode.Return or key.KeyCode==Enum.KeyCode.KeypadEnter then skipNow() end
+            or key.KeyCode==Enum.KeyCode.Return or key.KeyCode==Enum.KeyCode.KeypadEnter then pressSkip() end
     end))
     camera.CameraType=Enum.CameraType.Scriptable
     local duration=math.max(.01,options.duration or 24)

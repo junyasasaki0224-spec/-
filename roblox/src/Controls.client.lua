@@ -636,6 +636,7 @@ local function startOpening(duration)
     openingShow = Opening.play({
         camera = camera, venue = world, boats = boatsShown, finalCFrames = goals, rows = rows,
         title = name.."　第"..tostring(openingCount).."R", duration = duration, gui = player.PlayerGui,
+        onSkip = function() roomRemote:FireServer("skipOpening") end,
     })
     openingShow.Done:Connect(function()
         openingShow = nil
@@ -667,7 +668,16 @@ RunService.RenderStepped:Connect(function(dt)
     end
     -- 見ている途中で「見ない」設定が届いた時(読み込みの順番による)は、その場で飛ばす
     if openingShow and not wantsOpening then openingShow.skip() end
-    if openingShow then return end
+    if openingShow then
+        -- 全員がスキップを押した(サーバーの時計が -14秒へ進んだ)ら終える。大勢の時は押した人数を出す
+        if (serverClock or -100) >= -14 then
+            openingShow.skip()
+        else
+            local votes, total = world:GetAttribute("OpeningVotes") or 0, world:GetAttribute("OpeningPlayers") or 1
+            if total > 1 and votes > 0 then openingShow.setSkipText(string.format("スキップ %d/%d", votes, total)) end
+        end
+        return
+    end
     if roundChanged then
         viewing.reset()
         controls.throttle,controls.steer=0,0

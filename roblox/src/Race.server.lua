@@ -533,6 +533,27 @@ local assignAt = -14
 -- 会場に1人だけの時は、その人の画面のオープニングが終わるまで -14秒の手前で待つ(読み込みで前半を見逃さないように)。
 -- 待つのは長くても「オープニングの長さ + 20秒」まで
 local openingHold = nil
+-- オープニングのスキップの票(押した人)。全員そろったら、みんな一緒に -14秒へ進む
+local openingVotes = {}
+local function countOpeningVotes()
+    local votes, total = 0, 0
+    for _, p in ipairs(Players:GetPlayers()) do
+        total += 1
+        if openingVotes[p] then votes += 1 end
+    end
+    world:SetAttribute("OpeningVotes", votes)
+    world:SetAttribute("OpeningPlayers", total)
+    return votes, total
+end
+local function skipOpeningIfAgreed()
+    if not assigned or elapsed >= -14 then return end
+    local votes, total = countOpeningVotes()
+    if total > 0 and votes >= total then
+        elapsed = -14
+        raceClock = elapsed
+        openingHold = nil
+    end
+end
 local function beginOpening()
     local length = 0
     if not (practiceMode or matchKind() == "ta") then
@@ -545,6 +566,8 @@ local function beginOpening()
     assignAt = elapsed
     world:SetAttribute("Opening", length > 0 and length or nil)
     openingHold = length > 0 and os.clock() + length + 20 or nil
+    table.clear(openingVotes)
+    countOpeningVotes()
 end
 -- タイムアタックを始める(大時計の -14秒から)。記録とゴーストも最初から
 -- 同じ会場で次のレースを始める(タイムアタックの「もう一度」、大会の予選2走目・優勝戦)
@@ -792,10 +815,10 @@ end
 roomRemote.OnServerEvent:Connect(function(player, action)
     -- オープニングのスキップ: 会場に1人だけの時は、すぐ大時計の場面へ進める(大勢の時は各自の画面だけ飛ばす)
     if action == "skipOpening" then
-        if assigned and elapsed < -14 and #Players:GetPlayers() == 1 then
-            elapsed = -14
-            raceClock = elapsed
-            openingHold = nil
+        -- スキップは票。1人なら押した時点で、大勢なら全員(見ない設定の人も自動で票になる)がそろった時に進む
+        if assigned and elapsed < -14 then
+            openingVotes[player] = true
+            skipOpeningIfAgreed()
         end
         return
     end
@@ -917,6 +940,8 @@ local function step()
         assignPlayers()
     end
     if not assigned then return end
+    -- 押していない人が抜けて、残りが全員押していれば進む
+    if elapsed < -14 and next(openingVotes) then skipOpeningIfAgreed() end
     -- オープニング中は艇を止めておく
     if elapsed < -14 then return end
     if openingHold then

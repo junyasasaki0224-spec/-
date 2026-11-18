@@ -54,6 +54,15 @@ function Wake.new(root)
         p.Lifetime = NumberRange.new(.35,.6)
         table.insert(sides,p)
     end
+    -- 艇首が水を切るしぶき: 両舷の前寄りから、外へ低く広がる
+    local bows = {}
+    for _, s in {-1,1} do
+        local a = attachment(root,"BowSpray",Vector3.new(s*1.2,-.12,-3.2),Vector3.new(s,.45,.55))
+        local p = drops(a,"BowDrops",NumberRange.new(5,11),Vector2.new(18,10))
+        p.Size = sequence(.7,1.4,.5)
+        p.Lifetime = NumberRange.new(.3,.5)
+        table.insert(bows,p)
+    end
     local crown = drops(stern,"ImpactCrown",NumberRange.new(16,36),Vector2.new(62,62))
     crown.EmissionDirection = Enum.NormalId.Top
     -- Separate upright attachment for the radial burst.
@@ -75,14 +84,31 @@ function Wake.new(root)
         trail.Parent = root
         table.insert(ribbons,trail)
     end
-    return {jet=jet, sheet=sheet, mist=mist, crown=crown, fan=fan, ribbons=ribbons, sides=sides}
+    -- 艇首から後ろへ斜めに広がる白い波(V字の引き波の始まり)
+    for _, side in {-1,1} do
+        local trail = Instance.new("Trail")
+        trail.Name = "BowFoam"
+        trail.Attachment0 = attachment(root,"BowFoamInner",Vector3.new(side*.35,-.05,-4.2),Vector3.zAxis)
+        trail.Attachment1 = attachment(root,"BowFoamOuter",Vector3.new(side*1.6,-.05,-2.8),Vector3.zAxis)
+        trail.Texture = "rbxasset://textures/particles/smoke_main.dds"
+        trail.TextureMode, trail.TextureLength = Enum.TextureMode.Wrap, 6
+        trail.FaceCamera = false
+        trail.Color = ColorSequence.new(Color3.fromRGB(240,251,250),Color3.fromRGB(170,200,206))
+        trail.Transparency = sequence(.25,.55,1)
+        trail.WidthScale = sequence(.6,1,1.2)
+        trail.MinLength, trail.MaxLength, trail.Lifetime = .5, 90, 1.4
+        trail.Enabled = false
+        trail.Parent = root
+        table.insert(ribbons,trail)
+    end
+    return {jet=jet, sheet=sheet, mist=mist, crown=crown, fan=fan, ribbons=ribbons, sides=sides, bows=bows}
 end
 
 function Wake.update(e, race, out, age, speed, throttle, slip, side, distance, following, jump, scale)
     scale=scale or 1
     if e.race ~= race or jump then
         for _, trail in e.ribbons do trail:Clear() end
-        for _, p in {e.jet,e.sheet,e.mist,e.crown,e.sides[1],e.sides[2]} do p:Clear() end
+        for _, p in {e.jet,e.sheet,e.mist,e.crown,e.sides[1],e.sides[2],e.bows[1],e.bows[2]} do p:Clear() end
         if e.race ~= race then e.sunk = false end
         e.race = race
     end
@@ -92,6 +118,7 @@ function Wake.update(e, race, out, age, speed, throttle, slip, side, distance, f
     end
     e.jet.Rate, e.sheet.Rate, e.mist.Rate = jet*scale, sheet*scale, scale>.35 and mist*scale or 0
     for _, p in e.sides do p.Rate = hull*scale/2 end
+    for _, p in e.bows do p.Rate = hull*scale*.7 end
     for _, trail in e.ribbons do trail.Enabled = out == "" and speed > 3 and not jump end
     if sheet > 0 and side ~= e.side then
         local origin = Vector3.new(side*.85,-.15,4.4)
