@@ -530,7 +530,7 @@ function Hud:layout()
     self.wx.Position = UDim2.new(0.5, 0, 1, portrait and -100 or -14)
 end
 
--- スタート前の枠の形: 練習(時計 + 予想STのバー)か、時計だけ(シーズン・オンライン・大会など)
+-- スタート前の枠の形: 練習(時計 + 予想STのバー)か、時計だけ(ランク戦・オンライン・大会など)
 function Hud:setAssist(on)
     self.assistMode = on
     self.plate.Visible = on

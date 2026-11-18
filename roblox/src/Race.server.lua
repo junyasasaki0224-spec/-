@@ -453,12 +453,20 @@ input.OnServerEvent:Connect(function(player, throttle, steer, sequence, round)
     if now - command.last < 0.04 then return end
     -- 1000分の1にそろえる(タイムアタックの入力を保存して読み直しても同じ走りになるように)
     command.throttle, command.steer, command.last, command.sequence = RaceStep.quantize(math.clamp(throttle,0,1)), RaceStep.quantize(steer), now, sequence
+    -- アクセルを1度でも踏んだら、そのレースの間はチルトを変えられない(艇の札に TiltLocked を付けて画面にも知らせる)
+    if command.throttle > 0 and command.tiltLocked ~= raceNumber then
+        command.tiltLocked = raceNumber
+        for _, boat in ipairs(boats) do
+            if boat.player == player then boat.model:SetAttribute("TiltLocked", true) end
+        end
+    end
 end)
 setup.OnServerEvent:Connect(function(player, index, round)
     if roomWaiting or round ~= raceNumber then return end
     if type(index) ~= "number" or index ~= index or index%1 ~= 0 or not tilts[index] or raceClock >= 0 then return end
     local command = commands[player]
     if not command or os.clock()-(command.setupLast or 0)<0.2 then return end
+    if command.tiltLocked == raceNumber then return end
     command.setupLast = os.clock()
     for _,boat in ipairs(boats) do
         if boat.player == player and not boat.started then applyTilt(boat,index); return end
@@ -529,6 +537,7 @@ local function reset()
         b.passed = 0
         b.started,b.flying,b.place,b.startTime = false,false,0,nil
         b.out,b.outAt,b.sunk = nil,nil,false
+        b.model:SetAttribute("TiltLocked",nil)
         b.model:SetAttribute("Skin",nil)
         b.model:SetAttribute("HelmetStyle",nil)
         clearAvatar(i)

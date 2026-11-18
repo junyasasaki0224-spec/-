@@ -272,10 +272,10 @@ rankedPanel.Parent = gui
 local function updateRanked()
     local phase=world:GetAttribute("RankedPhase")
     rankedPanel.Visible = phase == "waiting" or phase == "finished" or phase == "incomplete" or phase == "between"
-    local names = {ranked="シーズン", online="オンライン", event="イベント", ta="タイムアタック", gp="大会"}
+    local names = {ranked="ランク戦", online="オンライン", event="イベント", ta="タイムアタック", gp="大会"}
     rankedPanel.Text = phase == "finished" and "終了：ロビーに戻る" or phase == "incomplete" and "参加者が来ませんでした：ロビーに戻る"
         or phase == "between" and "大会：次の走りの準備中"
-        or (names[world:GetAttribute("MatchMode")] or "シーズン").."：参加者の到着を待っています"
+        or (names[world:GetAttribute("MatchMode")] or "ランク戦").."：参加者の到着を待っています"
 end
 world:GetAttributeChangedSignal("RankedPhase"):Connect(updateRanked)
 updateRanked()
@@ -501,6 +501,8 @@ tiltCorner.CornerRadius = UDim.new(0,8)
 tiltCorner.Parent = tiltButton
 local tiltNames = {"-0.5°","0°","+1.5°","+3.0°"}
 tiltButton.Activated:Connect(function()
+    -- アクセルを踏んだ後は変えられない(サーバーも受け付けない)
+    if boat:GetAttribute("TiltLocked") then return end
     if running and predicted and (serverClock or 0)<0 then
         setupRemote:FireServer(((boat:GetAttribute("Tilt") or 2)%4)+1,predictionRace)
     end
@@ -905,7 +907,14 @@ RunService.RenderStepped:Connect(function(dt)
     local finished = shown and shown:GetAttribute("Finished") or false
     local shownOut = shownLane and latest[shownLane] and latest[shownLane][17] or ""
     tiltButton.Visible = driving==true and time < 0
-    tiltButton.Text = "チルト "..tiltNames[boat:GetAttribute("Tilt") or 2]
+    -- アクセルを踏んだら「固定」と出して、押せない見た目にする
+    local tiltLocked = boat:GetAttribute("TiltLocked") == true
+    tiltButton.Text = "チルト "..tiltNames[boat:GetAttribute("Tilt") or 2]..(tiltLocked and "　固定" or "")
+    tiltButton.AutoButtonColor = not tiltLocked
+    tiltButton.BackgroundTransparency = tiltLocked and 0.45 or 0
+    tiltButton.TextTransparency = tiltLocked and 0.35 or 0
+    tiltButton.Size = UDim2.fromOffset(tiltLocked and 150 or 112, 40)
+    tiltButton.Position = UDim2.new(1, tiltLocked and -162 or -124, 0, 12)
     -- ゴール後は大きな結果の画面、スタート前は右上の出走表
     result.Visible = (not resultRows) and drawResults(nil, boatNumber, time) or false
     local mode = world:GetAttribute("MatchMode")
@@ -977,8 +986,8 @@ RunService.RenderStepped:Connect(function(dt)
     -- 予想ST(自分が走っていて、まだスタートしていない時だけ)
     local pre = driving == true and not startTime and time >= -14
     -- 毎コマ計算し(ブラウザ版と同じ)、表示は少しだけならす
-    -- 予想STのバーはスタート練習だけ(シーズン・オンライン・大会などは大時計だけ)
-    -- 予想STのバー: シーズン・オンライン・大会は出さない(対戦のイメージ)。
+    -- 予想STのバーはスタート練習だけ(ランク戦・オンライン・大会などは大時計だけ)
+    -- 予想STのバー: ランク戦・オンライン・大会は出さない(対戦のイメージ)。
     -- 練習・フリーレース・フレンド・タイムアタックは、本人の設定(オン・オフ)で決める
     local barModes = {single=true, room=true, ta=true}
     local assist = barModes[world:GetAttribute("MatchMode") or ""] == true and player:GetAttribute("MinatoAssist") ~= false

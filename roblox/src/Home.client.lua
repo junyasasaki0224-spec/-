@@ -25,7 +25,7 @@ local gold=Color3.fromRGB(255,210,60)
 local pale=Color3.fromRGB(169,189,219)
 local white=Color3.new(1,1,1)
 local rarity={N=white,R=Color3.fromRGB(57,140,255),SR=Color3.fromRGB(172,110,255),SSR=gold}
-local mode="シーズン"
+local mode="ランク戦"
 local m,page,pending=nil,"ホーム",nil
 local quality=require(RS:WaitForChild("DisplayQuality"))
 local practiceLane=1
@@ -127,11 +127,11 @@ Run.RenderStepped:Connect(function(dt)
         local portrait=gui.AbsoluteSize.X<gui.AbsoluteSize.Y
         local dist=portrait and 24 or 14
         cam.CFrame=CFrame.lookAt(Vector3.new(math.sin(angle)*dist,7,100+math.cos(angle)*dist),Vector3.new(0,1,100))
-        if (page=="倉庫" or page=="シーズン" or page=="オンライン" or page=="イベント" or page=="タイムアタック") and not portrait then cam.CFrame=cam.CFrame*CFrame.new(-5,0,0) end
+        if (page=="倉庫" or page=="ランク戦" or page=="オンライン" or page=="イベント" or page=="タイムアタック") and not portrait then cam.CFrame=cam.CFrame*CFrame.new(-5,0,0) end
         cam.Focus=CFrame.new(0,1,100)
     end
 end)
-local modes={"シーズン","オンライン","タイムアタック","フレンド","大会","イベント","フリーレース","スタート練習"}
+local modes={"ランク戦","オンライン","タイムアタック","フレンド","大会","イベント","フリーレース","スタート練習"}
 local function go(p) page=p;redraw() end
 -- イベント内のランキング(サーバーから。30秒ごとに読み直す)
 local eventBoard,eventLoading=nil,false
@@ -226,8 +226,8 @@ end
 local matchEvent
 local waitingMode
 local matchMessage=""
-local matchNames={online="オンライン",ranked="シーズン",event="イベント"}
-local pageKinds={["シーズン"]="ranked",["オンライン"]="online",["イベント"]="event"}
+local matchNames={online="オンライン",ranked="ランク戦",event="イベント"}
+local pageKinds={["ランク戦"]="ranked",["オンライン"]="online",["イベント"]="event"}
 local joinActions={ranked="join",online="online",event="event"}
 -- サーバーから: 文言、待っているか、モード、集まった人数、出走までの残り秒数
 local function bindMatch(event)
@@ -421,7 +421,7 @@ function redraw()
     end
     local y=0
     if page=="通信対戦" then
-        for _,entry in {{"オンライン","先に集まった人と気軽に走る"},{"フレンド","合言葉で同じ会場に集まる"},{"シーズン","レートの近い人と競う"}} do
+        for _,entry in {{"オンライン","先に集まった人と気軽に走る"},{"フレンド","合言葉で同じ会場に集まる"},{"ランク戦","レートの近い人と競う"}} do
             y=row(entry[1],entry[2],y,function() go(entry[1]) end,"選ぶ")
         end
     elseif page=="フレンド" then
@@ -521,7 +521,7 @@ function redraw()
             end
             y+=8
         else
-            y=row("シーズン戦","近いレートの選手から相手を探します",y)
+            y=row("ランク戦","近いレートの選手から相手を探します",y)
         end
         y=row("待ち合わせ","2人以上なら30秒、1人なら60秒で、空きを AI（達人）で埋めて出走",y)
         if waitingMode and waitingMode~=kind then
@@ -894,7 +894,7 @@ function redraw()
         y+=58
         -- 押してオン・オフを切り替える設定(保存される。レースの中で使う)
         local toggles={
-            {"assist","スタートの予想バー","練習・フリーレース・フレンド・タイムアタックで、全開のST(スタートの目安)を出します。シーズン・オンライン・大会では出ません。"},
+            {"assist","スタートの予想バー","練習・フリーレース・フレンド・タイムアタックで、全開のST(スタートの目安)を出します。ランク戦・オンライン・大会では出ません。"},
             {"shake","画面の揺れ","速い時の揺れと、ターンの傾きを止めます。酔いやすい時はオフにしてください。"},
             {"opening","オープニング","レース前の出走表・ピット離れ・待機行動の演出です。オフにするとすぐ大時計の場面から始まります(ほかの人がいる会場では、その人たちのオープニングが終わるまで待ちます)。"},
         }
