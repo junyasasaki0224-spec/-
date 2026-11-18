@@ -511,7 +511,7 @@ def main():
     lines += ["    },", "    loops = {"]
     for name, (a, b) in loop_regions.items():
         lines.append(f"        {name} = {{{a}, {b}}},")
-    lines += ["    },", "    openingLoop = {34, 66},", f"    musicLength = {round(len(bgm) / SR, 3)},", "}", ""]
+    lines += ["    },", "    openingLoop = {34, 66},", "    gachaLoop = {16, 28.8},", f"    musicLength = {round(len(bgm) / SR, 3)},", "}", ""]
     (ROOT / "src" / "AudioSheet.lua").write_text("\n".join(lines), encoding="utf-8", newline="\n")
     for f in sorted(OUT.glob("minato-*.wav")):
         print(f.name, f"{f.stat().st_size / 1024:.0f} KB")

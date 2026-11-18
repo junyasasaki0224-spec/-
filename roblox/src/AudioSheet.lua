@@ -32,5 +32,6 @@ return {
         crowd = {21.9, 27.9},
     },
     openingLoop = {34, 66},
+    gachaLoop = {16, 28.8},
     musicLength = 36.923,
 }

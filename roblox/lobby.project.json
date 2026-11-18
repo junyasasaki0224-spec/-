@@ -94,6 +94,9 @@
       "RacerAvatar": {
         "$path": "src/RacerAvatar.lua"
       },
+      "GachaShow": {
+        "$path": "src/GachaShow.lua"
+      },
       "VisualAssets": {
         "$className": "Folder",
         "Boat": {

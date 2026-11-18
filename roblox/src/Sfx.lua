@@ -99,36 +99,48 @@ function Sfx.music(on, volume)
     musicTarget = on and (volume or 0.32) or 0
 end
 
-local openingSound, fade
-function Sfx.opening(on)
-    if not ready(config.opening) then return end
-    if fade then fade:Cancel(); fade=nil end
+-- くり返す曲(オープニング・ガチャの演出)。最初の幕開けは1回だけ鳴らし、あとは AudioSheet の区切りをくり返す
+local tracks = {}
+local function track(key, name, loop, volume, on)
+    local id = config[key]
+    if not ready(id) then return end
+    local t = tracks[key] or {}
+    tracks[key] = t
+    if t.fade then t.fade:Cancel(); t.fade = nil end
     if on then
-        if not openingSound then
-            openingSound=Instance.new("Sound")
-            openingSound.Name="OpeningMusic"
-            openingSound.SoundId=config.opening
-            openingSound.Looped=true
-            -- 最初の幕開け(ティンパニのロール)は1回だけ。あとは主題の16小節(AudioSheet.openingLoop)をくり返す
-            local loop=sheet.openingLoop
+        if not t.sound then
+            local sound = Instance.new("Sound")
+            sound.Name = name
+            sound.SoundId = id
+            sound.Looped = true
             if loop then
-                openingSound.PlaybackRegionsEnabled=true
-                openingSound.LoopRegion=NumberRange.new(loop[1],loop[2])
+                sound.PlaybackRegionsEnabled = true
+                sound.LoopRegion = NumberRange.new(loop[1], loop[2])
             end
-            openingSound.Parent=folder
+            sound.Parent = folder
+            t.sound = sound
         end
-        openingSound.Volume=.42*Sfx.master()
-        if not openingSound.IsPlaying then openingSound:Play() end
-    elseif openingSound then
-        local sound=openingSound
-        local tween=game:GetService("TweenService"):Create(sound,TweenInfo.new(1.4),{Volume=0})
-        fade=tween
+        t.sound.Volume = volume * Sfx.master()
+        if not t.sound.IsPlaying then t.sound.TimePosition = 0; t.sound:Play() end
+    elseif t.sound then
+        local sound = t.sound
+        local tween = game:GetService("TweenService"):Create(sound, TweenInfo.new(key == "gacha" and .6 or 1.4), {Volume = 0})
+        t.fade = tween
         tween.Completed:Once(function(state)
-            if state==Enum.PlaybackState.Completed and fade==tween then
-                sound:Destroy(); openingSound=nil; fade=nil
+            if state == Enum.PlaybackState.Completed and t.fade == tween then
+                sound:Destroy(); t.sound = nil; t.fade = nil
             end
         end)
         tween:Play()
     end
+end
+-- オープニングの曲(ブラウザ版と同じ曲)
+function Sfx.opening(on)
+    track("opening", "OpeningMusic", sheet.openingLoop, .42, on)
+end
+-- ガチャの演出の曲(ホームの BGM はその間だけ止める)
+function Sfx.gacha(on)
+    if on then Sfx.music(false) else Sfx.music(true) end
+    track("gacha", "GachaMusic", sheet.gachaLoop, .5, on)
 end
 return Sfx

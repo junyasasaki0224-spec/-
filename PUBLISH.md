@@ -27,6 +27,7 @@
    | `roblox/assets/audio/minato-loops.wav`(エンジン・水切り・観客) | `roblox/src/AudioConfig.lua` の `loops` |
    | `roblox/assets/audio/minato-music.wav`(ホームの BGM) | `roblox/src/AudioConfig.lua` の `music` |
    | `roblox/assets/audio/minato-opening.wav`(オープニングの曲。ブラウザ版と同じ曲を `roblox/tools/record-opening.js` で録音した物) | `roblox/src/AudioConfig.lua` の `opening` |
+   | `roblox/assets/audio/minato-gacha.wav`(ガチャの演出の曲。`roblox/tools/record-gacha.js` で合成した物) | `roblox/src/AudioConfig.lua` の `gacha` |
    | `roblox/assets/venue/Crowd.png`・`Windows.png`・`Lamps.png` | `roblox/src/VenueImages.lua` の `Crowd`・`Windows`・`Lamps`(2026-11-17 に登録済み) |
 
 8. モデルは Studio で FBX を1つずつ開き、部品名を保ち、「シーン位置を使用して挿入」「ピボットをシーン起源に設定」を選んで取り込む。Explorer で取り込んだモデルだけを選び、右クリックの「Save to File…」で形式 **Roblox XML Model (.rbxmx)** を選ぶ。プロジェクトの一番上に `owner-boat.rbxmx`・`owner-venue.rbxmx` として保存し、次を実行する。名前が欠けていれば対象の部品が表示される。元の取り込みと同じ軸・単位を使う。出力モデルには元の可動部の中心が入る。[3D Importer](https://create.roblox.com/docs/studio/importer)

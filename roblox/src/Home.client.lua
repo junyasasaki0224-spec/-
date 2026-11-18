@@ -971,11 +971,19 @@ request=function(action,arg)
             -- 設定の音量を音の部品に伝える(この端末の中だけ)
             if type(m.volume)=="number" then player:SetAttribute("MinatoVolume",m.volume) end
             if action=="pull" and type(m.last)=="table" then
-                -- ガチャ: いちばん高いレア度の音を、カードが出そろう頃に鳴らす
-                local best,order=1,{N=1,R=2,SR=3,SSR=4}
-                for _,v in ipairs(m.last) do local it=Meta.item(v.id);if it then best=math.max(best,order[it.r]) end end
-                Sfx.play("drumroll",.6)
-                task.delay(math.min(#m.last*.12,1)+.2,function() Sfx.play("gacha"..({"N","R","SR","SSR"})[best],.9) end)
+                -- ガチャの演出: カプセル → 品の3D(ヘルメットはそのヘルメット、塗装はその塗装の艇)→ 10回は一覧
+                local results={}
+                for _,v in ipairs(m.last) do
+                    local it=Meta.item(v.id)
+                    if it then table.insert(results,{item=it,dupe=v.dupe or 0}) end
+                end
+                if #results>0 then
+                    local folder=RS:FindFirstChild("RacerAvatars")
+                    require(RS:WaitForChild("GachaShow")).play(gui,results,{
+                        rarity=rarity,skin=m.skin,helmet=m.helmet,
+                        avatar=folder and folder:FindFirstChild("Home"..player.UserId),
+                    })
+                end
             elseif (action=="mail" or action=="mission") and type(m.last)=="string" and m.last:find("受け取り") then
                 Sfx.play("coin",.8)
             end
