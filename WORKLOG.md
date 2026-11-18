@@ -1,5 +1,13 @@
 # 作業記録(新しいものを上に)
 
+## 2026-11-18 Claude: 自分の Roblox のアバターがレーサーになる
+- `RacerAvatar.lua`(新): サーバーが `Players:GetHumanoidDescriptionFromUserId` → `CreateHumanoidModelFromDescription`(R15)で人形を作り、ひざをついた前かがみの姿勢に固める(新しいアバターの関節 AnimationConstraint・古い Motor6D の両方をたどって部品の位置を計算し、全部固定)。背の高さ 4.2・胴の幅 1.55 スタッドのきつい方に縮め、腰を共通の人形の腰の位置に置く
+- 頭まわり(帽子・髪・顔)・背中・腰・肩の飾りは外し、頭は隠して、ゲームのヘルメット(Helmet・HelmetStripe・Visor・Rubber)をアバターの頭の位置へ動かす(ヘルメットのスキンはそのまま生きる)。共通の人形のほかの部品は隠す
+- レース(`Race.server.lua`): 人間の艇の分を `ReplicatedStorage.RacerAvatars` に `Lane1〜6` で置く(人ごとに1回作って使い回す。レースの切り替え・退出で消す)。プレイヤー側(`Controls.client.lua`)は届いたら VisualBoat の上半身の組(ターンで傾く)に入れる → オープニングにも出る。AI の艇は共通の人形のまま
+- ロビー(`AvatarLobby.server.lua` 新・`Home.client.lua`): `Home<ユーザー ID>` で置き、ホームの艇に乗せる
+- 見た目のデータは動いている間に Roblox から取るだけで保存しない。作れない時(Studio の複数人テストの仮の人など)は共通の人形のまま
+- Studio で確認: レースの自分の艇・ホームの艇にアバター(服)とヘルメットが乗る
+
 ## 2026-11-18 Claude: オープニングの曲をブラウザ版と同じにした
 - 前の Roblox 版は別の曲(make_audio.py で作った12小節の行進曲)だった。ブラウザ版(`src/audio.js` の _scheduleOpening)の曲を、ブラウザの中でそのまま録音(OfflineAudioContext)して `minato-opening.wav` を差し替えた。ティンパニのロールの幕開け → 金管の主題・弦・スネアの16小節
 - 66秒 = 幕開け2秒 + 主題16小節 × 2周。Roblox では 34〜66秒(2周目。1周目の残響を引き継ぐので継ぎ目が切れない)をくり返す(`AudioSheet.openingLoop`、`Sfx.opening` の LoopRegion)

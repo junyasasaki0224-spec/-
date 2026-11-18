@@ -27,6 +27,9 @@
       "VisualModels": {
         "$path": "src/VisualModels.lua"
       },
+      "RacerAvatar": {
+        "$path": "src/RacerAvatar.lua"
+      },
       "VisualAssets": {
         "$className": "Folder",
         "Boat": {

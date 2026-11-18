@@ -96,6 +96,12 @@ for i=-7,detailedVenue and -8 or 7 do
     part(scenery,"Column",Vector3.new(.7,22,.7),Vector3.new(i*11,11,72),Color3.fromRGB(202,213,220))
 end
 local model=boat(scenery)
+-- 自分の Roblox のアバターをレーサーとして乗せる(ロビーのサーバーが作って RacerAvatars に置く)
+task.spawn(function()
+    local folder=RS:WaitForChild("RacerAvatars",20)
+    local template=folder and folder:WaitForChild("Home"..player.UserId,20)
+    if template and model.Parent then require(RS:WaitForChild("RacerAvatar")).attach(model,template) end
+end)
 if not model:GetAttribute("Detailed") then model:ScaleTo(3.5) end
 model:PivotTo(CFrame.new(0,0,100))
 local root=box("Frame",gui,"Content");root.BackgroundTransparency=1;root.Size=UDim2.fromScale(1,1)

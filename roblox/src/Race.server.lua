@@ -26,6 +26,28 @@ local rankedExpected = 0
 -- オンライン対戦のモード(シーズン・オンライン・イベント)。空きは AI の達人が走り、結果に「AI」と付ける
 local ONLINE = {ranked=true, online=true, event=true}
 local Meta = require(ReplicatedStorage:WaitForChild("Meta"))
+-- 人間の艇には、その人の Roblox のアバターをレーサーとして乗せる(見た目は動いている間だけ持ち、保存しない)
+local RacerAvatar = require(ReplicatedStorage:WaitForChild("RacerAvatar"))
+local avatarFolder = Instance.new("Folder")
+avatarFolder.Name = "RacerAvatars"
+avatarFolder.Parent = ReplicatedStorage
+local avatarCache, avatarPending = {}, {}
+-- その人のアバターの人形(1回だけ作って使い回す)。作れない時は false
+local function avatarFor(player)
+    local userId = player.UserId
+    while avatarPending[userId] do task.wait(0.1) end
+    if avatarCache[userId] == nil then
+        avatarPending[userId] = true
+        avatarCache[userId] = RacerAvatar.build(userId) or false
+        avatarPending[userId] = nil
+    end
+    return avatarCache[userId]
+end
+-- 艇 lane のアバターを降ろす
+local function clearAvatar(lane)
+    local old = avatarFolder:FindFirstChild("Lane"..lane)
+    if old then old:Destroy() end
+end
 -- 公開していない Studio では、ワークスペースの属性 MinatoTestMode(ranked / online / event)で
 -- オンライン対戦の会場と同じ AI・イベント・結果の表示を確かめられる(保存はしない)
 -- タイムアタックは ta(コースは属性 MinatoTestLane = 1〜6)
@@ -337,8 +359,12 @@ Players.PlayerAdded:Connect(preparePlayer)
 Players.PlayerRemoving:Connect(function(player)
     commands[player] = nil
     roomMembers[player] = nil
-    for _, boat in ipairs(boats) do
+    local cached = avatarCache[player.UserId]
+    if cached then cached:Destroy() end
+    avatarCache[player.UserId] = nil
+    for lane, boat in ipairs(boats) do
         if boat.player == player then
+            clearAvatar(lane)
             collision.disqualify(boat,"退出",raceClock)
             boat.player = nil
         end
@@ -400,6 +426,17 @@ local function assignPlayers()
                     player:SetAttribute("MinatoOpening",outfit.opening~=false)
                     boat.model:SetAttribute("Skin",outfit.skin)
                     boat.model:SetAttribute("HelmetStyle",outfit.helmet)
+                end
+            end)
+            -- アバターを乗せる(届くまでは共通のレーサー人形のまま)
+            local lane = i
+            task.spawn(function()
+                local template = avatarFor(player)
+                if template and raceNumber==round and boat.player==player then
+                    clearAvatar(lane)
+                    local copy = template:Clone()
+                    copy.Name = "Lane"..lane
+                    copy.Parent = avatarFolder
                 end
             end)
         end
@@ -494,6 +531,7 @@ local function reset()
         b.out,b.outAt,b.sunk = nil,nil,false
         b.model:SetAttribute("Skin",nil)
         b.model:SetAttribute("HelmetStyle",nil)
+        clearAvatar(i)
         b.player = nil
         b.humanUserId,b.finishTime = nil,nil
         b.windX,b.windZ = math.cos(windAngle)*wind,math.sin(windAngle)*wind

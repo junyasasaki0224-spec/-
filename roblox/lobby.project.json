@@ -3,6 +3,9 @@
   "tree": {
     "$className": "DataModel",
     "ServerScriptService": {
+      "AvatarLobby": {
+        "$path": "src/AvatarLobby.server.lua"
+      },
       "Leaderboard": {
         "$path": "src/Leaderboard.server.lua"
       },
@@ -87,6 +90,9 @@
       },
       "VisualModels": {
         "$path": "src/VisualModels.lua"
+      },
+      "RacerAvatar": {
+        "$path": "src/RacerAvatar.lua"
       },
       "VisualAssets": {
         "$className": "Folder",

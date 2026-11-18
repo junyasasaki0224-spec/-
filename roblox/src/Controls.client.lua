@@ -56,6 +56,26 @@ for i = 1, 6 do
     motion[i] = {roll=0,yaw=0,pitch=0}
     renderBoats[i] = visual
 end
+-- 人間の艇には、その人のアバターをレーサーとして乗せる(サーバーが RacerAvatars に Lane1〜6 の名前で置く)
+local RacerAvatar = require(ReplicatedStorage:WaitForChild("RacerAvatar"))
+local avatarFolder = ReplicatedStorage:WaitForChild("RacerAvatars")
+local function syncAvatar(lane)
+    local visual = renderBoats[lane]
+    if not visual then return end
+    local template = avatarFolder:FindFirstChild("Lane"..lane)
+    if template then RacerAvatar.attach(visual, template) else RacerAvatar.detach(visual) end
+end
+local function laneOf(child) return tonumber(child.Name:match("^Lane(%d)$")) end
+avatarFolder.ChildAdded:Connect(function(child)
+    -- 中身が届き終わるのを少し待つ
+    local lane = laneOf(child)
+    if lane then task.delay(0.2, syncAvatar, lane) end
+end)
+avatarFolder.ChildRemoved:Connect(function(child)
+    local lane = laneOf(child)
+    if lane then syncAvatar(lane) end
+end)
+for lane = 1, 6 do syncAvatar(lane) end
 local predicted, predictedNumber, running = nil, 0, false
 local predictionAccumulator = 0
 local inputSequence, currentSequence = 0, 0
