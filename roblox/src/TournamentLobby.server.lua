@@ -228,6 +228,10 @@ remote.OnServerInvoke = function(player, action, arg)
     if action ~= "list" and action ~= "board" and action ~= "create" and action ~= "join" and type(arg) ~= "string" then
         return nil
     end
+    -- 大会の番号などの文字は短い物だけ(長すぎる文字で保存先を読ませない)
+    if type(arg) == "string" and #arg > 64 then
+        return nil
+    end
     -- 書き換える操作は0.6秒に1回まで(一覧と得点表を読むのは0.2秒に1回まで)
     local now = os.clock()
     local readOnly = action == "list" or action == "board"
