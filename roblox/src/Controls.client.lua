@@ -522,6 +522,78 @@ UserInputService.InputBegan:Connect(function(input, processed)
 end)
 -- 中継カメラの場所(メートル): スタンドの屋根 / 1マークの奥 / 対岸 / 2マークの奥。4つ目は望遠の強さ
 local TV_SPOTS = {{20,27,80,13},{257,8,-14,8.5},{44,12,-85,12},{-265,7.5,50,8.5}}
+-- 走行ガイド(ブラウザ版の gfx/guide.js): サーバーから届いた理想のラインを、艇の先26区間だけ水面に点線で描く。
+-- ふだんは水色、ターンの円の区間は黄、「レバーを落とす」時は手前45mを赤。遠いほど薄く、進む向きへ光が流れる
+local guidePlan = nil
+local guideRemote = ReplicatedStorage:WaitForChild("MinatoGuide", 10)
+if guideRemote then
+    guideRemote.OnClientEvent:Connect(function(race, xs, zs, turnStart)
+        if type(xs) ~= "table" or type(zs) ~= "table" or #xs ~= #zs or #xs < 2 or #xs > 400 then return end
+        guidePlan = {race = race, xs = xs, zs = zs, turnStart = tonumber(turnStart) or 1, k = 1}
+    end)
+end
+local GUIDE_N = 26
+local guideFolder = Instance.new("Folder")
+guideFolder.Name = "MinatoGuideLine"
+guideFolder.Parent = workspace
+local guideParts = {}
+for i = 1, GUIDE_N do
+    local p = Instance.new("Part")
+    p.Name = "Guide"..i
+    p.Anchored, p.CanCollide, p.CanTouch, p.CanQuery, p.CastShadow = true, false, false, false, false
+    p.Material = Enum.Material.Neon
+    p.Size = Vector3.new(1.1*STUDS_PER_METRE, 0.06, 1)
+    p.Transparency = 1
+    p.Parent = guideFolder
+    guideParts[i] = p
+end
+local guideShown = false
+local function hideGuide()
+    if not guideShown then return end
+    guideShown = false
+    for _, p in guideParts do p.Transparency = 1 end
+end
+local function drawGuide(x, z, lift, now)
+    local P = guidePlan
+    local xs, zs, count = P.xs, P.zs, #P.xs
+    -- いちばん近い点(前のコマの近くだけを探す)
+    local best, k = math.huge, P.k
+    for i = math.max(1, P.k - 3), math.min(count, P.k + 14) do
+        local d = (xs[i]-x)^2 + (zs[i]-z)^2
+        if d < best then best, k = d, i end
+    end
+    P.k = k
+    guideShown = true
+    local dist, px, pz = 0, x, z
+    for i = 1, GUIDE_N do
+        local part = guideParts[i]
+        local a = k + i
+        if a >= count then
+            part.Transparency = 1
+        else
+            local ax, az, cx, cz = xs[a], zs[a], xs[a+1], zs[a+1]
+            dist += math.sqrt((ax-px)^2 + (az-pz)^2)
+            px, pz = ax, az
+            local len = math.sqrt((cx-ax)^2 + (cz-az)^2)
+            if len < 0.05 then
+                part.Transparency = 1
+            else
+                -- 区間の6割の長さの板を、区間の真ん中に置く(すき間が点線に見える)
+                local from = Vector3.new(ax, 0.1, az)*STUDS_PER_METRE
+                local to = Vector3.new(cx, 0.1, cz)*STUDS_PER_METRE
+                part.Size = Vector3.new(1.1*STUDS_PER_METRE, 0.06, len*STUDS_PER_METRE*0.6)
+                part.CFrame = CFrame.lookAt((from+to)/2, to)
+                local inArc = a >= P.turnStart and a <= P.turnStart + 14
+                local red = lift and dist < 45
+                part.Color = red and Color3.fromRGB(255,64,51) or (inArc and Color3.fromRGB(255,204,51) or Color3.fromRGB(77,230,255))
+                local alpha = math.min(1, dist/6) * math.max(0, 1 - dist/95) * 0.8
+                local wave = (dist/14 - now*1.2) % 1
+                alpha *= 0.6 + 0.4*math.cos(wave*2*math.pi)
+                part.Transparency = 1 - alpha*0.8
+            end
+        end
+    end
+end
 -- 一時停止(ブラウザ版の ⏸)。1人で走るフリーレースだけ。P キーでも止める・再開する
 local pauseButton = tiltButton:Clone()
 pauseButton.Name = "Pause"
@@ -1055,6 +1127,14 @@ RunService.RenderStepped:Connect(function(dt)
     local liftOn = driving==true and time >= 0 and helpModes[world:GetAttribute("MatchMode") or ""] == true
         and player:GetAttribute("MinatoAssist") ~= false and boat:GetAttribute("AdviceLift") == true and controls.throttle > 0.5
     liftHint.Visible = liftOn
+    -- 走行ガイド: 練習の補助がオンのモードで、スタートしてからゴールまで
+    local startedNow = boat:GetAttribute("StartTime") ~= nil and not boat:GetAttribute("Finished")
+    if driving==true and startedNow and helpModes[world:GetAttribute("MatchMode") or ""] == true
+        and player:GetAttribute("MinatoAssist") ~= false and guidePlan and guidePlan.race == predictionRace and predicted then
+        drawGuide(predicted.x + predOff.x, predicted.z + predOff.z, boat:GetAttribute("AdviceLift") == true, os.clock())
+    else
+        hideGuide()
+    end
     if liftOn then
         -- 0.25秒ごとに色を替えて点滅させる。タッチの時はスロットルのレバーの左に出す
         liftHint.BackgroundColor3 = (os.clock()*4)%2 < 1 and Color3.fromRGB(214,40,40) or Color3.fromRGB(255,120,60)

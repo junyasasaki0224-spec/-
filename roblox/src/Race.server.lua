@@ -89,6 +89,11 @@ roomRemote.Name = "MinatoRoomRace"
 roomRemote.Parent = ReplicatedStorage
 -- 一時停止(1人で走るフリーレースだけ。対戦では止められない)
 local racePaused = false
+-- 走行ガイド: AI が考えたこの艇の理想のライン(点の並び)を、本人の画面にだけ送る(練習の補助と同じモードだけ)
+local guideRemote = Instance.new("RemoteEvent")
+guideRemote.Name = "MinatoGuide"
+guideRemote.Parent = ReplicatedStorage
+local GUIDE_MODES = {single=true, room=true, ta=true}
 local roomInfo = Instance.new("RemoteFunction")
 roomInfo.Name = "MinatoRoomInfo"
 roomInfo.Parent = ReplicatedStorage
@@ -542,6 +547,7 @@ local function reset()
         b.model:SetAttribute("TiltLocked",nil)
         b.model:SetAttribute("AdviceLift",nil)
         b.adviceLift = nil
+        b.sentPlan = nil
         racePaused = false
         world:SetAttribute("Paused", nil)
         b.model:SetAttribute("SinkCause",nil)
@@ -1038,6 +1044,12 @@ local function step()
                         if b.adviceLift ~= lift then
                             b.adviceLift = lift
                             b.model:SetAttribute("AdviceLift", lift)
+                        end
+                        -- ラインを引き直した時だけ送る(1周に数回)
+                        local plan = b.ai.plan
+                        if plan and b.sentPlan ~= plan and GUIDE_MODES[matchKind() or ""] and b.player:GetAttribute("MinatoAssist") ~= false then
+                            b.sentPlan = plan
+                            guideRemote:FireClient(b.player, raceNumber, plan.xs, plan.zs, plan.turnStart)
                         end
                     end
                     command.applied = command.sequence
