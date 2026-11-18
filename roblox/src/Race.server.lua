@@ -397,6 +397,7 @@ local function assignPlayers()
                     player:SetAttribute("MinatoQuality",outfit.quality)
                     player:SetAttribute("MinatoAssist",outfit.assist~=false)
                     player:SetAttribute("MinatoShake",outfit.shake~=false)
+                    player:SetAttribute("MinatoOpening",outfit.opening~=false)
                     boat.model:SetAttribute("Skin",outfit.skin)
                     boat.model:SetAttribute("HelmetStyle",outfit.helmet)
                 end

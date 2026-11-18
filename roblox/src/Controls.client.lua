@@ -615,6 +615,7 @@ local function angLerp(a, b, t)
     return a + d*t
 end
 local openingShow, openingRace = nil, nil
+local openingWaitFrom = nil
 -- この会場で何走目か(出走表の「第N R」。サーバーの番号は待ち時間の区切りでも増えるので使わない)
 local openingCount = 0
 local function startOpening(duration)
@@ -648,11 +649,24 @@ RunService.RenderStepped:Connect(function(dt)
     local openingClock = (serverClock or 0) + math.min(os.clock() - snapshotAt, 0.25)
     -- 会場に1人なら、サーバーが待ってくれるので最初から全部見せる。大勢なら残りの時間だけ
     local solo = #Players:GetPlayers() == 1
-    if not openingShow and world:GetAttribute("Opening") and openingRace ~= predictionRace and (solo or openingClock < -16.5) and next(latest) then
+    -- 設定でオープニングを見ない人は、出さずにすぐ大時計の場面へ(1人の会場ならサーバーも -14秒へ進む)
+    local wantsOpening = player:GetAttribute("MinatoOpening") ~= false
+    local openingDue = world:GetAttribute("Opening") ~= nil and openingRace ~= predictionRace
+    if openingDue then openingWaitFrom = openingWaitFrom or os.clock() else openingWaitFrom = nil end
+    -- 本人の設定(見る・見ない)が届くまで少しだけ待つ(届く前に始めて、一瞬だけ見えてしまわないように。最長1.5秒)
+    local settingKnown = player:GetAttribute("MinatoOpening") ~= nil or os.clock() - (openingWaitFrom or 0) > 1.5
+    if not openingShow and openingDue and settingKnown and (solo or openingClock < -16.5) and next(latest) then
         openingRace = predictionRace
         openingCount += 1
-        startOpening(solo and world:GetAttribute("Opening") or -14 - openingClock)
+        if wantsOpening then
+            startOpening(solo and world:GetAttribute("Opening") or -14 - openingClock)
+        else
+            chase.init = false
+            if (serverClock or 0) < -14 then roomRemote:FireServer("skipOpening") end
+        end
     end
+    -- 見ている途中で「見ない」設定が届いた時(読み込みの順番による)は、その場で飛ばす
+    if openingShow and not wantsOpening then openingShow.skip() end
     if openingShow then return end
     if roundChanged then
         viewing.reset()
