@@ -3,6 +3,6 @@
 return {
     sfx = "rbxassetid://114632345723489", -- minato-sfx.wav(効果音を並べた物)
     loops = "rbxassetid://129159326072690", -- minato-loops.wav(エンジン・水切り・観客)
-    opening = "rbxassetid://118937627639007", -- minato-opening.wav
+    opening = "rbxassetid://111990074138087", -- minato-opening.wav(ブラウザ版と同じ曲を録音した物)
     music = "rbxassetid://94752370516848", -- minato-music.wav(ホームの BGM)
 }

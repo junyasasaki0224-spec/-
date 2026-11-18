@@ -109,6 +109,12 @@ function Sfx.opening(on)
             openingSound.Name="OpeningMusic"
             openingSound.SoundId=config.opening
             openingSound.Looped=true
+            -- 最初の幕開け(ティンパニのロール)は1回だけ。あとは主題の16小節(AudioSheet.openingLoop)をくり返す
+            local loop=sheet.openingLoop
+            if loop then
+                openingSound.PlaybackRegionsEnabled=true
+                openingSound.LoopRegion=NumberRange.new(loop[1],loop[2])
+            end
             openingSound.Parent=folder
         end
         openingSound.Volume=.42*Sfx.master()
