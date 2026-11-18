@@ -962,6 +962,14 @@ RunService.RenderStepped:Connect(function(dt)
             elseif mode and phase == "finished" then
                 buttons = {{"Lobby","ロビーへ戻る",true,fire("return")}}
             end
+            -- 沈没した時は、何に当たったかを出す(ブラウザ版と同じ言葉)
+            local myTemplate = boatNumber > 0 and templates:FindFirstChild("Boat"..boatNumber)
+            local cause = myTemplate and myTemplate:GetAttribute("SinkCause")
+            if cause and not world:GetAttribute("Practice") then
+                local words = {mark="ターンマーク", unit="ターンマーク横の消波装置", pole="センターポール", wall="外周の消波装置"}
+                opts = opts or {}
+                opts.sub = (words[cause] or "障害物").."に強く当たりました"
+            end
             resultView:show(resultRows, boatNumber, extra, buttons, key, opts)
         end
     elseif resultView.key then

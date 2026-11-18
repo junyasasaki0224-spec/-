@@ -89,7 +89,7 @@ end
 
 local function collideObstacles(boat, clock)
     if boat.out then return end
-    local power, threshold = 0, 2
+    local power, threshold, cause = 0, 2, nil
     local ch, sh = math.cos(boat.h), math.sin(boat.h)
     for _, obstacle in ipairs(obstacles) do
         if (boat.x-obstacle.x)^2+(boat.z-obstacle.z)^2 > 9 then continue end
@@ -107,6 +107,8 @@ local function collideObstacles(boat, clock)
                 if normalSpeed < 0 then
                     if -normalSpeed > power then
                         power, threshold = -normalSpeed, obstacle.unit and 3.5 or 2
+                        -- 何に当たったか(沈没の知らせに出す。ブラウザ版と同じ言葉)
+                        cause = obstacle.unit and "unit" or (obstacle.softness == 1 and "pole" or "mark")
                     end
                     local rebound = obstacle.softness == 1 and 1.2 or 0.6
                     boat.vx = (boat.vx - rebound * normalSpeed * nx) * 0.985
@@ -116,7 +118,10 @@ local function collideObstacles(boat, clock)
             end
         end
     end
-    if boat.started and power >= threshold then disqualify(boat,"沈",clock) end
+    if boat.started and power >= threshold and not boat.out then
+        boat.sinkCause = cause
+        disqualify(boat,"沈",clock)
+    end
 end
 
 local function walls(b, clock)
@@ -136,7 +141,10 @@ local function walls(b, clock)
         end
         b.z = math.clamp(b.z,-77,57)
     end
-    if b.started and impact >= 7 then disqualify(b,"沈",clock) end
+    if b.started and impact >= 7 and not b.out then
+        b.sinkCause = "wall"
+        disqualify(b,"沈",clock)
+    end
 end
 
 return {boats=collide, obstacles=collideObstacles, walls=walls, units=units, disqualify=disqualify}

@@ -538,6 +538,8 @@ local function reset()
         b.started,b.flying,b.place,b.startTime = false,false,0,nil
         b.out,b.outAt,b.sunk = nil,nil,false
         b.model:SetAttribute("TiltLocked",nil)
+        b.model:SetAttribute("SinkCause",nil)
+        b.sinkCause = nil
         b.model:SetAttribute("Skin",nil)
         b.model:SetAttribute("HelmetStyle",nil)
         clearAvatar(i)
@@ -1024,6 +1026,8 @@ local function step()
         end
         local event = RaceStep.advance(b, throttle, steer, elapsed, dt)
         if event == "out" then
+            -- 沈没した時は、何に当たったかを艇の札に書く(結果の画面で出す)
+            if b.out == "沈" then b.model:SetAttribute("SinkCause", b.sinkCause or "mark") end
             if b.player then commands[b.player]=nil end
             continue
         elseif event == "finish" then
