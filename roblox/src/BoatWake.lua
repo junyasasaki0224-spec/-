@@ -63,6 +63,11 @@ function Wake.new(root)
         p.Lifetime = NumberRange.new(.3,.5)
         table.insert(bows,p)
     end
+    -- 艇首の先の小さなしぶき: 水を切る先端から、前と左右へ細かく跳ねる
+    local tipAt = attachment(root,"BowTip",Vector3.new(0,-.1,-4.7),Vector3.new(0,.8,-.6))
+    local tip = drops(tipAt,"BowTipDrops",NumberRange.new(3,7),Vector2.new(55,25))
+    tip.Size = sequence(.35,.7,.25)
+    tip.Lifetime = NumberRange.new(.22,.4)
     local crown = drops(stern,"ImpactCrown",NumberRange.new(16,36),Vector2.new(62,62))
     crown.EmissionDirection = Enum.NormalId.Top
     -- Separate upright attachment for the radial burst.
@@ -101,14 +106,14 @@ function Wake.new(root)
         trail.Parent = root
         table.insert(ribbons,trail)
     end
-    return {jet=jet, sheet=sheet, mist=mist, crown=crown, fan=fan, ribbons=ribbons, sides=sides, bows=bows}
+    return {jet=jet, sheet=sheet, mist=mist, crown=crown, fan=fan, ribbons=ribbons, sides=sides, bows=bows, tip=tip}
 end
 
 function Wake.update(e, race, out, age, speed, throttle, slip, side, distance, following, jump, scale)
     scale=scale or 1
     if e.race ~= race or jump then
         for _, trail in e.ribbons do trail:Clear() end
-        for _, p in {e.jet,e.sheet,e.mist,e.crown,e.sides[1],e.sides[2],e.bows[1],e.bows[2]} do p:Clear() end
+        for _, p in {e.jet,e.sheet,e.mist,e.crown,e.sides[1],e.sides[2],e.bows[1],e.bows[2],e.tip} do p:Clear() end
         if e.race ~= race then e.sunk = false end
         e.race = race
     end
@@ -119,6 +124,7 @@ function Wake.update(e, race, out, age, speed, throttle, slip, side, distance, f
     e.jet.Rate, e.sheet.Rate, e.mist.Rate = jet*scale, sheet*scale, scale>.35 and mist*scale or 0
     for _, p in e.sides do p.Rate = hull*scale/2 end
     for _, p in e.bows do p.Rate = hull*scale*.7 end
+    e.tip.Rate = hull*scale*.6
     for _, trail in e.ribbons do trail.Enabled = out == "" and speed > 3 and not jump end
     if sheet > 0 and side ~= e.side then
         local origin = Vector3.new(side*.85,-.15,4.4)
@@ -129,6 +135,14 @@ function Wake.update(e, race, out, age, speed, throttle, slip, side, distance, f
         e.sunk = true
         if age < 1 then e.crown:Emit(math.ceil(32*scale)); e.mist:Emit(math.ceil(6*scale)) end
     end
+end
+
+-- しぶきと白い波を止める(止まっている時・オープニングでレース用の艇を使わない時)。出ている粒は自然に消える
+function Wake.stop(e)
+    e.jet.Rate, e.sheet.Rate, e.mist.Rate, e.tip.Rate = 0, 0, 0, 0
+    for _, p in e.sides do p.Rate = 0 end
+    for _, p in e.bows do p.Rate = 0 end
+    for _, trail in e.ribbons do trail.Enabled = false end
 end
 
 return Wake

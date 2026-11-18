@@ -696,6 +696,8 @@ RunService.RenderStepped:Connect(function(dt)
             local votes, total = world:GetAttribute("OpeningVotes") or 0, world:GetAttribute("OpeningPlayers") or 1
             if total > 1 and votes > 0 then openingShow.setSkipText(string.format("スキップ %d/%d", votes, total)) end
         end
+        -- オープニングの間は、レース用の艇のしぶきと白い波を止める(しぶきはオープニングの部品が速さに合わせて出す)
+        for i = 1, 6 do Wake.stop(wakes[i]) end
         return
     end
     if roundChanged then
