@@ -500,6 +500,41 @@ local tiltCorner = Instance.new("UICorner")
 tiltCorner.CornerRadius = UDim.new(0,8)
 tiltCorner.Parent = tiltButton
 local tiltNames = {"-0.5°","0°","+1.5°","+3.0°"}
+-- 視点の切り替え(ブラウザ版の 🎥 と C キーと同じ): 追尾 → 接近 → オンボード → 中継 → 上空
+local CAM_NAMES = {"追尾","接近","オンボード","中継","上空"}
+local camMode = 1
+local camButton = tiltButton:Clone()
+camButton.Name = "Camera"
+camButton.Size = UDim2.fromOffset(112,40)
+camButton.Text = "視点 追尾"
+camButton.Visible = false
+camButton.Parent = gui
+local camSwitched = false
+local function cycleCam()
+    camMode = camMode % #CAM_NAMES + 1
+    camButton.Text = "視点 "..CAM_NAMES[camMode]
+    camSwitched = true
+end
+camButton.Activated:Connect(cycleCam)
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.KeyCode == Enum.KeyCode.C and camButton.Visible then cycleCam() end
+end)
+-- 中継カメラの場所(メートル): スタンドの屋根 / 1マークの奥 / 対岸 / 2マークの奥。4つ目は望遠の強さ
+local TV_SPOTS = {{20,27,80,13},{257,8,-14,8.5},{44,12,-85,12},{-265,7.5,50,8.5}}
+-- 「▼ レバーを落とす」の合図(ブラウザ版の #lift)。ターンの手前で全開のままの時に、右下で点滅する
+local liftHint = Instance.new("TextLabel")
+liftHint.Name = "LiftHint"
+liftHint.Text = "▼ レバーを落とす"
+liftHint.Font, liftHint.TextSize = Enum.Font.GothamBlack, 18
+liftHint.TextColor3 = Color3.new(1,1,1)
+liftHint.BackgroundColor3 = Color3.fromRGB(214,40,40)
+liftHint.BackgroundTransparency = 0.08
+liftHint.AnchorPoint = Vector2.new(1,1)
+liftHint.Size = UDim2.fromOffset(176,36)
+liftHint.Visible = false
+liftHint.Parent = gui
+do local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0,9); c.Parent = liftHint end
 tiltButton.Activated:Connect(function()
     -- アクセルを踏んだ後は変えられない(サーバーも受け付けない)
     if boat:GetAttribute("TiltLocked") then return end
@@ -849,10 +884,47 @@ RunService.RenderStepped:Connect(function(dt)
         chase.dir = angLerp(chase.dir,want,1-math.exp(-dt*4.2))
         local cx, cz = math.cos(chase.dir), math.sin(chase.dir)
         local bx, bz = cf.Position.X/STUDS_PER_METRE, cf.Position.Z/STUDS_PER_METRE
-        local back = 6.4 + 1.5*f - 1.5*ti
-        local up = 2.35 + 0.3*f - 0.75*ti
+        local close = camMode == 2
+        local back = close and (4.0 - 0.6*ti) or (6.4 + 1.5*f - 1.5*ti)
+        local up = close and (1.3 - 0.25*ti) or (2.35 + 0.3*f - 0.75*ti)
         local wantPos = Vector3.new(bx-cx*back, up, bz-cz*back)*STUDS_PER_METRE
-        local wantLook = Vector3.new(bx+cx*6, 1.0, bz+cz*6)*STUDS_PER_METRE
+        local wantLook = Vector3.new(bx+cx*6, close and 0.85 or 1.0, bz+cz*6)*STUDS_PER_METRE
+        local fov = (close and 68 or 60) + 13*f*f + 13*ti
+        local rigid = false
+        if camMode == 3 then
+            -- オンボード: 選手の目の少し前から前を見る(ターンの傾き・艇の揺れも一緒)
+            local upper = visibleBoat:FindFirstChild("RacerUpper")
+            local origin = upper and upper:GetAttribute("RestOrigin")
+            local frame = (upper and typeof(origin) == "Vector3") and upper:GetPivot()*CFrame.new(-origin) or cf
+            wantPos = frame:PointToWorldSpace(Vector3.new(0, 3.15, -0.7))
+            wantLook = frame:PointToWorldSpace(Vector3.new(0, 2.3, -40))
+            fov = 74 + 10*f*f + 10*ti
+            rigid = true
+        elseif camMode == 4 then
+            -- 中継: 岸の4か所のカメラのうち、艇がいる側の1台から望遠で追う(2.2秒は切り替えない)
+            local centre = 8*math.clamp((bx+150)/300,0,1)
+            local want = bx > 96 and 2 or (bx < -96 and 4 or (bz >= centre and 1 or 3))
+            chase.tvHold = (chase.tvHold or 0) - dt
+            if not chase.tv or (want ~= chase.tv and chase.tvHold <= 0) then
+                chase.tv, chase.tvHold = want, 2.2
+                camSwitched = true
+            end
+            local spot = TV_SPOTS[chase.tv]
+            wantPos = Vector3.new(spot[1], spot[2], spot[3])*STUDS_PER_METRE
+            wantLook = Vector3.new(bx + b.vx*0.25, 0.8, bz + b.vz*0.25)*STUDS_PER_METRE
+            local d = (wantPos - wantLook).Magnitude/STUDS_PER_METRE
+            fov = math.clamp(2*math.deg(math.atan(spot[4]/math.max(d,1))), 7, 46)
+        elseif camMode == 5 then
+            -- 上空: 艇の斜め上から見下ろす
+            wantPos = Vector3.new(bx-6, 64, bz+40)*STUDS_PER_METRE
+            wantLook = Vector3.new(bx, 0, bz)*STUDS_PER_METRE
+            fov = 46
+        end
+        if camSwitched and chase.init then
+            -- 視点を替えた時は、その場で切り替える(なめらかに寄せない)
+            chase.pos, chase.look, chase.catch = wantPos, wantLook, 0
+        end
+        camSwitched = false
         if not chase.init then
             -- オープニングや前のカメラの位置から、1.5秒かけてなめらかに(ゆっくり動き出して、ゆっくり止まる)追いつく
             chase.init = true
@@ -862,10 +934,20 @@ RunService.RenderStepped:Connect(function(dt)
             chase.catch = 1.5
         end
         chase.catch = math.max(0, chase.catch-dt)
-        chase.pos = chase.pos:Lerp(wantPos, 1-math.exp(-dt*14))
-        chase.look = chase.look:Lerp(wantLook, 1-math.exp(-dt*12))
-        -- 速さとターンで細かく揺らす
-        local shakeOn = player:GetAttribute("MinatoShake") ~= false
+        if rigid then
+            chase.pos, chase.look = wantPos, wantLook
+        elseif camMode == 4 then
+            chase.pos = wantPos
+            chase.look = chase.look:Lerp(wantLook, 1-math.exp(-dt*5))
+        elseif camMode == 5 then
+            chase.pos = chase.pos:Lerp(wantPos, 1-math.exp(-dt*4))
+            chase.look = chase.look:Lerp(wantLook, 1-math.exp(-dt*8))
+        else
+            chase.pos = chase.pos:Lerp(wantPos, 1-math.exp(-dt*14))
+            chase.look = chase.look:Lerp(wantLook, 1-math.exp(-dt*12))
+        end
+        -- 速さとターンで細かく揺らす(選手の目線に近い視点だけ)
+        local shakeOn = player:GetAttribute("MinatoShake") ~= false and camMode <= 2
         local s = shakeOn and (0.012*f*f + 0.02*ti)*STUDS_PER_METRE or 0
         local shake = Vector3.new((math.random()-0.5)*s, (math.random()-0.5)*s*1.4, (math.random()-0.5)*s)
         local eye, look = chase.pos + shake, chase.look
@@ -877,14 +959,18 @@ RunService.RenderStepped:Connect(function(dt)
         end
         if eye.Y < 0.45*STUDS_PER_METRE then eye = Vector3.new(eye.X, 0.45*STUDS_PER_METRE, eye.Z) end
         local roll = shakeOn and math.clamp(b.w*(0.035+0.05*f)*(1+ti),-0.2,0.2) or 0
-        camera.CFrame = CFrame.lookAt(eye, look) * CFrame.Angles(0,0,roll)
+        if rigid then
+            -- オンボードは艇の傾きそのまま(目線の上を艇の上へそろえる)
+            camera.CFrame = CFrame.lookAt(eye, look, visibleBoat:GetPivot().UpVector)
+            roll = nil
+        end
+        if roll then camera.CFrame = CFrame.lookAt(eye, look) * CFrame.Angles(0,0,roll) end
         camera.Focus = CFrame.new(cf.Position)
-        -- 視野: 速いほど・ターンほど広く。縦長の画面では横が狭くなるので少し広げる
-        local fov = 60 + 13*f*f + 13*ti
+        -- 視野: 速いほど・ターンほど広く。縦長の画面では横が狭くなるので少し広げる(中継の望遠はそのまま)
         local v = camera.ViewportSize
         local aspect = v.Y > 0 and v.X/v.Y or 1.6
-        if aspect < 1.2 then fov *= 1 + 0.32*math.clamp((1.2-aspect)/0.7,0,1) end
-        camera.FieldOfView += (fov-camera.FieldOfView)*math.min(1,dt*5)
+        if aspect < 1.2 and camMode ~= 4 then fov *= 1 + 0.32*math.clamp((1.2-aspect)/0.7,0,1) end
+        camera.FieldOfView += (fov-camera.FieldOfView)*math.min(1,dt*(camMode == 4 and 3 or 5))
     end
     local time = world:GetAttribute("Time") or -8
     -- サーバーの時計を手元で進めた時刻(大時計と予想STを滑らかにする)
@@ -907,6 +993,20 @@ RunService.RenderStepped:Connect(function(dt)
     local finished = shown and shown:GetAttribute("Finished") or false
     local shownOut = shownLane and latest[shownLane] and latest[shownLane][17] or ""
     tiltButton.Visible = driving==true and time < 0
+    -- 視点のボタン: 走っている間は右上の角。スタート前はチルトの左(画面が狭い時は大時計と重ならないよう出さない)
+    local screenW = gui.AbsoluteSize.X
+    camButton.Visible = driving==true and (time >= 0 or screenW >= 840)
+    camButton.Position = time < 0 and UDim2.new(1,-244,0,12) or UDim2.new(1,-124,0,12)
+    -- レバーを落とす合図: 練習の補助と同じく、フリーレース・フレンド・タイムアタックで、設定がオンの時だけ
+    local helpModes = {single=true, room=true, ta=true}
+    local liftOn = driving==true and time >= 0 and helpModes[world:GetAttribute("MatchMode") or ""] == true
+        and player:GetAttribute("MinatoAssist") ~= false and boat:GetAttribute("AdviceLift") == true and controls.throttle > 0.5
+    liftHint.Visible = liftOn
+    if liftOn then
+        -- 0.25秒ごとに色を替えて点滅させる。タッチの時はスロットルのレバーの左に出す
+        liftHint.BackgroundColor3 = (os.clock()*4)%2 < 1 and Color3.fromRGB(214,40,40) or Color3.fromRGB(255,120,60)
+        liftHint.Position = UserInputService.TouchEnabled and UDim2.new(1,-128,1,-150) or UDim2.new(1,-18,1,-132)
+    end
     -- アクセルを踏んだら「固定」と出して、押せない見た目にする
     local tiltLocked = boat:GetAttribute("TiltLocked") == true
     tiltButton.Text = "チルト "..tiltNames[boat:GetAttribute("Tilt") or 2]..(tiltLocked and "　固定" or "")

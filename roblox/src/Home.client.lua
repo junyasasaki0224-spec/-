@@ -259,7 +259,7 @@ local function swatch(parent,it,x,y,w,h,spin)
     return require(RS:WaitForChild("GachaShow")).preview(parent,it,x,y,w,h,{helmet=m and m.helmet,spin=spin})
 end
 local drawnPage
-function redraw()
+local function redrawNow()
     local oldList=drawnPage==page and root:FindFirstChild("List",true)
     local oldScroll=oldList and oldList.CanvasPosition
     drawnPage=page
@@ -977,7 +977,7 @@ function redraw()
         y+=58
         -- 押してオン・オフを切り替える設定(保存される。レースの中で使う)
         local toggles={
-            {"assist","スタートの予想バー","練習・フリーレース・フレンド・タイムアタックで、全開のST(スタートの目安)を出します。ランク戦・オンライン・大会では出ません。"},
+            {"assist","練習の補助","練習・フリーレース・フレンド・タイムアタックで、全開のST(スタートの目安)のバーと、ターンの手前の「▼ レバーを落とす」の合図を出します。ランク戦・オンライン・大会では出ません。"},
             {"shake","画面の揺れ","速い時の揺れと、ターンの傾きを止めます。酔いやすい時はオフにしてください。"},
             {"opening","オープニング","レース前の出走表・ピット離れ・待機行動の演出です。オフにするとすぐ大時計の場面から始まります(ほかの人がいる会場では、その人たちのオープニングが終わるまで待ちます)。"},
         }
@@ -1001,6 +1001,17 @@ function redraw()
     end
     list.CanvasSize=UDim2.fromOffset(0,y+12)
     if oldScroll then list.CanvasPosition=oldScroll end
+end
+-- 作り直しは1回ずつ。作っている途中にまた呼ばれたら、終わってからもう1回だけ作り直す
+-- (起動直後に2か所から同時に呼ばれて、ボタンが2組重なっていたため)
+local drawing,drawAgain=false,false
+function redraw()
+    if drawing then drawAgain=true;return end
+    drawing=true
+    local ok,err=pcall(redrawNow)
+    drawing=false
+    if not ok then warn("[Home] 画面を作れませんでした: "..tostring(err)) end
+    if drawAgain then drawAgain=false;redraw() end
 end
 -- 装備した瞬間の演出: しぶきの粒、レア度の色で光る知らせ(2秒)、レア度に合わせた音、カメラの1周
 local RARITY_PITCH={N=1,R=1.12,SR=1.26,SSR=1.45}

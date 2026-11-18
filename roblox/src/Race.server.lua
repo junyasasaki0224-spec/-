@@ -538,6 +538,8 @@ local function reset()
         b.started,b.flying,b.place,b.startTime = false,false,0,nil
         b.out,b.outAt,b.sunk = nil,nil,false
         b.model:SetAttribute("TiltLocked",nil)
+        b.model:SetAttribute("AdviceLift",nil)
+        b.adviceLift = nil
         b.model:SetAttribute("SinkCause",nil)
         b.sinkCause = nil
         b.model:SetAttribute("Skin",nil)
@@ -1010,6 +1012,16 @@ local function step()
                 local command = commands[b.player]
                 if command then
                     if os.clock()-command.last < 0.6 then throttle,steer = command.throttle,command.steer end
+                    -- 練習の合図「レバーを落とす」: AI がこの艇を走らせるなら、ターンの手前でスロットルを戻す所か
+                    -- (ブラウザ版 ai.js の advice.lift と同じ決まり。AI の計算は艇を動かさず、答えだけ使う)
+                    if b.ai and b.started then
+                        local advised = RaceAI.update(b,boats,elapsed,dt,collision.units)
+                        local lift = advised < 0.5 and (b.speed or 0) > 11
+                        if b.adviceLift ~= lift then
+                            b.adviceLift = lift
+                            b.model:SetAttribute("AdviceLift", lift)
+                        end
+                    end
                     command.applied = command.sequence
                 end
             else
