@@ -30,6 +30,9 @@
       "RacerAvatar": {
         "$path": "src/RacerAvatar.lua"
       },
+      "ShopConfig": {
+        "$path": "src/ShopConfig.lua"
+      },
       "VisualAssets": {
         "$className": "Folder",
         "Boat": {
@@ -115,6 +118,12 @@
       },
       "MetaService": {
         "$path": "src/MetaService.lua"
+      },
+      "ShopService": {
+        "$path": "src/ShopService.lua"
+      },
+      "ShopLobby": {
+        "$path": "src/ShopLobby.server.lua"
       },
       "RaceStep": {
         "$path": "src/RaceStep.lua"

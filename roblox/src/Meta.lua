@@ -25,6 +25,17 @@ local Meta = {["ITEMS"]={{["id"]="s0",["name"]="スタンダード",["r"]="N",["
     {["id"]="top3",["name"]="3着以内に入る",["goal"]=1,["coins"]=80},
     {["id"]="st20",["name"]="ST 0.20 以内でスタートする",["goal"]=1,["coins"]=80},
     {["id"]="race3",["name"]="レースに3回出る",["goal"]=3,["coins"]=120}},["GRADES"]={{["name"]="B2",["rate"]=0,["diff"]=0},{["name"]="B1",["rate"]=300,["diff"]=1},{["name"]="A2",["rate"]=800,["diff"]=2},{["name"]="A1",["rate"]=1500,["diff"]=3}},["RARITY"]={["N"]={["name"]="N",["rate"]=0.6,["dupe"]=15},["R"]={["name"]="R",["rate"]=0.28,["dupe"]=40},["SR"]={["name"]="SR",["rate"]=0.1,["dupe"]=120},["SSR"]={["name"]="SSR",["rate"]=0.02,["dupe"]=400}}}
+-- Roblox 版だけの品: ショップで Robux で直接買う物(shop)と、VIP パスの特典(vip)。
+-- どれもランダムではなく、ガチャには出ない(ガチャの確率は今までと同じ)。速さや強さは変わらない見た目だけ
+for _,it in ipairs({
+    {id="x1",name="さくら",r="SR",hull=16245222,trim=14707340,deck=15979483,cowl=14707340,kind="skin",shop=true},
+    {id="x2",name="ネオンナイト",r="SR",hull=1316394,trim=2748671,deck=921632,cowl=16728008,kind="skin",shop=true},
+    {id="x3",name="朱漆",r="SR",hull=11741982,trim=15253850,deck=8001044,cowl=1315860,kind="skin",shop=true},
+    {id="x4",name="さくら",r="SR",base=16242399,stripe=14239866,kind="helmet",shop=true},
+    {id="x5",name="ネオン",r="SR",base=1053734,stripe=2748671,kind="helmet",shop=true},
+    {id="v1",name="VIPゴールド",r="SSR",hull=1710618,trim=15911244,deck=1118481,cowl=15911244,kind="skin",shop=true,vip=true},
+    {id="v2",name="VIPゴールド",r="SSR",base=15911244,stripe=1710618,kind="helmet",shop=true,vip=true},
+}) do table.insert(Meta.ITEMS,it) end
 local function clone(v)
     if type(v)~="table" then return v end
     local out={}
@@ -99,7 +110,8 @@ function Meta.action(m,action,arg,rnd)
                 x-=Meta.RARITY[r].rate
             end
             local pool={}
-            for _,it in ipairs(Meta.ITEMS) do if it.r==rar then table.insert(pool,it) end end
+            -- ショップ・VIP の品はガチャに出さない
+            for _,it in ipairs(Meta.ITEMS) do if it.r==rar and not it.shop then table.insert(pool,it) end end
             local it=pool[math.min(#pool,math.floor(rnd()*#pool)+1)]
             local dupe=0
             if table.find(m.own,it.id) then dupe=Meta.RARITY[rar].dupe;m.coins+=dupe
@@ -171,6 +183,27 @@ function Meta.result(m,r)
         m.tier+=1
         Meta.sendMail(m,"シーズンパス "..m.tier.."段 到達","ごほうびのコインです。",m.tier%5==0 and 300 or 100)
     end
+end
+-- Robux の購入(ショップの品・VIP パス)で品を渡す。purchaseId ごとに1回だけ
+-- (ProcessReceipt は同じ購入が何度も届くことがあるため)。戻り値: "granted" / "already"
+function Meta.grantPurchase(m,purchaseId,ids)
+    if type(m.receipts)~="table" then m.receipts={} end
+    if table.find(m.receipts,purchaseId) then return "already" end
+    for _,id in ipairs(ids) do
+        local it=Meta.item(id)
+        if it and it.shop and not table.find(m.own,id) then table.insert(m.own,id) end
+    end
+    if string.sub(purchaseId,1,5)=="pass:" then m.vip=true end
+    table.insert(m.receipts,purchaseId)
+    -- 古い記録は消す(パスの記録は残す)
+    while #m.receipts>200 do
+        local removed=false
+        for i,r in ipairs(m.receipts) do
+            if string.sub(r,1,5)~="pass:" then table.remove(m.receipts,i);removed=true;break end
+        end
+        if not removed then break end
+    end
+    return "granted"
 end
 function Meta.transact(value,token,action,arg,day,randoms,nextToken)
     local data=clone(value or {})

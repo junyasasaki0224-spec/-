@@ -34,4 +34,16 @@ function Service.action(userId,token,action,arg)
     local data=update(userId,function(v) return Meta.transact(v,token,action,arg,today,draws,nextToken) end)
     return data and data.meta
 end
+-- Robux の購入で品を渡して保存する。保存できた時だけ meta と "granted" / "already" を返す(できなければ nil)
+function Service.grant(userId,purchaseId,ids)
+    local result
+    local data=update(userId,function(v)
+        v=Meta.clone(v or {})
+        v.meta=Meta.normalize(v.meta)
+        result=Meta.grantPurchase(v.meta,purchaseId,ids)
+        return v
+    end)
+    if not data then return nil end
+    return data.meta,result
+end
 return Service

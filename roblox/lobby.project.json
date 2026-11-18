@@ -39,6 +39,12 @@
       "MetaService": {
         "$path": "src/MetaService.lua"
       },
+      "ShopService": {
+        "$path": "src/ShopService.lua"
+      },
+      "ShopLobby": {
+        "$path": "src/ShopLobby.server.lua"
+      },
       "MetaLobby": {
         "$path": "src/MetaLobby.server.lua"
       },
@@ -93,6 +99,9 @@
       },
       "RacerAvatar": {
         "$path": "src/RacerAvatar.lua"
+      },
+      "ShopConfig": {
+        "$path": "src/ShopConfig.lua"
       },
       "GachaShow": {
         "$path": "src/GachaShow.lua"

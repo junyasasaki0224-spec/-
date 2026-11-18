@@ -102,6 +102,7 @@ local ICONS = {
     ranking = { { "box", 22, 5, 20, 16, 8 }, { "bar", 31, 21, 3, 9 }, { "bar", 24, 31, 17, 3 }, { "ring", 13, 8, 9, 9 }, { "ring", 42, 8, 9, 9 } },
     online = { { "ring", 17, 5, 30, 30 }, { "bar", 17, 19, 30, 3 }, { "box", 26, 5, 12, 30, 6 } },
     howto = { { "ring", 17, 5, 30, 30 }, { "bar", 31, 16, 3, 8 }, { "dot", 31, 27, 3, 3 } },
+    shop = { { "box", 14, 13, 36, 23, 4 }, { "ring", 24, 3, 16, 16 }, { "bar", 26, 22, 12, 3 } },
 }
 function Ui.icon(parent, kind, x, y, scale)
     local holder = Instance.new("Frame")

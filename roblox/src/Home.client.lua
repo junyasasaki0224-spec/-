@@ -17,6 +17,12 @@ local LANE_COLORS2={{Color3.fromRGB(242,242,240),Color3.fromRGB(17,17,17)},{Colo
     {Color3.fromRGB(217,30,46),Color3.new(1,1,1)},{Color3.fromRGB(27,80,212),Color3.new(1,1,1)},{Color3.fromRGB(243,210,27),Color3.fromRGB(17,17,17)},{Color3.fromRGB(24,162,76),Color3.new(1,1,1)}}
 local outfit=require(RS:WaitForChild("Outfit"))
 local remote=RS:WaitForChild("MinatoMeta")
+-- ショップ(Robux で見た目だけを買う)。値段は Roblox から取る。品を渡すのはサーバーだけ(ShopService)
+local Marketplace=game:GetService("MarketplaceService")
+local ShopConfig=require(RS:WaitForChild("ShopConfig"))
+local shopEvent=RS:WaitForChild("MinatoShop",10)
+local ROBUX=utf8.char(0xE002)
+local prices,fetching,buying={},{},nil
 local gui=Instance.new("ScreenGui")
 gui.Name="MinatoHome";gui.ResetOnSpawn=false;gui.ScreenInsets=Enum.ScreenInsets.CoreUISafeInsets
 gui.Parent=player:WaitForChild("PlayerGui")
@@ -283,6 +289,7 @@ function redraw()
             Ui.headButton(root,"Settings","設定",w-12-64,17,64,function() go("設定") end)
             Ui.pill(root,"Coins",tostring(m.coins),12,78,110,34,nil,true)
             Ui.pill(root,"Pass","シーズンパス "..m.tier.."段",130,78,160,34,function() go("シーズンパス") end)
+            if m.vip then Ui.pill(root,"Vip","VIP",298,78,64,34) end
             Ui.logo(root,0,122,w,30)
             local raceH=72
             local raceY=h-18-raceH
@@ -293,9 +300,10 @@ function redraw()
                 local tile=Ui.tile(root,t[1],t[2],t[1],"",12+(i-1)*(tw+8),tileY,tw,tileH,true,function() go(t[1]) end)
                 if t[1]=="ミッション" then Ui.badge(tile,misCount,tw-14,-8) end
             end
-            local sw=(w-24-8)/2
-            Ui.tile(root,"通信対戦","online","通信対戦","オンライン・フレンド",12,tileY-8-52,sw,52,false,function() go("通信対戦") end)
-            Ui.tile(root,"遊び方","howto","遊び方","スタートとターンのコツ",20+sw,tileY-8-52,sw,52,false,function() go("遊び方") end)
+            local sw=(w-24-16)/3
+            Ui.tile(root,"通信対戦","online","通信対戦","",12,tileY-8-52,sw,52,false,function() go("通信対戦") end)
+            Ui.tile(root,"遊び方","howto","遊び方","",20+sw,tileY-8-52,sw,52,false,function() go("遊び方") end)
+            Ui.tile(root,"ショップ","shop","ショップ","",28+2*sw,tileY-8-52,sw,52,false,function() go("ショップ") end)
             if waitingMode then
                 local chip=frame(root,"Waiting",12,raceY-58,w-24,48);stroke(chip,gold,1)
                 label(chip,matchNames[waitingMode].." 待機中",10,0,140,24,14).TextColor3=gold
@@ -326,6 +334,9 @@ function redraw()
         end
         Ui.tile(root,"通信対戦","online","通信対戦","オンライン・フレンド",w-16-tw,short and 70 or 96,tw,th,false,function() go("通信対戦") end)
         Ui.tile(root,"遊び方","howto","遊び方","スタートとターンのコツ",w-16-tw,(short and 70 or 96)+th+gap,tw,th,false,function() go("遊び方") end)
+        Ui.tile(root,"ショップ","shop","ショップ","限定の塗装・VIP",w-16-tw,(short and 70 or 96)+2*(th+gap),tw,th,false,function() go("ショップ") end)
+        -- VIP の札は、コインの札の下に小さく
+        if m.vip then Ui.pill(root,"Vip","VIP",16+pw+12,(short and 20 or 26)+42,64,28) end
         local rw=math.min(300,math.floor(w*.44))
         local rh=short and 60 or 76
         local rx,ry=w-16-rw,h-18-rh-6
@@ -832,6 +843,77 @@ function redraw()
             end
         end
         y=row("所持 "..#m.own.." / "..#Meta.ITEMS.." 種","重複時 N15 / R40 / SR120 / SSR400 コイン",y)
+    elseif page=="ショップ" then
+        -- 値段のボタンの文字(持っている・準備中・確認中・値段)
+        local function priceText(kind,id,owned)
+            if owned then return "持っています" end
+            if id<=0 then return "準備中" end
+            if buying==id then return "確認中…" end
+            local key=kind..id
+            if prices[key]==nil and not fetching[key] then
+                fetching[key]=true
+                task.spawn(function()
+                    local ok,info=pcall(Marketplace.GetProductInfo,Marketplace,id,kind=="pass" and Enum.InfoType.GamePass or Enum.InfoType.Product)
+                    prices[key]=ok and info and info.PriceInRobux or false
+                    if page=="ショップ" then redraw() end
+                end)
+            end
+            if prices[key] then return ROBUX.." "..prices[key] end
+            return prices[key]==false and "値段を読めません" or ROBUX.." …"
+        end
+        -- 買う: Roblox の確認画面を出すだけ。品はサーバーが購入を確かめてから渡す
+        local function buy(kind,id,owned)
+            if owned or id<=0 or buying then return end
+            buying=id;redraw()
+            local ok=pcall(function()
+                if kind=="pass" then Marketplace:PromptGamePassPurchase(player,id)
+                else Marketplace:PromptProductPurchase(player,id) end
+            end)
+            if not ok then buying=nil;toast.Text="購入の画面を開けませんでした";redraw() end
+        end
+        y=row("見た目だけのショップ","Robux で買えるのは塗装・ヘルメット・VIP の見た目だけです。レースの速さや強さは変わりません。ガチャはゲーム内コインだけで引けます(Robux では引けません)。",y)
+        -- VIP パス(いちばん上に大きく)
+        local vip=ShopConfig.vip
+        local vipCard=frame(list,"Vip",8,y,width-16,154);stroke(vipCard,gold,2)
+        local grad=Instance.new("UIGradient");grad.Rotation=90
+        grad.Color=ColorSequence.new(Color3.fromRGB(58,46,14),Color3.fromRGB(11,29,58));grad.Parent=vipCard
+        local pw=math.min(130,math.floor((width-32)/4))
+        for k,id in ipairs(vip.items) do
+            local it=Meta.item(id)
+            if it then swatch(vipCard,it,8+(k-1)*(pw+8),8,pw,100,true) end
+        end
+        local tx=8+2*(pw+8)+6
+        local tw=width-16-tx-8
+        label(vipCard,"みなと VIP パス",tx,8,tw,28,18).TextColor3=gold
+        local d=label(vipCard,"金の塗装とヘルメット、ホームの VIP の札。1回買えばずっと使えます",tx,38,tw,56,14)
+        d.TextWrapped=true;d.TextTruncate=Enum.TextTruncate.None;d.TextColor3=pale
+        button(vipCard,priceText("pass",vip.pass,m.vip),tx,100,math.min(220,tw),function() buy("pass",vip.pass,m.vip) end,not m.vip and vip.pass>0)
+        label(vipCard,"VIP の品は倉庫で着せ替えられます",8,116,tx-16,30,12).TextColor3=pale
+        y+=166
+        -- ショップ限定の塗装・ヘルメット(1つずつ買う)
+        label(list,"ショップ限定の塗装・ヘルメット",8,y,width-16,28,17).TextColor3=gold
+        y+=34
+        local columns=math.max(1,math.floor(width/175));local cw=math.floor(width/columns)-8
+        for i,entry in ipairs(ShopConfig.products) do
+            local it=Meta.item(entry.item)
+            if it then
+                local x=((i-1)%columns)*(cw+8);local cy=y+math.floor((i-1)/columns)*206
+                local card=frame(list,"Shop"..it.id,x,cy,cw,196)
+                local owned=table.find(m.own,it.id)~=nil
+                local equipped=m.skin==it.id or m.helmet==it.id
+                stroke(card,equipped and gold or rarity[it.r],equipped and 3 or 1)
+                swatch(card,it,8,8,cw-16,84)
+                label(card,it.name,8,98,cw-16,24,14)
+                label(card,(it.kind=="skin" and "塗装" or "ヘルメット").."　ショップ限定",8,124,cw-16,20,12).TextColor3=rarity[it.r]
+                if owned then
+                    button(card,equipped and "装備中" or "装備する",8,146,cw-16,function() request("equip",it.id) end)
+                else
+                    button(card,priceText("product",entry.product,false),8,146,cw-16,function() buy("product",entry.product,false) end,entry.product>0)
+                end
+            end
+        end
+        y+=math.ceil(#ShopConfig.products/columns)*206
+        y=row("購入について","購入は Roblox の確認画面で決まります。届いた品は倉庫で着せ替えられます。持っている品は買えません。",y)
     elseif page=="倉庫" then
         -- いちばん上に「装備中」: 塗装とヘルメットを色見本・名前・レア度で出す
         label(list,"装備中",8,0,120,26,16).TextColor3=gold
@@ -860,6 +942,7 @@ function redraw()
             label(card,it.name,8,98,cw-16,24,14)
             label(card,(it.kind=="skin" and "塗装 " or "ヘルメット ")..it.r,8,124,cw-16,20,12).TextColor3=rarity[it.r]
             if owned then button(card,(m.skin==it.id or m.helmet==it.id) and "装備中" or "装備する",8,146,cw-16,function() request("equip",it.id) end)
+            elseif it.shop then button(card,it.vip and "VIP パスの特典" or "ショップで買えます",8,146,cw-16,function() go("ショップ") end)
             else label(card,"未入手",8,149,cw-16,40,14) end
         end
         y+=math.ceil(#Meta.ITEMS/columns)*206
@@ -1021,6 +1104,41 @@ end)
 task.spawn(function()
     while not m do request("get");task.wait(6) end
 end)
+-- 購入の画面が閉じた時(買った・やめた)。品そのものは、サーバーが確かめてからの知らせ(MinatoShop)で届く
+local function purchaseClosed(id,purchased)
+    if buying~=id then return end
+    buying=nil
+    toast.Text=purchased and "購入を確かめています…" or "購入をやめました"
+    if page=="ショップ" then redraw() end
+end
+Marketplace.PromptProductPurchaseFinished:Connect(function(userId,productId,purchased)
+    if userId==player.UserId then purchaseClosed(productId,purchased) end
+end)
+Marketplace.PromptGamePassPurchaseFinished:Connect(function(who,passId,purchased)
+    if who==player then purchaseClosed(passId,purchased) end
+end)
+-- 品が届いた: 持ち物を読み直して、ガチャと同じ演出で見せる
+if shopEvent then
+    shopEvent.OnClientEvent:Connect(function(kind,ids)
+        if kind~="granted" or type(ids)~="table" then return end
+        task.spawn(function()
+            while pending do task.wait(.1) end
+            request("get")
+            while pending do task.wait(.1) end
+            local results={}
+            for _,id in ipairs(ids) do
+                local it=type(id)=="string" and Meta.item(id)
+                if it then table.insert(results,{item=it,dupe=0}) end
+            end
+            if #results>0 then
+                toast.Text="購入した品が倉庫に届きました"
+                local folder=RS:FindFirstChild("RacerAvatars")
+                require(RS:WaitForChild("GachaShow")).play(gui,results,{rarity=rarity,skin=m and m.skin,helmet=m and m.helmet,
+                    avatar=folder and folder:FindFirstChild("Home"..player.UserId)})
+            end
+        end)
+    end)
+end
 
 task.spawn(function()
     while gui.Parent do
