@@ -335,30 +335,22 @@ function GachaShow.play(gui, results, options)
 			s.Color = rarityColor[it.r] or WHITE
 			s.Thickness = ORDER[it.r] >= 3 and 3 or 1.5
 			s.Parent = card
-			local colors = it.kind == "skin" and { it.hull, it.trim, it.deck, it.cowl } or { it.base, it.stripe }
-			for i, n in colors do
-				local sw = Instance.new("Frame")
-				sw.BorderSizePixel = 0
-				sw.ZIndex = 57
-				sw.Position = UDim2.new(0, 8 + (i - 1) * 40 / #colors, 0, 8)
-				sw.Size = UDim2.fromOffset(40 / #colors, 40)
-				sw.BackgroundColor3 =
-					Color3.fromRGB(bit32.rshift(n, 16), bit32.band(bit32.rshift(n, 8), 255), bit32.band(n, 255))
-				sw.Parent = card
-			end
+			-- 品の見た目は3Dで(色見本ではなく)
+			local thumb = GachaShow.preview(card, it, 8, 8, 72, 76, { helmet = options.helmet })
+			thumb.ZIndex = 57
 			local t1 = label(card, it.r, 18, rarityColor[it.r])
 			t1.ZIndex = 57
 			t1.AnchorPoint = Vector2.zero
 			t1.TextXAlignment = Enum.TextXAlignment.Left
-			t1.Position = UDim2.fromOffset(56, 6)
-			t1.Size = UDim2.new(1, -60, 0, 22)
+			t1.Position = UDim2.fromOffset(88, 6)
+			t1.Size = UDim2.new(1, -92, 0, 22)
 			local t2 = label(card, it.name, 14)
 			t2.ZIndex = 57
 			t2.AnchorPoint = Vector2.zero
 			t2.TextXAlignment = Enum.TextXAlignment.Left
 			t2.TextTruncate = Enum.TextTruncate.AtEnd
-			t2.Position = UDim2.fromOffset(56, 30)
-			t2.Size = UDim2.new(1, -60, 0, 20)
+			t2.Position = UDim2.fromOffset(88, 30)
+			t2.Size = UDim2.new(1, -92, 0, 20)
 			local t3 = label(
 				card,
 				r.dupe > 0 and ("かぶり +" .. r.dupe) or "NEW!",
@@ -368,8 +360,8 @@ function GachaShow.play(gui, results, options)
 			t3.ZIndex = 57
 			t3.AnchorPoint = Vector2.zero
 			t3.TextXAlignment = Enum.TextXAlignment.Left
-			t3.Position = UDim2.fromOffset(8, 60)
-			t3.Size = UDim2.new(1, -16, 0, 22)
+			t3.Position = UDim2.fromOffset(88, 58)
+			t3.Size = UDim2.new(1, -92, 0, 22)
 		end
 		hint.Text = "タップで閉じる"
 		revealAt = os.clock()
@@ -540,6 +532,69 @@ function GachaShow.play(gui, results, options)
 	return {
 		close = finish,
 	}
+end
+
+-- 品の小さな3Dの窓(ガチャの結果のカード・倉庫で使う)。色見本の代わりに、見た目そのままを見せる。
+--   塗装はその塗装の艇(options.helmet のヘルメット)、ヘルメットはそのヘルメット。止まった斜め前からの眺め
+--   options.spin = true で、ゆっくり回す(装備中の品など)
+local previewLinks = {}
+function GachaShow.preview(parent, item, x, y, w, h, options)
+	options = options or {}
+	local view = Instance.new("ViewportFrame")
+	view.Name = "Preview"
+	view.Position = UDim2.fromOffset(x, y)
+	view.Size = UDim2.fromOffset(w, h)
+	view.BackgroundColor3 = Color3.fromRGB(28, 52, 92)
+	view.BackgroundTransparency = 0.2
+	view.BorderSizePixel = 0
+	view.Ambient = Color3.fromRGB(160, 170, 190)
+	view.LightColor = Color3.fromRGB(255, 250, 240)
+	view.LightDirection = Vector3.new(-0.6, -1, -0.5)
+	view.Parent = parent
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = view
+	local shade = Instance.new("UIGradient")
+	shade.Rotation = 90
+	shade.Color = ColorSequence.new(Color3.fromRGB(120, 150, 200), Color3.fromRGB(40, 60, 100))
+	shade.Parent = view
+	local camera = Instance.new("Camera")
+	camera.FieldOfView = 30
+	camera.Parent = view
+	view.CurrentCamera = camera
+	local model = itemModel(item, { helmet = options.helmet })
+	if not model then
+		return view
+	end
+	model.Parent = view
+	local center, distance = frameModel(camera, model, item.kind)
+	-- 横長の窓では、艇がはみ出さないよう少し近づける
+	if item.kind ~= "helmet" then
+		distance *= w > h * 1.4 and 0.66 or 0.85
+	end
+	local yaw = item.kind == "helmet" and math.pi + 0.6 or 2.4
+	local function place()
+		local look = CFrame.new(center)
+			* CFrame.Angles(0, yaw, 0)
+			* CFrame.Angles(-0.32, 0, 0)
+			* CFrame.new(0, 0, distance)
+		camera.CFrame = CFrame.lookAt(look.Position, center)
+	end
+	place()
+	if options.spin then
+		local link
+		link = RunService.RenderStepped:Connect(function(dt)
+			if not view.Parent then
+				link:Disconnect()
+				previewLinks[link] = nil
+				return
+			end
+			yaw += dt * 0.6
+			place()
+		end)
+		previewLinks[link] = true
+	end
+	return view
 end
 
 return GachaShow

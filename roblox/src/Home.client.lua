@@ -248,13 +248,9 @@ end
 RS.ChildAdded:Connect(bindMatch)
 local existingMatch=RS:FindFirstChild("MinatoRankedLobby")
 if existingMatch then bindMatch(existingMatch) end
-local function swatch(parent,it,x,y,w,h)
-    local colors=it.kind=="skin" and {it.hull,it.trim,it.deck,it.cowl} or {it.base,it.stripe}
-    for i,c in ipairs(colors) do
-        local f=frame(parent,"Color",x+(i-1)*w/#colors,y,w/#colors,h)
-        if it.kind=="helmet" then f:FindFirstChildOfClass("UICorner").CornerRadius=UDim.new(1,0) end
-        f.BackgroundTransparency=0;f.BackgroundColor3=Color3.fromRGB(bit32.rshift(c,16),bit32.band(bit32.rshift(c,8),255),bit32.band(c,255))
-    end
+-- 品の見た目: 色見本ではなく3Dで出す(塗装はその塗装の艇に今のヘルメット、ヘルメットはそのヘルメット)
+local function swatch(parent,it,x,y,w,h,spin)
+    return require(RS:WaitForChild("GachaShow")).preview(parent,it,x,y,w,h,{helmet=m and m.helmet,spin=spin})
 end
 local drawnPage
 function redraw()
@@ -827,9 +823,9 @@ function redraw()
             for index,v in ipairs(m.last) do
                 local it=Meta.item(v.id)
                 local card=frame(list,"Draw"..index,8,y,width-16,112);stroke(card,rarity[it.r],2)
-                swatch(card,it,8,8,64,88)
-                label(card,it.r.."　"..it.name,82,10,width-106,32,16)
-                label(card,v.dupe>0 and ("重複 +"..v.dupe.." コイン") or "倉庫に届きました",82,50,width-106,30,14)
+                swatch(card,it,8,8,128,96)
+                label(card,it.r.."　"..it.name,146,10,width-170,32,16).TextColor3=rarity[it.r]
+                label(card,(it.kind=="skin" and "塗装　" or "ヘルメット　")..(v.dupe>0 and ("重複 +"..v.dupe.." コイン") or "倉庫に届きました"),146,50,width-170,30,14)
                 card.Visible=false
                 task.delay(index*.12,function() if card.Parent then card.Visible=true end end)
                 y+=124
@@ -843,27 +839,30 @@ function redraw()
             local it=Meta.item(id)
             if it then
                 local cardW=math.floor((width-24)/2)
-                local now=frame(list,"Equipped"..k,8+(k-1)*(cardW+8),28,cardW,64);stroke(now,rarity[it.r],2)
-                swatch(now,it,8,8,44,48)
-                label(now,it.name,60,6,cardW-66,28,15)
-                label(now,(it.kind=="skin" and "塗装 " or "ヘルメット ")..it.r,60,34,cardW-66,22,12).TextColor3=rarity[it.r]
+                local now=frame(list,"Equipped"..k,8+(k-1)*(cardW+8),28,cardW,96);stroke(now,rarity[it.r],2)
+                local pw=math.min(120,math.floor(cardW*.48))
+                swatch(now,it,6,6,pw,84,true)
+                label(now,it.name,pw+14,10,cardW-pw-20,28,15)
+                label(now,(it.kind=="skin" and "塗装 " or "ヘルメット ")..it.r,pw+14,40,cardW-pw-20,22,12).TextColor3=rarity[it.r]
             end
         end
-        y=104
+        y=136
         local columns=math.max(1,math.floor(width/175));local cw=math.floor(width/columns)-8
         for i,it in ipairs(Meta.ITEMS) do
-            local x=((i-1)%columns)*(cw+8);local cy=y+math.floor((i-1)/columns)*156
-            local card=frame(list,it.id,x,cy,cw,146)
+            local x=((i-1)%columns)*(cw+8);local cy=y+math.floor((i-1)/columns)*206
+            local card=frame(list,it.id,x,cy,cw,196)
             local owned=table.find(m.own,it.id)
             card.BackgroundTransparency=owned and .1 or .7
             stroke(card,(m.skin==it.id or m.helmet==it.id) and gold or rarity[it.r],(m.skin==it.id or m.helmet==it.id) and 3 or 1)
-            swatch(card,it,8,8,cw-16,34)
-            label(card,it.name,8,48,cw-16,24,14)
-            label(card,(it.kind=="skin" and "塗装 " or "ヘルメット ")..it.r,8,74,cw-16,20,12)
-            if owned then button(card,(m.skin==it.id or m.helmet==it.id) and "装備中" or "装備する",8,96,cw-16,function() request("equip",it.id) end)
-            else label(card,"未入手",8,99,cw-16,40,14) end
+            local view=swatch(card,it,8,8,cw-16,84)
+            -- まだ持っていない品は、少し薄くして見せる(見た目はわかるように)
+            if not owned and view then view.ImageTransparency=.3 end
+            label(card,it.name,8,98,cw-16,24,14)
+            label(card,(it.kind=="skin" and "塗装 " or "ヘルメット ")..it.r,8,124,cw-16,20,12).TextColor3=rarity[it.r]
+            if owned then button(card,(m.skin==it.id or m.helmet==it.id) and "装備中" or "装備する",8,146,cw-16,function() request("equip",it.id) end)
+            else label(card,"未入手",8,149,cw-16,40,14) end
         end
-        y+=math.ceil(#Meta.ITEMS/columns)*156
+        y+=math.ceil(#Meta.ITEMS/columns)*206
     elseif page=="メール" then
         for _,v in ipairs(m.mail) do y=row(v.title,v.body.."　+"..v.coins.." コイン",y,function() request("mail",v.id) end) end
         if #m.mail==0 then y=row("メールはありません","次のログインやレースで報酬が届きます",y) end
