@@ -25,14 +25,8 @@ local Meta = {["ITEMS"]={{["id"]="s0",["name"]="スタンダード",["r"]="N",["
     {["id"]="top3",["name"]="3着以内に入る",["goal"]=1,["coins"]=80},
     {["id"]="st20",["name"]="ST 0.20 以内でスタートする",["goal"]=1,["coins"]=80},
     {["id"]="race3",["name"]="レースに3回出る",["goal"]=3,["coins"]=120}},["GRADES"]={{["name"]="B2",["rate"]=0,["diff"]=0},{["name"]="B1",["rate"]=300,["diff"]=1},{["name"]="A2",["rate"]=800,["diff"]=2},{["name"]="A1",["rate"]=1500,["diff"]=3}},["RARITY"]={["N"]={["name"]="N",["rate"]=0.6,["dupe"]=15},["R"]={["name"]="R",["rate"]=0.28,["dupe"]=40},["SR"]={["name"]="SR",["rate"]=0.1,["dupe"]=120},["SSR"]={["name"]="SSR",["rate"]=0.02,["dupe"]=400}}}
--- Roblox 版だけの品: ショップで Robux で直接買う物(shop)と、VIP パスの特典(vip)。
--- どれもランダムではなく、ガチャには出ない(ガチャの確率は今までと同じ)。速さや強さは変わらない見た目だけ
+-- Roblox 版だけの品: VIP パスの特典。ランダムではなく、ガチャには出ない(ガチャの確率は今までと同じ)。速さや強さは変わらない見た目だけ
 for _,it in ipairs({
-    {id="x1",name="さくら",r="SR",hull=16245222,trim=14707340,deck=15979483,cowl=14707340,kind="skin",shop=true},
-    {id="x2",name="ネオンナイト",r="SR",hull=1316394,trim=2748671,deck=921632,cowl=16728008,kind="skin",shop=true},
-    {id="x3",name="朱漆",r="SR",hull=11741982,trim=15253850,deck=8001044,cowl=1315860,kind="skin",shop=true},
-    {id="x4",name="さくら",r="SR",base=16242399,stripe=14239866,kind="helmet",shop=true},
-    {id="x5",name="ネオン",r="SR",base=1053734,stripe=2748671,kind="helmet",shop=true},
     {id="v1",name="VIPゴールド",r="SSR",hull=1710618,trim=15911244,deck=1118481,cowl=15911244,kind="skin",shop=true,vip=true},
     {id="v2",name="VIPゴールド",r="SSR",base=15911244,stripe=1710618,kind="helmet",shop=true,vip=true},
 }) do table.insert(Meta.ITEMS,it) end
@@ -43,6 +37,20 @@ local function clone(v)
     return out
 end
 Meta.clone=clone
+-- ランク戦は1日(日本時間)5回まで。VIP パスがあれば無制限
+Meta.RANKED_DAILY=5
+-- 今日あと何回ランク戦に出られるか。VIP は nil(無制限)
+function Meta.rankedLeft(m,day)
+    if m.vip==true then return nil end
+    local used=(m.rankDay==day and type(m.rankCount)=="number") and m.rankCount or 0
+    return math.max(0,Meta.RANKED_DAILY-used)
+end
+-- ガチャの1つあたりの確率(表示と抽選は同じ Meta.RARITY と品の数から計算する)
+function Meta.pool(rar)
+    local pool={}
+    for _,it in ipairs(Meta.ITEMS) do if it.r==rar and not it.shop then table.insert(pool,it) end end
+    return pool
+end
 function Meta.item(id)
     for _,it in ipairs(Meta.ITEMS) do if it.id==id then return it end end
 end
@@ -109,9 +117,8 @@ function Meta.action(m,action,arg,rnd)
                 if x<Meta.RARITY[r].rate then rar=r;break end
                 x-=Meta.RARITY[r].rate
             end
-            local pool={}
-            -- ショップ・VIP の品はガチャに出さない
-            for _,it in ipairs(Meta.ITEMS) do if it.r==rar and not it.shop then table.insert(pool,it) end end
+            -- VIP の品はガチャに出さない
+            local pool=Meta.pool(rar)
             local it=pool[math.min(#pool,math.floor(rnd()*#pool)+1)]
             local dupe=0
             if table.find(m.own,it.id) then dupe=Meta.RARITY[rar].dupe;m.coins+=dupe
@@ -167,6 +174,10 @@ function Meta.result(m,r)
         xp=r.out and 6 or ({30,24,20,16,12,12})[pi]
         if r.event then coins*=2 end
         if r.mode=="season" then
+            -- 今日のランク戦の回数(出走した時点で1回。日本時間の日付ごと)
+            local day=r.day or m.day
+            if m.rankDay~=day then m.rankDay,m.rankCount=day,0 end
+            m.rankCount=(type(m.rankCount)=="number" and m.rankCount or 0)+1
             local before=Meta.grade(m.rate)
             m.rate=math.max(0,m.rate+Meta.seasonDelta(r))
             m.peak=math.max(m.peak,m.rate);m.seasonRaces+=1
@@ -184,11 +195,12 @@ function Meta.result(m,r)
         Meta.sendMail(m,"シーズンパス "..m.tier.."段 到達","ごほうびのコインです。",m.tier%5==0 and 300 or 100)
     end
 end
--- Robux の購入(ショップの品・VIP パス)で品を渡す。purchaseId ごとに1回だけ
+-- Robux の購入(コインの袋・VIP パス)で品とコインを渡す。purchaseId ごとに1回だけ
 -- (ProcessReceipt は同じ購入が何度も届くことがあるため)。戻り値: "granted" / "already"
-function Meta.grantPurchase(m,purchaseId,ids)
+function Meta.grantPurchase(m,purchaseId,ids,coins)
     if type(m.receipts)~="table" then m.receipts={} end
     if table.find(m.receipts,purchaseId) then return "already" end
+    if type(coins)=="number" and coins>0 and coins<=100000 then m.coins+=math.floor(coins) end
     for _,id in ipairs(ids) do
         local it=Meta.item(id)
         if it and it.shop and not table.find(m.own,id) then table.insert(m.own,id) end
@@ -204,6 +216,13 @@ function Meta.grantPurchase(m,purchaseId,ids)
         if not removed then break end
     end
     return "granted"
+end
+-- VIP の毎日のボーナス(1日1回、メールで届く)
+function Meta.vipDaily(m,day,coins)
+    if m.vip~=true or type(day)~="string" or m.vipDay==day then return false end
+    m.vipDay=day
+    Meta.sendMail(m,"VIP の毎日のボーナス",day.." の VIP ボーナスです。",coins)
+    return true
 end
 function Meta.transact(value,token,action,arg,day,randoms,nextToken)
     local data=clone(value or {})

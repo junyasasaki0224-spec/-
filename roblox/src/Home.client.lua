@@ -18,7 +18,7 @@ local LANE_COLORS2={{Color3.fromRGB(242,242,240),Color3.fromRGB(17,17,17)},{Colo
 local outfit=require(RS:WaitForChild("Outfit"))
 local Visor=require(RS:WaitForChild("Visor"))
 local remote=RS:WaitForChild("MinatoMeta")
--- ショップ(Robux で見た目だけを買う)。値段は Roblox から取る。品を渡すのはサーバーだけ(ShopService)
+-- ショップ(Robux でコインの袋と VIP パスを買う)。値段は Roblox から取る。渡すのはサーバーだけ(ShopService)
 local Marketplace=game:GetService("MarketplaceService")
 local ShopConfig=require(RS:WaitForChild("ShopConfig"))
 local shopEvent=RS:WaitForChild("MinatoShop",10)
@@ -260,6 +260,26 @@ RS.ChildAdded:Connect(bindMatch)
 local existingMatch=RS:FindFirstChild("MinatoRankedLobby")
 if existingMatch then bindMatch(existingMatch) end
 -- 品の見た目: 色見本ではなく3Dで出す(塗装はその塗装の艇に今のヘルメット、ヘルメットはそのヘルメット)
+-- ガチャの確率の文字。表示も抽選も同じ Meta.RARITY と品の数から作る(確率を書き写さない)
+local function pct(x)
+    local t=string.format("%.2f",x*100):gsub("0+$",""):gsub("%.$","")
+    return t.."%"
+end
+local function oddsText()
+    local parts={}
+    for _,r in ipairs({"N","R","SR","SSR"}) do table.insert(parts,r.." "..pct(Meta.RARITY[r].rate)) end
+    return table.concat(parts,"　")
+end
+local function oddsEach()
+    local parts={}
+    for _,r in ipairs({"N","R","SR","SSR"}) do
+        local n=#Meta.pool(r)
+        if n>0 then table.insert(parts,r.."（"..n.."種）各 "..pct(Meta.RARITY[r].rate/n)) end
+    end
+    return table.concat(parts,"　")
+end
+-- コイン(ガチャに使う)を Robux で買えるか。サーバーが地域の決まりを確かめて付ける(確かめる前は false)
+local function coinShopOk() return player:GetAttribute("MinatoCoinShop")==true end
 local function swatch(parent,it,x,y,w,h,spin)
     return require(RS:WaitForChild("GachaShow")).preview(parent,it,x,y,w,h,{helmet=m and m.helmet,spin=spin})
 end
@@ -340,7 +360,7 @@ local function redrawNow()
         end
         Ui.tile(root,"通信対戦","online","通信対戦","オンライン・フレンド",w-16-tw,short and 70 or 96,tw,th,false,function() go("通信対戦") end)
         Ui.tile(root,"遊び方","howto","遊び方","スタートとターンのコツ",w-16-tw,(short and 70 or 96)+th+gap,tw,th,false,function() go("遊び方") end)
-        Ui.tile(root,"ショップ","shop","ショップ","限定の塗装・VIP",w-16-tw,(short and 70 or 96)+2*(th+gap),tw,th,false,function() go("ショップ") end)
+        Ui.tile(root,"ショップ","shop","ショップ","コイン・VIP パス",w-16-tw,(short and 70 or 96)+2*(th+gap),tw,th,false,function() go("ショップ") end)
         -- VIP の札は、コインの札の下に小さく
         if m.vip then Ui.pill(root,"Vip","VIP",16+pw+12,(short and 20 or 26)+42,64,28) end
         local rw=math.min(300,math.floor(w*.44))
@@ -539,6 +559,15 @@ local function redrawNow()
             y+=8
         else
             y=row("ランク戦","近いレートの選手から相手を探します",y)
+            local left=Meta.rankedLeft(m,Meta.today())
+            if left==nil then
+                y=row("今日のランク戦","VIP パス: 何回でも走れます",y)
+            elseif left>0 then
+                y=row("今日のランク戦","あと "..left.." 回（1日 "..Meta.RANKED_DAILY.." 回まで。日本時間0時に戻ります）",y)
+            else
+                y=row("今日のランク戦","今日は "..Meta.RANKED_DAILY.." 回走りました。日本時間0時にまた走れます。VIP パスなら何回でも走れます",y,
+                    function() go("ショップ") end,"VIP パスを見る")
+            end
         end
         y=row("待ち合わせ","2人以上なら30秒、1人なら60秒で、空きを AI（達人）で埋めて出走",y)
         if waitingMode and waitingMode~=kind then
@@ -551,6 +580,8 @@ local function redrawNow()
                 label(list,matchMessage,8,y+59,width-16,24,14).TextColor3=pale
                 button(list,"待機をやめる",8,y+89,math.min(width-16,170),function() matchEvent:FireServer("cancel") end,true)
                 y+=149
+            elseif kind=="ranked" and Meta.rankedLeft(m,Meta.today())==0 then
+                y=row("出走受付","今日のランク戦はおしまいです。オンラインやイベントは何回でも走れます",y)
             else
                 y=row("出走受付",matchMessage~="" and matchMessage or "参加すると会場を探します",y,function()
                     matchEvent:FireServer(joinActions[kind])
@@ -832,8 +863,10 @@ local function redrawNow()
         end)
         y=math.max(ly,ry+84)
     elseif page=="ガチャ" then
-        y=row("コインで見た目を集めよう","N 60%　R 28%　SR 10%　SSR 2%",y)
-        y=row("ゲーム内コイン限定","コインはお金で買えません",y)
+        y=row("コインで見た目を集めよう",oddsText(),y)
+        y=row("1つあたりの確率",oddsEach().."。VIP の品は出ません",y)
+        y=row("コインの集め方",coinShopOk() and "レース・ミッション・ログインボーナスでたまります。ショップで Robux でも買えます"
+            or "レース・ミッション・ログインボーナスでたまります",y,coinShopOk() and function() go("ショップ") end or nil,"ショップへ")
         button(list,"1回 100コイン",8,y,math.min(width-16,250),function() request("pull",1) end,true);y+=58
         button(list,"10回 900コイン",8,y,math.min(width-16,250),function() request("pull",10) end,true);y+=62
         if type(m.last)=="table" then
@@ -867,59 +900,69 @@ local function redrawNow()
             if prices[key] then return ROBUX.." "..prices[key] end
             return prices[key]==false and "値段を読めません" or ROBUX.." …"
         end
-        -- 買う: Roblox の確認画面を出すだけ。品はサーバーが購入を確かめてから渡す
-        local function buy(kind,id,owned)
+        -- 買う: Roblox の確認画面を出すだけ。品はサーバーが購入を確かめてから渡す。
+        -- コインの袋は、サーバーが地域の決まりを確かめてから確認画面を出す(entry があればコインの袋)
+        local function buy(kind,id,owned,entry)
             if owned or id<=0 or buying then return end
             buying=id;redraw()
+            -- 確認画面が出なかった時のために、しばらくしたらボタンを戻す
+            task.delay(30,function() if buying==id then buying=nil;if page=="ショップ" then redraw() end end end)
             local ok=pcall(function()
-                if kind=="pass" then Marketplace:PromptGamePassPurchase(player,id)
+                if entry then shopEvent:FireServer("buy",entry.key)
+                elseif kind=="pass" then Marketplace:PromptGamePassPurchase(player,id)
                 else Marketplace:PromptProductPurchase(player,id) end
             end)
             if not ok then buying=nil;toast.Text="購入の画面を開けませんでした";redraw() end
         end
-        y=row("見た目だけのショップ","Robux で買えるのは塗装・ヘルメット・VIP の見た目だけです。レースの速さや強さは変わりません。ガチャはゲーム内コインだけで引けます(Robux では引けません)。",y)
-        -- VIP パス(いちばん上に大きく)
+        local coinsOk=coinShopOk()
         local vip=ShopConfig.vip
-        local vipCard=frame(list,"Vip",8,y,width-16,154);stroke(vipCard,gold,2)
+        y=row("ショップ","Robux でガチャのコインと VIP パスを買えます。レースの速さや強さは変わりません。",y)
+        -- VIP パス(いちばん上に大きく): 名前・金の品・特典の一覧・値段
+        local perks={
+            "・ランク戦が何回でも走れる（ふつうは1日 "..Meta.RANKED_DAILY.." 回）",
+            "・金の塗装とヘルメット「VIPゴールド」",
+            "・ホームに VIP の札",
+        }
+        if coinsOk then
+            table.insert(perks,"・買った時に "..vip.welcomeCoins.." コイン、毎日 "..vip.dailyCoins.." コイン（毎日の分はメール）")
+        end
+        local perkH=#perks*24
+        local pw=math.min(130,math.floor((width-40)/2))
+        local cardH=40+90+8+perkH+8+46+12
+        local vipCard=frame(list,"Vip",8,y,width-16,cardH);stroke(vipCard,gold,2)
         local grad=Instance.new("UIGradient");grad.Rotation=90
         grad.Color=ColorSequence.new(Color3.fromRGB(58,46,14),Color3.fromRGB(11,29,58));grad.Parent=vipCard
-        local pw=math.min(130,math.floor((width-32)/4))
+        label(vipCard,"みなと VIP パス",12,8,width-40,28,18).TextColor3=gold
         for k,id in ipairs(vip.items) do
             local it=Meta.item(id)
-            if it then swatch(vipCard,it,8+(k-1)*(pw+8),8,pw,100,true) end
+            if it then swatch(vipCard,it,12+(k-1)*(pw+8),40,pw,90,true) end
         end
-        local tx=8+2*(pw+8)+6
-        local tw=width-16-tx-8
-        label(vipCard,"みなと VIP パス",tx,8,tw,28,18).TextColor3=gold
-        local d=label(vipCard,"金の塗装とヘルメット、ホームの VIP の札。1回買えばずっと使えます",tx,38,tw,56,14)
-        d.TextWrapped=true;d.TextTruncate=Enum.TextTruncate.None;d.TextColor3=pale
-        button(vipCard,priceText("pass",vip.pass,m.vip),tx,100,math.min(220,tw),function() buy("pass",vip.pass,m.vip) end,not m.vip and vip.pass>0)
-        label(vipCard,"VIP の品は倉庫で着せ替えられます",8,116,tx-16,30,12).TextColor3=pale
-        y+=166
-        -- ショップ限定の塗装・ヘルメット(1つずつ買う)
-        label(list,"ショップ限定の塗装・ヘルメット",8,y,width-16,28,17).TextColor3=gold
+        for k,text in ipairs(perks) do
+            local line=label(vipCard,text,12,138+(k-1)*24,width-40,24,14);line.TextColor3=pale
+        end
+        button(vipCard,priceText("pass",vip.pass,m.vip),12,138+perkH+8,math.min(240,width-40),function() buy("pass",vip.pass,m.vip) end,not m.vip and vip.pass>0)
+        y+=cardH+12
+        -- コインの袋(何度でも買える)
+        label(list,"ガチャのコイン",8,y,width-16,28,17).TextColor3=gold
         y+=34
-        local columns=math.max(1,math.floor(width/175));local cw=math.floor(width/columns)-8
-        for i,entry in ipairs(ShopConfig.products) do
-            local it=Meta.item(entry.item)
-            if it then
-                local x=((i-1)%columns)*(cw+8);local cy=y+math.floor((i-1)/columns)*206
-                local card=frame(list,"Shop"..it.id,x,cy,cw,196)
-                local owned=table.find(m.own,it.id)~=nil
-                local equipped=m.skin==it.id or m.helmet==it.id
-                stroke(card,equipped and gold or rarity[it.r],equipped and 3 or 1)
-                swatch(card,it,8,8,cw-16,84)
-                label(card,it.name,8,98,cw-16,24,14)
-                label(card,(it.kind=="skin" and "塗装" or "ヘルメット").."　ショップ限定",8,124,cw-16,20,12).TextColor3=rarity[it.r]
-                if owned then
-                    button(card,equipped and "装備中" or "装備する",8,146,cw-16,function() request("equip",it.id) end)
-                else
-                    button(card,priceText("product",entry.product,false),8,146,cw-16,function() buy("product",entry.product,false) end,entry.product>0)
-                end
+        if not coinsOk then
+            y=row("この地域では買えません","お住まいの地域の決まりで、ガチャに使うコインは Robux で買えません。コインはレース・ミッション・ログインボーナスでたまります。",y)
+        else
+            local columns=math.max(1,math.floor(width/175));local cw=math.floor(width/columns)-8
+            for i,entry in ipairs(ShopConfig.coins) do
+                local x=((i-1)%columns)*(cw+8);local cy=y+math.floor((i-1)/columns)*170
+                local card=frame(list,"Coins"..entry.key,x,cy,cw,160)
+                stroke(card,entry.bonus>0 and gold or white,1)
+                local total=entry.coins+entry.bonus
+                local big=label(card,total.." コイン",10,10,cw-20,34,22);big.TextColor3=gold
+                label(card,entry.bonus>0 and (entry.coins.."＋おまけ "..entry.bonus) or "おまけなし",10,46,cw-20,22,14).TextColor3=pale
+                label(card,"ガチャ "..math.floor(total/100).." 回ぶん",10,70,cw-20,22,14).TextColor3=pale
+                button(card,priceText("product",entry.product,false),8,104,cw-16,function() buy("product",entry.product,false,entry) end,entry.product>0)
             end
+            y+=math.ceil(#ShopConfig.coins/columns)*170
+            y=row("ガチャの確率",oddsText().."（1つあたり "..oddsEach().."）",y)
         end
-        y+=math.ceil(#ShopConfig.products/columns)*206
-        y=row("購入について","購入は Roblox の確認画面で決まります。届いた品は倉庫で着せ替えられます。持っている品は買えません。",y)
+        y=row("購入について","購入は Roblox の確認画面で決まります。コインはすぐに届き、VIP の品は倉庫で着せ替えられます。",y)
     elseif page=="倉庫" then
         -- いちばん上に「装備中」: 塗装とヘルメットを色見本・名前・レア度で出す
         label(list,"装備中",8,0,120,26,16).TextColor3=gold
@@ -1144,10 +1187,23 @@ end)
 Marketplace.PromptGamePassPurchaseFinished:Connect(function(who,passId,purchased)
     if who==player then purchaseClosed(passId,purchased) end
 end)
+-- コインを買えるか(地域の決まり)・VIP がサーバーで確かめられたら、ショップとガチャの表示を直す
+for _,key in ipairs({"MinatoCoinShop","MinatoVip"}) do
+    player:GetAttributeChangedSignal(key):Connect(function()
+        if m and (page=="ショップ" or page=="ガチャ" or page=="ランク戦") then redraw() end
+    end)
+end
 -- 品が届いた: 持ち物を読み直して、ガチャと同じ演出で見せる
 if shopEvent then
-    shopEvent.OnClientEvent:Connect(function(kind,ids)
+    shopEvent.OnClientEvent:Connect(function(kind,ids,coins)
+        -- サーバーからのお知らせ(準備中・この地域では買えない など)
+        if kind=="notice" and type(ids)=="string" then
+            buying=nil;toast.Text=ids
+            if page=="ショップ" then redraw() end
+            return
+        end
         if kind~="granted" or type(ids)~="table" then return end
+        coins=type(coins)=="number" and coins or 0
         task.spawn(function()
             while pending do task.wait(.1) end
             request("get")
@@ -1157,8 +1213,9 @@ if shopEvent then
                 local it=type(id)=="string" and Meta.item(id)
                 if it then table.insert(results,{item=it,dupe=0}) end
             end
+            if coins>0 then toast.Text=coins.." コインが届きました" end
             if #results>0 then
-                toast.Text="購入した品が倉庫に届きました"
+                toast.Text=coins>0 and ("購入した品と "..coins.." コインが届きました") or "購入した品が倉庫に届きました"
                 local folder=RS:FindFirstChild("RacerAvatars")
                 require(RS:WaitForChild("GachaShow")).play(gui,results,{rarity=rarity,skin=m and m.skin,helmet=m and m.helmet,
                     avatar=folder and folder:FindFirstChild("Home"..player.UserId)})

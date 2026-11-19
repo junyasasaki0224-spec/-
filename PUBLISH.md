@@ -40,30 +40,33 @@
 
 9. 手順2で両方を再度作り、各ファイルを Studio で開いて「Publish to Roblox As…」を選ぶ。**Lobby → 既存の開始場所、Race → 既存のレース会場** の順に上書きする。別の端末から絵・音・モデルを確認する。画像が未登録ならカードは紺地と金の絵、会場は端末内の絵または図形になる。エンジン音は登録後に鳴る。
 
-## ショップ(Robux で見た目だけを売る)
+## ショップ(Robux でガチャのコインと VIP パスを売る)
 
-- Creator Hub でゲームを開き、「収益化 → 開発者製品」で次の5つを作る。名前・説明・値段(目安)は下の表のとおり。作ったら製品の番号(ID)を `roblox/src/ShopConfig.lua` の `products` の `product` に入れる
+- Creator Hub でゲームを開き、「収益化 → 開発者製品」で、下の表のコインの袋を4つ作る。作ったら製品の番号(ID)を `roblox/src/ShopConfig.lua` の `coins` の `product` に入れる
 - 「収益化 → パス」で VIP パスを作り、番号を `ShopConfig.lua` の `vip.pass` に入れる
-- 製品とパスのアイコンは `roblox/assets/shop/`(x1〜x5 と vip の PNG)。`python roblox/tools/make_shop_icons.py` で作り直せる
+- アイコンは `roblox/assets/shop/`(c1〜c4 と vip の PNG)。`python roblox/tools/make_shop_icons.py` で作り直せる
 - 番号を入れたら、手順2・9のとおりロビーと会場を作り直して上書きする。番号が 0 の品は、ショップで「準備中」と出て買えない
+- 値段は Robux で決める。円での値段は Robux の買い方(端末・お店)で変わる。VIP パスの 600 Robux は約1000円の目安なので、Creator Hub で実際の値段を見て決める
 
-  | 品(`item`) | 種類 | 名前 | 値段の目安 |
-  |---|---|---|---|
-  | x1 | 開発者製品 | 塗装 さくら | 99 Robux |
-  | x2 | 開発者製品 | 塗装 ネオンナイト | 99 Robux |
-  | x3 | 開発者製品 | 塗装 朱漆 | 99 Robux |
-  | x4 | 開発者製品 | ヘルメット さくら | 49 Robux |
-  | x5 | 開発者製品 | ヘルメット ネオン | 49 Robux |
-  | v1・v2 | パス | みなと VIP パス(金の塗装とヘルメット、ホームの VIP の札) | 199 Robux |
+  | 品(`key`) | 種類 | 名前 | 中身 | 値段の目安 |
+  |---|---|---|---|---|
+  | c1 | 開発者製品 | コイン 500 | 500 コイン(ガチャ5回ぶん) | 49 Robux |
+  | c2 | 開発者製品 | コイン 1100 | 1000 + おまけ 100 コイン | 99 Robux |
+  | c3 | 開発者製品 | コイン 3500 | 3000 + おまけ 500 コイン | 299 Robux |
+  | c4 | 開発者製品 | コイン 7500 | 6000 + おまけ 1500 コイン | 599 Robux |
+  | vip | パス | みなと VIP パス | ランク戦が無制限(ふつうは1日5回)、金の塗装とヘルメット、ホームの VIP の札、買った時に 1000 コイン、毎日 100 コイン | 600 Robux(約1000円) |
 
+- コインはガチャ(中身がランダム)に使うので、Roblox の「有料のランダムアイテム」にあたる。
+  - 地域によっては売れない。サーバーの `ShopService.lua` が `PolicyService` で確かめ、売れない地域の人にはコインの袋の購入画面を出さず、VIP のコインの特典も付けない(ランク戦無制限と金の品は付く)
+  - ガチャの確率は、ガチャの画面とショップに、引く前に出している(表示も抽選も `Meta.lua` の同じ表から作る)
 - 品を渡すのはサーバーの `ShopService.lua` だけ。Roblox から届いた購入を、保存できてから「受け取り済み」にする(同じ購入は1回だけ渡す)
-- 公開前に、テスト用の場所で「テスト購入」(Studio の購入はお金がかからない)をして、品が倉庫に届くことを確かめる
+- 公開前に、テスト用の場所で「テスト購入」(Studio の購入はお金がかからない)をして、コインと品が届くことを確かめる
 
 ## 公開範囲・質問票・データ
 
 10. Roblox で動く本番の保存はサーバーが行う。Studio でも保存を試す場合は、**別に作ったテスト用ゲーム**を開き、Experience Settings → Security → Enable Studio Access to API Services をオンにし、Workspace の属性 `MinatoLiveData` を true にして保存する(付けないと Studio では保存しない)。本番とテストで同じデータに書き込まないよう、テスト用ロビーにはテスト用会場の ID を入れる。外部 HTTP や第三者ゲームへの移動は今回の機能には不要。[Data Stores](https://create.roblox.com/docs/cloud-services/data-stores)
-11. Dashboard のゲームの Content Ratings 質問票を開き、実際に表示される内容に沿って回答する。描写には艇の衝突・沈没、交流には大会名や招待がある。抽選に使うのは遊んで得る無料コインで、コイン・抽選券の Robux 販売、着順への賭け、換金はない。Robux で買えるのは、ランダムではない見た目の品(ショップ限定の塗装・ヘルメットと VIP パス)だけ。公開する最終版に追加した購入や描写があれば回答にも反映する。対象年齢は提出後の判定を確認する。[質問票](https://create.roblox.com/docs/production/promotion/content-ratings)・[ランダムアイテム](https://create.roblox.com/docs/production/monetization/paid-random-items)
-12. ゲームの説明文の例。「架空のみなと競艇場で、6艇の3周レース。スタートを練習して、友達との対戦や大会に挑もう。塗装とヘルメットのガチャには遊んで貯めたゲーム内コインだけを使います。Robuxで買えるのは見た目だけ(ショップ限定の塗装・ヘルメットとVIPパス)で、レースの速さは変わりません。着順に賭ける仕組みはありません。」
+11. Dashboard のゲームの Content Ratings 質問票を開き、実際に表示される内容に沿って回答する。描写には艇の衝突・沈没、交流には大会名や招待がある。抽選(ガチャ)に使うコインは、遊んで得るほか Robux でも買える(**有料のランダムアイテムあり**と答える)。着順への賭け、換金はない。Robux で買えるのはコインの袋と VIP パス(ランク戦無制限・見た目の品・コイン)。公開する最終版に追加した購入や描写があれば回答にも反映する。対象年齢は提出後の判定を確認する。[質問票](https://create.roblox.com/docs/production/promotion/content-ratings)・[ランダムアイテム](https://create.roblox.com/docs/production/monetization/paid-random-items)
+12. ゲームの説明文の例。「架空のみなと競艇場で、6艇の3周レース。スタートを練習して、友達との対戦や大会に挑もう。塗装とヘルメットのガチャはゲーム内コインで引けます(コインは遊んで貯めるほか、ショップでも買えます。確率はガチャの画面に出ています)。VIPパスではランク戦が無制限になります。買える物でレースの速さは変わりません。着順に賭ける仕組みはありません。」
 13. Dashboard の Data Stores Manager → RTBF Deletion で、同梱の [削除設定と依頼対応](roblox/DATA_DELETION.md) の表を順に登録する。世界1位の走りなど、複数人で共有するキーの確認手順も読む。[削除テンプレート](https://create.roblox.com/docs/cloud-services/data-stores/right-to-be-forgotten)
 14. Dashboard の「Publish settings → Manage Audience → Manage access」で Playtest タブを開き、早期テスターを招待する。Studio の Play を終了して **Roblox アプリ**から開始場所に入る。下の表を終えたら、同じ Manage access の Public タブで公開対象を選び、Save Changes を押す。一般公開するときは Friends 限定を解除する。初回のリリース案内が表示されたら、所有者の画面で質問票と公開条件の確認を完了する。公開条件・選択できる対象は所有者の画面で確認する。別の参加者が公開ページの再生ボタンからロビーに入れれば公開確認完了。[公開範囲と条件](https://create.roblox.com/docs/production/publishing/publish-games-and-places)
 

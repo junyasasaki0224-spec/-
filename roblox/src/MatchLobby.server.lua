@@ -9,6 +9,8 @@ local queue = require(script.Parent:WaitForChild("MatchQueue"))
 local policy = require(script.Parent:WaitForChild("MatchPolicy"))
 local live = game.GameId ~= 0 and type(config.racePlaceId) == "number" and config.racePlaceId > 0
 local Stats = live and require(script.Parent:WaitForChild("PlayerStats"))
+local Meta = require(ReplicatedStorage:WaitForChild("Meta"))
+local MetaService = require(script.Parent:WaitForChild("MetaService"))
 -- 公開していない Studio では会場へ移動できないので、組が決まるところまでを確かめられるようにする
 local rehearsal = queue.localOnly
 local remote = Instance.new("RemoteEvent")
@@ -18,6 +20,16 @@ local MODES = { "ranked", "online", "event" }
 local ACTIONS = { join = "ranked", online = "online", event = "event" }
 local active, last, loading = {}, {}, {}
 local cancellations = { ranked = {}, online = {}, event = {} }
+
+-- ランク戦は1日 Meta.RANKED_DAILY 回まで(VIP パスがあれば無制限)。もう出られなければ true
+local function rankedUsedUp(player, meta)
+    if player:GetAttribute("MinatoVip") == true then
+        return false
+    end
+    local left = Meta.rankedLeft(Meta.normalize(meta), Meta.today())
+    return left ~= nil and left <= 0
+end
+local USED_UP = "今日のランク戦は" .. Meta.RANKED_DAILY .. "回走りました。日本時間0時にまた走れます(VIP パスなら無制限)"
 
 -- 待機をやめる(行列からは次の更新で消える)
 local function cancel(player, notify)
@@ -56,6 +68,18 @@ remote.OnServerEvent:Connect(function(player, action)
     local mode = ACTIONS[action]
     local token = HttpService:GenerateGUID(false)
     if mode ~= "ranked" or not Stats then
+        -- Studio の試しのランク戦も、今日の回数を確かめる(試しの成績は保存しない)
+        if mode == "ranked" then
+            local ok, meta = pcall(MetaService.get, player.UserId)
+            if not ok or not meta then
+                remote:FireClient(player, "成績を取得できません。もう一度お試しください", false)
+                return
+            end
+            if rankedUsedUp(player, meta) then
+                remote:FireClient(player, USED_UP, false)
+                return
+            end
+        end
         -- オンライン・イベントはレートで相手を選ばない。Studio の試しではレート1500として扱う
         active[player] = { session = token, rating = 1500, mode = mode }
         remote:FireClient(player, "参加者を集めています", true, mode, 1, policy.SOLO_WAIT)
@@ -74,6 +98,10 @@ remote.OnServerEvent:Connect(function(player, action)
         end
         if not profile then
             remote:FireClient(player, "成績を取得できません。もう一度お試しください", false)
+            return
+        end
+        if rankedUsedUp(player, profile.meta) then
+            remote:FireClient(player, USED_UP, false)
             return
         end
         active[player] = { session = token, rating = profile.rating, mode = mode }

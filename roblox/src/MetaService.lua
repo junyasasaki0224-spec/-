@@ -34,16 +34,27 @@ function Service.action(userId,token,action,arg)
     local data=update(userId,function(v) return Meta.transact(v,token,action,arg,today,draws,nextToken) end)
     return data and data.meta
 end
--- Robux の購入で品を渡して保存する。保存できた時だけ meta と "granted" / "already" を返す(できなければ nil)
-function Service.grant(userId,purchaseId,ids)
+-- Robux の購入で品とコインを渡して保存する。保存できた時だけ meta と "granted" / "already" を返す(できなければ nil)
+function Service.grant(userId,purchaseId,ids,coins)
     local result
     local data=update(userId,function(v)
         v=Meta.clone(v or {})
         v.meta=Meta.normalize(v.meta)
-        result=Meta.grantPurchase(v.meta,purchaseId,ids)
+        result=Meta.grantPurchase(v.meta,purchaseId,ids,coins)
         return v
     end)
     if not data then return nil end
     return data.meta,result
+end
+-- VIP の毎日のボーナスをメールで届けて保存する(その日にすでに届いていれば何もしない)。保存できたら true
+function Service.vipDaily(userId,coins,today)
+    local data=update(userId,function(v)
+        v=Meta.clone(v or {})
+        v.meta=Meta.normalize(v.meta)
+        Meta.daily(v.meta,today)
+        Meta.vipDaily(v.meta,today,coins)
+        return v
+    end)
+    return data~=nil
 end
 return Service

@@ -1,8 +1,8 @@
 """ショップの品のアイコン(512x512 の PNG)を作る。
 
 使い方: python roblox/tools/make_shop_icons.py
-出力: roblox/assets/shop/x1.png … x5.png, vip.png
-色は src/Meta.lua の品と同じ。numpy だけで描く(画像の部品は使わない)。
+出力: roblox/assets/shop/c1.png … c4.png(コインの袋), vip.png(VIP パス)
+numpy だけで描く(画像の部品は使わない)。
 """
 import os
 import struct
@@ -16,14 +16,8 @@ S = 512
 SS = 3  # なめらかにするため、3倍の大きさで描いて縮める
 N = S * SS
 
-# 品の色(Meta.lua と同じ数)
-ITEMS = {
-    "x1": {"kind": "skin", "hull": 16245222, "trim": 14707340, "deck": 15979483, "cowl": 14707340},
-    "x2": {"kind": "skin", "hull": 1316394, "trim": 2748671, "deck": 921632, "cowl": 16728008},
-    "x3": {"kind": "skin", "hull": 11741982, "trim": 15253850, "deck": 8001044, "cowl": 1315860},
-    "x4": {"kind": "helmet", "base": 16242399, "stripe": 14239866},
-    "x5": {"kind": "helmet", "base": 1053734, "stripe": 2748671},
-}
+# コインの袋(ShopConfig.lua と同じ順): 名前 → 柱ごとに積むコインの枚数(多い袋ほど山が高い)
+PACKS = {"c1": [4], "c2": [4, 6], "c3": [4, 8, 5], "c4": [7, 11, 8]}
 GOLD = 15911244
 
 
@@ -94,55 +88,30 @@ def water(img):
         paint(img, m, (1, 1, 1), 0.22 - i * 0.05)
 
 
-def boat(img, c):
-    """横から見た競艇の艇(左が前)"""
-    hull, trim, deck, cowl = rgb(c["hull"]), rgb(c["trim"]), rgb(c["deck"]), rgb(c["cowl"])
-    # 影
-    paint(img, ellipse(262, 380, 190, 16), (0, 0, 0), 0.35)
-    # 船体
-    paint(img, poly([(70, 300), (120, 262), (430, 262), (452, 300), (440, 360), (110, 360)]), hull)
-    # 船体の下の暗い面
-    paint(img, poly([(78, 322), (446, 322), (440, 360), (110, 360)]), hull * 0.62)
-    # 縁取りの帯
-    paint(img, poly([(92, 300), (448, 300), (446, 314), (84, 314)]), trim)
-    # 甲板
-    paint(img, poly([(130, 262), (150, 236), (380, 236), (420, 262)]), deck)
-    # 選手の座る所(風よけ)
-    paint(img, poly([(250, 236), (280, 196), (318, 196), (330, 236)]), (0.75, 0.9, 1.0), 0.75)
-    # エンジンのカバー
-    paint(img, poly([(408, 250), (420, 190), (470, 190), (476, 260)]), cowl)
-    paint(img, rect(420, 196, 468, 206), (1, 1, 1), 0.35)
-    # エンジンの軸とプロペラ
-    paint(img, rect(440, 260, 452, 352), (0.25, 0.27, 0.3))
-    # 光り
-    paint(img, poly([(130, 270), (420, 270), (424, 280), (124, 280)]), (1, 1, 1), 0.28)
+def coin(img, cx, cy, r):
+    """斜めから見た金のコイン1枚(縁・面・刻印・光り)"""
+    gold = rgb(GOLD)
+    paint(img, ellipse(cx, cy + r * 0.16, r, r * 0.42), gold * 0.55)
+    paint(img, ellipse(cx, cy, r, r * 0.42), gold)
+    paint(img, ellipse(cx, cy, r * 0.74, r * 0.30), gold * 0.82)
+    paint(img, ellipse(cx, cy, r * 0.30, r * 0.12), gold * 1.08)
+    paint(img, ellipse(cx - r * 0.35, cy - r * 0.16, r * 0.30, r * 0.08), (1, 1, 1), 0.45)
 
 
-def helmet(img, c):
-    """横から見たヘルメット(左が前)"""
-    base, stripe = rgb(c["base"]), rgb(c["stripe"])
-    paint(img, ellipse(256, 410, 140, 16), (0, 0, 0), 0.35)
-    # 頭の丸い所と下の切り口
-    shell = circle(256, 250, 150) * (YY < 330)
-    shell = np.maximum(shell, rect(110, 300, 402, 372) * circle(256, 250, 168))
-    # 暗い色でも地から見分けられるよう、外側に細い明るい縁
-    edge = circle(256, 250, 158) * (YY < 372) * (1 - shell)
-    paint(img, edge, (0.75, 0.85, 1.0), 0.5)
-    paint(img, shell, base)
-    # 影(右下を暗く)
-    shade = shell * np.clip((XX - 256) / 200 + (YY - 250) / 260, 0, 1)
-    paint(img, shade, (0, 0, 0), 0.28)
-    # まん中の線
-    band = shell * (np.abs((XX - 256) * 0.35 + (YY - 250) * 1.0 + 40) < 24)
-    paint(img, band, stripe)
-    # 顔の窓(バイザー)
-    visor = poly([(106, 230), (210, 222), (238, 300), (114, 320)]) * circle(256, 250, 156)
-    paint(img, visor, (0.08, 0.1, 0.14))
-    paint(img, poly([(118, 238), (196, 232), (204, 252), (122, 258)]) * visor, (1, 1, 1), 0.35)
-    # 下の縁
-    paint(img, rect(108, 358, 404, 374) * circle(256, 250, 170), (0.12, 0.12, 0.14))
-    # 光り
-    paint(img, ellipse(300, 160, 70, 26), (1, 1, 1), 0.3)
+def coins(img, stacks):
+    """コインの山。stacks は柱ごとの枚数(左から)"""
+    gold = rgb(GOLD)
+    paint(img, ellipse(256, 392, 180, 18), (0, 0, 0), 0.35)
+    xs = {1: [256], 2: [204, 308], 3: [150, 256, 362]}[len(stacks)]
+    r = {1: 84, 2: 72, 3: 60}[len(stacks)]
+    for x, k in zip(xs, stacks):
+        for i in range(k):
+            coin(img, x, 372 - i * 22, r)
+    # きらめき
+    for x, y, size in ((112, 112, 16), (404, 96, 12), (300, 54, 9)):
+        star = poly([(x, y - size * 2), (x + size * 0.5, y), (x, y + size * 2), (x - size * 0.5, y)])
+        star = np.maximum(star, poly([(x - size * 2, y), (x, y - size * 0.5), (x + size * 2, y), (x, y + size * 0.5)]))
+        paint(img, star, gold * 1.15)
 
 
 def crown(img):
@@ -178,10 +147,10 @@ def save_png(path, img):
 def main():
     os.makedirs(OUT, exist_ok=True)
     navy_top, navy_bottom = (0.06, 0.13, 0.27), (0.02, 0.05, 0.12)
-    for key, c in ITEMS.items():
-        img = background(navy_top, navy_bottom, (0.86, 0.33, 0.95))  # SR の紫の枠
+    for key, stacks in PACKS.items():
+        img = background(navy_top, navy_bottom, rgb(GOLD) * (0.7 if sum(stacks) < 12 else 1.0))
         water(img)
-        (boat if c["kind"] == "skin" else helmet)(img, c)
+        coins(img, stacks)
         save_png(os.path.join(OUT, key + ".png"), img)
     img = background((0.16, 0.12, 0.04), (0.05, 0.03, 0.0), rgb(GOLD))
     crown(img)
