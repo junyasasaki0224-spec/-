@@ -44,6 +44,7 @@
 
 - Creator Hub でゲームを開き、「収益化 → 開発者製品」で次の5つを作る。名前・説明・値段(目安)は下の表のとおり。作ったら製品の番号(ID)を `roblox/src/ShopConfig.lua` の `products` の `product` に入れる
 - 「収益化 → パス」で VIP パスを作り、番号を `ShopConfig.lua` の `vip.pass` に入れる
+- 製品とパスのアイコンは `roblox/assets/shop/`(x1〜x5 と vip の PNG)。`python roblox/tools/make_shop_icons.py` で作り直せる
 - 番号を入れたら、手順2・9のとおりロビーと会場を作り直して上書きする。番号が 0 の品は、ショップで「準備中」と出て買えない
 
   | 品(`item`) | 種類 | 名前 | 値段の目安 |
