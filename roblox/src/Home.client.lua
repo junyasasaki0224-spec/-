@@ -964,7 +964,10 @@ local function redrawNow()
                 local total=entry.coins+entry.bonus
                 local big=label(card,total.." コイン",10,10,cw-20,34,22);big.TextColor3=gold
                 label(card,entry.bonus>0 and (entry.coins.."＋おまけ "..entry.bonus) or "おまけなし",10,46,cw-20,22,14).TextColor3=pale
-                label(card,"ガチャ "..math.floor(total/100).." 回ぶん",10,70,cw-20,22,14).TextColor3=pale
+                -- 何回引けるか(10連は 900 コイン。10連で引けるだけ引いて、残りは1回ずつ)
+                local tens,ones=total//900,(total%900)//100
+                local pulls=tens>0 and ("10連 "..tens.."回"..(ones>0 and (" + "..ones.."回") or "").."ぶん") or ("ガチャ "..ones.." 回ぶん")
+                label(card,pulls,10,70,cw-20,22,14).TextColor3=pale
                 button(card,priceText("product",entry.product,false),8,104,cw-16,function() buy("product",entry.product,false,entry) end,entry.product>0)
             end
             y+=math.ceil(#ShopConfig.coins/columns)*170
