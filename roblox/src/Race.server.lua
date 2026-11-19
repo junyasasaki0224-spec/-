@@ -433,6 +433,8 @@ local function assignPlayers()
                     player:SetAttribute("MinatoOpening",outfit.opening~=false)
                     boat.model:SetAttribute("Skin",outfit.skin)
                     boat.model:SetAttribute("HelmetStyle",outfit.helmet)
+                    -- ヘルメットのシールドを上げて目元を見せる(設定。見た目だけ)
+                    boat.model:SetAttribute("VisorUp",outfit.visor==true)
                 end
             end)
             -- アバターを乗せる(届くまでは共通のレーサー人形のまま)
@@ -554,6 +556,7 @@ local function reset()
         b.sinkCause = nil
         b.model:SetAttribute("Skin",nil)
         b.model:SetAttribute("HelmetStyle",nil)
+        b.model:SetAttribute("VisorUp",nil)
         clearAvatar(i)
         b.player = nil
         b.humanUserId,b.finishTime = nil,nil

@@ -91,6 +91,9 @@
       "Outfit": {
         "$path": "src/Outfit.lua"
       },
+      "Visor": {
+        "$path": "src/Visor.lua"
+      },
       "CardImages": {
         "$path": "src/CardImages.lua"
       },

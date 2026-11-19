@@ -18,6 +18,7 @@ local boat = templates:WaitForChild("Boat1")
 local updateVenue = require(ReplicatedStorage:WaitForChild("VenueDecor"))(world,templates)
 local visuals=require(ReplicatedStorage:WaitForChild("VisualModels"))
 local outfit=require(ReplicatedStorage:WaitForChild("Outfit"))
+local Visor=require(ReplicatedStorage:WaitForChild("Visor"))
 local STUDS_PER_METRE = 3.5
 local Wake = require(ReplicatedStorage:WaitForChild("BoatWake"))
 local quality=require(ReplicatedStorage:WaitForChild("DisplayQuality"))
@@ -37,9 +38,11 @@ for i = 1, 6 do
         local stripe=visual:FindFirstChild("HelmetStripe")
         if stripe then stripe:Destroy() end
         outfit(visual,original:GetAttribute("Skin"),original:GetAttribute("HelmetStyle"))
+        Visor.apply(visual,original:GetAttribute("VisorUp")==true)
     end
     original:GetAttributeChangedSignal("Skin"):Connect(refreshOutfit)
     original:GetAttributeChangedSignal("HelmetStyle"):Connect(refreshOutfit)
+    original:GetAttributeChangedSignal("VisorUp"):Connect(refreshOutfit)
     refreshOutfit()
     visual.Name = "VisualBoat"..i
     visual.Parent = workspace
@@ -63,7 +66,11 @@ local function syncAvatar(lane)
     local visual = renderBoats[lane]
     if not visual then return end
     local template = avatarFolder:FindFirstChild("Lane"..lane)
+    -- 乗せ替える前にシールドを下ろし、乗せた後でその艇の設定に戻す(頭の見せ方もそろえる)
+    Visor.apply(visual, false)
     if template then RacerAvatar.attach(visual, template) else RacerAvatar.detach(visual) end
+    local original = templates:FindFirstChild("Boat"..lane)
+    Visor.apply(visual, original ~= nil and original:GetAttribute("VisorUp") == true)
 end
 local function laneOf(child) return tonumber(child.Name:match("^Lane(%d)$")) end
 avatarFolder.ChildAdded:Connect(function(child)

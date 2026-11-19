@@ -16,6 +16,7 @@ local TILT_INFO={{"-0.5°","出足・回り足",1.085,.965,1.065},{"0°","バラ
 local LANE_COLORS2={{Color3.fromRGB(242,242,240),Color3.fromRGB(17,17,17)},{Color3.fromRGB(22,22,26),Color3.new(1,1,1)},
     {Color3.fromRGB(217,30,46),Color3.new(1,1,1)},{Color3.fromRGB(27,80,212),Color3.new(1,1,1)},{Color3.fromRGB(243,210,27),Color3.fromRGB(17,17,17)},{Color3.fromRGB(24,162,76),Color3.new(1,1,1)}}
 local outfit=require(RS:WaitForChild("Outfit"))
+local Visor=require(RS:WaitForChild("Visor"))
 local remote=RS:WaitForChild("MinatoMeta")
 -- ショップ(Robux で見た目だけを買う)。値段は Roblox から取る。品を渡すのはサーバーだけ(ShopService)
 local Marketplace=game:GetService("MarketplaceService")
@@ -106,7 +107,11 @@ local model=boat(scenery)
 task.spawn(function()
     local folder=RS:WaitForChild("RacerAvatars",20)
     local template=folder and folder:WaitForChild("Home"..player.UserId,20)
-    if template and model.Parent then require(RS:WaitForChild("RacerAvatar")).attach(model,template) end
+    if template and model.Parent then
+        require(RS:WaitForChild("RacerAvatar")).attach(model,template)
+        -- 乗せた後で、シールドの設定に合わせる(頭を見せるかどうかも)
+        Visor.apply(model,m~=nil and m.visor==true)
+    end
 end)
 if not model:GetAttribute("Detailed") then model:ScaleTo(3.5) end
 model:PivotTo(CFrame.new(0,0,100))
@@ -268,6 +273,7 @@ local function redrawNow()
     if not m then return end
     if quality.choice~=m.quality then quality.apply(m.quality) end
     outfit(model,m.skin,m.helmet)
+    Visor.apply(model,m.visor==true)
     local w,h=gui.AbsoluteSize.X,gui.AbsoluteSize.Y
     local portrait=w<h
     toast.Position=UDim2.fromOffset(16,page=="ホーム" and 130 or 58)
@@ -929,6 +935,14 @@ local function redrawNow()
             end
         end
         y=136
+        -- ヘルメットの目元: どのヘルメットでも、シールドを上げる・下ろすを選べる(設定と同じ)
+        y=row("ヘルメットのシールド","上げると、ヘルメットの中のアバターの目元が見えます。すべてのヘルメットで使えます。",y)
+        do
+            local bw=math.floor((width-24)/2)
+            button(list,"下ろす",8,y,bw,function() request("settings","visor=off") end,m.visor~=true)
+            button(list,"上げる(目元を見せる)",8+bw+8,y,bw,function() request("settings","visor=on") end,m.visor==true)
+            y+=58
+        end
         local columns=math.max(1,math.floor(width/175));local cw=math.floor(width/columns)-8
         for i,it in ipairs(Meta.ITEMS) do
             local x=((i-1)%columns)*(cw+8);local cy=y+math.floor((i-1)/columns)*206
@@ -980,9 +994,11 @@ local function redrawNow()
             {"assist","練習の補助","練習・フリーレース・フレンド・タイムアタックで、全開のST(スタートの目安)のバーと、ターンの手前の「▼ レバーを落とす」の合図を出します。ランク戦・オンライン・大会では出ません。"},
             {"shake","画面の揺れ","速い時の揺れと、ターンの傾きを止めます。酔いやすい時はオフにしてください。"},
             {"opening","オープニング","レース前の出走表・ピット離れ・待機行動の演出です。オフにするとすぐ大時計の場面から始まります(ほかの人がいる会場では、その人たちのオープニングが終わるまで待ちます)。"},
+            {"visor","ヘルメットの目元","オンにするとシールドを上げて、ヘルメットの中のアバターの目元を見せます。すべてのヘルメットで使えます(見た目だけで、速さは変わりません)。",false},
         }
         for _,item in toggles do
-            local on=m[item[1]]~=false
+            -- 4つ目が false の設定は、初めはオフ
+            local on=item[4]==false and m[item[1]]==true or (item[4]~=false and m[item[1]]~=false)
             y=row(item[2],item[3],y)
             local bw=math.floor((width-24)/2)
             button(list,"オン",8,y,bw,function() request("settings",item[1].."=on") end,on)
