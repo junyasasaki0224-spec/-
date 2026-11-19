@@ -51,6 +51,10 @@ function Meta.pool(rar)
     for _,it in ipairs(Meta.ITEMS) do if it.r==rar and not it.shop then table.insert(pool,it) end end
     return pool
 end
+-- その品を使えるか(持っている品。検証用の「全部の品を解放」がオンなら全部)
+function Meta.owns(m,id)
+    return m.testUnlock==true and Meta.item(id)~=nil or table.find(m.own,id)~=nil
+end
 function Meta.item(id)
     for _,it in ipairs(Meta.ITEMS) do if it.id==id then return it end end
 end
@@ -102,7 +106,7 @@ function Meta.action(m,action,arg,rnd)
         end
     elseif action=="equip" then
         local it=Meta.item(arg)
-        if it and table.find(m.own,arg) then
+        if it and Meta.owns(m,arg) then
             m[it.kind=="skin" and "skin" or "helmet"]=arg
             return it.name.."を装備しました"
         end

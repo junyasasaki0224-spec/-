@@ -90,11 +90,19 @@ local function boat(parent)
     return model
 end
 local scenery=Instance.new("Folder");scenery.Name="MinatoHomeScene";scenery.Parent=workspace
+-- 検証用(Studio で、ロビーと会場をまとめた場所 dev.project.json)。会場はレースのサーバーが作るので、ホームでは重ねて作らない
+local devCombined=Run:IsStudio() and RS:FindFirstChild("MinatoDevCombined")~=nil
 local water = require(RS:WaitForChild("CourseWater"))
-water.fill()
-local detailedVenue=visuals.venue(scenery)
-water.configure(detailedVenue)("day", 1)
-local updateVenue = require(RS:WaitForChild("VenueDecor"))(scenery,nil)
+local detailedVenue,updateVenue
+if devCombined then
+    detailedVenue=true
+    updateVenue=function(...) end
+else
+    water.fill()
+    detailedVenue=visuals.venue(scenery)
+    water.configure(detailedVenue)("day", 1)
+    updateVenue = require(RS:WaitForChild("VenueDecor"))(scenery,nil)
+end
 for i=1,detailedVenue and 0 or 8 do
     part(scenery,"Terrace",Vector3.new(160,2,5),Vector3.new(0,i*1.5,53+i*4),Color3.fromRGB(137,158,169))
 end
@@ -986,11 +994,15 @@ local function redrawNow()
             button(list,"上げる(目元を見せる)",8+bw+8,y,bw,function() request("settings","visor=on") end,m.visor==true)
             y+=58
         end
+        -- 検証用に全部の品を解放している時は、そのことを出す(サーバーが付けた印)
+        if m.testUnlock==true then
+            y=row("検証用: 全部の品を解放中","ガチャ・VIP の品をすべて着せ替えられます(Studio とゲームの持ち主だけ)。公開前に止めます。",y)
+        end
         local columns=math.max(1,math.floor(width/175));local cw=math.floor(width/columns)-8
         for i,it in ipairs(Meta.ITEMS) do
             local x=((i-1)%columns)*(cw+8);local cy=y+math.floor((i-1)/columns)*206
             local card=frame(list,it.id,x,cy,cw,196)
-            local owned=table.find(m.own,it.id)
+            local owned=Meta.owns(m,it.id)
             card.BackgroundTransparency=owned and .1 or .7
             stroke(card,(m.skin==it.id or m.helmet==it.id) and gold or rarity[it.r],(m.skin==it.id or m.helmet==it.id) and 3 or 1)
             local view=swatch(card,it,8,8,cw-16,84)
@@ -1187,6 +1199,22 @@ end)
 Marketplace.PromptGamePassPurchaseFinished:Connect(function(who,passId,purchased)
     if who==player then purchaseClosed(passId,purchased) end
 end)
+-- 検証用: その場のレースが始まったらホームを隠し、「ロビーへ」で戻ったら出し直す(コインなども読み直す)
+if devCombined then
+    player:GetAttributeChangedSignal("MinatoDevRace"):Connect(function()
+        local racing=player:GetAttribute("MinatoDevRace")==true
+        gui.Enabled=not racing
+        scenery.Parent=(not racing) and workspace or nil
+        Sfx.music(not racing)
+        if not racing then
+            toast.Text=""
+            task.spawn(function()
+                while pending do task.wait(.1) end
+                request("get")
+            end)
+        end
+    end)
+end
 -- コインを買えるか(地域の決まり)・VIP がサーバーで確かめられたら、ショップとガチャの表示を直す
 for _,key in ipairs({"MinatoCoinShop","MinatoVip"}) do
     player:GetAttributeChangedSignal(key):Connect(function()

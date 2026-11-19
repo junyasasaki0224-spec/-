@@ -27,6 +27,9 @@ local function applyQuality() quality.apply(player:GetAttribute("MinatoQuality")
 player:GetAttributeChangedSignal("MinatoQuality"):Connect(applyQuality)
 applyQuality()
 local camera = workspace.CurrentCamera
+-- 検証用(Studio で、ロビーと会場をまとめた場所 dev.project.json): ホームを見ている間は、レースの画面とカメラを止める
+local devCombined = RunService:IsStudio() and ReplicatedStorage:FindFirstChild("MinatoDevCombined") ~= nil
+local function devAway() return devCombined and player:GetAttribute("MinatoDevRace") ~= true end
 local renderBoats, wakes, motion, latest = {}, {}, {}, {}
 for i = 1, 6 do
     local original = templates:WaitForChild("Boat"..i)
@@ -828,7 +831,24 @@ local function startOpening(duration)
         if (serverClock or 0) < -14 then roomRemote:FireServer("skipOpening") end
     end)
 end
+-- 検証用: ホームとレースの切り替えで、レースの画面(大時計・結果・オープニング)を出し入れする
+if devCombined then
+    local function devShow()
+        local away = devAway()
+        for _, name in ipairs({"MinatoHUD", "MinatoResult", "MinatoOpening"}) do
+            for _, g in ipairs(player.PlayerGui:GetDescendants()) do
+                if g:IsA("ScreenGui") and g.Name == name then g.Enabled = not away end
+            end
+        end
+    end
+    player:GetAttributeChangedSignal("MinatoDevRace"):Connect(devShow)
+    player.PlayerGui.DescendantAdded:Connect(function(g)
+        if g:IsA("ScreenGui") and devAway() then task.defer(devShow) end
+    end)
+    devShow()
+end
 RunService.RenderStepped:Connect(function(dt)
+    if devAway() then return end
     local openingClock = (serverClock or 0) + math.min(os.clock() - snapshotAt, 0.25)
     -- 会場に1人なら、サーバーが待ってくれるので最初から全部見せる。大勢なら残りの時間だけ
     local solo = #Players:GetPlayers() == 1

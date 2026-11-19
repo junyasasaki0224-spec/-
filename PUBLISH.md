@@ -40,6 +40,11 @@
 
 9. 手順2で両方を再度作り、各ファイルを Studio で開いて「Publish to Roblox As…」を選ぶ。**Lobby → 既存の開始場所、Race → 既存のレース会場** の順に上書きする。別の端末から絵・音・モデルを確認する。画像が未登録ならカードは紺地と金の絵、会場は端末内の絵または図形になる。エンジン音は登録後に鳴る。
 
+## 公開の前に止める検証用の仕組み
+
+- `roblox/src/MetaService.lua` の `TEST_UNLOCK_ALL` を **false** にする(true の間は、Studio とゲームの持ち主だけ、全部の品を倉庫で着せ替えられる)
+- `roblox/dev.project.json`(ロビーと会場をまとめた検証用の場所)は公開に使わない。公開はロビー(`lobby.project.json`)と会場(`default.project.json`)を別々に作る
+
 ## ショップ(Robux でガチャのコインと VIP パスを売る)
 
 - Creator Hub でゲームを開き、「収益化 → 開発者製品」で、下の表のコインの袋を4つ作る。作ったら製品の番号(ID)を `roblox/src/ShopConfig.lua` の `coins` の `product` に入れる

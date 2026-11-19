@@ -28,7 +28,8 @@ local ONLINE = {ranked=true, online=true, event=true}
 local Meta = require(ReplicatedStorage:WaitForChild("Meta"))
 -- 人間の艇には、その人の Roblox のアバターをレーサーとして乗せる(見た目は動いている間だけ持ち、保存しない)
 local RacerAvatar = require(ReplicatedStorage:WaitForChild("RacerAvatar"))
-local avatarFolder = Instance.new("Folder")
+-- 検証用の、ロビーと会場をまとめた場所(dev.project.json)では、ロビーと同じ入れ物を使う
+local avatarFolder = ReplicatedStorage:FindFirstChild("RacerAvatars") or Instance.new("Folder")
 avatarFolder.Name = "RacerAvatars"
 avatarFolder.Parent = ReplicatedStorage
 local avatarCache, avatarPending = {}, {}
@@ -52,7 +53,10 @@ end
 -- オンライン対戦の会場と同じ AI・イベント・結果の表示を確かめられる(保存はしない)
 -- タイムアタックは ta(コースは属性 MinatoTestLane = 1〜6)
 local TEST_MODES = {ranked=true, online=true, event=true, ta=true, gp=true, single=true, practice=true}
-local studioMode = localPractice and TEST_MODES[workspace:GetAttribute("MinatoTestMode")] and workspace:GetAttribute("MinatoTestMode") or nil
+-- 検証用(Studio だけ): ロビーと会場をまとめた場所。ホームの「出走」を待って、この場所の中でフリーレースを始める
+local devCombined = localPractice and ReplicatedStorage:FindFirstChild("MinatoDevCombined") ~= nil
+local studioMode = devCombined and "single"
+    or localPractice and TEST_MODES[workspace:GetAttribute("MinatoTestMode")] and workspace:GetAttribute("MinatoTestMode") or nil
 -- スタート練習は、フリーレース(1人用)の仕組みを使い、スタートだけで終わる(成績・報酬なし)
 local practiceMode = studioMode == "practice"
 if practiceMode then studioMode = "single" end
@@ -73,7 +77,7 @@ local singleCfg = studioMode == "single" and {
     -- Studio の試し: 属性 MinatoTestEnv(day / evening / night)で時間帯を選べる
     env = ({day="day", evening="evening", night="night"})[workspace:GetAttribute("MinatoTestEnv")] or "day",
 } or nil
-local singlePending = studioMode == "single"
+local singlePending = studioMode == "single" and not devCombined
 -- 大会(T17 ③): 大会の番号、段階(heat = 予選 / final = 優勝戦)、組、この会場で走り終えた数、次を始めてよいか、最新の記録
 local TRules = require(script.Parent:WaitForChild("TournamentRules"))
 local TStore = require(script.Parent:WaitForChild("TournamentStore"))
@@ -116,6 +120,28 @@ world.Name = "Minato"
 world.Parent = workspace
 world:SetAttribute("RoomMode", isRoom)
 world:SetAttribute("RoomWaiting", roomWaiting)
+-- 検証用: ロビーのサーバー(FreeRaceLobby)から「この人がこの出走表で走る」を受け取る(サーバーの中だけの合図)
+if devCombined then
+    local devStart = Instance.new("BindableFunction")
+    devStart.Name = "MinatoDevRace"
+    devStart.OnInvoke = function(player, cfg)
+        if not roomWaiting or singlePending or world:GetAttribute("RankedPhase") == "racing" then
+            return false, "レースの準備中です。少し待ってからもう一度押してください"
+        end
+        practiceMode = cfg.practice == true
+        practiceEnd = nil
+        singleCfg = practiceMode and {lane=cfg.lane, tilt=2, diff=2, env="day", seed=math.random(1,1000000)}
+            or {lane=cfg.lane, tilt=cfg.tilt, diff=cfg.diff, env=cfg.env, seed=cfg.seed}
+        world:SetAttribute("MatchMode","single")
+        world:SetAttribute("Practice",practiceMode or nil)
+        world:SetAttribute("RankedPhase","waiting")
+        singlePending = true
+        player:SetAttribute("MinatoDevRace", true)
+        return true, practiceMode and "スタート練習を始めます" or "フリーレースを始めます"
+    end
+    devStart.Parent = game:GetService("ServerStorage")
+end
+
 
 local STUDS_PER_METRE = 3.5
 local BOAT_SCALE = STUDS_PER_METRE * (2.9 / 7)
@@ -925,6 +951,20 @@ roomRemote.OnServerEvent:Connect(function(player, action)
     local mayReturn = ((ONLINE[roomKind] or roomKind == "ta" or roomKind == "single") and over and roomMembers[player])
         or (racePaused and roomKind == "single" and roomMembers[player])
         or (roomKind == "gp" and (over or not roomMembers[player]))
+    -- 検証用: 「ロビーへ」でホームに戻る(走っている途中なら、結果を付けずに止めて待ちに戻す)
+    if devCombined and action == "return" and (over or racePaused) then
+        if racePaused then
+            racePaused = false
+            world:SetAttribute("Paused", nil)
+        end
+        if not over then
+            roomWaiting = true
+            world:SetAttribute("RoomWaiting", true)
+            world:SetAttribute("RankedPhase", "finished")
+        end
+        player:SetAttribute("MinatoDevRace", false)
+        return
+    end
     if action == "return" and mayReturn and rankedLobbyPlace and not returning[player] then
         returning[player]=true
         task.spawn(function()

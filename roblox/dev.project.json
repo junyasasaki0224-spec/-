@@ -1,0 +1,231 @@
+{
+  "name": "Minato Grand Prix (dev: lobby + race)",
+  "tree": {
+    "$className": "DataModel",
+    "ServerScriptService": {
+      "AvatarLobby": {
+        "$path": "src/AvatarLobby.server.lua"
+      },
+      "Leaderboard": {
+        "$path": "src/Leaderboard.server.lua"
+      },
+      "LobbyConfig": {
+        "$path": "src/LobbyConfig.lua"
+      },
+      "Rating": {
+        "$path": "src/Rating.lua"
+      },
+      "PlayerStats": {
+        "$path": "src/PlayerStats.lua"
+      },
+      "ResultRules": {
+        "$path": "src/ResultRules.lua"
+      },
+      "RoomService": {
+        "$path": "src/RoomService.lua"
+      },
+      "MatchPolicy": {
+        "$path": "src/MatchPolicy.lua"
+      },
+      "MatchQueue": {
+        "$path": "src/MatchQueue.lua"
+      },
+      "MatchLobby": {
+        "$path": "src/MatchLobby.server.lua"
+      },
+      "RoomLobby": {
+        "$path": "src/RoomLobby.server.lua"
+      },
+      "MetaService": {
+        "$path": "src/MetaService.lua"
+      },
+      "ShopService": {
+        "$path": "src/ShopService.lua"
+      },
+      "ShopLobby": {
+        "$path": "src/ShopLobby.server.lua"
+      },
+      "MetaLobby": {
+        "$path": "src/MetaLobby.server.lua"
+      },
+      "TimeTrialStore": {
+        "$path": "src/TimeTrialStore.lua"
+      },
+      "TimeAttackLobby": {
+        "$path": "src/TimeAttackLobby.server.lua"
+      },
+      "TournamentRules": {
+        "$path": "src/TournamentRules.lua"
+      },
+      "TournamentStore": {
+        "$path": "src/TournamentStore.lua"
+      },
+      "TournamentLobby": {
+        "$path": "src/TournamentLobby.server.lua"
+      },
+      "EventBoard": {
+        "$path": "src/EventBoard.lua"
+      },
+      "EventBoardLobby": {
+        "$path": "src/EventBoardLobby.server.lua"
+      },
+      "FreeRaceLobby": {
+        "$path": "src/FreeRaceLobby.server.lua"
+      },
+      "Race": {
+        "$path": "src/Race.server.lua"
+      },
+      "BoatCollision": {
+        "$path": "src/BoatCollision.lua"
+      },
+      "RaceAI": {
+        "$path": "src/RaceAI.lua"
+      },
+      "RaceStep": {
+        "$path": "src/RaceStep.lua"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Home": {
+          "$path": "src/Home.client.lua"
+        },
+        "Controls": {
+          "$path": "src/Controls.client.lua"
+        }
+      },
+      "$properties": {
+        "DevTouchMovementMode": "Scriptable",
+        "DevComputerMovementMode": "Scriptable"
+      }
+    },
+    "ReplicatedStorage": {
+      "Meta": {
+        "$path": "src/Meta.lua"
+      },
+      "Outfit": {
+        "$path": "src/Outfit.lua"
+      },
+      "Visor": {
+        "$path": "src/Visor.lua"
+      },
+      "CardImages": {
+        "$path": "src/CardImages.lua"
+      },
+      "VisualModels": {
+        "$path": "src/VisualModels.lua"
+      },
+      "RacerAvatar": {
+        "$path": "src/RacerAvatar.lua"
+      },
+      "ShopConfig": {
+        "$path": "src/ShopConfig.lua"
+      },
+      "GachaShow": {
+        "$path": "src/GachaShow.lua"
+      },
+      "VisualAssets": {
+        "$className": "Folder",
+        "Boat": {
+          "$path": "assets/models/Boat.rbxmx"
+        },
+        "Venue": {
+          "$path": "assets/models/Venue.rbxmx"
+        }
+      },
+      "HomeUi": {
+        "$path": "src/HomeUi.lua"
+      },
+      "RaceRoster": {
+        "$path": "src/RaceRoster.lua"
+      },
+      "WaterRules": {
+        "$path": "src/WaterRules.lua"
+      },
+      "CourseWater": {
+        "$path": "src/CourseWater.lua"
+      },
+      "VenueBoard": {
+        "$path": "src/VenueBoard.lua"
+      },
+      "VenuePixels": {
+        "$path": "src/VenuePixels.lua"
+      },
+      "VenueImages": {
+        "$path": "src/VenueImages.lua"
+      },
+      "VenueArt": {
+        "$path": "src/VenueArt.lua"
+      },
+      "VenueDecor": {
+        "$path": "src/VenueDecor.lua"
+      },
+      "RaceStep": {
+        "$path": "src/RaceStep.lua"
+      },
+      "BoatPhysics": {
+        "$path": "src/BoatPhysics.lua"
+      },
+      "BoatCollision": {
+        "$path": "src/BoatCollision.lua"
+      },
+      "DisplayQuality": {
+        "$path": "src/DisplayQuality.lua"
+      },
+      "Sfx": {
+        "$path": "src/Sfx.lua"
+      },
+      "AudioSheet": {
+        "$path": "src/AudioSheet.lua"
+      },
+      "AudioConfig": {
+        "$path": "src/AudioConfig.lua"
+      },
+      "Spectator": {
+        "$path": "src/Spectator.lua"
+      },
+      "Reconciliation": {
+        "$path": "src/Reconciliation.lua"
+      },
+      "RaceHud": {
+        "$path": "src/RaceHud.lua"
+      },
+      "RaceResult": {
+        "$path": "src/RaceResult.lua"
+      },
+      "BoatWake": {
+        "$path": "src/BoatWake.lua"
+      },
+      "Opening": {
+        "$path": "src/Opening.lua"
+      },
+      "MinatoDevCombined": {
+        "$className": "BoolValue",
+        "$properties": {
+          "Value": true
+        }
+      }
+    },
+    "StarterGui": {
+      "$className": "StarterGui",
+      "$properties": {
+        "ScreenOrientation": "Sensor"
+      }
+    },
+    "Players": {
+      "$properties": {
+        "CharacterAutoLoads": false
+      }
+    },
+    "Workspace": {
+      "$properties": {
+        "StreamingEnabled": false
+      }
+    },
+    "Lighting": {
+      "$properties": {
+        "LightingStyle": "Realistic"
+      }
+    }
+  }
+}

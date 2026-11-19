@@ -4,7 +4,8 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RacerAvatar = require(ReplicatedStorage:WaitForChild("RacerAvatar"))
 
-local folder = Instance.new("Folder")
+-- 検証用の、ロビーと会場をまとめた場所(dev.project.json)では、会場と同じ入れ物を使う
+local folder = ReplicatedStorage:FindFirstChild("RacerAvatars") or Instance.new("Folder")
 folder.Name = "RacerAvatars"
 folder.Parent = ReplicatedStorage
 

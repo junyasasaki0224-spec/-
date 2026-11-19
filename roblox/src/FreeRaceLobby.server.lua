@@ -34,7 +34,17 @@ remote.OnServerInvoke = function(player, cfg)
         return { message = "出走表を開き直してください" }
     end
     if not live then
-        return { message = "Studio では会場へ移動しません（会場の place で MinatoTestMode を使って確かめます）" }
+        -- 検証用(Studio で、ロビーと会場をまとめた場所 dev.project.json): 移動せずに、この場所の中で走る
+        local devStart = game:GetService("RunService"):IsStudio()
+            and ReplicatedStorage:FindFirstChild("MinatoDevCombined")
+            and game:GetService("ServerStorage"):FindFirstChild("MinatoDevRace")
+        if devStart then
+            local ok, started, message = pcall(devStart.Invoke, devStart, player, {
+                practice = practice, lane = cfg.lane, tilt = cfg.tilt, diff = cfg.diff, env = cfg.env, seed = cfg.seed,
+            })
+            return { message = ok and message or "レースを始められませんでした", started = ok and started == true }
+        end
+        return { message = "Studio では会場へ移動しません（dev.project.json の検証用の場所なら、その場で走れます）" }
     end
     if moving[player] then
         return { message = "移動の準備をしています" }
