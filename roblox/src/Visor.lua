@@ -12,12 +12,21 @@ local HINGE = Vector3.new(0, 0.0035, -0.0719)
 -- 頭はヘルメットの殻の高さの 0.78 倍までに縮めて、殻からはみ出さないようにする
 local HEAD_FIT = 0.78
 
+-- 殻の「前が -Z」の向き。着せ替えの品は部品を半回転して置いてある(Turned)ので、半回転して戻す
+local function frameOf(shell: BasePart): CFrame
+	if shell:GetAttribute("Turned") then
+		return shell.CFrame * CFrame.Angles(0, math.pi, 0)
+	end
+	return shell.CFrame
+end
+
 -- モデルの中から、ヘルメットの殻とシールドの部品を探す(アバターの部品は名前に "__" がないので入らない)
 local function findParts(model: Instance)
 	local shell: BasePart? = nil
 	local visors: { BasePart } = {}
 	for _, p in model:GetDescendants() do
-		if p:IsA("BasePart") then
+		-- 着せ替えで隠した元のヘルメット(OutfitHidden)は使わない
+		if p:IsA("BasePart") and p:GetAttribute("OutfitHidden") == nil then
 			local material = p.Name:match("__(.-)__")
 			if material == "Helmet" and not shell then
 				shell = p
@@ -68,7 +77,7 @@ local function showHead(head: BasePart, shell: BasePart, on: boolean)
 	-- 頭の中心は殻の中心の少し下・後ろ(顔が目元の穴の奥に来る)
 	if on then
 		head.CFrame = CFrame.new(
-			shell.CFrame:PointToWorldSpace(Vector3.new(0, -0.04 * shell.Size.Y, 0.04 * shell.Size.Z))
+			frameOf(shell):PointToWorldSpace(Vector3.new(0, -0.04 * shell.Size.Y, 0.04 * shell.Size.Z))
 		) * at.Rotation
 	end
 	head.Transparency = on and 0 or 1
@@ -90,7 +99,7 @@ function Visor.apply(model: Instance, up: boolean)
 		local rest = visor:GetAttribute("VisorRest")
 		local size = visor:GetAttribute("VisorSize")
 		if typeof(rest) ~= "CFrame" or typeof(size) ~= "Vector3" then
-			rest = shell.CFrame:ToObjectSpace(visor.CFrame)
+			rest = frameOf(shell):ToObjectSpace(visor.CFrame)
 			size = visor.Size
 			visor:SetAttribute("VisorRest", rest)
 			visor:SetAttribute("VisorSize", size)
@@ -100,10 +109,10 @@ function Visor.apply(model: Instance, up: boolean)
 			local hinge = CFrame.new(HINGE * shell.Size)
 			local fromHinge = hinge:Inverse() * rest
 			local turned = CFrame.Angles(OPEN, 0, 0) * (fromHinge.Rotation + fromHinge.Position * GROW)
-			visor.CFrame = shell.CFrame * hinge * turned
+			visor.CFrame = frameOf(shell) * hinge * turned
 			visor.Size = size * GROW
 		else
-			visor.CFrame = shell.CFrame * rest
+			visor.CFrame = frameOf(shell) * rest
 			visor.Size = size
 		end
 		visor:SetAttribute("VisorUp", up)

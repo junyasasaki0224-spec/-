@@ -1,7 +1,7 @@
 local M=require("../src/Meta")
 local Rules=require("../src/ResultRules")
--- ブラウザ版の23品 + VIP の2品
-assert(#M.ITEMS==25 and #M.MISSIONS==4)
+-- スタンダード5品(s0・h0・c0・w0・f0)+ VIP の2品 + ガチャの着せ替え150品(5種類×30)
+assert(#M.ITEMS==157 and #M.MISSIONS==4)
 local m=M.new()
 M.daily(m,"2026-11-15")
 assert(#m.mail==2)
@@ -13,24 +13,41 @@ M.action(m,"mail","welcome")
 assert(m.coins==500)
 m.token="a"
 local data={meta=m}
-local first=M.transact(data,"a","pull",1,"2026-11-15",{0,.01},"b")
-local replay=M.transact(first,"a","pull",1,"2026-11-15",{.9,.9},"c")
+local first=M.transact(data,"a","pull","skin:1","2026-11-15",{0,.01},"b")
+local replay=M.transact(first,"a","pull","skin:1","2026-11-15",{.9,.9},"c")
 assert(first.meta.pulls==1 and replay.meta.pulls==1 and replay.meta.token=="b")
 assert(data.meta.pulls==0 and first.meta.coins==400)
-assert(first.meta.last[1].id=="s11")
-local dupe=M.transact(first,"b","pull",1,"2026-11-15",{0,0},"c")
-assert(dupe.meta.coins==700 and dupe.meta.last[1].dupe==400)
+-- 乱数 0 は UR、2つ目の乱数で UR の3点から1点目(艇外装なら hull28)
+assert(first.meta.last[1].id=="hull28")
+local dupe=M.transact(first,"b","pull","skin:1","2026-11-15",{0,0},"c")
+assert(dupe.meta.coins==1300 and dupe.meta.last[1].dupe==1000)
 local before=m.coins
-M.action(m,"pull",0)
-assert(m.coins==before)
+M.action(m,"pull","skin:0")
+M.action(m,"pull",10)
+M.action(m,"pull","hat:1")
+assert(m.coins==before and m.pulls==0)
+assert(M.pullArg("helmet:10")=="helmet" and M.pullArg("flag:1")=="flag" and not M.pullArg("skin:5") and not M.pullArg(1))
 assert(not M.item("forged"))
-M.action(m,"equip","s12")
+-- 持っていない品は装備できない。スタンダードはいつでも装備できる
+M.action(m,"equip","hull05")
 assert(m.skin=="s0")
+M.action(m,"equip","c0")
+assert(m.cowl=="c0")
+-- 乱数 .99 は N(N は 50%)。艇外装の N 8点の8点目 = hull08。初めの1つ以外はかぶり(N は 10 コイン)
 m.coins=900
-local rolls=M.action(m,"pull",10,function() return .99 end)
-assert(#rolls==10 and m.pulls==10 and m.coins==135)
+local rolls=M.action(m,"pull","skin:10",function() return .99 end)
+assert(#rolls==10 and m.pulls==10 and m.coins==90 and rolls[1].id=="hull08" and rolls[2].dupe==10)
+-- 種類を選ぶと、その種類だけが出る
+local h=M.new();h.coins=900
+for _,v in ipairs(M.action(h,"pull","helmet:10",function() return .3 end)) do assert(M.item(v.id).kind=="helmet") end
+-- 持っている品は装備できる(種類ごとの場所に入る)
+M.action(h,"equip",h.own[#h.own])
+assert(M.item(h.helmet).kind=="helmet" and h.helmet~="h0")
 local poor=M.new()
-assert(type(M.action(poor,"pull",10))=="string" and poor.pulls==0)
+assert(type(M.action(poor,"pull","skin:10"))=="string" and poor.pulls==0)
+-- 今はない品(前の色だけのガチャの品)を装備していた記録は、スタンダードに戻す
+local old=M.normalize({skin="s5",helmet="h9",own={"s0","h0","s5"}})
+assert(old.skin=="s0" and old.helmet=="h0" and old.cowl=="c0" and old.wheel=="w0" and old.flag=="f0")
 for i,coins in ipairs({60,40,30,20,15,15}) do
  local n=M.new();M.result(n,{mode="race",place=i,st=.2})
  assert(n.coins==coins and n.mis.race1==1 and n.mis.st20==1)
@@ -73,6 +90,14 @@ assert(table.find(s.own,"v1") and table.find(s.own,"v2") and not table.find(s.ow
 local mails=#s.mail
 assert(M.vipDaily(s,"2026-11-15",100) and not M.vipDaily(s,"2026-11-15",100) and #s.mail==mails+1 and s.mail[1].coins==100)
 assert(not M.vipDaily(M.new(),"2026-11-15",100))
--- ガチャに VIP の品は出ない。1つあたりの確率の元(品の数)
-assert(#M.pool("N")==8 and #M.pool("R")==7 and #M.pool("SR")==5 and #M.pool("SSR")==3)
+-- ガチャに VIP の品・スタンダードは出ない。1つあたりの確率の元(品の数)。どの種類も 8/8/7/4/3
+for _,slot in ipairs(M.SLOTS) do
+ assert(#M.pool("N",slot.kind)==8 and #M.pool("R",slot.kind)==8 and #M.pool("SR",slot.kind)==7 and #M.pool("SSR",slot.kind)==4 and #M.pool("UR",slot.kind)==3)
+end
+-- 確率の合計は 100%(表示と抽選は同じ Meta.RARITY)
+local sum=0
+for _,r in ipairs(M.RARITIES) do sum+=M.RARITY[r].rate end
+assert(math.abs(sum-1)<1e-9)
+-- 色見本: 色だけの品はその色、着せ替えは模様の色
+assert(M.swatch(M.item("s0"))==M.item("s0").hull and M.swatch(M.item("hull01"))==M.item("hull01").color)
 print("meta catalog, rewards, transactions and retry checks passed")

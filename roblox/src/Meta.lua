@@ -1,35 +1,50 @@
--- Catalog values match src/meta.js. Rules below are service-independent.
+-- 品・ミッション・級・レア度の表と、サービスに頼らない決まり。
+-- ガチャの品は GPT がデザインした着せ替え(5種類×30点。ItemCatalog.lua)。ブラウザ版(src/meta.js)の色だけの品とは別になった。
+-- スタンダード(s0・h0 と c0・w0・f0)は最初から持っている元の見た目。VIP の品(v1・v2)は元の艇の色違い
 local Meta = {["ITEMS"]={{["id"]="s0",["name"]="スタンダード",["r"]="N",["hull"]=15921902,["trim"]=13114922,["deck"]=15329764,["cowl"]=13114922,["kind"]="skin"},
-    {["id"]="s1",["name"]="マリンブルー",["r"]="N",["hull"]=15921902,["trim"]=1790164,["deck"]=14674162,["cowl"]=1790164,["kind"]="skin"},
-    {["id"]="s2",["name"]="フォレスト",["r"]="N",["hull"]=15790054,["trim"]=1605692,["deck"]=15133919,["cowl"]=1605692,["kind"]="skin"},
-    {["id"]="s3",["name"]="サンセット",["r"]="N",["hull"]=16773596,["trim"]=15759890,["deck"]=16769725,["cowl"]=15759890,["kind"]="skin"},
-    {["id"]="s4",["name"]="グラファイト",["r"]="R",["hull"]=3817287,["trim"]=14278114,["deck"]=2764340,["cowl"]=9278620,["kind"]="skin"},
-    {["id"]="s5",["name"]="チェリーレッド",["r"]="R",["hull"]=12983083,["trim"]=16777215,["deck"]=11015202,["cowl"]=1710622,["kind"]="skin"},
-    {["id"]="s6",["name"]="ディープシー",["r"]="R",["hull"]=1063546,["trim"]=3786472,["deck"]=797790,["cowl"]=3786472,["kind"]="skin"},
-    {["id"]="s7",["name"]="ライムフラッシュ",["r"]="R",["hull"]=1447964,["trim"]=11989562,["deck"]=2106153,["cowl"]=11989562,["kind"]="skin"},
-    {["id"]="s8",["name"]="ミッドナイト",["r"]="SR",["hull"]=856096,["trim"]=9067775,["deck"]=1382963,["cowl"]=9067775,["kind"]="skin"},
-    {["id"]="s9",["name"]="パールホワイト",["r"]="SR",["hull"]=16513781,["trim"]=14072176,["deck"]=15986658,["cowl"]=14072176,["kind"]="skin"},
-    {["id"]="s10",["name"]="クリムゾンゴールド",["r"]="SR",["hull"]=7999260,["trim"]=16765500,["deck"]=6032149,["cowl"]=16765500,["kind"]="skin"},
-    {["id"]="s11",["name"]="みなとゴールド",["r"]="SSR",["hull"]=14856762,["trim"]=16774340,["deck"]=13212194,["cowl"]=1708544,["kind"]="skin"},
-    {["id"]="s12",["name"]="オーロラ",["r"]="SSR",["hull"]=1229488,["trim"]=16736168,["deck"]=954268,["cowl"]=6966527,["kind"]="skin"},
-    {["id"]="h0",["name"]="オレンジ",["r"]="N",["base"]=16742938,["stripe"]=1052688,["kind"]="helmet"},
-    {["id"]="h1",["name"]="ホワイト",["r"]="N",["base"]=16053490,["stripe"]=1986512,["kind"]="helmet"},
-    {["id"]="h2",["name"]="ブラック",["r"]="N",["base"]=1447707,["stripe"]=15909376,["kind"]="helmet"},
-    {["id"]="h3",["name"]="スカイ",["r"]="N",["base"]=3778792,["stripe"]=16777215,["kind"]="helmet"},
-    {["id"]="h4",["name"]="ファイア",["r"]="R",["base"]=14229038,["stripe"]=16765500,["kind"]="helmet"},
-    {["id"]="h5",["name"]="ミント",["r"]="R",["base"]=3528352,["stripe"]=735788,["kind"]="helmet"},
-    {["id"]="h6",["name"]="バイオレット",["r"]="R",["base"]=6959016,["stripe"]=16777215,["kind"]="helmet"},
-    {["id"]="h7",["name"]="カーボン",["r"]="SR",["base"]=2369324,["stripe"]=14694970,["kind"]="helmet"},
-    {["id"]="h8",["name"]="シャンパン",["r"]="SR",["base"]=15326388,["stripe"]=9071132,["kind"]="helmet"},
-    {["id"]="h9",["name"]="チャンピオン",["r"]="SSR",["base"]=16765500,["stripe"]=13114922,["kind"]="helmet"}},["MISSIONS"]={{["id"]="race1",["name"]="レースに1回出る",["goal"]=1,["coins"]=50},
+    {["id"]="h0",["name"]="オレンジ",["r"]="N",["base"]=16742938,["stripe"]=1052688,["kind"]="helmet"}},["MISSIONS"]={{["id"]="race1",["name"]="レースに1回出る",["goal"]=1,["coins"]=50},
     {["id"]="top3",["name"]="3着以内に入る",["goal"]=1,["coins"]=80},
     {["id"]="st20",["name"]="ST 0.20 以内でスタートする",["goal"]=1,["coins"]=80},
-    {["id"]="race3",["name"]="レースに3回出る",["goal"]=3,["coins"]=120}},["GRADES"]={{["name"]="B2",["rate"]=0,["diff"]=0},{["name"]="B1",["rate"]=300,["diff"]=1},{["name"]="A2",["rate"]=800,["diff"]=2},{["name"]="A1",["rate"]=1500,["diff"]=3}},["RARITY"]={["N"]={["name"]="N",["rate"]=0.6,["dupe"]=15},["R"]={["name"]="R",["rate"]=0.28,["dupe"]=40},["SR"]={["name"]="SR",["rate"]=0.1,["dupe"]=120},["SSR"]={["name"]="SSR",["rate"]=0.02,["dupe"]=400}}}
+    {["id"]="race3",["name"]="レースに3回出る",["goal"]=3,["coins"]=120}},["GRADES"]={{["name"]="B2",["rate"]=0,["diff"]=0},{["name"]="B1",["rate"]=300,["diff"]=1},{["name"]="A2",["rate"]=800,["diff"]=2},{["name"]="A1",["rate"]=1500,["diff"]=3}},["RARITY"]={["N"]={["name"]="N",["rate"]=0.5,["dupe"]=10},["R"]={["name"]="R",["rate"]=0.3,["dupe"]=30},["SR"]={["name"]="SR",["rate"]=0.14,["dupe"]=100},["SSR"]={["name"]="SSR",["rate"]=0.045,["dupe"]=300},["UR"]={["name"]="UR",["rate"]=0.015,["dupe"]=1000}}}
 -- Roblox 版だけの品: VIP パスの特典。ランダムではなく、ガチャには出ない(ガチャの確率は今までと同じ)。速さや強さは変わらない見た目だけ
 for _,it in ipairs({
     {id="v1",name="VIPゴールド",r="SSR",hull=1710618,trim=15911244,deck=1118481,cowl=15911244,kind="skin",shop=true,vip=true},
     {id="v2",name="VIPゴールド",r="SSR",base=15911244,stripe=1710618,kind="helmet",shop=true,vip=true},
 }) do table.insert(Meta.ITEMS,it) end
+-- 元の見た目(スタンダード)。最初から持っていて、ガチャには出ない(standard。ヘルメットの base は色なので別の名前)
+Meta.ITEMS[1].standard=true
+Meta.ITEMS[2].standard=true
+for _,it in ipairs({
+    {id="c0",name="スタンダード",r="N",kind="cowl",standard=true},
+    {id="w0",name="スタンダード",r="N",kind="wheel",standard=true},
+    {id="f0",name="スタンダード",r="N",kind="flag",standard=true},
+}) do table.insert(Meta.ITEMS,it) end
+-- ガチャの着せ替え(形と模様は ReplicatedStorage.VisualAssets.Items の同じ番号の Model)
+-- (Roblox の中では隣のモジュール。テストの Luau では同じフォルダのファイル)
+local ItemCatalog=if script then require(script.Parent:WaitForChild("ItemCatalog")) else require("./ItemCatalog")
+for _,it in ipairs(ItemCatalog) do
+    table.insert(Meta.ITEMS,{id=it.id,name=it.name,r=it.r,kind=it.kind,no=it.no,color=it.color,accent=it.accent,gacha=true})
+end
+-- 着せ替えの種類(ガチャは種類を選んでから引く)。並びは画面の並び
+Meta.SLOTS={
+    {kind="skin",name="艇外装",default="s0"},
+    {kind="helmet",name="ヘルメット",default="h0"},
+    {kind="cowl",name="モーターカバー",default="c0"},
+    {kind="wheel",name="ステアリング",default="w0"},
+    {kind="flag",name="艇首旗",default="f0"},
+}
+-- レア度の並び(低い順)
+Meta.RARITIES={"N","R","SR","SSR","UR"}
+-- 出走表などの小さな色見本(主な色, 差し色)。色だけの品は塗装・ヘルメットの色、着せ替えは模様の色
+function Meta.swatch(it)
+    if not it then return 0xF2F2F0,0xF2F2F0 end
+    if it.kind=="skin" and it.hull then return it.hull,it.trim end
+    if it.kind=="helmet" and it.base then return it.base,it.stripe end
+    return it.color or 0xF2F2F0,it.accent or it.color or 0xF2F2F0
+end
+function Meta.slot(kind)
+    for _,s in ipairs(Meta.SLOTS) do if s.kind==kind then return s end end
+end
 local function clone(v)
     if type(v)~="table" then return v end
     local out={}
@@ -46,17 +61,22 @@ function Meta.rankedLeft(m,day)
     return math.max(0,Meta.RANKED_DAILY-used)
 end
 -- ガチャの1つあたりの確率(表示と抽選は同じ Meta.RARITY と品の数から計算する)
-function Meta.pool(rar)
+-- kind を省くと全部の種類から
+function Meta.pool(rar,kind)
     local pool={}
-    for _,it in ipairs(Meta.ITEMS) do if it.r==rar and not it.shop then table.insert(pool,it) end end
+    for _,it in ipairs(Meta.ITEMS) do if it.gacha and it.r==rar and (kind==nil or it.kind==kind) then table.insert(pool,it) end end
     return pool
 end
 -- その品を使えるか(持っている品。検証用の「全部の品を解放」がオンなら全部)
 function Meta.owns(m,id)
-    return m.testUnlock==true and Meta.item(id)~=nil or table.find(m.own,id)~=nil
+    local it=Meta.item(id)
+    if it and it.standard then return true end
+    return m.testUnlock==true and it~=nil or table.find(m.own,id)~=nil
 end
+local byId={}
+for _,it in ipairs(Meta.ITEMS) do byId[it.id]=it end
 function Meta.item(id)
-    for _,it in ipairs(Meta.ITEMS) do if it.id==id then return it end end
+    return byId[id]
 end
 function Meta.grade(rate)
     local index=1
@@ -64,13 +84,18 @@ function Meta.grade(rate)
     return index
 end
 function Meta.new()
-    return {volume=80,lever=40,quality="auto",assist=true,shake=true,opening=true,visor=false,coins=0,own={"s0","h0"},skin="s0",helmet="h0",rate=0,peak=0,seasonRaces=0,
+    return {volume=80,lever=40,quality="auto",assist=true,shake=true,opening=true,visor=false,coins=0,own={"s0","h0"},skin="s0",helmet="h0",cowl="c0",wheel="w0",flag="f0",rate=0,peak=0,seasonRaces=0,
         seasonWins=0,xp=0,tier=0,ta={},day="",mis={},misDone={},pulls=0,mailSeq=1,
         mail={{id="welcome",title="ようこそ みなとグランプリへ",body="出走の記念に、ガチャ5回ぶんのコインを贈ります。",coins=500}}}
 end
 function Meta.normalize(v)
     local m=Meta.new()
     if type(v)=="table" then for k,x in pairs(v) do m[k]=clone(x) end end
+    -- 今はない品(前の色だけのガチャの品など)を装備していたら、スタンダードに戻す
+    for _,s in ipairs(Meta.SLOTS) do
+        local it=Meta.item(m[s.kind])
+        if not it or it.kind~=s.kind then m[s.kind]=s.default end
+    end
     return m
 end
 function Meta.sendMail(m,title,body,coins)
@@ -83,6 +108,14 @@ function Meta.daily(m,day)
     if day=="" or m.day>=day then return end
     m.day,m.mis,m.misDone=day,{},{}
     Meta.sendMail(m,"ログインボーナス",day.." の出走ボーナスです。",100)
+end
+-- ガチャの引き方 "種類:回数" を読む。正しくなければ nil
+function Meta.pullArg(arg)
+    if type(arg)~="string" or #arg>12 then return nil end
+    local kind,n=arg:match("^(%a+):(%d+)$")
+    n=tonumber(n)
+    if not kind or not Meta.slot(kind) or (n~=1 and n~=10) then return nil end
+    return kind,n
 end
 function Meta.action(m,action,arg,rnd)
     if action=="settings" and type(arg)=="string" then
@@ -106,23 +139,28 @@ function Meta.action(m,action,arg,rnd)
         end
     elseif action=="equip" then
         local it=Meta.item(arg)
-        if it and Meta.owns(m,arg) then
-            m[it.kind=="skin" and "skin" or "helmet"]=arg
+        if it and Meta.slot(it.kind) and Meta.owns(m,arg) then
+            m[it.kind]=arg
             return it.name.."を装備しました"
         end
-    elseif action=="pull" and (arg==1 or arg==10) then
-        local cost=arg==10 and 900 or 100
+    elseif action=="pull" then
+        -- arg は「種類:回数」(例 "helmet:10")。種類を選んでから、その種類の30点の中で引く
+        local kind,count=Meta.pullArg(arg)
+        if not kind then return "引く種類を選んでください" end
+        local cost=count==10 and 900 or 100
         if m.coins<cost then return "コインが足りません" end
         m.coins-=cost
         local results={}
-        for _=1,arg do
+        for _=1,count do
+            -- 先にレア度を決め(高い順に確率を引いていく)、次にそのレア度の品から同じ確率で選ぶ
             local x,rar=rnd(),"N"
-            for _,r in ipairs({"SSR","SR","R","N"}) do
+            for i=#Meta.RARITIES,1,-1 do
+                local r=Meta.RARITIES[i]
                 if x<Meta.RARITY[r].rate then rar=r;break end
                 x-=Meta.RARITY[r].rate
             end
-            -- VIP の品はガチャに出さない
-            local pool=Meta.pool(rar)
+            -- VIP の品・スタンダードはガチャに出さない
+            local pool=Meta.pool(rar,kind)
             local it=pool[math.min(#pool,math.floor(rnd()*#pool)+1)]
             local dupe=0
             if table.find(m.own,it.id) then dupe=Meta.RARITY[rar].dupe;m.coins+=dupe

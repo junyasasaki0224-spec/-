@@ -6,6 +6,8 @@ function Visuals.boat(parent,number)
     if not source or #source:GetDescendants()==0 then return nil end
     local model=source:Clone()
     model:SetAttribute("Detailed",true)
+    -- 艇番(1〜6)。着せ替えの艇首旗の布と側面の板の色に使う(Outfit)
+    if number then model:SetAttribute("Lane",number) end
     for _,p in ipairs(model:GetDescendants()) do
         if p:IsA("BasePart") and number then
             local material=p.Name:match("__(.-)__")

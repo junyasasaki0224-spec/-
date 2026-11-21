@@ -43,6 +43,9 @@
         },
         "Venue": {
           "$path": "assets/models/Venue.rbxmx"
+        },
+        "Items": {
+          "$path": "assets/items/Items.rbxmx"
         }
       },
       "RaceHud": {
@@ -89,6 +92,9 @@
       },
       "Opening": {
         "$path": "src/Opening.lua"
+      },
+      "ItemCatalog": {
+        "$path": "src/ItemCatalog.lua"
       }
     },
     "ServerScriptService": {

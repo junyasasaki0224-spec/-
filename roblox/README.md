@@ -90,6 +90,39 @@ https://create.roblox.com/docs/studio/importer
 
 原点はmanifestから復元します。Wheel・Motor・RacerUpperは透明Pivotを回転の中心にします。Anchored・CanCollide=falseにして既存の独自の衝突計算へ引き継ぎます。倉庫の色は HullWhite / Trim / Deck / MotorRed / Helmet / HelmetStripe の材質名から適用します。Mesh所有者と公開ゲームの所有者が異なる時は、ゲームで読み取る許可をRoblox側で設定し、公開環境で確認してください。
 
+## ガチャの着せ替え(GPT がデザインした 5種類×30点)
+
+元の素材は `roblox/assets/items/source/`(GPT の GLB 150点・共通の艇番の板・一覧 `Catalog.csv`・点検結果)。ゲームの品の一覧は `src/ItemCatalog.lua`、見た目は `assets/items/Items.rbxmx`(ReplicatedStorage.VisualAssets.Items)。
+
+作り直す時の流れ:
+
+    python roblox/tools/gacha_items.py      # import/*.glb・items-manifest.json・src/ItemCatalog.lua を作る
+    (Studio)ファイル → インポート で import/ の5つの GLB を取り込む(作り手は「自分」)
+    (Studio)取り込んだ5つを1つのフォルダに入れ、右クリック → 保存 / エクスポート → ファイルに保存 →
+            import/GachaImport.rbxmx(XML)
+    python roblox/tools/package_items.py    # Items.rbxmx と番号の一覧 items-import.json を作る
+
+`gacha_items.py` がしていること:
+
+- 座標をブラウザ版(メートル・前が +X)から Roblox の艇(1m=3.5 studs・前が -Z)に変える
+- 1つの品を本体(模様)・金(UR の金属)・シールド・旗の布に分ける
+- Roblox は頂点の色を使わないので、単色の面は模様の画像の右端に足した色見本を指す
+- 出走表の色見本(主な色・差し色)を取り出す
+
+`package_items.py` がしていること:
+
+- Studio の取り込みは GLB を縦の軸まわりに半回転させて読むので、部品を半回転させて置く
+- 旗の布は、模様 × 艇番の色にするため、SpecialMesh(VertexColor)にする
+
+付け方は `src/Outfit.lua` です。
+
+- 品の部品を、ハンドル・モーター・上半身の組の中に入れる(一緒に動く)
+- その種類の元の部品は隠す
+- ヘルメットは元の殻の位置に付け、アバターを乗せた時のずれ(AvatarMoved)も写す
+- シールド(`Visor.lua`)は、品の部品の印 Turned を見て前の向きを知る
+
+Rojo の生同期は MeshPart の形(MeshId)を書き込めません。Studio で同期した時は、`tools/studio_item_meshes.lua` をコマンドバーで実行して、取り込んだ元のモデル(ServerStorage.GachaImportSource)から形を写します。`rojo build` の place には番号が入るので要りません。
+
 ## カード画像
 
 今回、8枚とも登録済みでCardImages.luaにIDを入れてあります。所有者を変える時は次の手順で登録し直してください。

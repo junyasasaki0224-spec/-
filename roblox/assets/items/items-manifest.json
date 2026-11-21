@@ -1,0 +1,4480 @@
+[
+ {
+  "name": "hull01__Paint__Body",
+  "item": "hull01",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3557
+ },
+ {
+  "name": "helm01__Helmet__Body",
+  "item": "helm01",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00517,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.06734,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1594
+ },
+ {
+  "name": "helm01__Visor__Visor",
+  "item": "helm01",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl01__Paint__Body",
+  "item": "cowl01",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.41479,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.41594,
+   1.162
+  ],
+  "color": null,
+  "triangles": 364
+ },
+ {
+  "name": "whl01__Paint__Body",
+  "item": "whl01",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   -7e-05,
+   1.97188,
+   0.35274
+  ],
+  "size": [
+   1.14086,
+   1.02546,
+   0.53616
+  ],
+  "color": null,
+  "triangles": 3104
+ },
+ {
+  "name": "flag01__Paint__Body",
+  "item": "flag01",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.0245,
+   1.89418,
+   -4.65493
+  ],
+  "size": [
+   0.0525,
+   0.63,
+   0.05237
+  ],
+  "color": null,
+  "triangles": 564
+ },
+ {
+  "name": "flag01__Fabric__Fabric",
+  "item": "flag01",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.012,
+   1.89418,
+   -4.15874
+  ],
+  "size": [
+   0.05555,
+   0.63,
+   0.99251
+  ],
+  "color": null,
+  "triangles": 320
+ },
+ {
+  "name": "hull02__Paint__Body",
+  "item": "hull02",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3557
+ },
+ {
+  "name": "helm02__Helmet__Body",
+  "item": "helm02",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00517,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.06734,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1594
+ },
+ {
+  "name": "helm02__Visor__Visor",
+  "item": "helm02",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl02__Paint__Body",
+  "item": "cowl02",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.41479,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.41594,
+   1.162
+  ],
+  "color": null,
+  "triangles": 364
+ },
+ {
+  "name": "whl02__Paint__Body",
+  "item": "whl02",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.9775,
+   0.35
+  ],
+  "size": [
+   1.16277,
+   1.04509,
+   0.54574
+  ],
+  "color": null,
+  "triangles": 2820
+ },
+ {
+  "name": "flag02__Paint__Body",
+  "item": "flag02",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.0245,
+   1.89418,
+   -4.65493
+  ],
+  "size": [
+   0.0525,
+   0.63,
+   0.05237
+  ],
+  "color": null,
+  "triangles": 564
+ },
+ {
+  "name": "flag02__Fabric__Fabric",
+  "item": "flag02",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.01808,
+   1.90801,
+   -4.16497
+  ],
+  "size": [
+   0.06143,
+   0.65767,
+   0.98007
+  ],
+  "color": null,
+  "triangles": 320
+ },
+ {
+  "name": "hull03__Paint__Body",
+  "item": "hull03",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3557
+ },
+ {
+  "name": "helm03__Helmet__Body",
+  "item": "helm03",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00517,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.06734,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1594
+ },
+ {
+  "name": "helm03__Visor__Visor",
+  "item": "helm03",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl03__Paint__Body",
+  "item": "cowl03",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.41479,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.41594,
+   1.162
+  ],
+  "color": null,
+  "triangles": 364
+ },
+ {
+  "name": "whl03__Paint__Body",
+  "item": "whl03",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.00263,
+   1.96349,
+   0.35684
+  ],
+  "size": [
+   1.14459,
+   1.02542,
+   0.53614
+  ],
+  "color": null,
+  "triangles": 3104
+ },
+ {
+  "name": "flag03__Paint__Body",
+  "item": "flag03",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.0245,
+   1.89418,
+   -4.65493
+  ],
+  "size": [
+   0.0525,
+   0.63,
+   0.05237
+  ],
+  "color": null,
+  "triangles": 564
+ },
+ {
+  "name": "flag03__Fabric__Fabric",
+  "item": "flag03",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.02552,
+   1.91701,
+   -4.18125
+  ],
+  "size": [
+   0.0694,
+   0.67567,
+   0.9475
+  ],
+  "color": null,
+  "triangles": 320
+ },
+ {
+  "name": "hull04__Paint__Body",
+  "item": "hull04",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3557
+ },
+ {
+  "name": "helm04__Helmet__Body",
+  "item": "helm04",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00517,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.06734,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1594
+ },
+ {
+  "name": "helm04__Visor__Visor",
+  "item": "helm04",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl04__Paint__Body",
+  "item": "cowl04",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.41479,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.41594,
+   1.162
+  ],
+  "color": null,
+  "triangles": 364
+ },
+ {
+  "name": "whl04__Paint__Body",
+  "item": "whl04",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   -0.00184,
+   1.95924,
+   0.35891
+  ],
+  "size": [
+   1.14351,
+   1.02545,
+   0.53615
+  ],
+  "color": null,
+  "triangles": 3388
+ },
+ {
+  "name": "flag04__Paint__Body",
+  "item": "flag04",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.0245,
+   1.89418,
+   -4.65493
+  ],
+  "size": [
+   0.0525,
+   0.63,
+   0.05237
+  ],
+  "color": null,
+  "triangles": 564
+ },
+ {
+  "name": "flag04__Fabric__Fabric",
+  "item": "flag04",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.02994,
+   1.91804,
+   -4.20134
+  ],
+  "size": [
+   0.07212,
+   0.67772,
+   0.90733
+  ],
+  "color": null,
+  "triangles": 320
+ },
+ {
+  "name": "hull05__Paint__Body",
+  "item": "hull05",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3557
+ },
+ {
+  "name": "helm05__Helmet__Body",
+  "item": "helm05",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00517,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.06734,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1594
+ },
+ {
+  "name": "helm05__Visor__Visor",
+  "item": "helm05",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl05__Paint__Body",
+  "item": "cowl05",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.41479,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.41594,
+   1.162
+  ],
+  "color": null,
+  "triangles": 364
+ },
+ {
+  "name": "whl05__Paint__Body",
+  "item": "whl05",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.9775,
+   0.35
+  ],
+  "size": [
+   1.15341,
+   1.03668,
+   0.54163
+  ],
+  "color": null,
+  "triangles": 2820
+ },
+ {
+  "name": "flag05__Paint__Body",
+  "item": "flag05",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.0245,
+   1.89418,
+   -4.65493
+  ],
+  "size": [
+   0.0525,
+   0.63,
+   0.05237
+  ],
+  "color": null,
+  "triangles": 564
+ },
+ {
+  "name": "flag05__Fabric__Fabric",
+  "item": "flag05",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.03185,
+   1.91073,
+   -4.21752
+  ],
+  "size": [
+   0.06915,
+   0.6631,
+   0.87497
+  ],
+  "color": null,
+  "triangles": 320
+ },
+ {
+  "name": "hull06__Paint__Body",
+  "item": "hull06",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3557
+ },
+ {
+  "name": "helm06__Helmet__Body",
+  "item": "helm06",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00517,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.06734,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1594
+ },
+ {
+  "name": "helm06__Visor__Visor",
+  "item": "helm06",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl06__Paint__Body",
+  "item": "cowl06",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.41479,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.41594,
+   1.162
+  ],
+  "color": null,
+  "triangles": 364
+ },
+ {
+  "name": "whl06__Paint__Body",
+  "item": "whl06",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.00153,
+   1.96769,
+   0.35479
+  ],
+  "size": [
+   1.14307,
+   1.02544,
+   0.53615
+  ],
+  "color": null,
+  "triangles": 3104
+ },
+ {
+  "name": "flag06__Paint__Body",
+  "item": "flag06",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.0245,
+   1.89418,
+   -4.65493
+  ],
+  "size": [
+   0.0525,
+   0.63,
+   0.05237
+  ],
+  "color": null,
+  "triangles": 564
+ },
+ {
+  "name": "flag06__Fabric__Fabric",
+  "item": "flag06",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.03334,
+   1.89764,
+   -4.22358
+  ],
+  "size": [
+   0.06602,
+   0.63691,
+   0.86284
+  ],
+  "color": null,
+  "triangles": 320
+ },
+ {
+  "name": "hull07__Paint__Body",
+  "item": "hull07",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3557
+ },
+ {
+  "name": "helm07__Helmet__Body",
+  "item": "helm07",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00517,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.06734,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1594
+ },
+ {
+  "name": "helm07__Visor__Visor",
+  "item": "helm07",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl07__Paint__Body",
+  "item": "cowl07",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.41479,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.41594,
+   1.162
+  ],
+  "color": null,
+  "triangles": 364
+ },
+ {
+  "name": "whl07__Paint__Body",
+  "item": "whl07",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   -0.00122,
+   1.96346,
+   0.35685
+  ],
+  "size": [
+   1.14263,
+   1.02545,
+   0.53615
+  ],
+  "color": null,
+  "triangles": 3104
+ },
+ {
+  "name": "flag07__Paint__Body",
+  "item": "flag07",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.0245,
+   1.89418,
+   -4.65493
+  ],
+  "size": [
+   0.0525,
+   0.63,
+   0.05237
+  ],
+  "color": null,
+  "triangles": 564
+ },
+ {
+  "name": "flag07__Fabric__Fabric",
+  "item": "flag07",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.03497,
+   1.88334,
+   -4.2172
+  ],
+  "size": [
+   0.06279,
+   0.65168,
+   0.87561
+  ],
+  "color": null,
+  "triangles": 320
+ },
+ {
+  "name": "hull08__Paint__Body",
+  "item": "hull08",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3557
+ },
+ {
+  "name": "helm08__Helmet__Body",
+  "item": "helm08",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00517,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.06734,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1594
+ },
+ {
+  "name": "helm08__Visor__Visor",
+  "item": "helm08",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl08__Paint__Body",
+  "item": "cowl08",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.41479,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.41594,
+   1.162
+  ],
+  "color": null,
+  "triangles": 364
+ },
+ {
+  "name": "whl08__Paint__Body",
+  "item": "whl08",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.9775,
+   0.35
+  ],
+  "size": [
+   1.18148,
+   1.06191,
+   0.55395
+  ],
+  "color": null,
+  "triangles": 2820
+ },
+ {
+  "name": "flag08__Paint__Body",
+  "item": "flag08",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.0245,
+   1.89418,
+   -4.65493
+  ],
+  "size": [
+   0.0525,
+   0.63,
+   0.05237
+  ],
+  "color": null,
+  "triangles": 564
+ },
+ {
+  "name": "flag08__Fabric__Fabric",
+  "item": "flag08",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.03655,
+   1.87283,
+   -4.20082
+  ],
+  "size": [
+   0.05977,
+   0.67271,
+   0.90837
+  ],
+  "color": null,
+  "triangles": 320
+ },
+ {
+  "name": "hull09__Paint__Body",
+  "item": "hull09",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3777
+ },
+ {
+  "name": "helm09__Helmet__Body",
+  "item": "helm09",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00517,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.06734,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1814
+ },
+ {
+  "name": "helm09__Visor__Visor",
+  "item": "helm09",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl09__Paint__Body",
+  "item": "cowl09",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.41545,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.41726,
+   1.162
+  ],
+  "color": null,
+  "triangles": 632
+ },
+ {
+  "name": "whl09__Paint__Body",
+  "item": "whl09",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.0005,
+   1.9719,
+   0.34368
+  ],
+  "size": [
+   1.14153,
+   1.02545,
+   0.55427
+  ],
+  "color": null,
+  "triangles": 3640
+ },
+ {
+  "name": "flag09__Paint__Body",
+  "item": "flag09",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.0245,
+   1.89418,
+   -4.65493
+  ],
+  "size": [
+   0.0525,
+   0.63,
+   0.05237
+  ],
+  "color": null,
+  "triangles": 564
+ },
+ {
+  "name": "flag09__Fabric__Fabric",
+  "item": "flag09",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.04316,
+   1.86977,
+   -4.15625
+  ],
+  "size": [
+   0.08184,
+   0.67881,
+   0.9975
+  ],
+  "color": null,
+  "triangles": 320
+ },
+ {
+  "name": "hull10__Paint__Body",
+  "item": "hull10",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3777
+ },
+ {
+  "name": "helm10__Helmet__Body",
+  "item": "helm10",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00517,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.06734,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1814
+ },
+ {
+  "name": "helm10__Visor__Visor",
+  "item": "helm10",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl10__Paint__Body",
+  "item": "cowl10",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.41479,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.41594,
+   1.162
+  ],
+  "color": null,
+  "triangles": 632
+ },
+ {
+  "name": "whl10__Paint__Body",
+  "item": "whl10",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   -0.00059,
+   1.96767,
+   0.34471
+  ],
+  "size": [
+   1.14168,
+   1.02545,
+   0.55634
+  ],
+  "color": null,
+  "triangles": 3924
+ },
+ {
+  "name": "flag10__Paint__Body",
+  "item": "flag10",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.0245,
+   1.89418,
+   -4.65493
+  ],
+  "size": [
+   0.0525,
+   0.63,
+   0.05237
+  ],
+  "color": null,
+  "triangles": 564
+ },
+ {
+  "name": "flag10__Fabric__Fabric",
+  "item": "flag10",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.03231,
+   1.87525,
+   -4.15625
+  ],
+  "size": [
+   0.09437,
+   0.66787,
+   0.9975
+  ],
+  "color": null,
+  "triangles": 320
+ },
+ {
+  "name": "hull11__Paint__Body",
+  "item": "hull11",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3777
+ },
+ {
+  "name": "helm11__Helmet__Body",
+  "item": "helm11",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00517,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.06734,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1814
+ },
+ {
+  "name": "helm11__Visor__Visor",
+  "item": "helm11",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl11__Paint__Body",
+  "item": "cowl11",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.41479,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.41594,
+   1.162
+  ],
+  "color": null,
+  "triangles": 632
+ },
+ {
+  "name": "whl11__Paint__Body",
+  "item": "whl11",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.9775,
+   0.34573
+  ],
+  "size": [
+   1.17213,
+   1.0535,
+   0.55838
+  ],
+  "color": null,
+  "triangles": 3356
+ },
+ {
+  "name": "flag11__Paint__Body",
+  "item": "flag11",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.0245,
+   1.89418,
+   -4.65493
+  ],
+  "size": [
+   0.0525,
+   0.63,
+   0.05237
+  ],
+  "color": null,
+  "triangles": 564
+ },
+ {
+  "name": "flag11__Fabric__Fabric",
+  "item": "flag11",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.02172,
+   1.88733,
+   -4.15625
+  ],
+  "size": [
+   0.10528,
+   0.64369,
+   0.9975
+  ],
+  "color": null,
+  "triangles": 320
+ },
+ {
+  "name": "hull12__Paint__Body",
+  "item": "hull12",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3777
+ },
+ {
+  "name": "helm12__Helmet__Body",
+  "item": "helm12",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00517,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.06734,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1814
+ },
+ {
+  "name": "helm12__Visor__Visor",
+  "item": "helm12",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl12__Paint__Body",
+  "item": "cowl12",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.41479,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.41594,
+   1.162
+  ],
+  "color": null,
+  "triangles": 632
+ },
+ {
+  "name": "whl12__Paint__Body",
+  "item": "whl12",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.0035,
+   1.95928,
+   0.34675
+  ],
+  "size": [
+   1.14953,
+   1.0254,
+   0.56042
+  ],
+  "color": null,
+  "triangles": 3640
+ },
+ {
+  "name": "flag12__Paint__Body",
+  "item": "flag12",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.0245,
+   1.89418,
+   -4.65493
+  ],
+  "size": [
+   0.0525,
+   0.63,
+   0.05237
+  ],
+  "color": null,
+  "triangles": 564
+ },
+ {
+  "name": "flag12__Fabric__Fabric",
+  "item": "flag12",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.01574,
+   1.90181,
+   -4.15625
+  ],
+  "size": [
+   0.10791,
+   0.64527,
+   0.9975
+  ],
+  "color": null,
+  "triangles": 320
+ },
+ {
+  "name": "hull13__Paint__Body",
+  "item": "hull13",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3777
+ },
+ {
+  "name": "helm13__Helmet__Body",
+  "item": "helm13",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00517,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.06734,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1814
+ },
+ {
+  "name": "helm13__Visor__Visor",
+  "item": "helm13",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl13__Paint__Body",
+  "item": "cowl13",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.41493,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.41622,
+   1.162
+  ],
+  "color": null,
+  "triangles": 632
+ },
+ {
+  "name": "whl13__Paint__Body",
+  "item": "whl13",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   -7e-05,
+   1.97188,
+   0.34368
+  ],
+  "size": [
+   1.14086,
+   1.02546,
+   0.55428
+  ],
+  "color": null,
+  "triangles": 3640
+ },
+ {
+  "name": "flag13__Paint__Body",
+  "item": "flag13",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.0245,
+   1.89418,
+   -4.65493
+  ],
+  "size": [
+   0.0525,
+   0.63,
+   0.05237
+  ],
+  "color": null,
+  "triangles": 564
+ },
+ {
+  "name": "flag13__Fabric__Fabric",
+  "item": "flag13",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.01316,
+   1.91362,
+   -4.15625
+  ],
+  "size": [
+   0.10301,
+   0.66889,
+   0.9975
+  ],
+  "color": null,
+  "triangles": 320
+ },
+ {
+  "name": "hull14__Paint__Body",
+  "item": "hull14",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3777
+ },
+ {
+  "name": "helm14__Helmet__Body",
+  "item": "helm14",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00517,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.06734,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1814
+ },
+ {
+  "name": "helm14__Visor__Visor",
+  "item": "helm14",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl14__Paint__Body",
+  "item": "cowl14",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.41562,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.41759,
+   1.162
+  ],
+  "color": null,
+  "triangles": 632
+ },
+ {
+  "name": "whl14__Paint__Body",
+  "item": "whl14",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.9775,
+   0.3447
+  ],
+  "size": [
+   1.16277,
+   1.04509,
+   0.55633
+  ],
+  "color": null,
+  "triangles": 3356
+ },
+ {
+  "name": "flag14__Paint__Body",
+  "item": "flag14",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.0245,
+   1.89418,
+   -4.65493
+  ],
+  "size": [
+   0.0525,
+   0.63,
+   0.05237
+  ],
+  "color": null,
+  "triangles": 564
+ },
+ {
+  "name": "flag14__Fabric__Fabric",
+  "item": "flag14",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.01081,
+   1.91864,
+   -4.15625
+  ],
+  "size": [
+   0.09849,
+   0.67893,
+   0.9975
+  ],
+  "color": null,
+  "triangles": 320
+ },
+ {
+  "name": "hull15__Paint__Body",
+  "item": "hull15",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3777
+ },
+ {
+  "name": "helm15__Helmet__Body",
+  "item": "helm15",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00517,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.06734,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1814
+ },
+ {
+  "name": "helm15__Visor__Visor",
+  "item": "helm15",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl15__Paint__Body",
+  "item": "cowl15",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.41582,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.41801,
+   1.162
+  ],
+  "color": null,
+  "triangles": 632
+ },
+ {
+  "name": "whl15__Paint__Body",
+  "item": "whl15",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.00263,
+   1.96349,
+   0.34573
+  ],
+  "size": [
+   1.14459,
+   1.02542,
+   0.55837
+  ],
+  "color": null,
+  "triangles": 3640
+ },
+ {
+  "name": "flag15__Paint__Body",
+  "item": "flag15",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.0245,
+   1.89418,
+   -4.65493
+  ],
+  "size": [
+   0.0525,
+   0.63,
+   0.05237
+  ],
+  "color": null,
+  "triangles": 564
+ },
+ {
+  "name": "flag15__Fabric__Fabric",
+  "item": "flag15",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.00828,
+   1.91512,
+   -4.15625
+  ],
+  "size": [
+   0.09354,
+   0.67188,
+   0.9975
+  ],
+  "color": null,
+  "triangles": 320
+ },
+ {
+  "name": "hull16__Paint__Body",
+  "item": "hull16",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3777
+ },
+ {
+  "name": "helm16__Helmet__Body",
+  "item": "helm16",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00517,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.06734,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1814
+ },
+ {
+  "name": "helm16__Visor__Visor",
+  "item": "helm16",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl16__Paint__Body",
+  "item": "cowl16",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.41539,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.41713,
+   1.162
+  ],
+  "color": null,
+  "triangles": 632
+ },
+ {
+  "name": "whl16__Paint__Body",
+  "item": "whl16",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   -0.00184,
+   1.95924,
+   0.34676
+  ],
+  "size": [
+   1.14351,
+   1.02545,
+   0.56045
+  ],
+  "color": null,
+  "triangles": 3924
+ },
+ {
+  "name": "flag16__Paint__Body",
+  "item": "flag16",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.0245,
+   1.89418,
+   -4.65493
+  ],
+  "size": [
+   0.0525,
+   0.63,
+   0.05237
+  ],
+  "color": null,
+  "triangles": 564
+ },
+ {
+  "name": "flag16__Fabric__Fabric",
+  "item": "flag16",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.00608,
+   1.90428,
+   -4.15625
+  ],
+  "size": [
+   0.08916,
+   0.65019,
+   0.9975
+  ],
+  "color": null,
+  "triangles": 320
+ },
+ {
+  "name": "hull17__Paint__Body",
+  "item": "hull17",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3385
+ },
+ {
+  "name": "helm17__Helmet__Body",
+  "item": "helm17",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00517,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.06734,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1422
+ },
+ {
+  "name": "helm17__Visor__Visor",
+  "item": "helm17",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl17__Paint__Body",
+  "item": "cowl17",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.4161,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.41856,
+   1.162
+  ],
+  "color": null,
+  "triangles": 288
+ },
+ {
+  "name": "whl17__Paint__Body",
+  "item": "whl17",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.00176,
+   1.9775,
+   0.35
+  ],
+  "size": [
+   1.15694,
+   1.03668,
+   0.54163
+  ],
+  "color": null,
+  "triangles": 3568
+ },
+ {
+  "name": "flag17__Paint__Body",
+  "item": "flag17",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   -0.00021,
+   1.89768,
+   -4.16897
+  ],
+  "size": [
+   0.12591,
+   0.637,
+   1.02429
+  ],
+  "color": null,
+  "triangles": 1228
+ },
+ {
+  "name": "flag17__Fabric__Fabric",
+  "item": "flag17",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   -0.0002,
+   1.89068,
+   -4.15625
+  ],
+  "size": [
+   0.10631,
+   0.63699,
+   0.9975
+  ],
+  "color": null,
+  "triangles": 640
+ },
+ {
+  "name": "hull18__Paint__Body",
+  "item": "hull18",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3409
+ },
+ {
+  "name": "helm18__Helmet__Body",
+  "item": "helm18",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00331,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.07107,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1446
+ },
+ {
+  "name": "helm18__Visor__Visor",
+  "item": "helm18",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl18__Paint__Body",
+  "item": "cowl18",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.42124,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.42883,
+   1.162
+  ],
+  "color": null,
+  "triangles": 312
+ },
+ {
+  "name": "whl18__Paint__Body",
+  "item": "whl18",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.00324,
+   1.96769,
+   0.35479
+  ],
+  "size": [
+   1.14649,
+   1.02544,
+   0.53615
+  ],
+  "color": null,
+  "triangles": 4136
+ },
+ {
+  "name": "flag18__Paint__Body",
+  "item": "flag18",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.00036,
+   1.89768,
+   -4.16746
+  ],
+  "size": [
+   0.11321,
+   0.63699,
+   1.0273
+  ],
+  "color": null,
+  "triangles": 1228
+ },
+ {
+  "name": "flag18__Fabric__Fabric",
+  "item": "flag18",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.01485,
+   1.8815,
+   -4.15625
+  ],
+  "size": [
+   0.12262,
+   0.65537,
+   0.9975
+  ],
+  "color": null,
+  "triangles": 640
+ },
+ {
+  "name": "hull19__Paint__Body",
+  "item": "hull19",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3385
+ },
+ {
+  "name": "helm19__Helmet__Body",
+  "item": "helm19",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00517,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.06734,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1422
+ },
+ {
+  "name": "helm19__Visor__Visor",
+  "item": "helm19",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl19__Paint__Body",
+  "item": "cowl19",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.41624,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.41885,
+   1.162
+  ],
+  "color": null,
+  "triangles": 288
+ },
+ {
+  "name": "whl19__Paint__Body",
+  "item": "whl19",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.00173,
+   1.96346,
+   0.35685
+  ],
+  "size": [
+   1.14853,
+   1.02545,
+   0.53615
+  ],
+  "color": null,
+  "triangles": 4136
+ },
+ {
+  "name": "flag19__Paint__Body",
+  "item": "flag19",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.00984,
+   1.89768,
+   -4.16772
+  ],
+  "size": [
+   0.12026,
+   0.63699,
+   1.0268
+  ],
+  "color": null,
+  "triangles": 1228
+ },
+ {
+  "name": "flag19__Fabric__Fabric",
+  "item": "flag19",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.02869,
+   1.87461,
+   -4.15625
+  ],
+  "size": [
+   0.13837,
+   0.66914,
+   0.9975
+  ],
+  "color": null,
+  "triangles": 640
+ },
+ {
+  "name": "hull20__Paint__Body",
+  "item": "hull20",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3409
+ },
+ {
+  "name": "helm20__Helmet__Body",
+  "item": "helm20",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   0.00017,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.07803,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1446
+ },
+ {
+  "name": "helm20__Visor__Visor",
+  "item": "helm20",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl20__Paint__Body",
+  "item": "cowl20",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.42119,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.42874,
+   1.162
+  ],
+  "color": null,
+  "triangles": 312
+ },
+ {
+  "name": "whl20__Paint__Body",
+  "item": "whl20",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.00176,
+   1.9775,
+   0.35
+  ],
+  "size": [
+   1.18501,
+   1.06191,
+   0.55395
+  ],
+  "color": null,
+  "triangles": 3568
+ },
+ {
+  "name": "flag20__Paint__Body",
+  "item": "flag20",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.02682,
+   1.89767,
+   -4.16764
+  ],
+  "size": [
+   0.14053,
+   0.63699,
+   1.02696
+  ],
+  "color": null,
+  "triangles": 1228
+ },
+ {
+  "name": "flag20__Fabric__Fabric",
+  "item": "flag20",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.03717,
+   1.87612,
+   -4.15625
+  ],
+  "size": [
+   0.14167,
+   0.66612,
+   0.9975
+  ],
+  "color": null,
+  "triangles": 640
+ },
+ {
+  "name": "hull21__Paint__Body",
+  "item": "hull21",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3385
+ },
+ {
+  "name": "helm21__Helmet__Body",
+  "item": "helm21",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00517,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.06734,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1422
+ },
+ {
+  "name": "helm21__Visor__Visor",
+  "item": "helm21",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl21__Paint__Body",
+  "item": "cowl21",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.41564,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.41764,
+   1.162
+  ],
+  "color": null,
+  "triangles": 288
+ },
+ {
+  "name": "whl21__Paint__Body",
+  "item": "whl21",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.00231,
+   1.9719,
+   0.35274
+  ],
+  "size": [
+   1.14515,
+   1.02545,
+   0.53615
+  ],
+  "color": null,
+  "triangles": 4136
+ },
+ {
+  "name": "flag21__Paint__Body",
+  "item": "flag21",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.03803,
+   1.89768,
+   -4.16742
+  ],
+  "size": [
+   0.15121,
+   0.637,
+   1.02738
+  ],
+  "color": null,
+  "triangles": 1228
+ },
+ {
+  "name": "flag21__Fabric__Fabric",
+  "item": "flag21",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.04036,
+   1.8855,
+   -4.15625
+  ],
+  "size": [
+   0.13627,
+   0.64737,
+   0.9975
+  ],
+  "color": null,
+  "triangles": 640
+ },
+ {
+  "name": "hull22__Paint__Body",
+  "item": "hull22",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3409
+ },
+ {
+  "name": "helm22__Helmet__Body",
+  "item": "helm22",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00031,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.07705,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1446
+ },
+ {
+  "name": "helm22__Visor__Visor",
+  "item": "helm22",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl22__Paint__Body",
+  "item": "cowl22",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.42115,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.42866,
+   1.162
+  ],
+  "color": null,
+  "triangles": 312
+ },
+ {
+  "name": "whl22__Paint__Body",
+  "item": "whl22",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.00179,
+   1.96767,
+   0.3548
+  ],
+  "size": [
+   1.14644,
+   1.02545,
+   0.53616
+  ],
+  "color": null,
+  "triangles": 4704
+ },
+ {
+  "name": "flag22__Paint__Body",
+  "item": "flag22",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.04351,
+   1.89784,
+   -4.16881
+  ],
+  "size": [
+   0.14888,
+   0.63733,
+   1.0246
+  ],
+  "color": null,
+  "triangles": 1228
+ },
+ {
+  "name": "flag22__Fabric__Fabric",
+  "item": "flag22",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.04361,
+   1.89212,
+   -4.15625
+  ],
+  "size": [
+   0.1295,
+   0.63477,
+   0.9975
+  ],
+  "color": null,
+  "triangles": 640
+ },
+ {
+  "name": "hull23__Paint__Body",
+  "item": "hull23",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3385
+ },
+ {
+  "name": "helm23__Helmet__Body",
+  "item": "helm23",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00517,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.06734,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1422
+ },
+ {
+  "name": "helm23__Visor__Visor",
+  "item": "helm23",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl23__Paint__Body",
+  "item": "cowl23",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.4158,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.41795,
+   1.162
+  ],
+  "color": null,
+  "triangles": 288
+ },
+ {
+  "name": "whl23__Paint__Body",
+  "item": "whl23",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.00176,
+   1.9775,
+   0.35
+  ],
+  "size": [
+   1.17565,
+   1.0535,
+   0.54985
+  ],
+  "color": null,
+  "triangles": 3568
+ },
+ {
+  "name": "flag23__Paint__Body",
+  "item": "flag23",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.04502,
+   1.90111,
+   -4.16818
+  ],
+  "size": [
+   0.14013,
+   0.64386,
+   1.02588
+  ],
+  "color": null,
+  "triangles": 1228
+ },
+ {
+  "name": "flag23__Fabric__Fabric",
+  "item": "flag23",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.04659,
+   1.89761,
+   -4.15625
+  ],
+  "size": [
+   0.12369,
+   0.63686,
+   0.9975
+  ],
+  "color": null,
+  "triangles": 640
+ },
+ {
+  "name": "hull24__Paint__Body",
+  "item": "hull24",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3593
+ },
+ {
+  "name": "helm24__Helmet__Body",
+  "item": "helm24",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   0.0106,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.09888,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1630
+ },
+ {
+  "name": "helm24__Visor__Visor",
+  "item": "helm24",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl24__Paint__Body",
+  "item": "cowl24",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.45585,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.49806,
+   1.162
+  ],
+  "color": null,
+  "triangles": 544
+ },
+ {
+  "name": "whl24__Paint__Body",
+  "item": "whl24",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.9729,
+   0.34056
+  ],
+  "size": [
+   1.1409,
+   1.02543,
+   0.53825
+  ],
+  "color": null,
+  "triangles": 2512
+ },
+ {
+  "name": "flag24__Paint__Body",
+  "item": "flag24",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.05541,
+   1.89998,
+   -4.16838
+  ],
+  "size": [
+   0.16816,
+   0.65559,
+   1.02547
+  ],
+  "color": null,
+  "triangles": 2556
+ },
+ {
+  "name": "flag24__Fabric__Fabric",
+  "item": "flag24",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.05546,
+   1.89998,
+   -4.15625
+  ],
+  "size": [
+   0.14586,
+   0.64159,
+   0.9975
+  ],
+  "color": null,
+  "triangles": 960
+ },
+ {
+  "name": "hull25__Paint__Body",
+  "item": "hull25",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3593
+ },
+ {
+  "name": "helm25__Helmet__Body",
+  "item": "helm25",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   0.01072,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.09911,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1630
+ },
+ {
+  "name": "helm25__Visor__Visor",
+  "item": "helm25",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl25__Paint__Body",
+  "item": "cowl25",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.45575,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.49786,
+   1.162
+  ],
+  "color": null,
+  "triangles": 544
+ },
+ {
+  "name": "whl25__Paint__Body",
+  "item": "whl25",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.9729,
+   0.34056
+  ],
+  "size": [
+   1.14033,
+   1.02492,
+   0.538
+  ],
+  "color": null,
+  "triangles": 2512
+ },
+ {
+  "name": "flag25__Paint__Body",
+  "item": "flag25",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.05513,
+   1.90051,
+   -4.16866
+  ],
+  "size": [
+   0.15228,
+   0.65667,
+   1.02491
+  ],
+  "color": null,
+  "triangles": 2556
+ },
+ {
+  "name": "flag25__Fabric__Fabric",
+  "item": "flag25",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.05514,
+   1.90051,
+   -4.15625
+  ],
+  "size": [
+   0.1299,
+   0.64267,
+   0.9975
+  ],
+  "color": null,
+  "triangles": 960
+ },
+ {
+  "name": "hull26__Paint__Body",
+  "item": "hull26",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3593
+ },
+ {
+  "name": "helm26__Helmet__Body",
+  "item": "helm26",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   0.01262,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.10292,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1630
+ },
+ {
+  "name": "helm26__Visor__Visor",
+  "item": "helm26",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl26__Paint__Body",
+  "item": "cowl26",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.4558,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.49797,
+   1.162
+  ],
+  "color": null,
+  "triangles": 544
+ },
+ {
+  "name": "whl26__Paint__Body",
+  "item": "whl26",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.9729,
+   0.34056
+  ],
+  "size": [
+   1.14081,
+   1.02535,
+   0.53821
+  ],
+  "color": null,
+  "triangles": 2512
+ },
+ {
+  "name": "flag26__Paint__Body",
+  "item": "flag26",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.03701,
+   1.8969,
+   -4.16668
+  ],
+  "size": [
+   0.17301,
+   0.65359,
+   1.02887
+  ],
+  "color": null,
+  "triangles": 2556
+ },
+ {
+  "name": "flag26__Fabric__Fabric",
+  "item": "flag26",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.03421,
+   1.8969,
+   -4.15625
+  ],
+  "size": [
+   0.15623,
+   0.63959,
+   0.9975
+  ],
+  "color": null,
+  "triangles": 960
+ },
+ {
+  "name": "hull27__Paint__Body",
+  "item": "hull27",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3593
+ },
+ {
+  "name": "helm27__Helmet__Body",
+  "item": "helm27",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   0.01482,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.10733,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1630
+ },
+ {
+  "name": "helm27__Visor__Visor",
+  "item": "helm27",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl27__Paint__Body",
+  "item": "cowl27",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.45597,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.49829,
+   1.162
+  ],
+  "color": null,
+  "triangles": 544
+ },
+ {
+  "name": "whl27__Paint__Body",
+  "item": "whl27",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.9729,
+   0.34056
+  ],
+  "size": [
+   1.141,
+   1.02552,
+   0.53829
+  ],
+  "color": null,
+  "triangles": 2512
+ },
+ {
+  "name": "flag27__Paint__Body",
+  "item": "flag27",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.02006,
+   1.89035,
+   -4.16668
+  ],
+  "size": [
+   0.19053,
+   0.65378,
+   1.02886
+  ],
+  "color": null,
+  "triangles": 2556
+ },
+ {
+  "name": "flag27__Fabric__Fabric",
+  "item": "flag27",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.01731,
+   1.89035,
+   -4.15625
+  ],
+  "size": [
+   0.17367,
+   0.63978,
+   0.9975
+  ],
+  "color": null,
+  "triangles": 960
+ },
+ {
+  "name": "hull28__Paint__Body",
+  "item": "hull28",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3033
+ },
+ {
+  "name": "hull28__Gold__Gold",
+  "item": "hull28",
+  "slot": "hull",
+  "group": null,
+  "kind": "Gold",
+  "center": [
+   0.0,
+   1.69276,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   1.47228,
+   10.13478
+  ],
+  "color": [
+   0.7913,
+   0.5089,
+   0.1714
+  ],
+  "triangles": 408
+ },
+ {
+  "name": "helm28__Helmet__Body",
+  "item": "helm28",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   0.01116,
+   0.00648
+  ],
+  "size": [
+   1.0115,
+   1.1,
+   1.06297
+  ],
+  "color": null,
+  "triangles": 1390
+ },
+ {
+  "name": "helm28__HelmetStripe__Gold",
+  "item": "helm28",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Gold",
+  "center": [
+   0.0,
+   0.36253,
+   0.11804
+  ],
+  "size": [
+   0.75868,
+   0.39726,
+   0.83986
+  ],
+  "color": [
+   0.7913,
+   0.5089,
+   0.1714
+  ],
+  "triangles": 88
+ },
+ {
+  "name": "helm28__Visor__Visor",
+  "item": "helm28",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl28__Paint__Body",
+  "item": "cowl28",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.49867,
+   5.78625
+  ],
+  "size": [
+   1.001,
+   0.5837,
+   1.17049
+  ],
+  "color": null,
+  "triangles": 352
+ },
+ {
+  "name": "cowl28__Gold__Gold",
+  "item": "cowl28",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Gold",
+  "center": [
+   0.0,
+   2.67575,
+   5.86158
+  ],
+  "size": [
+   0.80501,
+   0.22953,
+   1.01983
+  ],
+  "color": [
+   0.7913,
+   0.5089,
+   0.1714
+  ],
+  "triangles": 88
+ },
+ {
+  "name": "whl28__Paint__Body",
+  "item": "whl28",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.9729,
+   0.34056
+  ],
+  "size": [
+   1.14085,
+   1.02545,
+   0.53825
+  ],
+  "color": null,
+  "triangles": 836
+ },
+ {
+  "name": "whl28__Gold__Gold",
+  "item": "whl28",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Gold",
+  "center": [
+   0.0,
+   1.96055,
+   0.32061
+  ],
+  "size": [
+   1.01753,
+   0.84406,
+   0.48975
+  ],
+  "color": [
+   0.7913,
+   0.5089,
+   0.1714
+  ],
+  "triangles": 804
+ },
+ {
+  "name": "flag28__Paint__Body",
+  "item": "flag28",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   0.00069,
+   1.82145,
+   -4.15665
+  ],
+  "size": [
+   0.21435,
+   0.77546,
+   1.02469
+  ],
+  "color": null,
+  "triangles": 1024
+ },
+ {
+  "name": "flag28__Gold__Gold",
+  "item": "flag28",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Gold",
+  "center": [
+   0.00908,
+   1.8776,
+   -4.08647
+  ],
+  "size": [
+   0.22744,
+   0.67716,
+   1.18929
+  ],
+  "color": [
+   0.7913,
+   0.5089,
+   0.1714
+  ],
+  "triangles": 1532
+ },
+ {
+  "name": "flag28__Fabric__Fabric",
+  "item": "flag28",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   0.00469,
+   1.82486,
+   -4.07645
+  ],
+  "size": [
+   0.21103,
+   0.76865,
+   1.1571
+  ],
+  "color": null,
+  "triangles": 960
+ },
+ {
+  "name": "hull29__Paint__Body",
+  "item": "hull29",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3165
+ },
+ {
+  "name": "hull29__Gold__Gold",
+  "item": "hull29",
+  "slot": "hull",
+  "group": null,
+  "kind": "Gold",
+  "center": [
+   0.0,
+   1.78904,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   1.66485,
+   10.13478
+  ],
+  "color": [
+   0.8148,
+   0.6172,
+   0.305
+  ],
+  "triangles": 1228
+ },
+ {
+  "name": "helm29__Helmet__Body",
+  "item": "helm29",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   0.0467,
+   0.00175
+  ],
+  "size": [
+   1.0115,
+   1.17108,
+   1.0535
+  ],
+  "color": null,
+  "triangles": 1522
+ },
+ {
+  "name": "helm29__HelmetStripe__Gold",
+  "item": "helm29",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Gold",
+  "center": [
+   -0.00025,
+   0.48499,
+   0.05938
+  ],
+  "size": [
+   0.74874,
+   0.2945,
+   0.87473
+  ],
+  "color": [
+   0.8148,
+   0.6172,
+   0.305
+  ],
+  "triangles": 908
+ },
+ {
+  "name": "helm29__Visor__Visor",
+  "item": "helm29",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl29__Paint__Body",
+  "item": "cowl29",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.478,
+   5.782
+  ],
+  "size": [
+   1.001,
+   0.54237,
+   1.162
+  ],
+  "color": null,
+  "triangles": 484
+ },
+ {
+  "name": "cowl29__Gold__Gold",
+  "item": "cowl29",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Gold",
+  "center": [
+   -0.00026,
+   2.70004,
+   5.79035
+  ],
+  "size": [
+   0.79447,
+   0.2859,
+   1.06218
+  ],
+  "color": [
+   0.8148,
+   0.6172,
+   0.305
+  ],
+  "triangles": 908
+ },
+ {
+  "name": "whl29__Paint__Body",
+  "item": "whl29",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.96543,
+   0.34405
+  ],
+  "size": [
+   1.14055,
+   1.00967,
+   0.53087
+  ],
+  "color": null,
+  "triangles": 1268
+ },
+ {
+  "name": "whl29__Gold__Gold",
+  "item": "whl29",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Gold",
+  "center": [
+   0.0,
+   1.9348,
+   0.35127
+  ],
+  "size": [
+   0.98248,
+   0.93982,
+   0.49915
+  ],
+  "color": [
+   0.8148,
+   0.6172,
+   0.305
+  ],
+  "triangles": 892
+ },
+ {
+  "name": "flag29__Paint__Body",
+  "item": "flag29",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   -0.00309,
+   1.7852,
+   -4.18908
+  ],
+  "size": [
+   0.20822,
+   0.84796,
+   0.95984
+  ],
+  "color": null,
+  "triangles": 1024
+ },
+ {
+  "name": "flag29__Gold__Gold",
+  "item": "flag29",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Gold",
+  "center": [
+   -0.00148,
+   1.89277,
+   -4.17617
+  ],
+  "size": [
+   0.22378,
+   0.64648,
+   1.00989
+  ],
+  "color": [
+   0.8148,
+   0.6172,
+   0.305
+  ],
+  "triangles": 1532
+ },
+ {
+  "name": "flag29__Fabric__Fabric",
+  "item": "flag29",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   -0.00183,
+   1.78843,
+   -4.16622
+  ],
+  "size": [
+   0.1993,
+   0.84149,
+   0.97755
+  ],
+  "color": null,
+  "triangles": 960
+ },
+ {
+  "name": "hull30__Paint__Body",
+  "item": "hull30",
+  "slot": "hull",
+  "group": null,
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.19977,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   2.39955,
+   10.13478
+  ],
+  "color": null,
+  "triangles": 3057
+ },
+ {
+  "name": "hull30__Gold__Gold",
+  "item": "hull30",
+  "slot": "hull",
+  "group": null,
+  "kind": "Gold",
+  "center": [
+   0.0,
+   1.67808,
+   0.00761
+  ],
+  "size": [
+   4.68986,
+   1.44293,
+   10.13478
+  ],
+  "color": [
+   0.7379,
+   0.3712,
+   0.1845
+  ],
+  "triangles": 592
+ },
+ {
+  "name": "helm30__Helmet__Body",
+  "item": "helm30",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Body",
+  "center": [
+   0.0,
+   -0.00517,
+   0.00798
+  ],
+  "size": [
+   1.0115,
+   1.06734,
+   1.06595
+  ],
+  "color": null,
+  "triangles": 1414
+ },
+ {
+  "name": "helm30__HelmetStripe__Gold",
+  "item": "helm30",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Gold",
+  "center": [
+   0.0,
+   0.38417,
+   0.13
+  ],
+  "size": [
+   0.8413,
+   0.27245,
+   0.82192
+  ],
+  "color": [
+   0.7379,
+   0.3712,
+   0.1845
+  ],
+  "triangles": 272
+ },
+ {
+  "name": "helm30__Visor__Visor",
+  "item": "helm30",
+  "slot": "helmet",
+  "group": "RacerUpper",
+  "kind": "Visor",
+  "center": [
+   0.0,
+   0.14089,
+   -0.13125
+  ],
+  "size": [
+   0.9275,
+   0.62821,
+   0.7805
+  ],
+  "color": [
+   0.0152,
+   0.0307,
+   0.0497
+  ],
+  "triangles": 344
+ },
+ {
+  "name": "cowl30__Paint__Body",
+  "item": "cowl30",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Body",
+  "center": [
+   0.0,
+   2.51137,
+   5.78806
+  ],
+  "size": [
+   1.001,
+   0.60911,
+   1.17412
+  ],
+  "color": null,
+  "triangles": 376
+ },
+ {
+  "name": "cowl30__Gold__Gold",
+  "item": "cowl30",
+  "slot": "cowl",
+  "group": "Motor",
+  "kind": "Gold",
+  "center": [
+   0.0,
+   2.69521,
+   5.8761
+  ],
+  "size": [
+   0.89268,
+   0.24143,
+   0.99804
+  ],
+  "color": [
+   0.7379,
+   0.3712,
+   0.1845
+  ],
+  "triangles": 272
+ },
+ {
+  "name": "whl30__Paint__Body",
+  "item": "whl30",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Body",
+  "center": [
+   0.0,
+   1.9729,
+   0.33936
+  ],
+  "size": [
+   1.05652,
+   0.94959,
+   0.50367
+  ],
+  "color": null,
+  "triangles": 1532
+ },
+ {
+  "name": "whl30__Gold__Gold",
+  "item": "whl30",
+  "slot": "wheel",
+  "group": "Wheel",
+  "kind": "Gold",
+  "center": [
+   0.0,
+   1.938,
+   0.33303
+  ],
+  "size": [
+   0.97963,
+   0.93187,
+   0.52881
+  ],
+  "color": [
+   0.7379,
+   0.3712,
+   0.1845
+  ],
+  "triangles": 980
+ },
+ {
+  "name": "flag30__Paint__Body",
+  "item": "flag30",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Body",
+  "center": [
+   -0.00821,
+   1.76015,
+   -4.15211
+  ],
+  "size": [
+   0.19818,
+   0.89806,
+   1.03378
+  ],
+  "color": null,
+  "triangles": 1356
+ },
+ {
+  "name": "flag30__Gold__Gold",
+  "item": "flag30",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Gold",
+  "center": [
+   -0.00402,
+   1.80306,
+   -4.07209
+  ],
+  "size": [
+   0.21649,
+   0.82622,
+   1.21804
+  ],
+  "color": [
+   0.7379,
+   0.3712,
+   0.1845
+  ],
+  "triangles": 1864
+ },
+ {
+  "name": "flag30__Fabric__Fabric",
+  "item": "flag30",
+  "slot": "flag",
+  "group": "Flag",
+  "kind": "Fabric",
+  "center": [
+   -0.00492,
+   1.76355,
+   -4.06149
+  ],
+  "size": [
+   0.1931,
+   0.89127,
+   1.18703
+  ],
+  "color": null,
+  "triangles": 1280
+ },
+ {
+  "name": "SidePlates__NumberPlate__Plate",
+  "item": "plates",
+  "slot": "hull",
+  "group": null,
+  "kind": "Plate",
+  "center": [
+   0.0,
+   1.799,
+   3.395
+  ],
+  "size": [
+   3.549,
+   0.875,
+   0.98
+  ],
+  "color": [
+   1,
+   1,
+   1
+  ],
+  "triangles": 4
+ }
+]

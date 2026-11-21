@@ -31,7 +31,9 @@ local navy=Color3.fromRGB(11,29,58)
 local gold=Color3.fromRGB(255,210,60)
 local pale=Color3.fromRGB(169,189,219)
 local white=Color3.new(1,1,1)
-local rarity={N=white,R=Color3.fromRGB(57,140,255),SR=Color3.fromRGB(172,110,255),SSR=gold}
+local rarity={N=white,R=Color3.fromRGB(57,140,255),SR=Color3.fromRGB(172,110,255),SSR=gold,UR=Color3.fromRGB(255,92,150)}
+-- ガチャと倉庫で選んでいる着せ替えの種類(Meta.SLOTS の kind)
+local gachaKind,garageKind="skin","skin"
 local mode="ランク戦"
 local m,page,pending=nil,"ホーム",nil
 local quality=require(RS:WaitForChild("DisplayQuality"))
@@ -275,21 +277,31 @@ local function pct(x)
 end
 local function oddsText()
     local parts={}
-    for _,r in ipairs({"N","R","SR","SSR"}) do table.insert(parts,r.." "..pct(Meta.RARITY[r].rate)) end
+    for _,r in ipairs(Meta.RARITIES) do table.insert(parts,r.." "..pct(Meta.RARITY[r].rate)) end
     return table.concat(parts,"　")
 end
-local function oddsEach()
+-- 1つあたりの確率(選んだ種類の中で。kind を省くと艇外装。どの種類も点数は同じ)
+local function oddsEach(kind)
     local parts={}
-    for _,r in ipairs({"N","R","SR","SSR"}) do
-        local n=#Meta.pool(r)
+    for _,r in ipairs(Meta.RARITIES) do
+        local n=#Meta.pool(r,kind or "skin")
         if n>0 then table.insert(parts,r.."（"..n.."種）各 "..pct(Meta.RARITY[r].rate/n)) end
     end
     return table.concat(parts,"　")
 end
+-- 今の装備(艇外装・ヘルメット・モーターカバー・ステアリング・艇首旗)
+local function outfitOf(v)
+    if not v then return {} end
+    return {skin=v.skin,helmet=v.helmet,cowl=v.cowl,wheel=v.wheel,flag=v.flag}
+end
+local function kindName(kind)
+    local slot=Meta.slot(kind)
+    return slot and slot.name or ""
+end
 -- コイン(ガチャに使う)を Robux で買えるか。サーバーが地域の決まりを確かめて付ける(確かめる前は false)
 local function coinShopOk() return player:GetAttribute("MinatoCoinShop")==true end
 local function swatch(parent,it,x,y,w,h,spin)
-    return require(RS:WaitForChild("GachaShow")).preview(parent,it,x,y,w,h,{helmet=m and m.helmet,spin=spin})
+    return require(RS:WaitForChild("GachaShow")).preview(parent,it,x,y,w,h,{outfit=outfitOf(m),spin=spin})
 end
 local drawnPage
 local function redrawNow()
@@ -300,7 +312,7 @@ local function redrawNow()
     for _,c in ipairs(root:GetChildren()) do if c:IsA("GuiObject") then c:Destroy() end end
     if not m then return end
     if quality.choice~=m.quality then quality.apply(m.quality) end
-    outfit(model,m.skin,m.helmet)
+    outfit(model,m.skin,m.helmet,m.cowl,m.wheel,m.flag)
     Visor.apply(model,m.visor==true)
     local w,h=gui.AbsoluteSize.X,gui.AbsoluteSize.Y
     local portrait=w<h
@@ -362,7 +374,7 @@ local function redrawNow()
         local tw,th,gap=short and 186 or 214,short and 52 or 66,short and 7 or 12
         local total=4*th+3*gap
         local top=math.max(short and 78 or 96,math.floor(h/2-total/2+12))
-        for i,t in ipairs({{"ガチャ","gacha","塗装とヘルメットを集める"},{"倉庫","garage","艇の見た目を着せ替える"},{"ミッション","mission","毎日の目標でコイン"},{"ランキング","ranking","レート・タイム・戦績"}}) do
+        for i,t in ipairs({{"ガチャ","gacha","艇とヘルメットの着せ替えを集める"},{"倉庫","garage","5つの部分を着せ替える"},{"ミッション","mission","毎日の目標でコイン"},{"ランキング","ranking","レート・タイム・戦績"}}) do
             local tile=Ui.tile(root,t[1],t[2],t[1],t[3],16,top+(i-1)*(th+gap),tw,th,false,function() go(t[1]) end)
             if t[1]=="ミッション" then Ui.badge(tile,misCount,tw-14,-8) end
         end
@@ -871,25 +883,44 @@ local function redrawNow()
         end)
         y=math.max(ly,ry+84)
     elseif page=="ガチャ" then
-        y=row("コインで見た目を集めよう",oddsText(),y)
-        y=row("1つあたりの確率",oddsEach().."。VIP の品は出ません",y)
+        -- 先に種類を選ぶ(その種類の30点の中から引く)
+        label(list,"引く種類を選ぶ",8,y,width-16,26,16).TextColor3=gold;y+=30
+        do
+            local columns=width>=520 and 5 or 3
+            local bw=math.floor((width-16-(columns-1)*6)/columns)
+            for i,slot in ipairs(Meta.SLOTS) do
+                local bx=8+((i-1)%columns)*(bw+6);local by=y+math.floor((i-1)/columns)*52
+                button(list,slot.name,bx,by,bw,function() gachaKind=slot.kind;redraw() end,gachaKind==slot.kind)
+            end
+            y+=math.ceil(#Meta.SLOTS/columns)*52+6
+        end
+        local owned,total=0,0
+        for _,it in ipairs(Meta.ITEMS) do
+            if it.gacha and it.kind==gachaKind then total+=1;if table.find(m.own,it.id) then owned+=1 end end
+        end
+        y=row(kindName(gachaKind).."のガチャ　所持 "..owned.." / "..total,oddsText(),y)
+        y=row("1つあたりの確率",oddsEach(gachaKind).."。スタンダードと VIP の品は出ません",y)
         y=row("コインの集め方",coinShopOk() and "レース・ミッション・ログインボーナスでたまります。ショップで Robux でも買えます"
             or "レース・ミッション・ログインボーナスでたまります",y,coinShopOk() and function() go("ショップ") end or nil,"ショップへ")
-        button(list,"1回 100コイン",8,y,math.min(width-16,250),function() request("pull",1) end,true);y+=58
-        button(list,"10回 900コイン",8,y,math.min(width-16,250),function() request("pull",10) end,true);y+=62
+        button(list,"1回 100コイン",8,y,math.min(width-16,250),function() request("pull",gachaKind..":1") end,true);y+=58
+        button(list,"10回 900コイン",8,y,math.min(width-16,250),function() request("pull",gachaKind..":10") end,true);y+=62
         if type(m.last)=="table" then
             for index,v in ipairs(m.last) do
                 local it=Meta.item(v.id)
-                local card=frame(list,"Draw"..index,8,y,width-16,112);stroke(card,rarity[it.r],2)
-                swatch(card,it,8,8,128,96)
-                label(card,it.r.."　"..it.name,146,10,width-170,32,16).TextColor3=rarity[it.r]
-                label(card,(it.kind=="skin" and "塗装　" or "ヘルメット　")..(v.dupe>0 and ("重複 +"..v.dupe.." コイン") or "倉庫に届きました"),146,50,width-170,30,14)
-                card.Visible=false
-                task.delay(index*.12,function() if card.Parent then card.Visible=true end end)
-                y+=124
+                if it then
+                    local card=frame(list,"Draw"..index,8,y,width-16,112);stroke(card,rarity[it.r],2)
+                    swatch(card,it,8,8,128,96)
+                    label(card,it.r.."　"..it.name,146,10,width-170,32,16).TextColor3=rarity[it.r]
+                    label(card,kindName(it.kind).."　"..(v.dupe>0 and ("重複 +"..v.dupe.." コイン") or "倉庫に届きました"),146,50,width-170,30,14)
+                    card.Visible=false
+                    task.delay(index*.12,function() if card.Parent then card.Visible=true end end)
+                    y+=124
+                end
             end
         end
-        y=row("所持 "..#m.own.." / "..#Meta.ITEMS.." 種","重複時 N15 / R40 / SR120 / SSR400 コイン",y)
+        local dupes={}
+        for _,r in ipairs(Meta.RARITIES) do table.insert(dupes,r..Meta.RARITY[r].dupe) end
+        y=row("重複した時","同じ品が出たらコインに替わります: "..table.concat(dupes," / ").." コイン",y)
     elseif page=="ショップ" then
         -- 値段のボタンの文字(持っている・準備中・確認中・値段)
         local function priceText(kind,id,owned)
@@ -975,20 +1006,25 @@ local function redrawNow()
         end
         y=row("購入について","購入は Roblox の確認画面で決まります。コインはすぐに届き、VIP の品は倉庫で着せ替えられます。",y)
     elseif page=="倉庫" then
-        -- いちばん上に「装備中」: 塗装とヘルメットを色見本・名前・レア度で出す
+        -- いちばん上に「装備中」: 5つの種類の今の品(押すとその種類の一覧へ)
         label(list,"装備中",8,0,120,26,16).TextColor3=gold
-        for k,id in ipairs({m.skin,m.helmet}) do
-            local it=Meta.item(id)
-            if it then
-                local cardW=math.floor((width-24)/2)
-                local now=frame(list,"Equipped"..k,8+(k-1)*(cardW+8),28,cardW,96);stroke(now,rarity[it.r],2)
-                local pw=math.min(120,math.floor(cardW*.48))
-                swatch(now,it,6,6,pw,84,true)
-                label(now,it.name,pw+14,10,cardW-pw-20,28,15)
-                label(now,(it.kind=="skin" and "塗装 " or "ヘルメット ")..it.r,pw+14,40,cardW-pw-20,22,12).TextColor3=rarity[it.r]
+        do
+            local columns=width>=600 and 5 or 3
+            local cardW=math.floor((width-16-(columns-1)*6)/columns)
+            for k,slot in ipairs(Meta.SLOTS) do
+                local it=Meta.item(m[slot.kind])
+                local cx=8+((k-1)%columns)*(cardW+6);local cy=28+math.floor((k-1)/columns)*118
+                local now=frame(list,"Equipped"..k,cx,cy,cardW,110)
+                stroke(now,garageKind==slot.kind and gold or (it and rarity[it.r] or white),garageKind==slot.kind and 3 or 1)
+                if it then swatch(now,it,4,4,cardW-8,62,true) end
+                label(now,slot.name,6,68,cardW-12,18,11).TextColor3=pale
+                local nameLabel=label(now,it and (it.r.."　"..it.name) or "",6,86,cardW-12,20,12)
+                if it then nameLabel.TextColor3=rarity[it.r] end
+                local hit=Instance.new("TextButton");hit.BackgroundTransparency=1;hit.Text="";hit.Size=UDim2.fromScale(1,1);hit.Parent=now
+                hit.Activated:Connect(function() garageKind=slot.kind;redraw() end)
             end
+            y=28+math.ceil(#Meta.SLOTS/columns)*118+8
         end
-        y=136
         -- ヘルメットの目元: どのヘルメットでも、シールドを上げる・下ろすを選べる(設定と同じ)
         y=row("ヘルメットのシールド","上げると、ヘルメットの中のアバターの目元が見えます。すべてのヘルメットで使えます。",y)
         do
@@ -1001,23 +1037,36 @@ local function redrawNow()
         if m.testUnlock==true then
             y=row("検証用: 全部の品を解放中","ガチャ・VIP の品をすべて着せ替えられます(Studio とゲームの持ち主だけ)。公開前に止めます。",y)
         end
+        -- 種類を選んで、その種類の品を並べる(スタンダード → VIP → ガチャの N〜UR)
+        do
+            local columns=width>=520 and 5 or 3
+            local bw=math.floor((width-16-(columns-1)*6)/columns)
+            for i,slot in ipairs(Meta.SLOTS) do
+                local bx=8+((i-1)%columns)*(bw+6);local by=y+math.floor((i-1)/columns)*52
+                button(list,slot.name,bx,by,bw,function() garageKind=slot.kind;redraw() end,garageKind==slot.kind)
+            end
+            y+=math.ceil(#Meta.SLOTS/columns)*52+6
+        end
+        local shown={}
+        for _,it in ipairs(Meta.ITEMS) do if it.kind==garageKind then table.insert(shown,it) end end
         local columns=math.max(1,math.floor(width/175));local cw=math.floor(width/columns)-8
-        for i,it in ipairs(Meta.ITEMS) do
+        for i,it in ipairs(shown) do
             local x=((i-1)%columns)*(cw+8);local cy=y+math.floor((i-1)/columns)*206
             local card=frame(list,it.id,x,cy,cw,196)
             local owned=Meta.owns(m,it.id)
+            local equipped=m[it.kind]==it.id
             card.BackgroundTransparency=owned and .1 or .7
-            stroke(card,(m.skin==it.id or m.helmet==it.id) and gold or rarity[it.r],(m.skin==it.id or m.helmet==it.id) and 3 or 1)
+            stroke(card,equipped and gold or rarity[it.r],equipped and 3 or 1)
             local view=swatch(card,it,8,8,cw-16,84)
             -- まだ持っていない品は、少し薄くして見せる(見た目はわかるように)
             if not owned and view then view.ImageTransparency=.3 end
             label(card,it.name,8,98,cw-16,24,14)
-            label(card,(it.kind=="skin" and "塗装 " or "ヘルメット ")..it.r,8,124,cw-16,20,12).TextColor3=rarity[it.r]
-            if owned then button(card,(m.skin==it.id or m.helmet==it.id) and "装備中" or "装備する",8,146,cw-16,function() request("equip",it.id) end)
+            label(card,kindName(it.kind).." "..it.r,8,124,cw-16,20,12).TextColor3=rarity[it.r]
+            if owned then button(card,equipped and "装備中" or "装備する",8,146,cw-16,function() request("equip",it.id) end)
             elseif it.shop then button(card,it.vip and "VIP パスの特典" or "ショップで買えます",8,146,cw-16,function() go("ショップ") end)
             else label(card,"未入手",8,149,cw-16,40,14) end
         end
-        y+=math.ceil(#Meta.ITEMS/columns)*206
+        y+=math.ceil(#shown/columns)*206
     elseif page=="メール" then
         for _,v in ipairs(m.mail) do y=row(v.title,v.body.."　+"..v.coins.." コイン",y,function() request("mail",v.id) end) end
         if #m.mail==0 then y=row("メールはありません","次のログインやレースで報酬が届きます",y) end
@@ -1088,7 +1137,7 @@ function redraw()
     if drawAgain then drawAgain=false;redraw() end
 end
 -- 装備した瞬間の演出: しぶきの粒、レア度の色で光る知らせ(2秒)、レア度に合わせた音、カメラの1周
-local RARITY_PITCH={N=1,R=1.12,SR=1.26,SSR=1.45}
+local RARITY_PITCH={N=1,R=1.12,SR=1.26,SSR=1.45,UR=1.6}
 local splash=Instance.new("Part");splash.Name="EquipSplash";splash.Anchored=true;splash.CanCollide=false
 splash.Transparency=1;splash.Size=Vector3.new(1,1,1);splash.CFrame=CFrame.new(0,1,100);splash.Parent=scenery
 local sparks=Instance.new("ParticleEmitter")
@@ -1105,20 +1154,20 @@ local function celebrate(it)
     local color=rarity[it.r]
     spinStart=sceneClock
     sparks.Color=ColorSequence.new(Color3.fromRGB(226,244,246),color)
-    sparks:Emit(it.r=="SSR" and 90 or (it.r=="SR" and 60 or 36))
+    sparks:Emit(it.r=="UR" and 130 or it.r=="SSR" and 90 or (it.r=="SR" and 60 or 36))
     if Sfx.enabled then
         -- 装備の音と、レア度に合わせた音
         Sfx.play("equip",.8)
-        task.delay(.25,function() Sfx.play("gacha"..it.r,.8) end)
+        task.delay(.25,function() Sfx.play("gacha"..(it.r=="UR" and "SSR" or it.r),.8) end)
     else
         sound("rbxasset://sounds/impact_water.mp3",1,.5)
-        for k=1,(it.r=="SSR" and 3 or (it.r=="SR" and 2 or 1)) do
+        for k=1,(it.r=="UR" and 4 or it.r=="SSR" and 3 or (it.r=="SR" and 2 or 1)) do
             task.delay((k-1)*.13,function() sound("rbxasset://sounds/volume_slider.ogg",RARITY_PITCH[it.r]+(k-1)*.12,.7) end)
         end
     end
     local w,h=gui.AbsoluteSize.X,gui.AbsoluteSize.Y
     local portrait=w<h
-    local note=box("TextLabel",gui,"EquipNotice",(it.kind=="skin" and "塗装を装備　" or "ヘルメットを装備　")..it.name.."　"..it.r)
+    local note=box("TextLabel",gui,"EquipNotice",kindName(it.kind).."を装備　"..it.name.."　"..it.r)
     note.Size=UDim2.fromOffset(math.min(w-24,360),48)
     note.Position=portrait and UDim2.fromOffset(12,70) or UDim2.fromOffset(w-math.min(w-24,360)-12,h-120)
     note.TextColor3=color;note.ZIndex=20;note.TextSize=16
@@ -1133,7 +1182,7 @@ request=function(action,arg)
         local intent=pending
         local ok,data,message=pcall(remote.InvokeServer,remote,action,arg,token)
         if ok and data then
-            local before=m and {m.skin,m.helmet}
+            local before=m and outfitOf(m)
             m=data;pending=nil;toast.Text=type(m.last)=="string" and m.last or "";redraw()
             -- 設定の音量を音の部品に伝える(この端末の中だけ)
             if type(m.volume)=="number" then player:SetAttribute("MinatoVolume",m.volume) end
@@ -1147,16 +1196,22 @@ request=function(action,arg)
                 if #results>0 then
                     local folder=RS:FindFirstChild("RacerAvatars")
                     require(RS:WaitForChild("GachaShow")).play(gui,results,{
-                        rarity=rarity,skin=m.skin,helmet=m.helmet,
+                        rarity=rarity,outfit=outfitOf(m),
                         avatar=folder and folder:FindFirstChild("Home"..player.UserId),
                     })
                 end
             elseif (action=="mail" or action=="mission") and type(m.last)=="string" and m.last:find("受け取り") then
                 Sfx.play("coin",.8)
             end
-            if action=="equip" and before and (m.skin~=before[1] or m.helmet~=before[2]) then
-                local it=Meta.item(m.skin~=before[1] and m.skin or m.helmet)
-                if it then toast.Text="";celebrate(it) end
+            if action=="equip" and before then
+                -- 変わった種類の品を祝う
+                for _,slot in ipairs(Meta.SLOTS) do
+                    if m[slot.kind]~=before[slot.kind] then
+                        local it=Meta.item(m[slot.kind])
+                        if it then toast.Text="";celebrate(it) end
+                        break
+                    end
+                end
             end
             local feedback=toast.Text
             task.delay(3,function() if toast.Text==feedback then toast.Text="" end end)
@@ -1248,7 +1303,7 @@ if shopEvent then
             if #results>0 then
                 toast.Text=coins>0 and ("購入した品と "..coins.." コインが届きました") or "購入した品が倉庫に届きました"
                 local folder=RS:FindFirstChild("RacerAvatars")
-                require(RS:WaitForChild("GachaShow")).play(gui,results,{rarity=rarity,skin=m and m.skin,helmet=m and m.helmet,
+                require(RS:WaitForChild("GachaShow")).play(gui,results,{rarity=rarity,outfit=outfitOf(m),
                     avatar=folder and folder:FindFirstChild("Home"..player.UserId)})
             end
         end)

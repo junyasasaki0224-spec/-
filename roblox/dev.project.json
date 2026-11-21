@@ -131,6 +131,9 @@
         },
         "Venue": {
           "$path": "assets/models/Venue.rbxmx"
+        },
+        "Items": {
+          "$path": "assets/items/Items.rbxmx"
         }
       },
       "HomeUi": {
@@ -180,6 +183,9 @@
       },
       "AudioConfig": {
         "$path": "src/AudioConfig.lua"
+      },
+      "ItemCatalog": {
+        "$path": "src/ItemCatalog.lua"
       },
       "Spectator": {
         "$path": "src/Spectator.lua"

@@ -40,11 +40,14 @@ for i = 1, 6 do
         for part,color in pairs(baseColors) do part.Color=color end
         local stripe=visual:FindFirstChild("HelmetStripe")
         if stripe then stripe:Destroy() end
-        outfit(visual,original:GetAttribute("Skin"),original:GetAttribute("HelmetStyle"))
+        outfit(visual,original:GetAttribute("Skin"),original:GetAttribute("HelmetStyle"),
+            original:GetAttribute("CowlStyle"),original:GetAttribute("WheelStyle"),original:GetAttribute("FlagStyle"))
         Visor.apply(visual,original:GetAttribute("VisorUp")==true)
     end
     original:GetAttributeChangedSignal("Skin"):Connect(refreshOutfit)
     original:GetAttributeChangedSignal("HelmetStyle"):Connect(refreshOutfit)
+    -- 着せ替えのモーターカバー・ステアリング・艇首旗
+    for _,name in ipairs({"CowlStyle","WheelStyle","FlagStyle"}) do original:GetAttributeChangedSignal(name):Connect(refreshOutfit) end
     original:GetAttributeChangedSignal("VisorUp"):Connect(refreshOutfit)
     refreshOutfit()
     visual.Name = "VisualBoat"..i
@@ -460,8 +463,10 @@ local function drawLine(i, number, placeText, racer, isAI, skinId, helmetId, min
     line.lane.BackgroundColor3, line.lane.TextColor3 = LANE[number][1], LANE[number][2]
     line.name.Text = racer
     line.ai.Visible = isAI
-    line.paint.BackgroundColor3 = hex(skin.hull); line.trim.BackgroundColor3 = hex(skin.trim)
-    line.helmet.BackgroundColor3 = hex(helmet.base)
+    -- 色見本: 色だけの品はその色、着せ替えの品は模様の主な色と差し色
+    local hullColor, trimColor = Meta.swatch(skin)
+    line.paint.BackgroundColor3 = hex(hullColor); line.trim.BackgroundColor3 = hex(trimColor)
+    line.helmet.BackgroundColor3 = hex((Meta.swatch(helmet)))
 end
 -- スタート前の出走表(艇の属性から)と、ゴール後の結果(サーバーの結果の行から)を描き分ける
 local function drawResults(rows, mySeat, time)

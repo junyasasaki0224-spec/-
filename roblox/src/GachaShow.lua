@@ -1,7 +1,7 @@
 -- ガチャの演出(プレイヤー側。表示だけ。何が出るかはサーバーがもう決めている)。
 --   GachaShow.play(gui, results, options)
 --     results: { {item = Meta の品, dupe = かぶりで戻るコイン}, ... }
---     options: rarity(レア度の色)・skin / helmet(今の装備)・avatar(自分のアバターの人形。なくてもよい)・onDone
+--     options: rarity(レア度の色)・outfit(今の装備 {skin, helmet, cowl, wheel, flag})・avatar(自分のアバターの人形。なくてもよい)・onDone
 -- 流れ: 暗転して曲 → カプセルが落ちてきて震え、出た中でいちばん高いレア度の色まで光が変わる → 白く光って開く →
 --       品を3Dで見せる(ヘルメットはそのヘルメット、塗装はその塗装の艇。自分のアバターが乗る)→
 --       10回の時はタップで次へ(スキップで一覧)→ 一覧 → 閉じる
@@ -16,8 +16,9 @@ local Sfx = require(RS:WaitForChild("Sfx"))
 local RacerAvatar = require(RS:WaitForChild("RacerAvatar"))
 
 local GachaShow = {}
-local ORDER = { N = 1, R = 2, SR = 3, SSR = 4 }
-local NAMES = { "N", "R", "SR", "SSR" }
+local Meta = require(RS:WaitForChild("Meta"))
+local ORDER = { N = 1, R = 2, SR = 3, SSR = 4, UR = 5 }
+local NAMES = { "N", "R", "SR", "SSR", "UR" }
 local WHITE = Color3.new(1, 1, 1)
 local HELMET_PARTS = { Helmet = true, HelmetStripe = true, Visor = true, Rubber = true }
 
@@ -142,46 +143,99 @@ local function capsule()
 	return model, shell
 end
 
--- 出た品の3D: ヘルメットはそのヘルメット、塗装はその塗装の艇(今のヘルメット・自分のアバターが乗る)
+-- 今の装備(options.outfit。古い呼び方の options.skin / options.helmet にも合わせる)
+local function currentOutfit(options)
+	local o = options.outfit or {}
+	return {
+		skin = o.skin or options.skin,
+		helmet = o.helmet or options.helmet,
+		cowl = o.cowl,
+		wheel = o.wheel,
+		flag = o.flag,
+	}
+end
+
+-- 品の部品(着せ替えで付けた部品。隠した元の部品は入れない)
+local function itemParts(model)
+	local list = {}
+	for _, p in model:GetDescendants() do
+		if p:IsA("BasePart") and p:GetAttribute("OutfitItem") then
+			table.insert(list, p)
+		end
+	end
+	return list
+end
+
+-- 出た品の3D と、カメラを向ける部品(なければ全体)。
+--   艇外装・スタンダードの塗装: その艇(今のほかの装備・自分のアバターが乗る)
+--   ヘルメット: そのヘルメットだけ
+--   モーターカバー・ステアリング・艇首旗: 今の装備の艇に付けて、その部品を大きく見せる
 local function itemModel(item, options)
 	local boat = visuals.boat(nil)
 	if not boat then
 		return nil
 	end
+	local o = currentOutfit(options)
+	o[item.kind] = item.id
+	outfit(boat, o.skin, o.helmet, o.cowl, o.wheel, o.flag)
 	if item.kind == "helmet" then
 		local model = Instance.new("Model")
 		model.Name = "Helmet"
 		model:SetAttribute("Detailed", true)
-		for _, p in boat:GetDescendants() do
-			if p:IsA("MeshPart") then
+		local upper = boat:FindFirstChild("RacerUpper") or boat
+		for _, p in upper:GetDescendants() do
+			if p:IsA("MeshPart") and p:GetAttribute("OutfitHidden") == nil then
 				local material = p.Name:match("__(.-)__")
-				if
-					material
-					and HELMET_PARTS[material]
-					and p:IsDescendantOf(boat:FindFirstChild("RacerUpper") or boat)
-				then
+				if material and HELMET_PARTS[material] then
 					p.Parent = model
 				end
 			end
 		end
 		boat:Destroy()
-		outfit(model, nil, item.id)
-		return model
+		return model, nil
 	end
-	outfit(boat, item.id, options.helmet)
 	if options.avatar then
 		pcall(RacerAvatar.attach, boat, options.avatar)
 	end
-	return boat
+	if item.kind == "cowl" or item.kind == "wheel" or item.kind == "flag" then
+		local focus = itemParts(boat)
+		local keep = {}
+		for _, p in focus do
+			local material = p.Name:match("__(.-)__")
+			if p.Name:sub(1, #item.id + 2) == item.id .. "__" and material then
+				table.insert(keep, p)
+			end
+		end
+		return boat, #keep > 0 and keep or nil
+	end
+	return boat, nil
 end
 
--- 3D の品をカメラに収める(回転の中心と、離れる距離)
-local function frameModel(camera, model, kind)
-	local cf, size = model:GetBoundingBox()
+-- 3D の品をカメラに収める(回転の中心と、離れる距離)。focus があれば、その部品を中心に大きく
+local FOCUS_ZOOM = { cowl = 2.6, wheel = 2.4, flag = 2.8 }
+local function frameModel(camera, model, kind, focus)
+	local cf, size
+	if focus then
+		local lo, hi = Vector3.one * math.huge, -Vector3.one * math.huge
+		for _, p in focus do
+			local c, half = p.CFrame, p.Size / 2
+			for _, sx in { -1, 1 } do
+				for _, sy in { -1, 1 } do
+					for _, sz in { -1, 1 } do
+						local point = c:PointToWorldSpace(Vector3.new(half.X * sx, half.Y * sy, half.Z * sz))
+						lo, hi = lo:Min(point), hi:Max(point)
+					end
+				end
+			end
+		end
+		cf, size = CFrame.new((lo + hi) / 2), hi - lo
+	else
+		cf, size = model:GetBoundingBox()
+	end
 	local radius = size.Magnitude / 2
-	local distance = radius / math.tan(math.rad(camera.FieldOfView / 2)) * (kind == "helmet" and 1.15 or 0.82)
-	local center = cf.Position
-	return center, distance
+	local scale = focus and (FOCUS_ZOOM[kind] or 2.5) or (kind == "helmet" and 1.15 or 0.82)
+	local distance = radius / math.tan(math.rad(camera.FieldOfView / 2)) * scale
+	return cf.Position, distance
 end
 
 function GachaShow.play(gui, results, options)
@@ -336,7 +390,7 @@ function GachaShow.play(gui, results, options)
 			s.Thickness = ORDER[it.r] >= 3 and 3 or 1.5
 			s.Parent = card
 			-- 品の見た目は3Dで(色見本ではなく)
-			local thumb = GachaShow.preview(card, it, 8, 8, 72, 76, { helmet = options.helmet })
+			local thumb = GachaShow.preview(card, it, 8, 8, 72, 76, { outfit = currentOutfit(options) })
 			thumb.ZIndex = 57
 			local t1 = label(card, it.r, 18, rarityColor[it.r])
 			t1.ZIndex = 57
@@ -379,17 +433,19 @@ function GachaShow.play(gui, results, options)
 		local r = results[k]
 		local it = r.item
 		local color = rarityColor[it.r] or WHITE
-		shown = itemModel(it, options)
+		local focus
+		shown, focus = itemModel(it, options)
 		if shown then
 			shown.Parent = view
-			center, distance = frameModel(camera, shown, it.kind)
+			center, distance = frameModel(camera, shown, it.kind, focus)
 		end
 		spin = it.kind == "helmet" and math.pi or 2.4
 		rayColor, rayAlpha, raySpeed = color, ORDER[it.r] >= 3 and 0.25 or 0.55, ORDER[it.r] >= 3 and 40 or 22
 		rarityText.Text = it.r
 		rarityText.TextColor3 = color
-		rarityText.TextSize = it.r == "SSR" and 58 or 46
-		nameText.Text = (it.kind == "helmet" and "ヘルメット　" or "塗装　") .. it.name
+		rarityText.TextSize = it.r == "UR" and 64 or it.r == "SSR" and 58 or 46
+		local slot = Meta.slot(it.kind)
+		nameText.Text = (slot and slot.name or "") .. "　" .. it.name
 		noteText.Text = r.dupe > 0 and ("かぶり　+" .. r.dupe .. " コイン") or "NEW!　倉庫に届きました"
 		noteText.TextColor3 = r.dupe > 0 and Color3.fromRGB(190, 205, 230) or Color3.fromRGB(255, 210, 60)
 		info.Visible = true
@@ -399,7 +455,8 @@ function GachaShow.play(gui, results, options)
 		tween(view, 0.4, { Size = UDim2.fromScale(0.72, 0.72) }, Enum.EasingStyle.Back)
 		flash.BackgroundTransparency = ORDER[it.r] >= 3 and 0 or 0.4
 		tween(flash, 0.45, { BackgroundTransparency = 1 })
-		Sfx.play("gacha" .. it.r, 0.9)
+		-- UR は SSR の音(いちばん高い音)
+		Sfx.play("gacha" .. (it.r == "UR" and "SSR" or it.r), 0.9)
 		if #results > 1 then
 			hint.Text = string.format("タップで次へ　%d / %d", k, #results)
 		else
@@ -474,7 +531,8 @@ function GachaShow.play(gui, results, options)
 	capsuleModel.Parent = view
 	center, distance = Vector3.new(0, -0.3, 0), 15
 	hint.Text = ""
-	local stages = { { 0.9, 2 }, { 1.4, 3 }, { 1.9, 4 } } -- {秒, レア度}: 出た中でいちばん高いレア度まで色が上がる
+	-- {秒, レア度}: 出た中でいちばん高いレア度まで色が上がる(UR は開く直前に、もう一段)
+	local stages = { { 0.9, 2 }, { 1.3, 3 }, { 1.7, 4 }, { 2.15, 5 } }
 	local litRarity = 1
 	local DROP, OPEN = 0.7, 2.5
 
@@ -535,7 +593,7 @@ function GachaShow.play(gui, results, options)
 end
 
 -- 品の小さな3Dの窓(ガチャの結果のカード・倉庫で使う)。色見本の代わりに、見た目そのままを見せる。
---   塗装はその塗装の艇(options.helmet のヘルメット)、ヘルメットはそのヘルメット。止まった斜め前からの眺め
+--   艇外装はその艇(options.outfit の今の装備)、ヘルメットはそのヘルメット、モーター・ハンドル・旗はその部分を大きく。止まった斜め前からの眺め
 --   options.spin = true で、ゆっくり回す(装備中の品など)
 local previewLinks = {}
 function GachaShow.preview(parent, item, x, y, w, h, options)
@@ -562,14 +620,14 @@ function GachaShow.preview(parent, item, x, y, w, h, options)
 	camera.FieldOfView = 30
 	camera.Parent = view
 	view.CurrentCamera = camera
-	local model = itemModel(item, { helmet = options.helmet })
+	local model, focus = itemModel(item, options)
 	if not model then
 		return view
 	end
 	model.Parent = view
-	local center, distance = frameModel(camera, model, item.kind)
+	local center, distance = frameModel(camera, model, item.kind, focus)
 	-- 横長の窓では、艇がはみ出さないよう少し近づける
-	if item.kind ~= "helmet" then
+	if item.kind ~= "helmet" and not focus then
 		distance *= w > h * 1.4 and 0.66 or 0.85
 	end
 	local yaw = item.kind == "helmet" and math.pi + 0.6 or 2.4

@@ -1,6 +1,7 @@
 local Players=game:GetService("Players")
 local ReplicatedStorage=game:GetService("ReplicatedStorage")
 local Service=require(script.Parent:WaitForChild("MetaService"))
+local Meta=require(ReplicatedStorage:WaitForChild("Meta"))
 local remote=Instance.new("RemoteFunction")
 remote.Name="MinatoMeta"
 remote.Parent=ReplicatedStorage
@@ -10,7 +11,8 @@ remote.OnServerInvoke=function(player,action,arg,token)
     if action~="get" and action~="pull" and action~="mail" and action~="mission" and action~="equip" and action~="settings" then return nil,"操作を確認してください" end
     if action~="get" then
         if type(token)~="string" or #token>60 then return nil,"ホームを開き直してください" end
-        if action=="pull" then if arg~=1 and arg~=10 then return nil end
+        -- ガチャは「種類:回数」(例 "helmet:10")。種類と回数(1 か 10)を確かめる
+        if action=="pull" then if Meta.pullArg(arg)==nil then return nil end
         elseif type(arg)~="string" or #arg>80 then return nil end
     end
     last[player],busy[player]=os.clock(),true
