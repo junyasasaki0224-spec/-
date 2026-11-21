@@ -272,7 +272,8 @@ if existingMatch then bindMatch(existingMatch) end
 -- 品の見た目: 色見本ではなく3Dで出す(塗装はその塗装の艇に今のヘルメット、ヘルメットはそのヘルメット)
 -- ガチャの確率の文字。表示も抽選も同じ Meta.RARITY と品の数から作る(確率を書き写さない)
 local function pct(x)
-    local t=string.format("%.2f",x*100):gsub("0+$",""):gsub("%.$","")
+    -- 小数3けたまで(SSR の 1.125% を丸めずに出す)
+    local t=string.format("%.3f",x*100):gsub("0+$",""):gsub("%.$","")
     return t.."%"
 end
 local function oddsText()
@@ -304,6 +305,8 @@ local function swatch(parent,it,x,y,w,h,spin)
     return require(RS:WaitForChild("GachaShow")).preview(parent,it,x,y,w,h,{outfit=outfitOf(m),spin=spin})
 end
 local drawnPage
+-- 今のホームの艇に付けてある装備(同じなら付け直さない)
+local outfitKey
 local function redrawNow()
     local oldList=drawnPage==page and root:FindFirstChild("List",true)
     local oldScroll=oldList and oldList.CanvasPosition
@@ -312,8 +315,13 @@ local function redrawNow()
     for _,c in ipairs(root:GetChildren()) do if c:IsA("GuiObject") then c:Destroy() end end
     if not m then return end
     if quality.choice~=m.quality then quality.apply(m.quality) end
-    outfit(model,m.skin,m.helmet,m.cowl,m.wheel,m.flag)
-    Visor.apply(model,m.visor==true)
+    -- 装備かシールドが変わった時だけ付け直す(画面を描き直すたびに部品を作り直すと、艇がちらつく)
+    local key=table.concat({tostring(m.skin),tostring(m.helmet),tostring(m.cowl),tostring(m.wheel),tostring(m.flag),tostring(m.visor==true)},"|")
+    if key~=outfitKey then
+        outfitKey=key
+        outfit(model,m.skin,m.helmet,m.cowl,m.wheel,m.flag)
+        Visor.apply(model,m.visor==true)
+    end
     local w,h=gui.AbsoluteSize.X,gui.AbsoluteSize.Y
     local portrait=w<h
     toast.Position=UDim2.fromOffset(16,page=="ホーム" and 130 or 58)
@@ -374,7 +382,7 @@ local function redrawNow()
         local tw,th,gap=short and 186 or 214,short and 52 or 66,short and 7 or 12
         local total=4*th+3*gap
         local top=math.max(short and 78 or 96,math.floor(h/2-total/2+12))
-        for i,t in ipairs({{"ガチャ","gacha","艇とヘルメットの着せ替えを集める"},{"倉庫","garage","5つの部分を着せ替える"},{"ミッション","mission","毎日の目標でコイン"},{"ランキング","ranking","レート・タイム・戦績"}}) do
+        for i,t in ipairs({{"ガチャ","gacha","5種類×30点の着せ替えを集める"},{"倉庫","garage","5つの部分を着せ替える"},{"ミッション","mission","毎日の目標でコイン"},{"ランキング","ranking","レート・タイム・戦績"}}) do
             local tile=Ui.tile(root,t[1],t[2],t[1],t[3],16,top+(i-1)*(th+gap),tw,th,false,function() go(t[1]) end)
             if t[1]=="ミッション" then Ui.badge(tile,misCount,tw-14,-8) end
         end
@@ -1002,7 +1010,7 @@ local function redrawNow()
                 button(card,priceText("product",entry.product,false),8,104,cw-16,function() buy("product",entry.product,false,entry) end,entry.product>0)
             end
             y+=math.ceil(#ShopConfig.coins/columns)*170
-            y=row("ガチャの確率",oddsText().."（1つあたり "..oddsEach().."）",y)
+            y=row("ガチャの確率",oddsText().."（5種類から1つ選んで引きます。どの種類も1つあたり "..oddsEach().."）",y)
         end
         y=row("購入について","購入は Roblox の確認画面で決まります。コインはすぐに届き、VIP の品は倉庫で着せ替えられます。",y)
     elseif page=="倉庫" then

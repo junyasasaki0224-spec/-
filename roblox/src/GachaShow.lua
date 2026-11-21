@@ -602,19 +602,20 @@ function GachaShow.preview(parent, item, x, y, w, h, options)
 	view.Name = "Preview"
 	view.Position = UDim2.fromOffset(x, y)
 	view.Size = UDim2.fromOffset(w, h)
-	view.BackgroundColor3 = Color3.fromRGB(28, 52, 92)
+	view.BackgroundColor3 = Color3.fromRGB(16, 34, 76)
 	view.BackgroundTransparency = 0.2
 	view.BorderSizePixel = 0
-	view.Ambient = Color3.fromRGB(160, 170, 190)
+	view.Ambient = Color3.fromRGB(170, 178, 196)
 	view.LightColor = Color3.fromRGB(255, 250, 240)
 	view.LightDirection = Vector3.new(-0.6, -1, -0.5)
 	view.Parent = parent
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, 8)
 	corner.Parent = view
+	-- 上から下へ少し暗く。ViewportFrame のグラデーションは中の品の色にも掛かるので、暗くしすぎない
 	local shade = Instance.new("UIGradient")
 	shade.Rotation = 90
-	shade.Color = ColorSequence.new(Color3.fromRGB(120, 150, 200), Color3.fromRGB(40, 60, 100))
+	shade.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(175, 190, 220))
 	shade.Parent = view
 	local camera = Instance.new("Camera")
 	camera.FieldOfView = 30
@@ -629,8 +630,12 @@ function GachaShow.preview(parent, item, x, y, w, h, options)
 	-- 横長の窓では、艇がはみ出さないよう少し近づける
 	if item.kind ~= "helmet" and not focus then
 		distance *= w > h * 1.4 and 0.66 or 0.85
+	elseif focus then
+		-- 小さな窓では、モーター・ハンドル・旗をもっと大きく
+		distance *= 0.62
 	end
-	local yaw = item.kind == "helmet" and math.pi + 0.6 or 2.4
+	-- 見る向き: ヘルメットは顔の側、モーターカバーは艇の後ろから、ほかは斜め前から
+	local yaw = item.kind == "helmet" and math.pi + 0.6 or (item.kind == "cowl" and focus) and 0.75 or 2.4
 	local function place()
 		local look = CFrame.new(center)
 			* CFrame.Angles(0, yaw, 0)

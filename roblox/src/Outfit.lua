@@ -9,6 +9,18 @@ local RS = game:GetService("ReplicatedStorage")
 local Meta = require(RS:WaitForChild("Meta"))
 local Assets = RS:WaitForChild("VisualAssets")
 
+-- プレイヤー側: 着せ替えの形と模様を先に読み込んでおく(付けた瞬間や倉庫の小さな絵で、形が後から現れないように)
+if game:GetService("RunService"):IsClient() then
+	task.spawn(function()
+		local items = Assets:WaitForChild("Items", 30)
+		if items then
+			pcall(function()
+				game:GetService("ContentProvider"):PreloadAsync({ items })
+			end)
+		end
+	end)
+end
+
 -- 艇番の色(1〜6号艇)。艇首旗の布と、艇外装の時の側面の艇番の板に使う
 local LANE = { 0xf2f2f0, 0x16161a, 0xd91e2e, 0x1b50d4, 0xf3d21b, 0x18a24c }
 
