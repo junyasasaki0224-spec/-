@@ -75,7 +75,10 @@ for data in json.loads(Path(metadata).read_text()):
     for key,v in zip('RGB',spec['color']): ET.SubElement(color,key).text=str(v)
     prop(props,'float','Transparency',.45 if spec['material'] in ('Glass','Visor') else 0)
     prop(props,'bool','Anchored','true')
-    prop(props,'bool','DoubleSided','true')
+    # 両面で描くと、艇の操縦席の内張り(Hull Cockpit)と甲板(Hull Deck)の境目で、
+    # 裏の面が同じ深さに重なってちらつく。この2つは表だけで描く(ほかは裏返った面があるので両面のまま)
+    single = kind=='boat' and spec['group']=='Hull' and spec['material'] in ('Cockpit','Deck')
+    prop(props,'bool','DoubleSided','false' if single else 'true')
     for key in ['CanCollide','CanTouch','CanQuery']: prop(props,'bool',key,'false')
     prop(props,'token','RenderFidelity',0)
 ET.indent(doc)

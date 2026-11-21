@@ -1028,7 +1028,7 @@
           </Color3>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
-          <bool name="DoubleSided">true</bool>
+          <bool name="DoubleSided">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
@@ -1072,7 +1072,7 @@
           </Color3>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
-          <bool name="DoubleSided">true</bool>
+          <bool name="DoubleSided">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>

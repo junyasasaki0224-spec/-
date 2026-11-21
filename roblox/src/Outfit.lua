@@ -30,8 +30,9 @@ end
 
 -- 品を付けた時に隠す元の部品: 種類 → { 組の名前 = 隠す材質(true は組の全部) }
 local HIDE: { [string]: { [string]: any } } = {
-	-- 艇外装は元の操縦席まわりの板(Cowl)とも重なるので、その色の面も隠す(茶色の後ろの甲板と操縦席の中は残す)
-	skin = { Hull = true, Plates = true, Cowl = { HullWhite = true, Trim = true, MotorRed = true, BoatColor = true } },
+	-- 艇外装は元の操縦席まわりの板(Cowl)をすべて覆う。茶色の内壁(Plywood)と前の板(Cockpit)も外装の塗装の面と
+	-- ぴったり同じ所にあり、残すと艇の後ろ半分で茶色と塗装が交互に見えてちらつくので、Cowl は全部隠す
+	skin = { Hull = true, Plates = true, Cowl = true },
 	cowl = { Motor = { BoatColor = true } },
 	wheel = { Wheel = true },
 	helmet = { RacerUpper = { Helmet = true, HelmetStripe = true, Visor = true } },
