@@ -58,19 +58,50 @@ local function place(item, x, y, w, h)
 end
 Ui.place = place
 
--- 押せる板(押した時に少し縮む)
-local function pressable(button)
+-- 押した時に少し縮む(指を離すと戻る)。音は付けない
+function Ui.pressScale(button)
     local scale = Instance.new("UIScale")
     scale.Parent = button
+    local function set(value)
+        TweenService:Create(scale, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = value }):Play()
+    end
     button.MouseButton1Down:Connect(function()
-        scale.Scale = 0.97
+        set(0.95)
     end)
     button.MouseButton1Up:Connect(function()
-        scale.Scale = 1
+        set(1)
     end)
     button.MouseLeave:Connect(function()
-        scale.Scale = 1
+        set(1)
     end)
+    return button
+end
+
+-- 長い文字は、枠に入るまで小さくする(min まで)。日本語は指定の大きさより小さく見えるので、小さくしすぎない。
+-- min でも入らない時(長い名前など)は、縮めると2行になってはみ出すので、min の大きさで「…」で切る
+function Ui.fit(label, min)
+    local c = Instance.new("UITextSizeConstraint")
+    c.MaxTextSize = label.TextSize
+    c.MinTextSize = math.min(label.TextSize, min or math.max(10, math.floor(label.TextSize * 0.75)))
+    c.Parent = label
+    local wrapped = label.TextWrapped
+    label.TextScaled = true
+    -- 大きさと場所が決まった後(同じコマの終わり)に確かめる
+    task.defer(function()
+        if label.Parent and not label.TextFits then
+            label.TextScaled = false
+            label.TextSize = c.MinTextSize
+            label.TextWrapped = wrapped
+            label.TextTruncate = Enum.TextTruncate.AtEnd
+            c:Destroy()
+        end
+    end)
+    return label
+end
+
+-- 押せる板(押した時に少し縮む)
+local function pressable(button)
+    Ui.pressScale(button)
     -- 押した時の音
     button.Activated:Connect(function()
         Sfx.play("click", 0.7)
@@ -132,7 +163,7 @@ function Ui.badge(parent, count, x, y)
     if not count or count <= 0 then
         return
     end
-    local b = Ui.text(parent, "Badge", tostring(count), 12, Ui.HEAVY)
+    local b = Ui.text(parent, "Badge", tostring(count), 13, Ui.HEAVY)
     b.BackgroundTransparency = 0
     b.BackgroundColor3 = Color3.fromRGB(230, 50, 50)
     b.TextXAlignment = Enum.TextXAlignment.Center
@@ -153,17 +184,23 @@ function Ui.tile(parent, name, kind, title, sub, x, y, w, h, vertical, onPress)
     Ui.stroke(t, Ui.GOLD, 1.5, 0.25)
     if vertical then
         Ui.icon(t, kind, w / 2 - 22, 8, 0.7)
-        local b = Ui.text(t, "Title", title, 14, Ui.HEAVY)
+        local b = Ui.fit(Ui.text(t, "Title", title, 15, Ui.HEAVY), 11)
         b.TextXAlignment = Enum.TextXAlignment.Center
         place(b, 2, h - 26, w - 4, 20)
     else
-        local scale = h < 56 and 0.66 or 0.82
-        Ui.icon(t, kind, 10, h / 2 - 20 * scale, scale)
-        local left = 18 + 64 * scale
-        local b = Ui.text(t, "Title", title, h < 56 and 15 or 17, Ui.HEAVY)
-        place(b, left, h / 2 - 20, w - left - 8, 22)
-        local s = Ui.text(t, "Sub", sub, h < 56 and 10 or 11, Ui.BOLD, Ui.SUB)
-        place(s, left, h / 2 + 2, w - left - 8, 16)
+        -- 細いタイル(スマホ縦の3つ)はアイコンを小さくして、題の場所を広げる
+        local scale = w < 150 and 0.5 or (h < 56 and 0.66 or 0.82)
+        Ui.icon(t, kind, w < 150 and 6 or 10, h / 2 - 20 * scale, scale)
+        local left = (w < 150 and 10 or 18) + 64 * scale
+        local b = Ui.fit(Ui.text(t, "Title", title, h < 56 and 16 or 18, Ui.HEAVY), 11)
+        if sub == "" then
+            -- 説明がない時は、題をまん中の高さに
+            place(b, left, h / 2 - 11, w - left - 6, 22)
+        else
+            place(b, left, h / 2 - 20, w - left - 8, 22)
+            local s = Ui.fit(Ui.text(t, "Sub", sub, h < 56 and 12 or 13, Ui.BOLD, Ui.SUB), 10)
+            place(s, left, h / 2 + 2, w - left - 8, 16)
+        end
     end
     t.Activated:Connect(onPress)
     return t
@@ -188,7 +225,7 @@ function Ui.raceButton(parent, x, y, w, h, title, sub, onPress)
     local big = Ui.text(b, "Title", title, h < 70 and 27 or 34, Ui.HEAVY_ITALIC, Ui.DARK)
     big.TextXAlignment = Enum.TextXAlignment.Center
     place(big, 0, h * 0.14, w, h * 0.5)
-    local small = Ui.text(b, "Sub", sub, 12, Ui.HEAVY, Ui.DARK)
+    local small = Ui.fit(Ui.text(b, "Sub", sub, 13, Ui.HEAVY, Ui.DARK), 10)
     small.TextXAlignment = Enum.TextXAlignment.Center
     place(small, 0, h * 0.64, w, 16)
     -- 斜めに流れる光
@@ -235,8 +272,8 @@ function Ui.pill(parent, name, value, x, y, w, h, onPress, coin)
         c.Parent = p
         left = 32
     end
-    local t = Ui.text(p, "Text", value, 14, Ui.HEAVY)
-    place(t, left, 0, w - left - 8, h)
+    local t = Ui.fit(Ui.text(p, "Text", value, 15, Ui.HEAVY), 11)
+    place(t, left, 0, w - left - 10, h)
     if onPress then
         p.Activated:Connect(onPress)
     end
@@ -251,9 +288,9 @@ function Ui.headButton(parent, name, value, x, y, w, onPress, count)
     b.BackgroundTransparency = 0.2
     Ui.corner(b, 10)
     Ui.stroke(b, Ui.WHITE, 1, 0.55)
-    local t = Ui.text(b, "Text", value, 14, Ui.HEAVY)
+    local t = Ui.fit(Ui.text(b, "Text", value, 15, Ui.HEAVY), 11)
     t.TextXAlignment = Enum.TextXAlignment.Center
-    place(t, 0, 0, w, 44)
+    place(t, 4, 0, w - 8, 44)
     Ui.badge(b, count, w - 12, -8)
     b.Activated:Connect(onPress)
     return b
@@ -280,10 +317,10 @@ function Ui.profile(parent, x, y, w, gradeName, name, stats, progress)
     local g = Ui.text(badge, "Text", gradeName, 20, Ui.HEAVY_ITALIC, Ui.DARK)
     g.TextXAlignment = Enum.TextXAlignment.Center
     place(g, 0, 0, 46, 46)
-    local n = Ui.text(p, "Name", name, 16, Ui.HEAVY)
+    local n = Ui.fit(Ui.text(p, "Name", name, 17, Ui.HEAVY), 12)
     place(n, 64, 7, w - 74, 20)
-    local s = Ui.text(p, "Stats", stats, 11, Ui.BOLD, Color3.fromRGB(207, 220, 243))
-    place(s, 64, 28, w - 74, 14)
+    local s = Ui.fit(Ui.text(p, "Stats", stats, 13, Ui.BOLD, Color3.fromRGB(207, 220, 243)), 10)
+    place(s, 64, 28, w - 74, 15)
     local track = Instance.new("Frame")
     track.Name = "Progress"
     track.BackgroundColor3 = Ui.WHITE
@@ -337,7 +374,7 @@ function Ui.modeCard(parent, name, title, image, description, tag, x, y, w, h, s
     line.BorderSizePixel = 0
     place(line, 0, 42, w, 2)
     line.Parent = c
-    local t = Ui.text(band, "Title", title, w < 200 and 16 or 20, Ui.HEAVY)
+    local t = Ui.fit(Ui.text(band, "Title", title, w < 200 and 17 or 21, Ui.HEAVY), 12)
     t.TextXAlignment = Enum.TextXAlignment.Center
     place(t, 4, 0, w - 8, 42)
     local artH = math.max(60, h - 44 - 78)
@@ -357,15 +394,16 @@ function Ui.modeCard(parent, name, title, image, description, tag, x, y, w, h, s
         art:GetPropertyChangedSignal("IsLoaded"):Connect(loaded)
         loaded()
     end
-    local d = Ui.text(c, "Description", description, w < 200 and 11 or 13, Ui.BOLD, Ui.PALE)
+    local d = Ui.text(c, "Description", description, w < 200 and 13 or 15, Ui.BOLD, Ui.PALE)
     d.TextXAlignment = Enum.TextXAlignment.Center
     d.TextWrapped = true
+    Ui.fit(d, 11)
     place(d, 8, 44 + artH + 6, w - 16, 34)
-    local pill = Ui.text(c, "Tag", tag, 11, Ui.HEAVY, Color3.fromRGB(255, 230, 154))
+    local pill = Ui.text(c, "Tag", tag, 13, Ui.HEAVY, Color3.fromRGB(255, 230, 154))
     pill.TextXAlignment = Enum.TextXAlignment.Center
     pill.BackgroundTransparency = 0.88
     pill.BackgroundColor3 = Ui.GOLD
-    local pw = math.min(w - 24, 28 + (utf8.len(tag) or 4) * 12)
+    local pw = math.min(w - 24, 32 + (utf8.len(tag) or 4) * 12)
     place(pill, w / 2 - pw / 2, h - 32, pw, 22)
     Ui.corner(pill, 11)
     Ui.stroke(pill, Ui.GOLD, 1, 0.4)

@@ -1,4 +1,5 @@
 -- レースの結果の画面(ブラウザ版の #result と同じ: 大きな着順、ひとこと、結果の表、記録、ボタン)
+local TweenService = game:GetService("TweenService")
 local Result = {}
 Result.__index = Result
 
@@ -104,6 +105,9 @@ function Result.new(hudGui)
     corner(panel, 18)
     stroke(panel, WHITE, 1, 0.78)
     self.panel = panel
+    -- 出る時に少し小さい所から広がる
+    self.panelScale = Instance.new("UIScale")
+    self.panelScale.Parent = panel
     self.head = text(panel, "Head", 72, NUMBER)
     self.sub = text(panel, "Sub", 15, BOLD, PALE)
     self.sub.TextWrapped = true
@@ -266,6 +270,13 @@ function Result:show(rows, mySeat, extra, buttons, key, opts)
     local h = math.min(y, size.Y - 24)
     self.panel.Size = UDim2.fromOffset(w, h)
     self.panel.CanvasSize = UDim2.fromOffset(0, y)
+    if not self.shade.Visible then
+        -- 初めて出る時だけ: 後ろが暗くなり、表が広がって出る(同じ結果の出し直しでは動かさない)
+        self.shade.BackgroundTransparency = 1
+        self.panelScale.Scale = 0.9
+        TweenService:Create(self.shade, TweenInfo.new(0.25), { BackgroundTransparency = 0.45 }):Play()
+        TweenService:Create(self.panelScale, TweenInfo.new(0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+    end
     self.shade.Visible = true
     self.key = key
 end

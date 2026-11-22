@@ -131,7 +131,7 @@ function Hud.new(gui)
         row.Position = UDim2.fromOffset(16, 86 + (k - 1) * 25)
         row.Size = UDim2.fromOffset(150, 22)
         corner(row, 7)
-        local label = text(row, "Label", 13, BOLD_FONT, color)
+        local label = text(row, "Label", 14, BOLD_FONT, color)
         label.Position = UDim2.fromOffset(7, 0)
         label.Size = UDim2.fromOffset(20, 22)
         label.Text = k == 1 and "前" or "後"
@@ -227,6 +227,9 @@ function Hud.new(gui)
     start.Position = UDim2.new(0.5, 0, 0, 10)
     start.Parent = root
     self.start = start
+    -- 画面が細い時(スマホの縦持ち)は、枠ごと縮めて画面に収める
+    self.startScale = Instance.new("UIScale")
+    self.startScale.Parent = start
     -- 練習用の板(バーと文字を載せる)
     local plate = panel(start, "AssistPlate", 0.15)
     plate.BackgroundColor3 = Color3.fromRGB(12, 15, 22)
@@ -405,7 +408,7 @@ function Hud.new(gui)
     corner(marker, 2)
     stroke(marker, Color3.new(0, 0, 0), 1, 0.4)
     self.marker = marker
-    self.assist = text(info, "Assist", 13)
+    self.assist = text(info, "Assist", 14)
     self.assist.Position = UDim2.fromOffset(0, 80)
     self.assist.Size = UDim2.new(1, 0, 0, 20)
     self.assist.TextXAlignment = Enum.TextXAlignment.Left
@@ -460,7 +463,7 @@ function Hud.new(gui)
     self.wxArrow.Size = UDim2.fromOffset(22, 26)
     self.wxArrow.Position = UDim2.fromOffset(8, 0)
     self.wxArrow.Text = "▲"
-    self.wxText = text(wx, "Text", 13)
+    self.wxText = text(wx, "Text", 14)
     self.wxText.Position = UDim2.fromOffset(32, 0)
     self.wxText.Size = UDim2.new(1, -40, 1, 0)
     self.wxText.TextXAlignment = Enum.TextXAlignment.Left
@@ -521,7 +524,14 @@ function Hud:layout()
     self.spd.TextSize = compact and 42 or 56
     -- スタートの枠は、縦持ちでは順位の下へ
     self.start.Position = portrait and UDim2.new(0.5, 0, 0, 140) or UDim2.new(0.5, 0, 0, 10)
+    self:fitStart()
     self.wx.Position = UDim2.new(0.5, 0, 1, portrait and -100 or -14)
+end
+
+-- スタートの枠が画面の幅に入るように縮める(入る時はそのまま)
+function Hud:fitStart()
+    local full = self.assistMode and 400 or 136
+    self.startScale.Scale = math.min(1, (self.gui.AbsoluteSize.X - 16) / full)
 end
 
 -- スタート前の枠の形: 練習(時計 + 予想STのバー)か、時計だけ(ランク戦・オンライン・大会など)
@@ -539,6 +549,7 @@ function Hud:setAssist(on)
         self.dial.Position = UDim2.fromOffset(0, 0)
         self.dial.Size = UDim2.fromOffset(136, 136)
     end
+    self:fitStart()
 end
 
 -- 毎フレームの更新。info の中身は Controls.client.lua が作る
@@ -565,6 +576,14 @@ function Hud:update(info)
     self.time.Text = info.time and formatTime(info.time) or ""
     -- スタート前の枠
     self.start.Visible = info.pre == true
+    -- スタート前は大時計が残り時間を出す。左上の「スタート前」と時間が大時計の枠と重なる時(スマホの横持ちなど)は隠す
+    local hideTop = false
+    if info.pre then
+        local left = self.start.AbsolutePosition.X
+        local right = self.lap.AbsolutePosition.X + math.max(self.lap.TextBounds.X, self.time.TextBounds.X) + 12
+        hideTop = left < right and self.start.AbsolutePosition.Y < self.time.AbsolutePosition.Y + self.time.AbsoluteSize.Y
+    end
+    self.lap.Visible, self.time.Visible = not hideTop, not hideTop
     if info.pre then
         local t = info.clock or 0
         if (info.assist == true) ~= self.assistMode then
