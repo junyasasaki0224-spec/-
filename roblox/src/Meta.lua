@@ -33,6 +33,8 @@ Meta.SLOTS={
     {kind="wheel",name="ステアリング",default="w0"},
     {kind="flag",name="艇首旗",default="f0"},
 }
+-- 設定で選べる画面の言語(Lang.lua の LIST と同じ。auto はその人の Roblox の言語・国に合わせる)
+Meta.LANGS={auto=true,ja=true,en=true,es=true,pt=true,id=true,fr=true,de=true,ko=true,zhcn=true,zhtw=true,th=true,vi=true}
 -- レア度の並び(低い順)
 Meta.RARITIES={"N","R","SR","SSR","UR"}
 -- ランク(級)。ランク戦の RATE で決まる。D3 から始まり A1 まで12段。
@@ -155,7 +157,7 @@ function Meta.newSeason(m,day)
     m.season=season
 end
 function Meta.new()
-    return {volume=80,lever=40,quality="auto",assist=true,shake=true,opening=true,visor=false,coins=0,own={"s0","h0"},skin="s0",helmet="h0",cowl="c0",wheel="w0",flag="f0",rate=0,peak=0,seasonRaces=0,
+    return {volume=80,lever=40,quality="auto",lang="auto",assist=true,shake=true,opening=true,visor=false,coins=0,own={"s0","h0"},skin="s0",helmet="h0",cowl="c0",wheel="w0",flag="f0",rate=0,peak=0,seasonRaces=0,
         seasonWins=0,xp=0,tier=0,ta={},day="",mis={},misDone={},pulls=0,mailSeq=1,badges={"D3"},titles={},history={},guard=0,
         mail={{id="welcome",title="ようこそ みなとグランプリへ",body="出走の記念に、ガチャ5回ぶんのコインを贈ります。",coins=500}}}
 end
@@ -202,6 +204,8 @@ function Meta.action(m,action,arg,rnd)
         elseif key=="lever" and n and n>=0 and n<=140 and n%10==0 then m.lever=n
         elseif key=="quality" and ({auto=true,high=true,medium=true,low=true})[value] then m.quality=value
         elseif (key=="assist" or key=="shake" or key=="opening" or key=="visor") and (value=="on" or value=="off") then m[key]=value=="on"
+        -- 画面の言語(auto はその人の Roblox の言語・国に合わせる。Lang.LIST と同じ)
+        elseif key=="lang" and Meta.LANGS[value] then m.lang=value
         else return "設定を確認してください" end
         return "設定を保存しました"
     elseif action=="mail" then

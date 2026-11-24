@@ -1,6 +1,7 @@
 -- ホームとレース選択の部品(ブラウザ版の style.css の .tile / #btn-race / .mcard / #home-prof / .pill と同じ見た目)
 local TweenService = game:GetService("TweenService")
 local Sfx = require(game:GetService("ReplicatedStorage"):WaitForChild("Sfx"))
+local Lang = require(game:GetService("ReplicatedStorage"):WaitForChild("Lang"))
 local Ui = {}
 
 Ui.NAVY = Color3.fromRGB(11, 29, 58)
@@ -467,7 +468,9 @@ function Ui.modeCard(parent, name, title, image, description, tag, x, y, w, h, s
     pill.TextXAlignment = Enum.TextXAlignment.Center
     pill.BackgroundTransparency = 0.88
     pill.BackgroundColor3 = Ui.GOLD
-    local pw = math.min(w - 24, 32 + (utf8.len(tag) or 4) * 12)
+    -- 札の幅は、訳した後の文で測る
+    local shown = Lang.translate(tag)
+    local pw = math.min(w - 24, 28 + game:GetService("TextService"):GetTextSize(shown, 13, Enum.Font.GothamBlack, Vector2.new(2000, 100)).X)
     place(pill, w / 2 - pw / 2, h - 32, pw, 22)
     Ui.corner(pill, 11)
     Ui.stroke(pill, Ui.GOLD, 1, 0.4)

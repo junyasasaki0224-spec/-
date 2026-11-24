@@ -3,6 +3,8 @@
 -- 右下: 速度計(スロットルレバーの横) / 下中央: 風と波 / 中央上寄り: 大きな知らせ(ST・周回・ゴール・失格)
 local Hud = {}
 Hud.__index = Hud
+-- 毎コマ書き換える文字は、その場で今の言語に訳す(画面の見張りの訳が描くのに間に合わず、日本語がちらつかないように)
+local T = require(game:GetService("ReplicatedStorage"):WaitForChild("Lang")).translate
 
 local NAVY = Color3.fromRGB(11, 29, 58)
 local GOLD = Color3.fromRGB(255, 210, 60)
@@ -564,10 +566,10 @@ function Hud:update(info)
     -- 順位(1着は金、失格は赤)
     local rank = info.rank
     if info.out then
-        self.posN.Text, self.posUnit.Text = info.out, ""
+        self.posN.Text, self.posUnit.Text = T(info.out), ""
         self.posGradient.Color = ColorSequence.new(Color3.fromRGB(150, 30, 30), Color3.fromRGB(90, 10, 10))
     else
-        self.posN.Text, self.posUnit.Text = tostring(rank or "-"), "着"
+        self.posN.Text, self.posUnit.Text = tostring(rank or "-"), T("着")
         if rank == 1 then
             self.posGradient.Color = ColorSequence.new(Color3.fromRGB(226, 164, 0), Color3.fromRGB(165, 95, 0))
         else
@@ -575,7 +577,7 @@ function Hud:update(info)
         end
     end
     self.pos.Visible = info.rank ~= nil or info.out ~= nil
-    self.lap.Text = info.lapText or ""
+    self.lap.Text = T(info.lapText or "")
     self.time.Text = info.time and formatTime(info.time) or ""
     -- スタート前の枠
     self.start.Visible = info.pre == true
@@ -597,22 +599,22 @@ function Hud:update(info)
         self.slowHand.Rotation = (t % 60) * 6
         self.digital.Text = t < 0 and string.format("%.1f", -t) or string.format("+%.1f", t)
         self.digital.TextColor3 = t > -3 and self.champagne or self.ivory
-        self.cd.Text = t < 0 and string.format("スタートまで %.1f", -t) or string.format("+%.2f", t)
+        self.cd.Text = t < 0 and T(string.format("スタートまで %.1f", -t)) or string.format("+%.2f", t)
         self.cd.TextColor3 = t > -3 and GOLD or WHITE
-        self.dist.Text = info.dist and string.format("スタートラインまで %d m", math.max(0, math.floor(info.dist + 0.5))) or ""
+        self.dist.Text = info.dist and T(string.format("スタートラインまで %d m", math.max(0, math.floor(info.dist + 0.5)))) or ""
         local st = info.st
         self.marker.Visible = st ~= nil
         if st then
             self.marker.Position = UDim2.fromScale(math.clamp((st + 0.5) / 1.5, 0, 1), 0.5)
             if st < 0 then
-                self.assist.Text, self.assist.TextColor3 = string.format("全開だと %.2f秒 早い(フライング)", -st), Color3.fromRGB(255, 138, 122)
+                self.assist.Text, self.assist.TextColor3 = T(string.format("全開だと %.2f秒 早い(フライング)", -st)), Color3.fromRGB(255, 138, 122)
             elseif st < 0.25 then
-                self.assist.Text, self.assist.TextColor3 = string.format("今だ！ 全開で ST %.2f", st), GREEN
+                self.assist.Text, self.assist.TextColor3 = T(string.format("今だ！ 全開で ST %.2f", st)), GREEN
             else
-                self.assist.Text, self.assist.TextColor3 = string.format("全開で ST %.2f", st), WHITE
+                self.assist.Text, self.assist.TextColor3 = T(string.format("全開で ST %.2f", st)), WHITE
             end
         else
-            self.assist.Text = info.hint or ""
+            self.assist.Text = T(info.hint or "")
             self.assist.TextColor3 = SUB
         end
     end
@@ -626,7 +628,7 @@ function Hud:update(info)
                 row.chip.Text = tostring(o.lane)
                 row.chip.BackgroundColor3, row.chip.TextColor3 = LANE[o.lane][1], LANE[o.lane][2]
                 row.mark.Text = o.mark
-                row.name.Text = o.name
+                row.name.Text = T(o.name)
                 local me = o.me
                 if not self.compact then
                     row.frame.BackgroundColor3 = me and GOLD or Color3.fromRGB(8, 24, 48)
@@ -649,7 +651,7 @@ function Hud:update(info)
         if item then
             g.chip.Text = tostring(item.lane)
             g.chip.BackgroundColor3, g.chip.TextColor3 = LANE[item.lane][1], LANE[item.lane][2]
-            g.value.Text = item.text
+            g.value.Text = T(item.text)
         end
     end
     -- ミニマップ
@@ -688,9 +690,9 @@ function Hud:update(info)
     -- 風と波
     self.wx.Visible = info.wind ~= nil
     if info.wind then
-        self.wxText.Text = info.wind
+        self.wxText.Text = T(info.wind)
         self.wxArrow.Rotation = (info.windRotation or 0) + 90
-        self.wx.Size = UDim2.fromOffset(math.max(160, 48 + utf8.len(info.wind) * 13), 26)
+        self.wx.Size = UDim2.fromOffset(math.max(160, 56 + game:GetService("TextService"):GetTextSize(T(info.wind), 14, Enum.Font.GothamBold, Vector2.new(2000, 100)).X), 26)
     end
     -- 大きな知らせ
     local showing = os.clock() < self.flashUntil

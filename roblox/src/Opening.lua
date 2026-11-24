@@ -3,6 +3,8 @@ local Run = game:GetService("RunService")
 local Input = game:GetService("UserInputService")
 local Sfx = require(script.Parent.Sfx)
 local Wake = require(script.Parent.BoatWake)
+-- 毎コマ書き換える字幕は、その場で今の言語に訳す
+local T = require(script.Parent:WaitForChild("Lang")).translate
 local Opening = {}
 local Tween = game:GetService("TweenService")
 -- 色と字体はレース中の表示(RaceHud.lua)と同じ
@@ -302,7 +304,7 @@ function Opening.play(options)
             Tween:Create(card, TweenInfo.new(0.45, Enum.EasingStyle.Quint, Enum.EasingDirection.In),
                 {Position = UDim2.new(0, -440, 0.5, 0)}):Play()
         end
-        caption.Text = t < .3 and "" or (t < .65 and "ピット離れ" or "待機行動")
+        caption.Text = t < .3 and "" or T(t < .65 and "ピット離れ" or "待機行動")
         for i,p in paths do
             -- 1号艇から順にピットを出る。出だしと止まる所だけゆっくり(速さの山が高くなりすぎないよう、直線と半々)
             -- ブラウザ版と同じ決まり: どの艇も同じ時間をかけて走り、出るのも着くのも1号艇から少しずつずらす

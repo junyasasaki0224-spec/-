@@ -1,6 +1,7 @@
 -- 観戦の操作(見る艇・視点)。艇を選ぶ・観戦をやめるはこの画面の中だけ。
 -- 対戦で失格した人の「ロビーへ」だけは、レースの画面が渡す view.onLeave が合図を送る
 local Input = game:GetService("UserInputService")
+local T = require(game:GetService("ReplicatedStorage"):WaitForChild("Lang")).translate
 local names = {"追尾","接近","オンボード","上空","自由"}
 local navy = Color3.fromRGB(11,29,58)
 local gold = Color3.fromRGB(255,210,60)
@@ -139,8 +140,9 @@ return function(gui)
             btn.TextTransparency=enabled and 0 or .5
             strokes[i].Enabled=enabled and i==view.lane or false
         end
-        camera.Text="視点　"..names[view.mode]
-        leave.Text=view.leaveText or "退出"
+        -- 毎コマ書き換えるので、その場で今の言語に訳す
+        camera.Text=T("視点　"..names[view.mode])
+        leave.Text=T(view.leaveText or "退出")
     end
     function view.camera(cf)
         local forward=Vector3.new(cf.LookVector.X,0,cf.LookVector.Z).Unit

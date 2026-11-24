@@ -95,6 +95,12 @@
       },
       "ItemCatalog": {
         "$path": "src/ItemCatalog.lua"
+      },
+      "Lang": {
+        "$path": "src/Lang.lua"
+      },
+      "LangData": {
+        "$path": "src/LangData.lua"
       }
     },
     "ServerScriptService": {

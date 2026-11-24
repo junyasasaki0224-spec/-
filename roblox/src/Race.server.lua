@@ -241,7 +241,7 @@ local nextFirst = 1
 local saveResults
 local function preparePlayer(player)
     if strayServer then
-        player:Kick("ロビーから入り直してください")
+        player:Kick("ロビーから入り直してください / Please rejoin from the lobby")
         return
     end
     player:SetAttribute("MinatoBoat", 0)
@@ -273,7 +273,7 @@ local function preparePlayer(player)
                 if role == "watch" and record.private and not TRules.findEntrant(record, player.UserId) then role = nil end
             end
             if not role or (roomKind and roomKind ~= "gp") or (gpTid and gpTid ~= data.tid) then
-                if player.Parent == Players then player:Kick("大会の会場に入れません。ロビーから入り直してください") end
+                if player.Parent == Players then player:Kick("大会の会場に入れません。ロビーから入り直してください / Please rejoin from the lobby") end
                 return
             end
             if player.Parent ~= Players then return end
@@ -296,7 +296,7 @@ local function preparePlayer(player)
         if type(data) == "table" and data.mode == "practice" then
             local lane = data.lane
             if roomKind or next(roomMembers) or type(lane) ~= "number" or lane % 1 ~= 0 or lane < 1 or lane > 6 then
-                player:Kick("スタート練習の会場に入れません。ロビーから入り直してください")
+                player:Kick("スタート練習の会場に入れません。ロビーから入り直してください / Please rejoin from the lobby")
                 return
             end
             roomKind, practiceMode = "single", true
@@ -315,7 +315,7 @@ local function preparePlayer(player)
             local function int(v, lo, hi) return type(v) == "number" and v % 1 == 0 and v >= lo and v <= hi end
             if (roomKind and roomKind ~= "single") or next(roomMembers) or not int(data.lane,1,6) or not int(data.tilt,1,4)
                 or not int(data.diff,1,4) or not ENVS[data.env] or not int(data.seed,1,1000000) then
-                player:Kick("フリーレースの会場に入れません。ロビーから入り直してください")
+                player:Kick("フリーレースの会場に入れません。ロビーから入り直してください / Please rejoin from the lobby")
                 return
             end
             roomKind = "single"
@@ -332,7 +332,7 @@ local function preparePlayer(player)
         if type(data) == "table" and data.mode == "ta" then
             local lane = data.lane
             if (roomKind and roomKind ~= "ta") or next(roomMembers) or type(lane) ~= "number" or lane % 1 ~= 0 or lane < 1 or lane > 6 then
-                player:Kick("タイムアタックの会場に入れません。ロビーから入り直してください")
+                player:Kick("タイムアタックの会場に入れません。ロビーから入り直してください / Please rejoin from the lobby")
                 return
             end
             roomKind, taLane = "ta", lane - 1
@@ -350,12 +350,12 @@ local function preparePlayer(player)
         end
         if type(data) == "table" and ONLINE[data.mode] then
             if rankedStarted or (roomKind and roomKind ~= data.mode) then
-                player:Kick("対戦会場に入れません。ロビーから入り直してください")
+                player:Kick("対戦会場に入れません。ロビーから入り直してください / Please rejoin from the lobby")
                 return
             end
             local admitted, expected = MatchQueue.accept(player.UserId,game.PrivateServerId,data.mode)
             if not admitted or rankedStarted or (roomKind and roomKind ~= data.mode) then
-                if player.Parent == Players then player:Kick("対戦会場に入れません。ロビーから入り直してください") end
+                if player.Parent == Players then player:Kick("対戦会場に入れません。ロビーから入り直してください / Please rejoin from the lobby") end
                 return
             end
             if player.Parent ~= Players then return end
@@ -388,7 +388,7 @@ local function preparePlayer(player)
         end
         if player.Parent ~= Players then return end
         if not owner or (roomKind and roomKind ~= "room") or (roomCode and roomCode ~= code) or (roomHost and roomHost ~= owner) then
-            player:Kick("部屋に入れません。ロビーから入り直してください")
+            player:Kick("部屋に入れません。ロビーから入り直してください / Please rejoin from the lobby")
             return
         end
         roomKind = "room"
@@ -466,6 +466,7 @@ local function assignPlayers()
                     player:SetAttribute("MinatoAssist",outfit.assist~=false)
                     player:SetAttribute("MinatoShake",outfit.shake~=false)
                     player:SetAttribute("MinatoOpening",outfit.opening~=false)
+                    player:SetAttribute("MinatoLang",type(outfit.lang)=="string" and outfit.lang or "auto")
                     -- 出走表の級は、その人のランク(D3〜A1・S)
                     boat.model:SetAttribute("Class",Meta.gradeName(outfit))
                     boat.model:SetAttribute("Skin",outfit.skin)

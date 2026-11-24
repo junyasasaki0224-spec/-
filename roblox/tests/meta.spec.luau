@@ -106,6 +106,12 @@ for _,slot in ipairs(M.SLOTS) do
  assert(#M.pool("N",slot.kind)==8 and #M.pool("R",slot.kind)==8 and #M.pool("SR",slot.kind)==7 and #M.pool("SSR",slot.kind)==4 and #M.pool("UR",slot.kind)==3)
 end
 assert(#M.pool("N")==40 and #M.pool("R")==40 and #M.pool("SR")==35 and #M.pool("SSR")==20 and #M.pool("UR")==15)
+-- 画面の言語: 初めは auto。対応している言語だけ保存できる
+local lg=M.new()
+assert(lg.lang=="auto")
+M.action(lg,"settings","lang=en");assert(lg.lang=="en")
+assert(M.action(lg,"settings","lang=xx")=="設定を確認してください" and lg.lang=="en")
+M.action(lg,"settings","lang=zhtw");assert(lg.lang=="zhtw")
 -- 確率の合計は 100%(表示と抽選は同じ Meta.RARITY)
 local sum=0
 for _,r in ipairs(M.RARITIES) do sum+=M.RARITY[r].rate end

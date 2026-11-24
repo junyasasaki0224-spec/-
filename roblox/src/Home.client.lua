@@ -14,6 +14,10 @@ end)
 local visuals=require(RS:WaitForChild("VisualModels"))
 local Meta=require(RS:WaitForChild("Meta"))
 local Ui=require(RS:WaitForChild("HomeUi"))
+-- 画面の言語: 最初はその人の Roblox の言語(国・端末の言語)。持ち物が届いたら設定の言語にする。画面の文字は Lang が訳す
+local Lang=require(RS:WaitForChild("Lang"))
+Lang.set("auto")
+Lang.watch(player:WaitForChild("PlayerGui"))
 local Sfx=require(RS:WaitForChild("Sfx"))
 -- ホームでは BGM を静かに流す
 Sfx.music(true)
@@ -85,7 +89,13 @@ local function button(parent,title,x,y,w,action,primary)
     end
     b.Activated:Connect(function() Sfx.play(primary and "select" or "click",.7) end)
     Ui.pressScale(b)
+    -- 長い文(ほかの言語)は枠に入るまで小さくする
+    Ui.fit(b,11)
     b.Activated:Connect(action);return b
+end
+-- 訳した後の文の幅(札の大きさを文に合わせる時に使う)
+local function textWidth(text,size)
+    return math.ceil(TextService:GetTextSize(Lang.translate(text),size,Enum.Font.GothamBlack,Vector2.new(2000,100)).X)
 end
 local function label(parent,text,x,y,w,h,size)
     local t=box("TextLabel",parent,"Text",text);t.BackgroundTransparency=1
@@ -190,7 +200,7 @@ Run.RenderStepped:Connect(function(dt)
     sceneClock+=dt
     updateVenue(0,sceneClock,1)
     local cam=workspace.CurrentCamera
-    if waitLabel and waitLabel.Parent then waitLabel.Text=waitText() end
+    if waitLabel and waitLabel.Parent then waitLabel.Text=Lang.translate(waitText()) end
     if gui.Enabled then
         cam.CameraType=Enum.CameraType.Scriptable
         local t=math.clamp((sceneClock-spinStart)/SPIN_TIME,0,1)
@@ -473,7 +483,7 @@ local function oddsEach(kind)
     local parts={}
     for _,r in ipairs(Meta.RARITIES) do
         local n=#Meta.pool(r,kind)
-        if n>0 then table.insert(parts,r.."（"..n.."種）各 "..pct(Meta.RARITY[r].rate/n)) end
+        if n>0 then table.insert(parts,Lang.t("{1}（{2}種）各 {3}",r,n,pct(Meta.RARITY[r].rate/n))) end
     end
     return table.concat(parts,"　")
 end
@@ -642,7 +652,7 @@ local function redrawNow()
                 waitLabel=label(chip,waitText(),10,22,190,24,14)
                 button(chip,"取り消し",w-24-108,1,100,function() matchEvent:FireServer("cancel") end)
             else
-                local nowW=math.min(w-24,40+(utf8.len(mode) or 4)*13)
+                local nowW=math.min(w-24,40+textWidth(mode,15))
                 Ui.pill(root,"Now",mode,w/2-nowW/2-40,raceY-32,nowW+80,28)
             end
             Ui.raceButton(root,12,raceY,w-24,raceH,"レース","モードを選んで出走",function() go(waitingMode and matchNames[waitingMode] or "レースを選ぶ") end)
@@ -694,7 +704,7 @@ local function redrawNow()
             button(chip,"取り消し",196,1,100,function() matchEvent:FireServer("cancel") end)
         end
         local nowText=waitingMode and (matchNames[waitingMode].." 待機中") or mode
-        local nowW=math.min(rw,40+(utf8.len(nowText) or 4)*13)
+        local nowW=math.min(rw,40+textWidth(nowText,15))
         if ry-32<rightBottom+6 then
             -- 右のタイルと重なる時は、レースボタンの左に置く
             Ui.pill(root,"Now",nowText,rx-8-nowW,ry+math.floor(rh/2)-14,nowW,28)
@@ -814,7 +824,8 @@ local function redrawNow()
     local function row(title,body,y,action,caption)
         Ui.fit(label(list,title,8,y,width-16,30,17),12)
         -- 本文の高さは、折り返した時の本当の高さ(文字の大きさ 16・行の間を少し空ける)
-        local measured=body~="" and TextService:GetTextSize(body,16,Enum.Font.GothamBold,Vector2.new(width-16,10000)).Y or 0
+        -- 訳した後の文で測る(英語などは日本語より長い)
+        local measured=body~="" and TextService:GetTextSize(Lang.translate(body),16,Enum.Font.GothamBold,Vector2.new(width-16,10000)).Y or 0
         local bodyHeight=math.max(24,math.ceil(measured*1.08)+6)
         local detail=label(list,body,8,y+31,width-16,bodyHeight,14)
         detail.TextYAlignment=Enum.TextYAlignment.Top
@@ -1145,7 +1156,7 @@ local function redrawNow()
         choices("5. 公開","private",{{false,"だれでも"},{true,"合言葉"}})
         local note=label(list,"時間になって人数が足りなければ、空きを AI（達人）で埋めます",8,y,width-16,44,14)
         note.TextColor3=pale;note.TextWrapped=true;note.TextTruncate=Enum.TextTruncate.None;note.TextYAlignment=Enum.TextYAlignment.Top
-        y+=math.ceil(TextService:GetTextSize(note.Text,16,Enum.Font.GothamBold,Vector2.new(width-16,1000)).Y)+12
+        y+=math.ceil(TextService:GetTextSize(Lang.translate(note.Text),16,Enum.Font.GothamBold,Vector2.new(width-16,1000)).Y)+12
         local nextB=button(list,"内容を確認する",8,y,math.min(width-16,240),function()
             if (utf8.len(gpForm.name) or 0)<1 then toast.Text="大会名を入れてください";return end
             if (utf8.len(gpForm.name) or 99)>20 then toast.Text="大会名は20文字までです";return end
@@ -1220,7 +1231,8 @@ local function redrawNow()
             chip.TextXAlignment=Enum.TextXAlignment.Center;chip.BackgroundTransparency=0;chip.BackgroundColor3=LANE_COLORS2[i][1]
             Ui.place(chip,8,11,32,32);Ui.corner(chip,6);Ui.stroke(chip,white,1,.2)
             local who=mine and (Run:IsStudio() and "テストレーサー" or player.DisplayName) or r.racer.name
-            local nm=Ui.fit(Ui.text(rowB,"Name",who,16,Ui.HEAVY),12);Ui.place(nm,50,6,colW-190,22)
+            -- 名前の幅で級の札を置くので、先に訳した名前にしておく
+            local nm=Ui.fit(Ui.text(rowB,"Name",Lang.translate(who),16,Ui.HEAVY),12);Ui.place(nm,50,6,colW-190,22)
             if not mine then
                 local cls=Ui.text(rowB,"Class",r.racer.cls,12,Ui.HEAVY,Color3.fromRGB(26,18,0))
                 cls.TextXAlignment=Enum.TextXAlignment.Center;cls.BackgroundTransparency=0;cls.BackgroundColor3=Color3.fromRGB(207,220,243)
@@ -1408,7 +1420,7 @@ local function redrawNow()
                 -- 何回引けるか(10連は 900 コイン。10連で引けるだけ引いて、残りは1回ずつ)
                 local tens,ones=total//900,(total%900)//100
                 local pulls=tens>0 and ("10連 "..tens.."回"..(ones>0 and (" + "..ones.."回") or "").."ぶん") or ("ガチャ "..ones.." 回ぶん")
-                label(card,pulls,10,70,cw-20,22,14).TextColor3=pale
+                Ui.fit(label(card,pulls,10,70,cw-20,22,14),10).TextColor3=pale
                 button(card,priceText("product",entry.product,false),8,104,cw-16,function() buy("product",entry.product,false,entry) end,entry.product>0)
             end
             y+=math.ceil(#ShopConfig.coins/columns)*170
@@ -1443,7 +1455,7 @@ local function redrawNow()
                 local now=frame(list,"Equipped"..k,cx,cy,cardW,110)
                 stroke(now,garageKind==slot.kind and gold or (it and rarity[it.r] or white),garageKind==slot.kind and 3 or 1)
                 if it then swatch(now,it,4,4,cardW-8,62,true) end
-                label(now,slot.name,6,68,cardW-12,18,11).TextColor3=pale
+                Ui.fit(label(now,slot.name,6,68,cardW-12,18,11),8).TextColor3=pale
                 local nameLabel=Ui.fit(label(now,it and (it.r.."　"..it.name) or "",6,86,cardW-12,20,12),10)
                 if it then nameLabel.TextColor3=rarity[it.r] end
                 local hit=Instance.new("TextButton");hit.BackgroundTransparency=1;hit.Text="";hit.Size=UDim2.fromScale(1,1);hit.Parent=now
@@ -1550,6 +1562,21 @@ local function redrawNow()
             end
             y+=58
         end
+        -- 言語(自動 + 12の言語。名前はその言語で書く)
+        y=row("言語","最初は Roblox の言語（ふつうは国や端末の言語）に合わせます。「自動」でいつもそれに合わせます。",y)
+        do
+            local choices={{"auto","自動"}}
+            for _,l in ipairs(Lang.LIST) do table.insert(choices,{l.code,l.name}) end
+            local columns=width>=520 and 4 or 3
+            local bw=math.floor((width-16-(columns-1)*8)/columns)
+            local current=m.lang or "auto"
+            for i,c in ipairs(choices) do
+                local bx=8+((i-1)%columns)*(bw+8);local by=y+math.floor((i-1)/columns)*54
+                local b=button(list,c[2],bx,by,bw,function() if current~=c[1] then request("settings","lang="..c[1]) end end,current==c[1])
+                b.Name="Lang_"..c[1]
+            end
+            y+=math.ceil(#choices/columns)*54+4
+        end
         y=row("画質","自動ではタッチ端末の光と水しぶきを軽くします。",y)
         for i,q in {{"auto","自動"},{"low","低"},{"medium","中"},{"high","高"}} do
             local bw=math.floor((width-40)/4)
@@ -1649,7 +1676,11 @@ request=function(action,arg)
         local ok,data,message=pcall(remote.InvokeServer,remote,action,arg,token)
         if ok and data then
             local before=m and outfitOf(m)
-            m=data;pending=nil;toast.Text=type(m.last)=="string" and m.last or "";redraw()
+            m=data;pending=nil;toast.Text=type(m.last)=="string" and m.last or ""
+            -- 設定の言語(初めは auto)。変わった時は Lang.Changed で描き直す
+            local test=Run:IsStudio() and player:GetAttribute("MinatoTestLang")
+            Lang.set(type(test)=="string" and test or m.lang)
+            redraw()
             -- 設定の音量を音の部品に伝える(この端末の中だけ)
             if type(m.volume)=="number" then player:SetAttribute("MinatoVolume",m.volume) end
             if action=="pull" and type(m.last)=="table" then
@@ -1697,9 +1728,16 @@ request=function(action,arg)
     end)
 end
 gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(function() if m then redraw() end end)
+-- 言語が変わったら、文の長さが変わるので並びを作り直す
+Lang.Changed:Connect(function() if m then redraw() end end)
 -- 検証用(Studio だけ): 画面の大きさとページを外から決める(並びを自動で確かめる時に使う)
 if Run:IsStudio() then
     player:GetAttributeChangedSignal("MinatoTestScreen"):Connect(function() if m then redraw() end end)
+    -- 言語を外から決める(各言語の並びを確かめる時に使う)
+    player:GetAttributeChangedSignal("MinatoTestLang"):Connect(function()
+        local code=player:GetAttribute("MinatoTestLang")
+        Lang.set(type(code)=="string" and code or (m and m.lang))
+    end)
     player:GetAttributeChangedSignal("MinatoTestPage"):Connect(function()
         local p=player:GetAttribute("MinatoTestPage")
         if type(p)=="string" and p~="" and m then go(p) end

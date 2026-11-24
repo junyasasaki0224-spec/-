@@ -1,0 +1,106 @@
+ja|en|es|pt|id|fr|de|ko|zhcn|zhtw|th|vi
+# レースの画面(Controls・RaceHud・RaceResult・Spectator・Opening)
+着|Pos|º|º|Pos|e|.|위|名|名|อันดับ|hạng
+前|▲|▲|▲|▲|▲|▲|▲|前|前|▲|▲
+後|▼|▼|▼|▼|▼|▼|▼|后|後|▼|▼
+スタートまで {1}|Start in {1}|Salida en {1}|Largada em {1}|Start dalam {1}|Départ dans {1}|Start in {1}|스타트까지 {1}|距起跑 {1}|距起跑 {1}|อีก {1} ออกตัว|Xuất phát sau {1}
+スタートラインまで {1} m|{1} m to the start line|{1} m a la línea de salida|{1} m até a largada|{1} m ke garis start|{1} m de la ligne de départ|{1} m bis zur Startlinie|스타트 라인까지 {1} m|距起跑线 {1} 米|距起跑線 {1} 公尺|อีก {1} ม. ถึงเส้นออกตัว|Còn {1} m tới vạch xuất phát
+全開だと {1}秒 早い(フライング)|At full throttle: {1} s early (flying)|A fondo: {1} s antes (salida falsa)|A todo gás: {1} s cedo (queima)|Gas penuh: {1} dtk terlalu cepat (curi start)|Plein gaz : {1} s trop tôt (faux départ)|Vollgas: {1} s zu früh (Frühstart)|전개면 {1}초 빠름(플라잉)|全油门会早 {1} 秒（抢跑）|全油門會早 {1} 秒（搶跑）|เร่งสุดจะเร็วไป {1} วิ (ฟลายอิ้ง)|Hết ga: sớm {1} giây (xuất phát sai)
+今だ！ 全開で ST {1}|Now! Full throttle: ST {1}|¡Ahora! A fondo: ST {1}|Agora! A todo gás: ST {1}|Sekarang! Gas penuh: ST {1}|Maintenant ! Plein gaz : ST {1}|Jetzt! Vollgas: ST {1}|지금이다! 전개로 ST {1}|就是现在！全油门 ST {1}|就是現在！全油門 ST {1}|ตอนนี้! เร่งสุด ST {1}|Ngay bây giờ! Hết ga: ST {1}
+全開で ST {1}|Full throttle: ST {1}|A fondo: ST {1}|A todo gás: ST {1}|Gas penuh: ST {1}|Plein gaz : ST {1}|Vollgas: ST {1}|전개로 ST {1}|全油门 ST {1}|全油門 ST {1}|เร่งสุด ST {1}|Hết ga: ST {1}
+艇|Boat|Bote|Barco|Perahu|Bateau|Boot|정|艇|艇|เรือ|Thuyền
+レース結果|Race results|Resultados|Resultados|Hasil balapan|Résultats|Ergebnis|레이스 결과|比赛结果|比賽結果|ผลการแข่ง|Kết quả đua
+{1}着|P{1}|{1}º|{1}º|Ke-{1}|{1}e|Platz {1}|{1}위|第{1}名|第{1}名|อันดับ {1}|Hạng {1}
+おめでとう！|Congratulations!|¡Felicidades!|Parabéns!|Selamat!|Félicitations !|Glückwunsch!|축하합니다!|恭喜！|恭喜！|ยินดีด้วย!|Chúc mừng!
+1着 {1}号艇 {2}|Winner: Boat {1} {2}|Ganador: bote {1} {2}|Vencedor: barco {1} {2}|Juara: perahu {1} {2}|Vainqueur : bateau {1} {2}|Sieger: Boot {1} {2}|1위 {1}호정 {2}|第1名 {1}号艇 {2}|第1名 {1}號艇 {2}|ที่ 1 เรือหมายเลข {1} {2}|Hạng 1: thuyền {1} {2}
+フライング|Flying start|Salida en falso|Queima de largada|Curi start|Faux départ|Frühstart|플라잉|抢跑|搶跑|ฟลายอิ้ง|Xuất phát sai
+スタートが早すぎました。0秒〜1秒の間にスタートラインを越えよう|You started too early. Cross the start line between 0 and 1 seconds|Saliste demasiado pronto. Cruza la línea entre 0 y 1 segundos|Largou cedo demais. Cruze a linha entre 0 e 1 segundo|Start terlalu cepat. Lewati garis start antara 0 dan 1 detik|Départ trop tôt. Franchis la ligne entre 0 et 1 seconde|Zu früh gestartet. Überquere die Linie zwischen 0 und 1 Sekunde|스타트가 너무 빨랐습니다. 0초~1초 사이에 스타트 라인을 넘자|起跑太早了。请在 0～1 秒之间越过起跑线|起跑太早了。請在 0～1 秒之間越過起跑線|ออกตัวเร็วเกินไป ผ่านเส้นระหว่าง 0 ถึง 1 วินาที|Xuất phát quá sớm. Hãy qua vạch trong khoảng 0–1 giây
+沈没|Sunk|Hundido|Afundou|Tenggelam|Coulé|Gekentert|침몰|沉没|沉沒|เรือจม|Chìm
+ターンマークや消波装置に強く当たりました|You hit a turn mark or wave barrier hard|Chocaste fuerte con una boya o rompeolas|Você bateu forte numa boia ou quebra-ondas|Kamu menabrak penanda atau pemecah ombak dengan keras|Tu as heurté fort une bouée ou un brise-lames|Du hast eine Boje oder Wellenbarriere hart getroffen|턴 마크나 소파 장치에 세게 부딪혔습니다|猛撞了转弯标志或消波装置|猛撞了轉彎標誌或消波裝置|ชนทุ่นเลี้ยวหรือเครื่องกันคลื่นแรง ๆ|Đâm mạnh vào phao cua hoặc đê chắn sóng
+追尾|Chase|Persecución|Perseguição|Ikuti|Poursuite|Verfolger|추미|追尾|追尾|ตาม|Theo sau
+接近|Close|Cerca|Perto|Dekat|Proche|Nah|근접|近距离|近距離|ใกล้|Gần
+オンボード|Onboard|A bordo|A bordo|Onboard|Embarquée|Onboard|온보드|车载|車載|ในเรือ|Trên thuyền
+上空|Overhead|Aérea|Aérea|Udara|Aérienne|Von oben|상공|空中|空中|มุมสูง|Trên cao
+自由|Free|Libre|Livre|Bebas|Libre|Frei|자유|自由|自由|อิสระ|Tự do
+中継|Broadcast|Transmisión|Transmissão|Siaran|Diffusion|TV|중계|转播|轉播|ถ่ายทอด|Truyền hình
+視点　{1}|View　{1}|Cámara　{1}|Câmera　{1}|Kamera　{1}|Vue　{1}|Ansicht　{1}|시점　{1}|视角　{1}|視角　{1}|มุมกล้อง　{1}|Góc　{1}
+視点 {1}|View {1}|Cámara {1}|Câmera {1}|Kamera {1}|Vue {1}|Ansicht {1}|시점 {1}|视角 {1}|視角 {1}|มุมกล้อง {1}|Góc {1}
+退出|Exit|Salir|Sair|Keluar|Quitter|Verlassen|퇴장|退出|退出|ออก|Thoát
+ロビーへ|To Lobby|Al lobby|Para o lobby|Ke Lobi|Au lobby|Zur Lobby|로비로|返回大厅|返回大廳|ไปล็อบบี้|Về sảnh
+観戦中|Watching|Viendo|Assistindo|Menonton|Spectateur|Zuschauer|관전 중|观战中|觀戰中|กำลังชม|Đang xem
+出 走 表|L I N E U P|SALIDA|LARGADA|DAFTAR START|GRILLE|STARTLISTE|출 주 표|出 赛 表|出 賽 表|รายชื่อลงแข่ง|DANH SÁCH
+待機中…|Waiting…|Esperando…|Aguardando…|Menunggu…|En attente…|Warte…|대기 중…|等待中…|等待中…|กำลังรอ…|Đang chờ…
+ピット離れ|Leaving the pit|Saliendo de boxes|Saindo do box|Keluar pit|Sortie des stands|Boxenausfahrt|피트 아웃|离开船坞|離開船塢|ออกจากพิท|Rời bến
+待機行動|Waiting run|Maniobra de espera|Manobra de espera|Manuver tunggu|Manœuvre d'attente|Warterunde|대기 행동|待机航行|待機航行|วนรอ|Chạy chờ
+スキップ {1}/{2}|Skip {1}/{2}|Saltar {1}/{2}|Pular {1}/{2}|Lewati {1}/{2}|Passer {1}/{2}|Überspringen {1}/{2}|건너뛰기 {1}/{2}|跳过 {1}/{2}|跳過 {1}/{2}|ข้าม {1}/{2}|Bỏ qua {1}/{2}
+{1}　第{2}R|{1}　Race {2}|{1}　Carrera {2}|{1}　Corrida {2}|{1}　Balapan {2}|{1}　Course {2}|{1}　Rennen {2}|{1}　제{2}R|{1}　第{2}场|{1}　第{2}場|{1}　รอบที่ {2}|{1}　Lượt {2}
+レース開始|Start race|Iniciar carrera|Iniciar corrida|Mulai balapan|Lancer la course|Rennen starten|레이스 시작|开始比赛|開始比賽|เริ่มแข่ง|Bắt đầu đua
+友達を招待|Invite friends|Invitar amigos|Convidar amigos|Undang teman|Inviter des amis|Freunde einladen|친구 초대|邀请好友|邀請好友|ชวนเพื่อน|Mời bạn
+合言葉 {1}　待機中|Code {1}　Waiting|Código {1}　Esperando|Código {1}　Aguardando|Kode {1}　Menunggu|Code {1}　En attente|Code {1}　Wartet|암호 {1}　대기 중|暗号 {1}　等待中|暗號 {1}　等待中|รหัส {1}　กำลังรอ|Mã {1}　Đang chờ
+招待できません。合言葉を伝えてください|Can't invite. Share the code instead|No se puede invitar. Comparte el código|Não é possível convidar. Compartilhe o código|Tidak bisa mengundang. Bagikan kodenya|Invitation impossible. Partage le code|Einladen nicht möglich. Teile den Code|초대할 수 없습니다. 암호를 알려 주세요|无法邀请。请告知暗号|無法邀請。請告知暗號|เชิญไม่ได้ บอกรหัสแทน|Không thể mời. Hãy chia sẻ mã
+終了：ロビーに戻る|Finished: back to lobby|Terminado: volver al lobby|Fim: voltar ao lobby|Selesai: kembali ke lobi|Terminé : retour au lobby|Beendet: zurück zur Lobby|종료: 로비로 돌아가기|结束：返回大厅|結束：返回大廳|จบแล้ว: กลับล็อบบี้|Kết thúc: về sảnh
+参加者が来ませんでした：ロビーに戻る|No players arrived: back to lobby|No llegaron jugadores: volver al lobby|Ninguém chegou: voltar ao lobby|Tidak ada pemain: kembali ke lobi|Personne n'est venu : retour au lobby|Niemand kam: zurück zur Lobby|참가자가 오지 않았습니다: 로비로|无人参加：返回大厅|無人參加：返回大廳|ไม่มีผู้เล่นมา: กลับล็อบบี้|Không ai đến: về sảnh
+大会：次の走りの準備中|Tournament: preparing the next race|Torneo: preparando la siguiente|Torneio: preparando a próxima|Turnamen: menyiapkan balapan berikutnya|Tournoi : préparation de la course suivante|Turnier: nächstes Rennen wird vorbereitet|대회: 다음 주행 준비 중|锦标赛：准备下一场|錦標賽：準備下一場|ทัวร์นาเมนต์: เตรียมรอบถัดไป|Giải đấu: chuẩn bị lượt tiếp
+{1}：参加者の到着を待っています|{1}: waiting for players to arrive|{1}: esperando a que lleguen jugadores|{1}: aguardando jogadores chegarem|{1}: menunggu pemain datang|{1} : en attente des joueurs|{1}: Warte auf Spieler|{1}: 참가자 도착을 기다리는 중|{1}：等待参赛者到达|{1}：等待參賽者到達|{1}: รอผู้เล่นมาถึง|{1}: đang chờ người chơi đến
+もう一度走る|Race again|Correr otra vez|Correr de novo|Balapan lagi|Recommencer|Nochmal fahren|다시 달리기|再跑一次|再跑一次|แข่งอีกครั้ง|Đua lại
+もう一度|Again|Otra vez|De novo|Lagi|Encore|Nochmal|다시|再来|再來|อีกครั้ง|Lần nữa
+もう一度レース|Race again|Otra carrera|Correr de novo|Balapan lagi|Nouvelle course|Nochmal fahren|다시 레이스|再比一场|再比一場|แข่งอีกรอบ|Đua lần nữa
+優勝戦を観戦する|Watch the final|Ver la final|Assistir à final|Tonton final|Regarder la finale|Finale ansehen|결승 관전|观看决赛|觀看決賽|ชมรอบชิง|Xem chung kết
+出走表|Lineup|Lista de salida|Grid|Daftar start|Grille|Startliste|출주표|出赛表|出賽表|รายชื่อลงแข่ง|Danh sách
+{1}　出走表|{1}　Lineup|{1}　Lista de salida|{1}　Grid|{1}　Daftar start|{1}　Grille|{1}　Startliste|{1}　출주표|{1}　出赛表|{1}　出賽表|{1}　รายชื่อลงแข่ง|{1}　Danh sách
+未完走|DNF|No terminó|Não terminou|Tidak finis|Abandon|DNF|미완주|未完赛|未完賽|ไม่จบ|Không về đích
+沈|Sunk|Hund.|Afund.|Tggl|Coulé|Gek.|침|沉|沉|จม|Chìm
+退|Out|Ret.|Saiu|Kel.|Sorti|Raus|퇴|退|退|ออก|Rời
+≡ メニュー|≡ Menu|≡ Menú|≡ Menu|≡ Menu|≡ Menu|≡ Menü|≡ 메뉴|≡ 菜单|≡ 選單|≡ เมนู|≡ Menu
+一時停止中|Paused|En pausa|Pausado|Dijeda|En pause|Pausiert|일시정지 중|已暂停|已暫停|หยุดชั่วคราว|Đã tạm dừng
+再開する|Resume|Reanudar|Continuar|Lanjutkan|Reprendre|Fortsetzen|재개|继续|繼續|เล่นต่อ|Tiếp tục
+やり直す（最初から）|Restart (from the beginning)|Reiniciar (desde el principio)|Reiniciar (do começo)|Ulangi (dari awal)|Recommencer (depuis le début)|Neu starten (von vorn)|다시 하기 (처음부터)|重来（从头开始）|重來（從頭開始）|เริ่มใหม่ (ตั้งแต่ต้น)|Làm lại (từ đầu)
+タイトルへ戻る|Back to title|Volver al título|Voltar ao título|Kembali ke judul|Retour au titre|Zurück zum Titel|타이틀로 돌아가기|返回标题|返回標題|กลับหน้าแรก|Về màn hình chính
+▼ レバーを落とす|▼ Ease off|▼ Suelta|▼ Alivie|▼ Kurangi gas|▼ Lâche|▼ Gas weg|▼ 레버를 내려라|▼ 收油|▼ 收油|▼ ผ่อนคันเร่ง|▼ Nhả ga
+W / S でスロットル　A / D でハンドル|W / S throttle　A / D steer|W / S acelerador　A / D dirección|W / S acelerador　A / D direção|W / S gas　A / D kemudi|W / S gaz　A / D direction|W / S Gas　A / D Lenken|W / S 스로틀　A / D 핸들|W / S 油门　A / D 转向|W / S 油門　A / D 轉向|W / S คันเร่ง　A / D เลี้ยว|W / S ga　A / D lái
+左のレバーでハンドル　右でスロットル|Left lever steers　Right is throttle|Palanca izquierda: dirección　Derecha: acelerador|Alavanca esquerda: direção　Direita: acelerador|Tuas kiri kemudi　Kanan gas|Levier gauche : direction　Droit : gaz|Linker Hebel lenkt　Rechts Gas|왼쪽 레버로 핸들　오른쪽은 스로틀|左摇杆转向　右边油门|左搖桿轉向　右邊油門|คันโยกซ้ายเลี้ยว　ขวาคันเร่ง|Cần trái để lái　Phải là ga
+ハンドル|Steer|Dirección|Direção|Kemudi|Direction|Lenken|핸들|转向|轉向|เลี้ยว|Lái
+スロットル|Throttle|Acelerador|Acelerador|Gas|Gaz|Gas|스로틀|油门|油門|คันเร่ง|Ga
+無風　波 {1}cm|No wind　Waves {1} cm|Sin viento　Olas {1} cm|Sem vento　Ondas {1} cm|Tanpa angin　Ombak {1} cm|Sans vent　Vagues {1} cm|Windstill　Wellen {1} cm|무풍　파도 {1}cm|无风　浪 {1} 厘米|無風　浪 {1} 公分|ไร้ลม　คลื่น {1} ซม.|Lặng gió　Sóng {1} cm
+{1} {2}m　波 {3}cm|{1} {2} m　Waves {3} cm|{1} {2} m　Olas {3} cm|{1} {2} m　Ondas {3} cm|{1} {2} m　Ombak {3} cm|{1} {2} m　Vagues {3} cm|{1} {2} m　Wellen {3} cm|{1} {2}m　파도 {3}cm|{1} {2} 米　浪 {3} 厘米|{1} {2} 公尺　浪 {3} 公分|{1} {2} ม.　คลื่น {3} ซม.|{1} {2} m　Sóng {3} cm
+チルト {1}|Tilt {1}|Inclinación {1}|Inclinação {1}|Tilt {1}|Inclinaison {1}|Trimm {1}|틸트 {1}|倾角 {1}|傾角 {1}|ทิลต์ {1}|Nghiêng {1}
+チルト {1}　固定|Tilt {1}　Locked|Inclinación {1}　Fija|Inclinação {1}　Fixa|Tilt {1}　Terkunci|Inclinaison {1}　Verrouillée|Trimm {1}　Fest|틸트 {1}　고정|倾角 {1}　固定|傾角 {1}　固定|ทิลต์ {1}　ล็อก|Nghiêng {1}　Khóa
+次のレースがまもなく始まります|The next race starts soon|La próxima carrera empieza pronto|A próxima corrida começa em breve|Balapan berikutnya segera dimulai|La prochaine course commence bientôt|Das nächste Rennen beginnt gleich|다음 레이스가 곧 시작됩니다|下一场比赛即将开始|下一場比賽即將開始|การแข่งถัดไปจะเริ่มเร็ว ๆ นี้|Cuộc đua tiếp theo sắp bắt đầu
+ST順|By ST|Por ST|Por ST|Urut ST|Par ST|Nach ST|ST순|按 ST|按 ST|เรียงตาม ST|Theo ST
+スタート時刻より {1}秒 早くラインを通過 — 本番なら失格|Crossed the line {1} s before the start time — disqualified in a real race|Cruzaste {1} s antes de la hora — descalificado en carrera real|Cruzou {1} s antes do horário — desclassificado numa corrida real|Melewati garis {1} dtk lebih awal — diskualifikasi di balapan sungguhan|Ligne franchie {1} s trop tôt — disqualifié en vraie course|{1} s vor der Startzeit über der Linie — im Rennen disqualifiziert|스타트 시각보다 {1}초 일찍 통과 — 실전이면 실격|比起跑时刻早 {1} 秒过线 — 正式比赛会失格|比起跑時刻早 {1} 秒過線 — 正式比賽會失格|ผ่านเส้นก่อนเวลา {1} วิ — แข่งจริงถูกตัดสิทธิ์|Qua vạch sớm {1} giây — đua thật sẽ bị loại
+本番なら失格|Disqualified in a real race|Descalificado en carrera real|Desclassificado numa corrida real|Diskualifikasi di balapan sungguhan|Disqualifié en vraie course|Im Rennen disqualifiziert|실전이면 실격|正式比赛会失格|正式比賽會失格|แข่งจริงถูกตัดสิทธิ์|Đua thật sẽ bị loại
+出遅れ|Late start|Salida tardía|Largada atrasada|Start terlambat|Départ tardif|Später Start|출발 지연|起跑迟了|起跑遲了|ออกตัวช้า|Xuất phát muộn
+助走をつけて、針が0を指す瞬間にスタートラインを越えよう|Build up speed and cross the start line just as the hand hits 0|Toma impulso y cruza la línea justo cuando la aguja marque 0|Pegue embalo e cruze a linha quando o ponteiro marcar 0|Ambil ancang-ancang dan lewati garis tepat saat jarum menunjuk 0|Prends de l'élan et franchis la ligne quand l'aiguille atteint 0|Nimm Anlauf und überquere die Linie, wenn der Zeiger auf 0 steht|도움닫기를 하고 바늘이 0을 가리키는 순간 스타트 라인을 넘자|助跑后，在指针指向 0 的瞬间越过起跑线|助跑後，在指針指向 0 的瞬間越過起跑線|เร่งเครื่องแล้วผ่านเส้นตอนเข็มชี้ 0 พอดี|Lấy đà và qua vạch đúng lúc kim chỉ 0
+トップスタート級！|Top-class start!|¡Salida de élite!|Largada de elite!|Start kelas atas!|Départ de haut niveau !|Spitzenstart!|톱 스타트급!|顶级起跑！|頂級起跑！|ออกตัวระดับท็อป!|Xuất phát đỉnh cao!
+ナイススタート|Nice start|Buena salida|Boa largada|Start bagus|Beau départ|Guter Start|나이스 스타트|漂亮起跑|漂亮起跑|ออกตัวดี|Xuất phát tốt
+まずまず|Not bad|Nada mal|Nada mal|Lumayan|Pas mal|Nicht schlecht|그럭저럭|还不错|還不錯|พอใช้|Tạm được
+遅れ気味|A bit late|Algo tarde|Um pouco atrasado|Agak terlambat|Un peu tard|Etwas spät|약간 늦음|稍晚|稍晚|ช้าไปหน่อย|Hơi muộn
+{1}　{2}番目のスタート|{1}　Start #{2}|{1}　Salida #{2}|{1}　Largada #{2}|{1}　Start ke-{2}|{1}　Départ n°{2}|{1}　Start Nr. {2}|{1}　{2}번째 스타트|{1}　第 {2} 个起跑|{1}　第 {2} 個起跑|{1}　ออกตัวลำดับที่ {2}|{1}　Xuất phát thứ {2}
+ロビーへ戻る|Back to lobby|Volver al lobby|Voltar ao lobby|Kembali ke lobi|Retour au lobby|Zurück zur Lobby|로비로 돌아가기|返回大厅|返回大廳|กลับล็อบบี้|Về sảnh
+ターンマーク|turn mark|boya de giro|boia de curva|penanda belokan|bouée de virage|Wendeboje|턴 마크|转弯标志|轉彎標誌|ทุ่นเลี้ยว|phao cua
+ターンマーク横の消波装置|wave barrier by the turn mark|rompeolas junto a la boya|quebra-ondas junto à boia|pemecah ombak di samping penanda|brise-lames près de la bouée|Wellenbarriere an der Boje|턴 마크 옆 소파 장치|转弯标志旁的消波装置|轉彎標誌旁的消波裝置|เครื่องกันคลื่นข้างทุ่น|đê chắn sóng cạnh phao
+センターポール|center pole|poste central|poste central|tiang tengah|poteau central|Mittelpfahl|센터 폴|中央立柱|中央立柱|เสากลาง|cột giữa
+外周の消波装置|outer wave barrier|rompeolas exterior|quebra-ondas externo|pemecah ombak luar|brise-lames extérieur|äußere Wellenbarriere|외곽 소파 장치|外围消波装置|外圍消波裝置|เครื่องกันคลื่นรอบนอก|đê chắn sóng ngoài
+障害物|obstacle|obstáculo|obstáculo|rintangan|obstacle|Hindernis|장애물|障碍物|障礙物|สิ่งกีดขวาง|chướng ngại
+{1}に強く当たりました|You hit the {1} hard|Chocaste fuerte con: {1}|Você bateu forte: {1}|Kamu menabrak {1} dengan keras|Tu as heurté fort : {1}|Hart getroffen: {1}|{1}에 세게 부딪혔습니다|猛撞了{1}|猛撞了{1}|ชน{1}แรง ๆ|Đâm mạnh vào {1}
+レース終了|Race over|Carrera terminada|Corrida encerrada|Balapan selesai|Course terminée|Rennen vorbei|레이스 종료|比赛结束|比賽結束|จบการแข่ง|Kết thúc đua
+待合　次のレースから参加|Waiting room　Join from the next race|Sala de espera　Entras en la próxima|Sala de espera　Entra na próxima|Ruang tunggu　Ikut balapan berikutnya|Salle d'attente　Tu participes à la suivante|Warteraum　Ab dem nächsten Rennen dabei|대기실　다음 레이스부터 참가|等候区　下一场开始参加|等候區　下一場開始參加|ห้องรอ　เข้าร่วมรอบถัดไป|Phòng chờ　Tham gia từ cuộc sau
+{1}号艇を観戦中|Watching boat {1}|Viendo el bote {1}|Assistindo ao barco {1}|Menonton perahu {1}|Tu regardes le bateau {1}|Schaue Boot {1}|{1}호정 관전 중|正在观战 {1} 号艇|正在觀戰 {1} 號艇|กำลังชมเรือหมายเลข {1}|Đang xem thuyền {1}
+参加受付中　あと {1} 秒|Entry open　{1} s left|Inscripción abierta　quedan {1} s|Inscrição aberta　faltam {1} s|Pendaftaran dibuka　sisa {1} dtk|Inscriptions ouvertes　encore {1} s|Anmeldung offen　noch {1} s|참가 접수 중　{1}초 남음|报名中　还剩 {1} 秒|報名中　還剩 {1} 秒|เปิดรับสมัคร　เหลือ {1} วิ|Đang nhận đăng ký　còn {1} giây
+観戦中・次のレースから参加|Watching · joining from the next race|Viendo · entras en la próxima|Assistindo · entra na próxima|Menonton · ikut balapan berikutnya|Spectateur · tu participes à la suivante|Zuschauer · ab dem nächsten Rennen dabei|관전 중 · 다음 레이스부터 참가|观战中・下一场参加|觀戰中・下一場參加|กำลังชม · เข้าร่วมรอบถัดไป|Đang xem · tham gia cuộc sau
+フライング失格|Flying start DQ|Descalificado por salida en falso|Desclassificado por queima|Diskualifikasi curi start|Disqualifié (faux départ)|DQ wegen Frühstart|플라잉 실격|抢跑失格|搶跑失格|ตัดสิทธิ์ฟลายอิ้ง|Loại vì xuất phát sai
+沈没失格|Sunk DQ|Descalificado por hundimiento|Desclassificado por afundar|Diskualifikasi tenggelam|Disqualifié (coulé)|DQ wegen Kentern|침몰 실격|沉没失格|沉沒失格|ตัดสิทธิ์เรือจม|Loại vì chìm
+途中退出|Left mid-race|Abandonó|Saiu no meio|Keluar di tengah|Parti en course|Vorzeitig verlassen|도중 퇴장|中途退出|中途退出|ออกกลางคัน|Rời giữa chừng
+ゴール|Finish|Meta|Chegada|Finis|Arrivée|Ziel|골인|到达终点|到達終點|เข้าเส้นชัย|Về đích
+スタート前|Before start|Antes de la salida|Antes da largada|Sebelum start|Avant le départ|Vor dem Start|스타트 전|起跑前|起跑前|ก่อนออกตัว|Trước xuất phát
+{1} / 3 周|Lap {1} / 3|Vuelta {1} / 3|Volta {1} / 3|Putaran {1} / 3|Tour {1} / 3|Runde {1} / 3|{1} / 3 바퀴|第 {1} / 3 圈|第 {1} / 3 圈|รอบ {1} / 3|Vòng {1} / 3
+好スタート！|Great start!|¡Gran salida!|Ótima largada!|Start hebat!|Super départ !|Starker Start!|좋은 스타트!|好起跑！|好起跑！|ออกตัวสวย!|Xuất phát đẹp!
+最終周|Final lap|Última vuelta|Última volta|Putaran terakhir|Dernier tour|Letzte Runde|마지막 바퀴|最后一圈|最後一圈|รอบสุดท้าย|Vòng cuối
+{1}周目|Lap {1}|Vuelta {1}|Volta {1}|Putaran {1}|Tour {1}|Runde {1}|{1}바퀴째|第 {1} 圈|第 {1} 圈|รอบที่ {1}|Vòng {1}
+失格|Disqualified|Descalificado|Desclassificado|Diskualifikasi|Disqualifié|Disqualifiziert|실격|失格|失格|ตัดสิทธิ์|Bị loại
++{1}秒|+{1}s|+{1}s|+{1}s|+{1}d|+{1}s|+{1}s|+{1}초|+{1}秒|+{1}秒|+{1}วิ|+{1}s
+-{1}秒|-{1}s|-{1}s|-{1}s|-{1}d|-{1}s|-{1}s|-{1}초|-{1}秒|-{1}秒|-{1}วิ|-{1}s
+追い風 {1}m　波 {2}cm|Tailwind {1} m　Waves {2} cm|Viento a favor {1} m　Olas {2} cm|Vento a favor {1} m　Ondas {2} cm|Angin belakang {1} m　Ombak {2} cm|Vent arrière {1} m　Vagues {2} cm|Rückenwind {1} m　Wellen {2} cm|순풍 {1}m　파도 {2}cm|顺风 {1} 米　浪 {2} 厘米|順風 {1} 公尺　浪 {2} 公分|ลมส่ง {1} ม.　คลื่น {2} ซม.|Gió xuôi {1} m　Sóng {2} cm
+向かい風 {1}m　波 {2}cm|Headwind {1} m　Waves {2} cm|Viento en contra {1} m　Olas {2} cm|Vento contra {1} m　Ondas {2} cm|Angin depan {1} m　Ombak {2} cm|Vent de face {1} m　Vagues {2} cm|Gegenwind {1} m　Wellen {2} cm|맞바람 {1}m　파도 {2}cm|逆风 {1} 米　浪 {2} 厘米|逆風 {1} 公尺　浪 {2} 公分|ลมต้าน {1} ม.　คลื่น {2} ซม.|Gió ngược {1} m　Sóng {2} cm
+横風(スタンドへ) {1}m　波 {2}cm|Crosswind (to stands) {1} m　Waves {2} cm|Viento cruzado (a gradas) {1} m　Olas {2} cm|Vento lateral (p/ arquibancada) {1} m　Ondas {2} cm|Angin samping (ke tribun) {1} m　Ombak {2} cm|Vent de travers (tribunes) {1} m　Vagues {2} cm|Seitenwind (Tribüne) {1} m　Wellen {2} cm|옆바람(관중석 쪽) {1}m　파도 {2}cm|侧风（看台）{1} 米　浪 {2} 厘米|側風（看台）{1} 公尺　浪 {2} 公分|ลมข้าง (อัฒจันทร์) {1} ม.　คลื่น {2} ซม.|Gió ngang (khán đài) {1} m　Sóng {2} cm
+横風(対岸へ) {1}m　波 {2}cm|Crosswind (to far bank) {1} m　Waves {2} cm|Viento cruzado (otra orilla) {1} m　Olas {2} cm|Vento lateral (outra margem) {1} m　Ondas {2} cm|Angin samping (ke seberang) {1} m　Ombak {2} cm|Vent de travers (autre rive) {1} m　Vagues {2} cm|Seitenwind (Gegenufer) {1} m　Wellen {2} cm|옆바람(건너편 쪽) {1}m　파도 {2}cm|侧风（对岸）{1} 米　浪 {2} 厘米|側風（對岸）{1} 公尺　浪 {2} 公分|ลมข้าง (ฝั่งตรงข้าม) {1} ม.　คลื่น {2} ซม.|Gió ngang (bờ kia) {1} m　Sóng {2} cm

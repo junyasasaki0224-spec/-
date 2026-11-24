@@ -23,6 +23,17 @@ local STUDS_PER_METRE = 3.5
 local Wake = require(ReplicatedStorage:WaitForChild("BoatWake"))
 local quality=require(ReplicatedStorage:WaitForChild("DisplayQuality"))
 local Opening=require(ReplicatedStorage:WaitForChild("Opening"))
+-- 画面の言語(ホームの設定と同じ。会場のサーバーが持ち物の lang を属性 MinatoLang で配る。届くまではその人の Roblox の言語)
+local Lang=require(ReplicatedStorage:WaitForChild("Lang"))
+Lang.watch(player:WaitForChild("PlayerGui"))
+-- 検証用(Studio だけ): 属性 MinatoTestLang で言語を決めて、各言語の並びを確かめる
+local function applyLang()
+    local test = RunService:IsStudio() and player:GetAttribute("MinatoTestLang")
+    Lang.set(type(test) == "string" and test or player:GetAttribute("MinatoLang"))
+end
+applyLang()
+player:GetAttributeChangedSignal("MinatoLang"):Connect(applyLang)
+player:GetAttributeChangedSignal("MinatoTestLang"):Connect(applyLang)
 local function applyQuality() quality.apply(player:GetAttribute("MinatoQuality")) end
 player:GetAttributeChangedSignal("MinatoQuality"):Connect(applyQuality)
 applyQuality()
@@ -906,7 +917,7 @@ RunService.RenderStepped:Connect(function(dt)
             openingShow.skip()
         else
             local votes, total = world:GetAttribute("OpeningVotes") or 0, world:GetAttribute("OpeningPlayers") or 1
-            if total > 1 and votes > 0 then openingShow.setSkipText(string.format("スキップ %d/%d", votes, total)) end
+            if total > 1 and votes > 0 then openingShow.setSkipText(Lang.translate(string.format("スキップ %d/%d", votes, total))) end
         end
         -- オープニングの間は、レース用の艇のしぶきと白い波を止める(しぶきはオープニングの部品が速さに合わせて出す)
         for i = 1, 6 do Wake.stop(wakes[i]) end
@@ -1218,7 +1229,7 @@ RunService.RenderStepped:Connect(function(dt)
         end
     end
     -- アクセルを踏んだら「固定」と出して、押せない見た目にする
-    tiltButton.Text = "チルト "..tiltNames[boat:GetAttribute("Tilt") or 2]..(tiltLocked and "　固定" or "")
+    tiltButton.Text = Lang.translate("チルト "..tiltNames[boat:GetAttribute("Tilt") or 2]..(tiltLocked and "　固定" or ""))
     tiltButton.AutoButtonColor = not tiltLocked
     tiltButton.BackgroundTransparency = tiltLocked and 0.45 or 0
     tiltButton.TextTransparency = tiltLocked and 0.35 or 0
