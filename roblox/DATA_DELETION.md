@@ -10,12 +10,13 @@ Roblox から削除依頼を受けた場合の運用手順です。公開担当�
 | 保存先 | 種類 | 内容 |
 | --- | --- | --- |
 | `MinatoStats_v1` | Standard | 成績、レート、保存済みレースの情報、コイン・持ち物・装備・設定・メール・ミッション、Robux の購入の記録(購入番号)と VIP の印 |
-| `MinatoRating_v1` | Ordered | レート順位 |
+| `MinatoRating_v1` | Ordered | 以前のレート順位(2026-11-24 から書き込まない。残っている記録だけ消す) |
+| `MinatoRate<シーズン>_v1`(例 `MinatoRate2026-12_v1`) | Ordered | シーズン(日本時間の1か月)ごとの RATE の順位。毎月1つ増えるので、走った月の分すべてに設定する |
 | `MinatoWins_v1` | Ordered | １着数順位 |
 | `MinatoBestTimeMs_v1` | Ordered | ベストタイム順位 |
 | `MinatoTA0_v1`〜`MinatoTA5_v1` | Ordered | タイムアタックのコース別タイム（6つ。T17 ②） |
 
-3. Studio の API アクセスを有効にして試験したことがあり、試験用の記録も残っている場合は、上の保存先に加えて `MinatoTA0_studio_v1`〜`MinatoTA5_studio_v1` と、 `MinatoStats_studio_v1`、`MinatoRating_studio_v1`、`MinatoWins_studio_v1`、`MinatoBestTimeMs_studio_v1` にも同じ種類・キー・スコープで設定します。実際に使った保存先の名前を `PlayerStats.lua` と Dashboard で照合してください。
+3. Studio の API アクセスを有効にして試験したことがあり、試験用の記録も残っている場合は、上の保存先に加えて `MinatoTA0_studio_v1`〜`MinatoTA5_studio_v1` と、 `MinatoStats_studio_v1`、`MinatoRating_studio_v1`、`MinatoRate<シーズン>_studio_v1`、`MinatoWins_studio_v1`、`MinatoBestTimeMs_studio_v1` にも同じ種類・キー・スコープで設定します。実際に使った保存先の名前を `PlayerStats.lua` と Dashboard で照合してください。
 4. 作成した全テンプレートを保存・公開し、Dashboard で反映を確認します。以後 Roblox の削除依頼は公式の仕組みで処理されます。対象、処理状況、失敗時の対応は公開担当者が公式画面と通知で確認してください。
 
 ## 依頼を受けたとき
