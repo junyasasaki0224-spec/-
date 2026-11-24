@@ -48,6 +48,12 @@ assert(type(M.action(poor,"pull","skin:10"))=="string" and poor.pulls==0)
 -- 今はない品(前の色だけのガチャの品)を装備していた記録は、スタンダードに戻す
 local old=M.normalize({skin="s5",helmet="h9",own={"s0","h0","s5"}})
 assert(old.skin=="s0" and old.helmet=="h0" and old.cowl=="c0" and old.wheel=="w0" and old.flag=="f0")
+-- 持っていない品を装備した記録も、スタンダードに戻す(検証用の解放がオンの間だけはそのまま)
+local borrowed=M.normalize({skin="hull28",flag="flag01",own={"s0","h0","flag01"}})
+assert(borrowed.skin=="s0" and borrowed.flag=="flag01")
+assert(M.normalize({skin="hull28",own={"s0","h0"},testUnlock=true}).skin=="hull28")
+-- 持ち物の記録が壊れていても止まらない
+assert(M.normalize({own="broken",skin="hull28"}).skin=="s0")
 for i,coins in ipairs({60,40,30,20,15,15}) do
  local n=M.new();M.result(n,{mode="race",place=i,st=.2})
  assert(n.coins==coins and n.mis.race1==1 and n.mis.st20==1)

@@ -137,7 +137,8 @@ local function change(player, id, fn)
 end
 
 function actions.join(player, arg)
-    if type(arg) ~= "table" or type(arg.id) ~= "string" or (arg.code ~= nil and (type(arg.code) ~= "string" or #arg.code > 6)) then
+    if type(arg) ~= "table" or type(arg.id) ~= "string" or #arg.id > 64
+        or (arg.code ~= nil and (type(arg.code) ~= "string" or #arg.code > 6)) then
         return nil
     end
     local code = arg.code and string.upper(arg.code) or nil

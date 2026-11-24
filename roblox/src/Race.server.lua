@@ -14,6 +14,9 @@ local Rules = require(script.Parent:WaitForChild("ResultRules"))
 local localPractice = RunService:IsStudio() and (game.GameId == 0 or not workspace:GetAttribute("MinatoLiveData"))
 local PlayerStats = not localPractice and require(script.Parent:WaitForChild("PlayerStats"))
 local isRoom = game.PrivateServerId ~= "" and game.PrivateServerOwnerId == 0
+-- 会場へはいつもロビーが予約したサーバーで送る。予約していないサーバー(公開・VIP サーバー)は、
+-- ロビーを通らずに入った人だけなので、本番では入れない(Studio の試しは除く。PUBLISH.md 手順6の設定と二重の守り)
+local strayServer = not RunService:IsStudio() and not isRoom
 -- タイムアタックの記録の保存(世界ランキングとゴースト)。公開していない Studio では使わない
 local TimeTrial = not localPractice and require(script.Parent:WaitForChild("TimeTrialStore"))
 local RoomService = isRoom and require(script.Parent:WaitForChild("RoomService"))
@@ -235,6 +238,10 @@ end
 local nextFirst = 1
 local saveResults
 local function preparePlayer(player)
+    if strayServer then
+        player:Kick("ロビーから入り直してください")
+        return
+    end
     player:SetAttribute("MinatoBoat", 0)
     if not isRoom then return end
     task.spawn(function()
@@ -881,7 +888,8 @@ saveResults = function()
     end
     -- レートは人間どうしの着順だけで決める(人間の数と、人間の中の順位をサーバーが付ける)
     Rules.rankHumans(results)
-    if #results > 0 and not localPractice then
+    -- 本番では、サーバーが入場を確かめてモード(roomKind)が決まった会場の結果だけを保存する
+    if #results > 0 and not localPractice and (roomKind or RunService:IsStudio()) then
         -- The mode was established only after server-side admission.
         PlayerStats.recordRace(raceId,results,roomKind)
     end

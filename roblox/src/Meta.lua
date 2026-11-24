@@ -91,10 +91,13 @@ end
 function Meta.normalize(v)
     local m=Meta.new()
     if type(v)=="table" then for k,x in pairs(v) do m[k]=clone(x) end end
-    -- 今はない品(前の色だけのガチャの品など)を装備していたら、スタンダードに戻す
+    -- 持ち物の記録が壊れていたら、最初の持ち物に戻す
+    if type(m.own)~="table" then m.own={"s0","h0"} end
+    -- 今はない品(前の色だけのガチャの品など)や、持っていない品を装備していたら、スタンダードに戻す
+    -- (検証用の「全部の品を解放」を止めた後に、借りていた品を着たままにならないように)
     for _,s in ipairs(Meta.SLOTS) do
         local it=Meta.item(m[s.kind])
-        if not it or it.kind~=s.kind then m[s.kind]=s.default end
+        if not it or it.kind~=s.kind or not Meta.owns(m,m[s.kind]) then m[s.kind]=s.default end
     end
     return m
 end

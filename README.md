@@ -80,3 +80,7 @@ pip install bpy            # Blender を Python モジュールとして入れ�
 BLENDER_PY=python3 sh assets/build.sh
 npm run build
 ```
+
+## ほかの人が作った部品
+
+`dist/game.js` には three.js と meshoptimizer の読み込み部品(どちらも MIT ライセンス)が入っています。利用条件の文は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) にあります。`dist/game.js` を配る時は、この文書も一緒に付けてください。

@@ -28,6 +28,10 @@ function R.validate(params)
     if type(name) ~= "string" then
         return nil, "大会名を入れてください"
     end
+    -- とても長い文字は、整える前に断る(サーバーの手間を増やさない)
+    if #name > 240 then
+        return nil, "大会名は" .. R.NAME_MAX .. "文字までです"
+    end
     name = name:gsub("[%c]", ""):match("^%s*(.-)%s*$")
     local length = utf8.len(name)
     if not length or length < 1 then
