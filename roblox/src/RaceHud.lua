@@ -478,6 +478,9 @@ function Hud.new(gui)
     msg.TextStrokeColor3 = Color3.fromRGB(0, 20, 60)
     self.msg = msg
     local sub = text(root, "MessageSub", 22)
+    -- 明るい看板や空の上でも読めるように、縁取りを濃くする
+    sub.TextStrokeTransparency = 0.15
+    sub.TextStrokeColor3 = Color3.fromRGB(0, 20, 60)
     sub.AnchorPoint = Vector2.new(0.5, 0)
     sub.Position = UDim2.new(0.5, 0, 0.27, 34)
     sub.Size = UDim2.fromOffset(600, 30)

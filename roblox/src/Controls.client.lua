@@ -1145,9 +1145,11 @@ RunService.RenderStepped:Connect(function(dt)
     local shownOut = shownLane and latest[shownLane] and latest[shownLane][17] or ""
     tiltButton.Visible = driving==true and time < 0
     -- 視点のボタン: 走っている間は右上の角。スタート前はチルトの左(画面が狭い時は大時計と重ならないよう出さない)
+    -- チルトが「固定」になるとボタンが広がる(幅150)ので、視点のボタンもその分だけ左へ寄せる
+    local tiltLocked = boat:GetAttribute("TiltLocked") == true
     local screenW = gui.AbsoluteSize.X
-    camButton.Visible = driving==true and (time >= 0 or screenW >= 840)
-    camButton.Position = time < 0 and UDim2.new(1,-244,0,12) or UDim2.new(1,-124,0,12)
+    camButton.Visible = driving==true and (time >= 0 or screenW >= (tiltLocked and 920 or 840))
+    camButton.Position = time < 0 and UDim2.new(1,tiltLocked and -282 or -244,0,12) or UDim2.new(1,-124,0,12)
     -- 一時停止: 1人で走るフリーレースの、スタートの後・ゴール前だけ(視点のボタンの左)
     local paused = world:GetAttribute("Paused") == true
     pauseScreen.Visible = paused
@@ -1168,12 +1170,16 @@ RunService.RenderStepped:Connect(function(dt)
         hideGuide()
     end
     if liftOn then
-        -- 0.25秒ごとに色を替えて点滅させる。タッチの時はスロットルのレバーの左に出す
+        -- 0.25秒ごとに色を替えて点滅させる。スロットルのレバーのすぐ左、レバーの上の方に出す
+        -- (パソコンでもレバーは出ているので重ねない。設定でレバーの高さを変えた時もついていく)
         liftHint.BackgroundColor3 = (os.clock()*4)%2 < 1 and Color3.fromRGB(214,40,40) or Color3.fromRGB(255,120,60)
-        liftHint.Position = UserInputService.TouchEnabled and UDim2.new(1,-128,1,-150) or UDim2.new(1,-18,1,-132)
+        local throttleLever = gui:FindFirstChild("Throttle")
+        if throttleLever then
+            local at = throttleLever.AbsolutePosition - gui.AbsolutePosition
+            liftHint.Position = UDim2.fromOffset(at.X - 10, at.Y + 46)
+        end
     end
     -- アクセルを踏んだら「固定」と出して、押せない見た目にする
-    local tiltLocked = boat:GetAttribute("TiltLocked") == true
     tiltButton.Text = "チルト "..tiltNames[boat:GetAttribute("Tilt") or 2]..(tiltLocked and "　固定" or "")
     tiltButton.AutoButtonColor = not tiltLocked
     tiltButton.BackgroundTransparency = tiltLocked and 0.45 or 0

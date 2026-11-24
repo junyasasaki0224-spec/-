@@ -5,6 +5,12 @@ local TweenService=game:GetService("TweenService")
 local TextService=game:GetService("TextService")
 local player=Players.LocalPlayer
 local cards=require(RS:WaitForChild("CardImages"))
+-- 「レースを選ぶ」のカードの絵8枚を先に読み込む(開いた時に、仮の印ではなく絵がすぐ出るように)
+task.spawn(function()
+    local list={}
+    for _,id in pairs(cards) do if type(id)=="string" and id~="" then table.insert(list,id) end end
+    pcall(function() game:GetService("ContentProvider"):PreloadAsync(list) end)
+end)
 local visuals=require(RS:WaitForChild("VisualModels"))
 local Meta=require(RS:WaitForChild("Meta"))
 local Ui=require(RS:WaitForChild("HomeUi"))
@@ -44,6 +50,8 @@ local rarity={N=white,R=Color3.fromRGB(57,140,255),SR=Color3.fromRGB(172,110,255
 local gachaKind,garageKind="skin","skin"
 local mode="ランク戦"
 local m,page,pending=nil,"ホーム",nil
+-- メールを「すべて受け取る」を進めている間は true
+local claimingAll=false
 local quality=require(RS:WaitForChild("DisplayQuality"))
 local practiceLane=1
 local roomCode=player:GetAttribute("MinatoInviteCode") or ""
@@ -531,22 +539,32 @@ local function redrawNow()
             end
             scroller.ScrollingDirection=Enum.ScrollingDirection.Y
             scroller.CanvasSize=UDim2.fromOffset(0,8*(ch+gap)+16)
+            -- 描き直す前と同じ位置、または選んでいるモードのカードが見える位置から始める(「‹ 戻る」で戻った時も)
+            local maxY=math.max(0,8*(ch+gap)+16-(h-74))
+            local pick=table.find(modes,mode) or 1
+            scroller.CanvasPosition=Vector2.new(0,oldScroll and oldScroll.Y or math.clamp((pick-1)*(ch+gap)-math.floor((h-74-ch)/2),0,maxY))
         else
             local ch=math.min(400,h-90)
             local cw=math.min(270,math.max(170,math.floor(w*.3)))
             local gap=w<900 and 14 or 24
+            -- 背の高い画面では、カードを上下のまん中に置く(下に水面だけが広く空かないように)
+            local top=math.max(4,math.floor((h-74-ch)/2))
             for i,name in ipairs(modes) do
-                Ui.modeCard(scroller,"Mode"..i,name,cards[names[i]],texts[i][1],texts[i][2],16+(i-1)*(cw+gap),4,cw,ch,mode==name,function() open(name) end)
+                Ui.modeCard(scroller,"Mode"..i,name,cards[names[i]],texts[i][1],texts[i][2],16+(i-1)*(cw+gap),top,cw,ch,mode==name,function() open(name) end)
             end
             scroller.ScrollingDirection=Enum.ScrollingDirection.X
             scroller.CanvasSize=UDim2.fromOffset(32+8*cw+7*gap,0)
+            -- 描き直す前と同じ位置、または選んでいるモードのカードが見える位置から始める(「‹ 戻る」で戻った時も)
+            local maxX=math.max(0,32+8*cw+7*gap-w)
+            local pick=table.find(modes,mode) or 1
+            scroller.CanvasPosition=Vector2.new(oldScroll and oldScroll.X or math.clamp(16+(pick-1)*(cw+gap)-math.floor((w-cw)/2),0,maxX),0)
             -- 横に流せることがわかるように、左右の端に「‹」「›」のボタン(押すとカード1枚ぶん動く。端まで行くと消える)
             local arrows={}
             for k,dir in ipairs({-1,1}) do
                 local a=Instance.new("TextButton");a.Name=dir<0 and "ScrollLeft" or "ScrollRight"
                 a.Text=dir<0 and "‹" or "›";a.FontFace=Ui.HEAVY;a.TextSize=34;a.TextColor3=gold;a.AutoButtonColor=false
                 a.BackgroundColor3=navy;a.BackgroundTransparency=.2;a.ZIndex=4
-                Ui.place(a,dir<0 and 6 or w-50,68+math.floor(ch/2)-28,44,56);Ui.corner(a,12);Ui.stroke(a,gold,1,.4)
+                Ui.place(a,dir<0 and 6 or w-50,68+top+math.floor(ch/2)-28,44,56);Ui.corner(a,12);Ui.stroke(a,gold,1,.4)
                 a.Parent=root
                 Ui.pressScale(a)
                 a.Activated:Connect(function()
@@ -1217,15 +1235,24 @@ local function redrawNow()
             local total=0
             for _,v in ipairs(m.mail) do total+=v.coins end
             button(list,"すべて受け取る（+"..total.." コイン）",8,y,math.min(width-16,320),function()
-                -- 1通ずつ順に受け取る(前の受け取りが終わってから次へ)
+                -- 1通ずつ順に受け取る(前の受け取りが終わってから次へ)。2回押しても1回ぶんだけ動く
+                if claimingAll then return end
+                claimingAll=true
                 local ids={}
                 for _,v in ipairs(m.mail) do table.insert(ids,v.id) end
                 task.spawn(function()
-                    for _,id in ipairs(ids) do
+                    for i,id in ipairs(ids) do
                         while pending do task.wait(.1) end
+                        -- サーバーは 0.35 秒より短い間隔の送信を断るので、次の1通の前は少し待つ
+                        if i>1 then task.wait(.45) end
                         request("mail",id)
-                        task.wait(.15)
+                        while pending do task.wait(.1) end
+                        -- 受け取れなかった時はそこで止める(残りのメールは画面に残る)
+                        local left=false
+                        for _,v in ipairs(m.mail) do if v.id==id then left=true end end
+                        if left then break end
                     end
+                    claimingAll=false
                 end)
             end,true)
             y+=58
