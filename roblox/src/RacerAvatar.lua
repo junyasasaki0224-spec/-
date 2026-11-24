@@ -48,31 +48,91 @@ local REMOVE = {
 -- 共通の人形のうち、アバターを乗せた時も残す部品(ヘルメット)
 local KEEP = { Helmet = true, HelmetStripe = true, Visor = true, Rubber = true }
 
--- 2つの部品をつなぐ物(関節・溶接・固定)から、「片方の位置がわかればもう片方が決まる」式を作る
-local function links(model)
+-- 手を置く所(艇の原点から。前は -Z)。右手はハンドルの右の握り、左手はスロットルのレバー。
+-- どちらも風よけのガラスの後ろの面(GLASS_BACK)より後ろ。腕の長さはアバターごとに違うので、肩とひじの角度を探して合わせる
+local HAND_TARGET = { Right = Vector3.new(0.42, 2.05, 0.8), Left = Vector3.new(-0.55, 1.95, 0.85) }
+local GLASS_BACK = 0.085 -- VisualModels でガラスを前へずらした後の、ガラスの後ろの面
+
+-- 2つの部品をつなぐ物(関節・溶接・固定)から、「片方の位置がわかればもう片方が決まる」式を作る。
+-- pose は関節ごとの回転(省くと POSE)。pre・post は回転の前と後ろ(腕の角度を探す時に使う)
+local function links(model, pose)
+	pose = pose or POSE
 	local list = {}
 	for _, j in model:GetDescendants() do
 		if j:IsA("JointInstance") and j.Part0 and j.Part1 then
-			local turn = j:IsA("Motor6D") and POSE[j.Name] or CFrame.identity
+			local turn = j:IsA("Motor6D") and pose[j.Name] or CFrame.identity
 			local offset = j.C0 * turn * j.C1:Inverse()
-			table.insert(list, { a = j.Part0, b = j.Part1, offset = offset })
+			table.insert(list, { name = j.Name, a = j.Part0, b = j.Part1, offset = offset, pre = j.C0, post = j.C1:Inverse() })
 		elseif (j:IsA("AnimationConstraint") or j:IsA("RigidConstraint")) and j.Attachment0 and j.Attachment1 then
 			-- 新しいアバターの関節(AnimationConstraint)と、飾りの固定(RigidConstraint)
 			local a0, a1 = j.Attachment0, j.Attachment1
 			local p0, p1 = a0.Parent, a1.Parent
 			if p0 and p1 and p0:IsA("BasePart") and p1:IsA("BasePart") then
-				local turn = j:IsA("AnimationConstraint") and POSE[j.Name] or CFrame.identity
-				table.insert(list, { a = p0, b = p1, offset = a0.CFrame * turn * a1.CFrame:Inverse() })
+				local turn = j:IsA("AnimationConstraint") and pose[j.Name] or CFrame.identity
+				table.insert(list, {
+					name = j.Name,
+					a = p0,
+					b = p1,
+					offset = a0.CFrame * turn * a1.CFrame:Inverse(),
+					pre = a0.CFrame,
+					post = a1.CFrame:Inverse(),
+				})
 			end
 		end
 	end
 	return list
 end
 
+-- 腕の角度を探す: 肩(前へ振る・内へ寄せる)とひじ(曲げる)を少しずつ変えて、手がいちばん目当てに近い組を選ぶ。
+-- 手の前の端がガラスより前に出る組は使わない。同じくらいなら元の姿勢に近い方
+local function fitArm(model, torsoAt: CFrame, side: string, pose)
+	local shoulder, elbow, wrist
+	for _, l in links(model, pose) do
+		if l.name == side .. "Shoulder" then
+			shoulder = l
+		elseif l.name == side .. "Elbow" then
+			elbow = l
+		elseif l.name == side .. "Wrist" then
+			wrist = l
+		end
+	end
+	-- 胴 → 上腕 → 前腕 → 手 の順につながっている時だけ(つながりが違うアバターは元の姿勢のまま)
+	if not (shoulder and elbow and wrist) or shoulder.a.Name ~= "UpperTorso" or elbow.a ~= shoulder.b or wrist.a ~= elbow.b then
+		return
+	end
+	local hand = wrist.b
+	local reach = math.max(hand.Size.X, hand.Size.Y, hand.Size.Z) / 2
+	local target = HAND_TARGET[side]
+	local base = pose[side .. "Shoulder"]
+	local _, _, baseRoll = base:ToEulerAnglesXYZ()
+	local wristTurn = pose[side .. "Wrist"] or CFrame.identity
+	local best, bestCost = nil, math.huge
+	for pitch = 0.6, 2.61, 0.1 do
+		for roll = -0.5, 0.51, 0.25 do
+			local rollSide = side == "Left" and roll or -roll
+			local upper = torsoAt * shoulder.pre * CFrame.Angles(pitch, 0, rollSide) * shoulder.post
+			for bend = 0, 2.21, 0.1 do
+				local lower = upper * elbow.pre * CFrame.Angles(bend, 0, 0) * elbow.post
+				local at = (lower * wrist.pre * wristTurn * wrist.post).Position
+				if at.Z - reach >= GLASS_BACK + 0.05 then
+					local cost = (at - target).Magnitude + 0.03 * (math.abs(rollSide - baseRoll) + bend * 0.5)
+					if cost < bestCost then
+						best, bestCost = { pitch, rollSide, bend }, cost
+					end
+				end
+			end
+		end
+	end
+	if best then
+		pose[side .. "Shoulder"] = CFrame.Angles(best[1], 0, best[2])
+		pose[side .. "Elbow"] = CFrame.Angles(best[3], 0, 0)
+	end
+end
+
 -- 腰(HumanoidRootPart)を原点に置き、関節を順にたどって全部の部品の位置を決める
-local function solve(model, root)
+local function solve(model, root, pose)
 	local known = { [root] = root.CFrame }
-	local list = links(model)
+	local list = links(model, pose)
 	local progress = true
 	while progress do
 		progress = false
@@ -171,9 +231,17 @@ function RacerAvatar.build(userId: number)
 	end
 	-- 姿勢を付けて部品を置き、腰がひざをつく所に来るよう全体をずらす
 	root.CFrame = CFrame.new()
-	local posed = solve(model, root)
+	local pose = table.clone(POSE)
+	local posed = solve(model, root, pose)
 	local hips = model:FindFirstChild("LowerTorso")
 	local shift = HIPS_AT - (hips and posed[hips] or root.CFrame).Position
+	-- 腕はアバターごとに長さが違う: 手がハンドルとレバーに来るよう角度を合わせて、もう一度置く(手がガラスに食い込まないように)
+	if torso and posed[torso] then
+		for _, side in { "Right", "Left" } do
+			pcall(fitArm, model, posed[torso] + shift, side, pose)
+		end
+		posed = solve(model, root, pose)
+	end
 	for _, part in model:GetDescendants() do
 		if part:IsA("BasePart") then
 			part.Anchored = true

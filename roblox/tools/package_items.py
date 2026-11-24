@@ -82,32 +82,22 @@ def main():
             models[key] = item(root, "Model", key)[0]
         mesh, tex, natural = ids[row["name"]]
         fabric = row["kind"] == "Fabric"
+        _, props = item(models[key], "MeshPart", row["name"])
+        content = ET.SubElement(props, "Content", name="MeshId")
+        ET.SubElement(content, "url").text = mesh
         if fabric:
-            # 旗の布: 模様 × 艇番の色にしたいので、色を掛けられる SpecialMesh(VertexColor)を使う。
-            # 布の面は全部が模様の画像の範囲を指すので、同じ品の本体の模様の画像を使う(取り込んだ布の画像は透ける形で、色を掛けられない)
-            part, props = item(models[key], "Part", row["name"])
-            body = ids[row["item"] + "__Paint__Body"]
-            _, sm = item(part, "SpecialMesh", "Mesh")
-            prop(sm, "token", "MeshType", 5)
-            for name, url in (("MeshId", mesh), ("TextureId", body[1])):
-                content = ET.SubElement(sm, "Content", name=name)
-                ET.SubElement(content, "url").text = url
-            vec(sm, "Scale", [s / n for s, n in zip(row["size"], natural)])
-            vec(sm, "VertexColor", [1, 1, 1])
-        else:
-            _, props = item(models[key], "MeshPart", row["name"])
-            content = ET.SubElement(props, "Content", name="MeshId")
-            ET.SubElement(content, "url").text = mesh
-            if tex:
-                content = ET.SubElement(props, "Content", name="TextureID")
-                ET.SubElement(content, "url").text = tex
+            # 旗の布: 布の面は全部が模様の画像の範囲を指すので、同じ品の本体の模様の画像を使う(取り込んだ布の画像は透ける形)。
+            # 波打った布は片面だけだと向きによって消えるので、ほかの部品と同じく両面で描く(下の DoubleSided)
+            tex = ids[row["item"] + "__Paint__Body"][1]
+        if tex:
+            content = ET.SubElement(props, "Content", name="TextureID")
+            ET.SubElement(content, "url").text = tex
         frame = ET.SubElement(props, "CoordinateFrame", name="CFrame")
         # Studio の取り込みは GLB を縦の軸まわりに半回転させて読む(会場の FBX と同じ)。部品の向きを半回転させて元に戻す
         for k, v in zip(["X", "Y", "Z", "R00", "R01", "R02", "R10", "R11", "R12", "R20", "R21", "R22"], row["center"] + [-1, 0, 0, 0, 1, 0, 0, 0, -1]):
             ET.SubElement(frame, k).text = repr(float(v))
         vec(props, "size", row["size"])
-        if not fabric:
-            vec(props, "InitialSize", natural)
+        vec(props, "InitialSize", natural)
         color = ET.SubElement(props, "Color3", name="Color")
         for k, v in zip("RGB", row["color"] or [1, 1, 1]):
             ET.SubElement(color, k).text = repr(float(v))
@@ -116,8 +106,7 @@ def main():
         prop(props, "float", "Reflectance", 0.25 if gold else 0)
         prop(props, "float", "Transparency", 0.25 if row["kind"] == "Visor" else 0)
         prop(props, "bool", "Anchored", "true")
-        if not fabric:
-            prop(props, "bool", "DoubleSided", "true")
+        prop(props, "bool", "DoubleSided", "true")
         prop(props, "bool", "CastShadow", "false" if row["kind"] in ("Fabric", "Plate") else "true")
         for k in ("CanCollide", "CanTouch", "CanQuery"):
             prop(props, "bool", k, "false")

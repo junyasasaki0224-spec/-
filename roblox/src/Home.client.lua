@@ -46,8 +46,8 @@ local gold=Color3.fromRGB(255,210,60)
 local pale=Color3.fromRGB(169,189,219)
 local white=Color3.new(1,1,1)
 local rarity={N=white,R=Color3.fromRGB(57,140,255),SR=Color3.fromRGB(172,110,255),SSR=gold,UR=Color3.fromRGB(255,92,150)}
--- ガチャと倉庫で選んでいる着せ替えの種類(Meta.SLOTS の kind)
-local gachaKind,garageKind="skin","skin"
+-- 倉庫で選んでいる着せ替えの種類(Meta.SLOTS の kind)
+local garageKind="skin"
 local mode="ランク戦"
 local m,page,pending=nil,"ホーム",nil
 -- メールを「すべて受け取る」を進めている間は true
@@ -166,6 +166,26 @@ local function waitText()
     if not matchDeadline then return "" end
     return string.format("%d/6 人　出走まで あと %d 秒",matchCount or 1,math.max(0,math.ceil(matchDeadline-os.clock())))
 end
+-- 倉庫の眺め: 艇はゆっくり回り続け、ドラッグ(指・マウス)で好きな向きから、ホイール・2本指で寄って見られる。
+-- 触るのをやめて少したつと、また自動で回る。yaw が nil の間は倉庫を開いていない(開いた時に今の向きから始める)
+local GARAGE_NEAR,GARAGE_FAR=4.5,26
+local garage={yaw=nil,pitch=.42,dist=14,touchedAt=-10,drag=nil,pinchFrom=nil}
+local function garageFocus()
+    -- 寄るほど操縦席の高さを見る
+    local k=1-(garage.dist-GARAGE_NEAR)/(GARAGE_FAR-GARAGE_NEAR)
+    return Vector3.new(0,1+.9*math.clamp(k,0,1),100)
+end
+-- 艇を見せる場所(画面の中の割合)。倉庫では、横長は板の右の空き、縦長は板の上の空きのまん中
+local function garageScreenSpot(size)
+    local w,h=size.X,size.Y
+    if w<h then
+        local panelH=math.floor(h*.56)
+        return .5,math.clamp((h-panelH-16)/2/h,.12,.5)
+    end
+    local right=8+math.min(w-16,640)
+    if w-right<180 then return .5,.5 end
+    return (right+w)/2/w,.5
+end
 Run.RenderStepped:Connect(function(dt)
     sceneClock+=dt
     updateVenue(0,sceneClock,1)
@@ -177,12 +197,90 @@ Run.RenderStepped:Connect(function(dt)
         local angle=.65+sceneClock*.012+math.pi*2*(t*t*(3-2*t))
         local size=screenSize()
         local portrait=size.X<size.Y
+        if page=="倉庫" then
+            if not garage.yaw then
+                garage.yaw,garage.pitch,garage.dist=angle,.42,portrait and 20 or 14
+            end
+            -- 触っていない時は自動で回る(装備した瞬間の1周も足す)
+            if not garage.drag and os.clock()-garage.touchedAt>2.5 then garage.yaw+=dt*.28 end
+            local spin=math.pi*2*(t*t*(3-2*t))
+            local focus=garageFocus()
+            local yaw,pitch,dist=garage.yaw+spin,garage.pitch,garage.dist
+            local eye=focus+Vector3.new(math.sin(yaw)*math.cos(pitch),math.sin(pitch),math.cos(yaw)*math.cos(pitch))*dist
+            local look=CFrame.lookAt(eye,focus)
+            -- 艇が板に隠れないよう、空いている所に見せる(カメラを横・縦にずらす)
+            local u,v=garageScreenSpot(size)
+            local view=cam.ViewportSize
+            local halfH=dist*math.tan(math.rad(cam.FieldOfView/2))
+            local halfW=halfH*(view.X/math.max(view.Y,1))
+            cam.CFrame=look*CFrame.new(-(u-.5)*2*halfW,(v-.5)*2*halfH,0)
+            cam.Focus=CFrame.new(focus)
+            return
+        end
+        garage.yaw=nil
         local dist=portrait and 24 or 14
         cam.CFrame=CFrame.lookAt(Vector3.new(math.sin(angle)*dist,7,100+math.cos(angle)*dist),Vector3.new(0,1,100))
-        if (page=="倉庫" or page=="ランク戦" or page=="オンライン" or page=="イベント" or page=="タイムアタック") and not portrait then cam.CFrame=cam.CFrame*CFrame.new(-5,0,0) end
+        if (page=="ランク戦" or page=="オンライン" or page=="イベント" or page=="タイムアタック") and not portrait then cam.CFrame=cam.CFrame*CFrame.new(-5,0,0) end
         cam.Focus=CFrame.new(0,1,100)
     end
 end)
+-- 倉庫の眺めの操作。板(Panel)の上で始まった操作は、一覧を流すためのものなので使わない
+do
+    local UIS=game:GetService("UserInputService")
+    local function overPanel(pos)
+        local panel=root:FindFirstChild("Panel")
+        if not panel then return false end
+        local at,sz=panel.AbsolutePosition,panel.AbsoluteSize
+        return pos.X>=at.X and pos.X<=at.X+sz.X and pos.Y>=at.Y and pos.Y<=at.Y+sz.Y
+    end
+    local function active() return gui.Enabled and page=="倉庫" and garage.yaw~=nil end
+    local touches=0
+    UIS.InputBegan:Connect(function(input,processed)
+        if input.UserInputType==Enum.UserInputType.Touch then touches+=1 end
+        if processed or not active() then return end
+        local kind=input.UserInputType
+        if (kind==Enum.UserInputType.MouseButton1 or kind==Enum.UserInputType.Touch) and not overPanel(input.Position) then
+            garage.drag={input=input,last=input.Position}
+            garage.touchedAt=os.clock()
+        end
+    end)
+    UIS.InputChanged:Connect(function(input,processed)
+        if not active() then return end
+        local kind=input.UserInputType
+        if kind==Enum.UserInputType.MouseWheel then
+            if processed or overPanel(input.Position) then return end
+            garage.dist=math.clamp(garage.dist*(.88^input.Position.Z),GARAGE_NEAR,GARAGE_FAR)
+            garage.touchedAt=os.clock()
+        elseif garage.drag and touches<2 and (kind==Enum.UserInputType.MouseMovement or (kind==Enum.UserInputType.Touch and input==garage.drag.input)) then
+            local delta=input.Position-garage.drag.last
+            garage.drag.last=input.Position
+            garage.yaw-=delta.X*.009
+            garage.pitch=math.clamp(garage.pitch+delta.Y*.006,-.12,1.25)
+            garage.touchedAt=os.clock()
+        end
+    end)
+    UIS.InputEnded:Connect(function(input)
+        if input.UserInputType==Enum.UserInputType.Touch then touches=math.max(0,touches-1) end
+        if garage.drag and (input==garage.drag.input or input.UserInputType==Enum.UserInputType.MouseButton1) then
+            garage.drag=nil
+            garage.touchedAt=os.clock()
+        end
+    end)
+    -- 2本指で広げると寄り、つまむと離れる
+    UIS.TouchPinch:Connect(function(positions,scale,_,state,processed)
+        if not active() then return end
+        if state==Enum.UserInputState.Begin then
+            local inside=true
+            for _,pos in positions do if overPanel(pos) then inside=false end end
+            garage.pinchFrom=(not processed and inside) and garage.dist or nil
+            garage.drag=nil
+        elseif garage.pinchFrom and scale>0 then
+            garage.dist=math.clamp(garage.pinchFrom/scale,GARAGE_NEAR,GARAGE_FAR)
+            garage.touchedAt=os.clock()
+            if state==Enum.UserInputState.End or state==Enum.UserInputState.Cancel then garage.pinchFrom=nil end
+        end
+    end)
+end
 local modes={"ランク戦","オンライン","タイムアタック","フレンド","大会","イベント","フリーレース","スタート練習"}
 -- 戻る先(押した順に積む。前に通ったページへ行く時は、そこから先を消す)
 local backStack={}
@@ -342,6 +440,22 @@ end
 RS.ChildAdded:Connect(bindMatch)
 local existingMatch=RS:FindFirstChild("MinatoRankedLobby")
 if existingMatch then bindMatch(existingMatch) end
+-- 対戦の後の「もう一度レース」: 会場から届いた印(移動のデータ)を見て、同じモードの待ち合わせに自動で入る。
+-- 印は見た目の操作のきっかけだけ。入れるか(今日の回数など)はロビーのサーバーがいつも通り確かめる
+do
+    local ok,data=pcall(function() return game:GetService("TeleportService"):GetLocalPlayerTeleportData() end)
+    local again=ok and type(data)=="table" and data.again
+    if type(again)=="string" and matchNames[again] and roomCode=="" then
+        task.spawn(function()
+            local waited=0
+            while (not m or not matchEvent) and waited<30 do task.wait(.5);waited+=.5 end
+            if not m or not matchEvent or waitingMode then return end
+            go(matchNames[again])
+            toast.Text="もう一度 "..matchNames[again].."に参加します"
+            matchEvent:FireServer(joinActions[again])
+        end)
+    end
+end
 -- 品の見た目: 色見本ではなく3Dで出す(塗装はその塗装の艇に今のヘルメット、ヘルメットはそのヘルメット)
 -- ガチャの確率の文字。表示も抽選も同じ Meta.RARITY と品の数から作る(確率を書き写さない)
 local function pct(x)
@@ -354,11 +468,11 @@ local function oddsText()
     for _,r in ipairs(Meta.RARITIES) do table.insert(parts,r.." "..pct(Meta.RARITY[r].rate)) end
     return table.concat(parts,"　")
 end
--- 1つあたりの確率(選んだ種類の中で。kind を省くと艇外装。どの種類も点数は同じ)
+-- 1つあたりの確率(ガチャは5種類150点をまとめて引くので、ふつうは kind を省く)
 local function oddsEach(kind)
     local parts={}
     for _,r in ipairs(Meta.RARITIES) do
-        local n=#Meta.pool(r,kind or "skin")
+        local n=#Meta.pool(r,kind)
         if n>0 then table.insert(parts,r.."（"..n.."種）各 "..pct(Meta.RARITY[r].rate/n)) end
     end
     return table.concat(parts,"　")
@@ -376,6 +490,91 @@ end
 local function coinShopOk() return player:GetAttribute("MinatoCoinShop")==true end
 local function swatch(parent,it,x,y,w,h,spin)
     return require(RS:WaitForChild("GachaShow")).preview(parent,it,x,y,w,h,{outfit=outfitOf(m),spin=spin})
+end
+-- ガチャの広告の枠: いちばんレアな UR の品を3Dで大きく、3秒ごとに入れ替えて見せる(押すと次の品)。
+-- 見せるだけで、抽選には関係しない(確率は下の表と同じ Meta.RARITY から出す)
+local featured={}
+for _,it in ipairs(Meta.ITEMS) do if it.gacha and it.r=="UR" then table.insert(featured,it) end end
+local featuredAt,featuredSeq=1,0
+local function gachaShowcase(parent,x,y,w)
+    local wide=w>=420
+    local h=wide and math.clamp(math.floor(w*.42),190,250) or math.clamp(math.floor(w*.92),250,330)
+    local card=Instance.new("TextButton");card.Name="Showcase";card.Text="";card.AutoButtonColor=false
+    card.Position=UDim2.fromOffset(x,y);card.Size=UDim2.fromOffset(w,h);card.BackgroundColor3=white;card.BorderSizePixel=0
+    card.Parent=parent
+    Ui.corner(card,16)
+    local grad=Instance.new("UIGradient");grad.Rotation=120
+    grad.Color=ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.fromRGB(76,20,62)),ColorSequenceKeypoint.new(.55,Color3.fromRGB(22,32,82)),ColorSequenceKeypoint.new(1,Color3.fromRGB(8,20,44))})
+    grad.Parent=card
+    -- 縁は UR の色と金の間でゆっくり脈打つ
+    local edge=Ui.stroke(card,rarity.UR,2.5,0)
+    TweenService:Create(edge,TweenInfo.new(1.1,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut,-1,true),{Color=gold}):Play()
+    local vw=wide and math.floor(w*.56) or w-16
+    local vh=wide and h-16 or h-96
+    local stage=Instance.new("Frame");stage.Name="Stage";stage.BackgroundTransparency=1
+    stage.Position=UDim2.fromOffset(8,8);stage.Size=UDim2.fromOffset(vw,vh);stage.Parent=card
+    local pop=Instance.new("UIScale");pop.Parent=stage
+    -- きらめき(小さな菱形が光っては消える。文字の星は字の形がない端末があるので図形で描く)
+    for k=1,7 do
+        local star=Instance.new("Frame");star.BorderSizePixel=0;star.Rotation=45;star.ZIndex=3
+        star.BackgroundColor3=k%2==0 and gold or rarity.UR
+        local size=5+(k*5)%7
+        star.Size=UDim2.fromOffset(size,size)
+        star.Position=UDim2.fromOffset(math.floor(((k*53)%97)/97*(vw-12)),math.floor(((k*31)%89)/89*(vh-12)))
+        star.BackgroundTransparency=1;star.Parent=stage
+        Ui.corner(star,2)
+        TweenService:Create(star,TweenInfo.new(.7+(k%3)*.25,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut,-1,true,k*.23),{BackgroundTransparency=.05}):Play()
+    end
+    local tx=wide and vw+18 or 12
+    local tw=wide and w-vw-28 or w-24
+    -- 横長: 右に「今回の目玉」・大きな UR・名前・種類・確率。縦長: 3D の下に2行
+    local head=label(card,"今回の目玉",tx,wide and 14 or vh+12,wide and tw or 96,20,14);head.TextColor3=gold
+    local big=Ui.text(card,"Rarity","UR",wide and 46 or 24,Ui.HEAVY_ITALIC,rarity.UR)
+    big.TextStrokeTransparency=.3;big.TextStrokeColor3=Color3.fromRGB(40,0,20)
+    Ui.place(big,wide and tx or 96,wide and 36 or vh+8,wide and tw or 60,wide and 52 or 28)
+    local nameText=Ui.fit(label(card,"",tx,wide and 92 or vh+38,tw,wide and 32 or 26,wide and 24 or 18),12)
+    local kindText=label(card,"",tx,wide and 128 or vh+66,wide and tw or math.floor(tw*.55),22,wide and 16 or 14);kindText.TextColor3=pale
+    local oddsLabel=label(card,"",wide and tx or tx+math.floor(tw*.55),wide and 152 or vh+66,wide and tw or tw-math.floor(tw*.55),22,wide and 15 or 14);oddsLabel.TextColor3=pale
+    if not wide then oddsLabel.TextXAlignment=Enum.TextXAlignment.Right end
+    local hint=label(card,"押すと次の品",tx,h-32,tw,20,13);hint.TextColor3=Color3.fromRGB(150,170,205)
+    if not wide then hint.Visible=false end
+    local view
+    local function show(k)
+        if view then view:Destroy() end
+        local it=featured[k]
+        if not it then return end
+        -- 大きな窓では品が小さく見えるので、カメラを寄せる
+        view=require(RS:WaitForChild("GachaShow")).preview(stage,it,0,0,vw,vh,{outfit=outfitOf(m),spin=true,alone=true,zoom=it.kind=="helmet" and .62 or (it.kind=="skin" and 1.02 or 1.55)})
+        if view then view.BackgroundTransparency=1 end
+        pop.Scale=.82
+        TweenService:Create(pop,TweenInfo.new(.35,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{Scale=1}):Play()
+        nameText.Text=it.name;nameText.TextColor3=white
+        local owned=table.find(m.own,it.id)~=nil
+        kindText.Text=kindName(it.kind)..(owned and "　✓ 持っています" or "")
+        oddsLabel.Text="1つあたり "..pct(Meta.RARITY[it.r].rate/#Meta.pool(it.r))
+    end
+    show(featuredAt)
+    -- 3秒ごとに次の品へ。押した時も次へ(押した後の3秒は待つ)
+    featuredSeq+=1
+    local seq=featuredSeq
+    local function nextItem()
+        featuredAt=featuredAt%#featured+1
+        show(featuredAt)
+    end
+    card.Activated:Connect(function()
+        Sfx.play("click",.6)
+        featuredSeq+=1;seq=featuredSeq
+        nextItem()
+        task.spawn(function()
+            local mine=seq
+            while card.Parent and mine==seq do task.wait(3.2);if card.Parent and mine==seq then nextItem() end end
+        end)
+    end)
+    task.spawn(function()
+        local mine=seq
+        while card.Parent and mine==seq do task.wait(3.2);if card.Parent and mine==seq then nextItem() end end
+    end)
+    return y+h
 end
 local drawnPage
 -- 今のホームの艇に付けてある装備(同じなら付け直さない)
@@ -590,9 +789,12 @@ local function redrawNow()
     local panelWidth=wide and math.min(w-16,960) or side and math.min(w-16,(pageKinds[page] or page=="タイムアタック") and 460 or (page=="倉庫" and 640 or 560)) or w-16
     -- 待ち合わせの画面はスマホ縦なら上半分だけにして、下に自分の艇を見せる
     local panelHeight=(pageKinds[page] and portrait) and math.min(h-16,math.floor(h*.55)) or h-16
+    -- 倉庫はスマホ縦なら下の半分ほどにして、上に自分の艇を見せる(回したり寄ったりできる)
+    local garageBottom=page=="倉庫" and portrait
+    if garageBottom then panelHeight=math.floor(h*.56) end
     -- ブラウザ版の .panel(紺の半透明・白の細枠・角丸18)と、上の「‹ ホーム」・題・コイン
     -- 広い画面(出走表)はブラウザ版と同じく真ん中に置く
-    local panel=frame(root,"Panel",wide and math.floor((w-panelWidth)/2) or 8,8,panelWidth,panelHeight)
+    local panel=frame(root,"Panel",wide and math.floor((w-panelWidth)/2) or 8,garageBottom and h-panelHeight-8 or 8,panelWidth,panelHeight)
     panel.BackgroundColor3=Color3.fromRGB(9,24,50);panel.BackgroundTransparency=.16
     panel:FindFirstChildOfClass("UICorner").CornerRadius=UDim.new(0,18)
     stroke(panel,white,1).Transparency=.78
@@ -1028,22 +1230,16 @@ local function redrawNow()
         end)
         y=math.max(ly,ry+84)
     elseif page=="ガチャ" then
-        -- 先に種類を選ぶ(その種類の30点の中から引く)
-        label(list,"引く種類を選ぶ",8,y,width-16,26,16).TextColor3=gold;y+=30
+        -- 5種類150点をまとめた1つのガチャ。いちばん上に、出るかもしれないレアな品を3Dで大きく見せる(広告の枠)
         do
-            local columns=width>=520 and 5 or 3
-            local bw=math.floor((width-16-(columns-1)*6)/columns)
-            for i,slot in ipairs(Meta.SLOTS) do
-                local bx=8+((i-1)%columns)*(bw+6);local by=y+math.floor((i-1)/columns)*52
-                button(list,slot.name,bx,by,bw,function() gachaKind=slot.kind;redraw() end,gachaKind==slot.kind)
-            end
-            y+=math.ceil(#Meta.SLOTS/columns)*52+6
+            local sw=math.min(width-16,820)
+            y=gachaShowcase(list,8+math.floor((width-16-sw)/2),y,sw)+10
         end
         local owned,total=0,0
         for _,it in ipairs(Meta.ITEMS) do
-            if it.gacha and it.kind==gachaKind then total+=1;if table.find(m.own,it.id) then owned+=1 end end
+            if it.gacha then total+=1;if table.find(m.own,it.id) then owned+=1 end end
         end
-        y=row(kindName(gachaKind).."のガチャ　所持 "..owned.." / "..total,"確率　"..oddsText(),y)
+        y=row("着せ替えガチャ　所持 "..owned.." / "..total,"艇外装・ヘルメット・モーターカバー・ステアリング・艇首旗の5種類から出ます。確率　"..oddsText(),y)
         do
             -- 広い時は横に2つ、狭い時は縦に2つ
             local side=width>=420
@@ -1054,7 +1250,7 @@ local function redrawNow()
                 local caption=count.."回 "..cost.."コイン"..(short and ("（あと "..(cost-m.coins).."）") or "")
                 local b=button(list,caption,side and (8+(k-1)*(bw+8)) or 8,side and y or (y+(k-1)*54),bw,function()
                     if m.coins<cost then toast.Text="コインが足りません（あと "..(cost-m.coins).." コイン）";return end
-                    request("pull",gachaKind..":"..count)
+                    request("pull",tostring(count))
                 end,not short)
                 b.Name="Pull"..count
                 if short then b.TextColor3=pale end
@@ -1062,7 +1258,7 @@ local function redrawNow()
             y+=side and 58 or 112
         end
         -- くわしい確率も引くボタンのすぐ下に(引く前に見られるように)
-        y=row("1つあたりの確率",oddsEach(gachaKind).."。スタンダードと VIP の品は出ません",y)
+        y=row("1つあたりの確率",oddsEach().."。スタンダードと VIP の品は出ません",y)
         if type(m.last)=="table" then
             for index,v in ipairs(m.last) do
                 local it=Meta.item(v.id)
@@ -1164,10 +1360,26 @@ local function redrawNow()
                 button(card,priceText("product",entry.product,false),8,104,cw-16,function() buy("product",entry.product,false,entry) end,entry.product>0)
             end
             y+=math.ceil(#ShopConfig.coins/columns)*170
-            y=row("ガチャの確率",oddsText().."（5種類から1つ選んで引きます。どの種類も1つあたり "..oddsEach().."）",y)
+            y=row("ガチャの確率",oddsText().."（5種類150点から引きます。1つあたり "..oddsEach().."）",y)
         end
         y=row("購入について","購入は Roblox の確認画面で決まります。コインはすぐに届き、VIP の品は倉庫で着せ替えられます。",y)
     elseif page=="倉庫" then
+        -- 艇の眺めの使い方と「視点を戻す」(板の外、艇が見えている所の下)
+        do
+            local free=portrait and {x=8,y=8,w=w-16,h=h-panelHeight-24} or {x=16+panelWidth,y=8,w=w-24-panelWidth,h=h-16}
+            if free.w>=200 and free.h>=120 then
+                local UIS=game:GetService("UserInputService")
+                local touch=UIS.TouchEnabled and not UIS.KeyboardEnabled
+                local hint=label(root,touch and "指で回す・2本指で広げて寄る" or "ドラッグで回す・ホイールで寄る",free.x,free.y+free.h-40,free.w-140,36,14)
+                hint.Name="GarageHint";hint.TextColor3=pale;hint.TextStrokeTransparency=.4
+                hint.TextXAlignment=Enum.TextXAlignment.Center
+                Ui.fit(hint,11)
+                local reset=button(root,"視点を戻す",free.x+free.w-132,free.y+free.h-46,128,function()
+                    garage.yaw=nil;garage.touchedAt=-10
+                end)
+                reset.Name="GarageReset";reset.TextSize=15
+            end
+        end
         -- いちばん上に「装備中」: 5つの種類の今の品(押すとその種類の一覧へ)
         label(list,"装備中",8,0,120,26,16).TextColor3=gold
         do

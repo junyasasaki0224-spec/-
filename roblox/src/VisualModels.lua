@@ -18,6 +18,13 @@ function Visuals.boat(parent,number)
             end
         end
     end
+    -- 部品どうしの重なりを直す(元の模型の置き場所のずれ。前は -Z):
+    --   ・風よけのガラスを少し前へ、ハンドルを少し後ろへ(ハンドルとレーサーの手がガラスに食い込まないように)
+    --   ・艇番の板を少し上へ(艇首の甲板の山に板の真ん中が埋まり、暗い塗装で白い切れ端に見えていた)
+    for name,move in pairs({Glass=Vector3.new(0,0,-.15),Wheel=Vector3.new(0,0,.08),Plates=Vector3.new(0,.04,0)}) do
+        local group=model:FindFirstChild(name)
+        if group then group:PivotTo(group:GetPivot()+move) end
+    end
     for _,name in ipairs({"Motor","Wheel","RacerUpper"}) do
         local group=model:FindFirstChild(name)
         if group then group:SetAttribute("RestOrigin",group:GetPivot().Position) end

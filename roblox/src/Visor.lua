@@ -88,6 +88,40 @@ local function showHead(head: BasePart, shell: BasePart, on: boolean)
 	end
 end
 
+-- ヘルメットの中の暗い玉(頭を隠している時に、シールド越しにヘルメットの白い内側が見えて
+-- 「頭が透けている」ように見えないように)。名前の材質は Rubber(アバターを乗せた時、ヘルメットと一緒に動く)
+local SHADE = "VisorShade__Rubber__Inner"
+local function placeShade(model: Instance, shell: BasePart, visible: boolean)
+	local shade = nil
+	for _, d in model:GetDescendants() do
+		if d.Name == SHADE and d:IsA("BasePart") then
+			if shade or d.Parent ~= shell.Parent then
+				d:Destroy()
+			else
+				shade = d
+			end
+		end
+	end
+	if not shade then
+		local made = Instance.new("Part")
+		made.Name = SHADE
+		made.Shape = Enum.PartType.Ball
+		made.Material = Enum.Material.SmoothPlastic
+		made.Color = Color3.fromRGB(14, 16, 22)
+		made.Anchored = true
+		made.CanCollide, made.CanTouch, made.CanQuery = false, false, false
+		made.CastShadow = false
+		made.Massless = true
+		made.Parent = shell.Parent
+		shade = made
+	end
+	local s = shade :: BasePart
+	-- 殻より一回り小さく、少し下・後ろ(殻の外へ出ないように)
+	s.Size = Vector3.one * math.min(shell.Size.X, shell.Size.Y, shell.Size.Z) * 0.78
+	s.CFrame = frameOf(shell) * CFrame.new(0, -0.04 * shell.Size.Y, 0.05 * shell.Size.Z)
+	s.Transparency = visible and 0 or 1
+end
+
 -- シールドを上げる(up=true)・下ろす(false)。何度呼んでも同じ形になる
 function Visor.apply(model: Instance, up: boolean)
 	local shell, visors = findParts(model)
@@ -121,6 +155,8 @@ function Visor.apply(model: Instance, up: boolean)
 	if head then
 		showHead(head, shell, up)
 	end
+	-- 頭を見せていない時は、ヘルメットの中を暗くする
+	placeShade(model, shell, not (up and head ~= nil))
 end
 
 return Visor

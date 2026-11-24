@@ -25,7 +25,7 @@ local ItemCatalog=if script then require(script.Parent:WaitForChild("ItemCatalog
 for _,it in ipairs(ItemCatalog) do
     table.insert(Meta.ITEMS,{id=it.id,name=it.name,r=it.r,kind=it.kind,no=it.no,color=it.color,accent=it.accent,gacha=true})
 end
--- 着せ替えの種類(ガチャは種類を選んでから引く)。並びは画面の並び
+-- 着せ替えの種類(倉庫の並び)。ガチャは5種類150点をまとめて1つで引く
 Meta.SLOTS={
     {kind="skin",name="艇外装",default="s0"},
     {kind="helmet",name="ヘルメット",default="h0"},
@@ -61,7 +61,7 @@ function Meta.rankedLeft(m,day)
     return math.max(0,Meta.RANKED_DAILY-used)
 end
 -- ガチャの1つあたりの確率(表示と抽選は同じ Meta.RARITY と品の数から計算する)
--- kind を省くと全部の種類から
+-- kind を省くと全部の種類から(ガチャはこちら)
 function Meta.pool(rar,kind)
     local pool={}
     for _,it in ipairs(Meta.ITEMS) do if it.gacha and it.r==rar and (kind==nil or it.kind==kind) then table.insert(pool,it) end end
@@ -112,13 +112,10 @@ function Meta.daily(m,day)
     m.day,m.mis,m.misDone=day,{},{}
     Meta.sendMail(m,"ログインボーナス",day.." の出走ボーナスです。",100)
 end
--- ガチャの引き方 "種類:回数" を読む。正しくなければ nil
+-- ガチャの引く回数("1" か "10")を読む。正しくなければ nil
 function Meta.pullArg(arg)
-    if type(arg)~="string" or #arg>12 then return nil end
-    local kind,n=arg:match("^(%a+):(%d+)$")
-    n=tonumber(n)
-    if not kind or not Meta.slot(kind) or (n~=1 and n~=10) then return nil end
-    return kind,n
+    if arg~="1" and arg~="10" then return nil end
+    return tonumber(arg)
 end
 function Meta.action(m,action,arg,rnd)
     if action=="settings" and type(arg)=="string" then
@@ -147,9 +144,9 @@ function Meta.action(m,action,arg,rnd)
             return it.name.."を装備しました"
         end
     elseif action=="pull" then
-        -- arg は「種類:回数」(例 "helmet:10")。種類を選んでから、その種類の30点の中で引く
-        local kind,count=Meta.pullArg(arg)
-        if not kind then return "引く種類を選んでください" end
+        -- arg は回数("1" か "10")。5種類150点をまとめた中から引く
+        local count=Meta.pullArg(arg)
+        if not count then return "引く回数を選んでください" end
         local cost=count==10 and 900 or 100
         if m.coins<cost then return "コインが足りません" end
         m.coins-=cost
@@ -163,7 +160,7 @@ function Meta.action(m,action,arg,rnd)
                 x-=Meta.RARITY[r].rate
             end
             -- VIP の品・スタンダードはガチャに出さない
-            local pool=Meta.pool(rar,kind)
+            local pool=Meta.pool(rar)
             local it=pool[math.min(#pool,math.floor(rnd()*#pool)+1)]
             local dupe=0
             if table.find(m.own,it.id) then dupe=Meta.RARITY[rar].dupe;m.coins+=dupe

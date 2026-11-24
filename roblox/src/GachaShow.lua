@@ -14,6 +14,7 @@ local visuals = require(RS:WaitForChild("VisualModels"))
 local outfit = require(RS:WaitForChild("Outfit"))
 local Sfx = require(RS:WaitForChild("Sfx"))
 local RacerAvatar = require(RS:WaitForChild("RacerAvatar"))
+local Visor = require(RS:WaitForChild("Visor"))
 
 local GachaShow = {}
 local Meta = require(RS:WaitForChild("Meta"))
@@ -192,10 +193,25 @@ local function itemModel(item, options)
 			end
 		end
 		boat:Destroy()
+		-- ヘルメットの中を暗くする(シールド越しに白い内側が見えないように)
+		Visor.apply(model, false)
 		return model, nil
 	end
 	if options.avatar then
 		pcall(RacerAvatar.attach, boat, options.avatar)
+	end
+	Visor.apply(boat, false)
+	if (item.kind == "cowl" or item.kind == "wheel" or item.kind == "flag") and options.alone then
+		-- 品だけを取り出す(大きな窓で、艇やレーサーに隠れずに見せる時)
+		local model = Instance.new("Model")
+		model.Name = item.id
+		for _, p in itemParts(boat) do
+			if p.Name:sub(1, #item.id + 2) == item.id .. "__" then
+				p.Parent = model
+			end
+		end
+		boat:Destroy()
+		return model, nil
 	end
 	if item.kind == "cowl" or item.kind == "wheel" or item.kind == "flag" then
 		local focus = itemParts(boat)
@@ -594,7 +610,7 @@ end
 
 -- 品の小さな3Dの窓(ガチャの結果のカード・倉庫で使う)。色見本の代わりに、見た目そのままを見せる。
 --   艇外装はその艇(options.outfit の今の装備)、ヘルメットはそのヘルメット、モーター・ハンドル・旗はその部分を大きく。止まった斜め前からの眺め
---   options.spin = true で、ゆっくり回す(装備中の品など)
+--   options.spin = true で、ゆっくり回す(装備中の品など)。options.alone = true でモーター・ハンドル・旗を品だけで見せる
 local previewLinks = {}
 function GachaShow.preview(parent, item, x, y, w, h, options)
 	options = options or {}
@@ -633,6 +649,10 @@ function GachaShow.preview(parent, item, x, y, w, h, options)
 	elseif focus then
 		-- 小さな窓では、モーター・ハンドル・旗をもっと大きく
 		distance *= 0.62
+	end
+	-- options.zoom で寄せる(大きな窓で品を大きく見せる時)
+	if type(options.zoom) == "number" then
+		distance *= options.zoom
 	end
 	-- 見る向き: ヘルメットは顔の側、モーターカバーは艇の後ろから、ほかは斜め前から
 	local yaw = item.kind == "helmet" and math.pi + 0.6 or (item.kind == "cowl" and focus) and 0.75 or 2.4

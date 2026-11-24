@@ -21,7 +21,7 @@ if game:GetService("RunService"):IsClient() then
 	end)
 end
 
--- 艇番の色(1〜6号艇)。艇首旗の布と、艇外装の時の側面の艇番の板に使う
+-- 艇番の色(1〜6号艇)。艇外装の時の側面の艇番の板に使う
 local LANE = { 0xf2f2f0, 0x16161a, 0xd91e2e, 0x1b50d4, 0xf3d21b, 0x18a24c }
 
 local function color(n: number): Color3
@@ -141,11 +141,8 @@ local function attach(model: Model, id: string, kind: string, laneColor: Color3)
 				p:SetAttribute("AvatarMoved", moved)
 			end
 			local material = materialOf(p)
-			local mesh = p:FindFirstChildOfClass("SpecialMesh")
-			if material == "Fabric" and mesh then
-				-- 旗の布は、模様 × 艇番の色(1号艇の白ならそのままの模様)
-				mesh.VertexColor = Vector3.new(laneColor.R, laneColor.G, laneColor.B)
-			elseif material == "NumberPlate" then
+			-- 旗の布は模様そのまま(倉庫で見た旗が、どの艇番でも同じに見えるように)。布は両面で描く部品(Items.rbxmx)
+			if material == "NumberPlate" then
 				-- 側面の艇番の板は艇番の色
 				p.Color = laneColor
 			end
@@ -156,12 +153,18 @@ end
 
 -- 色だけの品(スタンダード・VIP)で元の部品を塗る
 local function paint(model: Model, skin: any, helmet: any)
+	-- 艇番が決まっていない艇(ホーム・倉庫・ガチャの見本)は、艇首と側面の艇番の板を甲板の色にする
+	-- (VIP の黒い甲板で、旗の下に白い板だけが浮いて見えないように)
+	local noLane = model:GetAttribute("Lane") == nil
 	for _, p in model:GetDescendants() do
 		if p:IsA("MeshPart") and not p:GetAttribute("OutfitItem") then
 			local material = materialOf(p)
 			local key = ({ HullWhite = "hull", Trim = "trim", Deck = "deck", MotorRed = "cowl" })[material or ""]
 			if skin and skin.hull and key then
 				p.Color = color(skin[key])
+			end
+			if skin and skin.deck and noLane and material == "NumberPlate" and p.Parent and p.Parent.Name == "Plates" then
+				p.Color = color(skin.deck)
 			end
 			if helmet and helmet.base and material == "Helmet" then
 				p.Color = color(helmet.base)

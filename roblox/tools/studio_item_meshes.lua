@@ -20,9 +20,13 @@ for _, p in items:GetDescendants() do
 	if p:IsA("MeshPart") then
 		local from = byName[p.Name]
 		if from then
-			local size, frame = p.Size, p.CFrame
+			-- 形だけ写す(大きさ・位置・模様は Items.rbxmx のまま。旗の布は本体の模様を使うので、模様も戻す)
+			local size, frame, texture = p.Size, p.CFrame, p.TextureID
 			p:ApplyMesh(from)
 			p.Size, p.CFrame = size, frame
+			if texture ~= "" then
+				p.TextureID = texture
+			end
 			done += 1
 		else
 			table.insert(missing, p.Name)

@@ -325,9 +325,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX13">
+      <Item class="MeshPart" referent="RBX13">
         <Properties>
           <string name="Name">flag01__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://93058712973253</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://134347282865845</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.012</X>
             <Y>1.89418</Y>
@@ -347,6 +353,11 @@
             <Y>0.63</Y>
             <Z>0.99251</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.0555509627</X>
+            <Y>0.629999995</Y>
+            <Z>0.992512465</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -356,41 +367,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX14">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://93058712973253</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://134347282865845</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>0.999982669967302</X>
-              <Y>1.000000007936508</Y>
-              <Z>0.9999975164039879</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX15">
+    <Item class="Model" referent="RBX14">
       <Properties>
         <string name="Name">hull02</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX16">
+      <Item class="MeshPart" referent="RBX15">
         <Properties>
           <string name="Name">hull02__Paint__Body</string>
           <Content name="MeshId">
@@ -441,11 +431,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX17">
+    <Item class="Model" referent="RBX16">
       <Properties>
         <string name="Name">helm02</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX18">
+      <Item class="MeshPart" referent="RBX17">
         <Properties>
           <string name="Name">helm02__Helmet__Body</string>
           <Content name="MeshId">
@@ -495,7 +485,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX19">
+      <Item class="MeshPart" referent="RBX18">
         <Properties>
           <string name="Name">helm02__Visor__Visor</string>
           <Content name="MeshId">
@@ -543,11 +533,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX20">
+    <Item class="Model" referent="RBX19">
       <Properties>
         <string name="Name">cowl02</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX21">
+      <Item class="MeshPart" referent="RBX20">
         <Properties>
           <string name="Name">cowl02__Paint__Body</string>
           <Content name="MeshId">
@@ -598,11 +588,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX22">
+    <Item class="Model" referent="RBX21">
       <Properties>
         <string name="Name">whl02</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX23">
+      <Item class="MeshPart" referent="RBX22">
         <Properties>
           <string name="Name">whl02__Paint__Body</string>
           <Content name="MeshId">
@@ -653,11 +643,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX24">
+    <Item class="Model" referent="RBX23">
       <Properties>
         <string name="Name">flag02</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX25">
+      <Item class="MeshPart" referent="RBX24">
         <Properties>
           <string name="Name">flag02__Paint__Body</string>
           <Content name="MeshId">
@@ -707,9 +697,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX26">
+      <Item class="MeshPart" referent="RBX25">
         <Properties>
           <string name="Name">flag02__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://139591335592463</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://99630740336900</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.01808</X>
             <Y>1.90801</Y>
@@ -729,6 +725,11 @@
             <Y>0.65767</Y>
             <Z>0.98007</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.0614311844</X>
+            <Y>0.657667518</Y>
+            <Z>0.980065525</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -738,41 +739,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX27">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://139591335592463</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://99630740336900</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>0.9999807198898806</X>
-              <Y>1.0000037739434167</Y>
-              <Z>1.0000045660212362</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX28">
+    <Item class="Model" referent="RBX26">
       <Properties>
         <string name="Name">hull03</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX29">
+      <Item class="MeshPart" referent="RBX27">
         <Properties>
           <string name="Name">hull03__Paint__Body</string>
           <Content name="MeshId">
@@ -823,11 +803,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX30">
+    <Item class="Model" referent="RBX28">
       <Properties>
         <string name="Name">helm03</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX31">
+      <Item class="MeshPart" referent="RBX29">
         <Properties>
           <string name="Name">helm03__Helmet__Body</string>
           <Content name="MeshId">
@@ -877,7 +857,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX32">
+      <Item class="MeshPart" referent="RBX30">
         <Properties>
           <string name="Name">helm03__Visor__Visor</string>
           <Content name="MeshId">
@@ -925,11 +905,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX33">
+    <Item class="Model" referent="RBX31">
       <Properties>
         <string name="Name">cowl03</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX34">
+      <Item class="MeshPart" referent="RBX32">
         <Properties>
           <string name="Name">cowl03__Paint__Body</string>
           <Content name="MeshId">
@@ -980,11 +960,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX35">
+    <Item class="Model" referent="RBX33">
       <Properties>
         <string name="Name">whl03</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX36">
+      <Item class="MeshPart" referent="RBX34">
         <Properties>
           <string name="Name">whl03__Paint__Body</string>
           <Content name="MeshId">
@@ -1035,11 +1015,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX37">
+    <Item class="Model" referent="RBX35">
       <Properties>
         <string name="Name">flag03</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX38">
+      <Item class="MeshPart" referent="RBX36">
         <Properties>
           <string name="Name">flag03__Paint__Body</string>
           <Content name="MeshId">
@@ -1089,9 +1069,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX39">
+      <Item class="MeshPart" referent="RBX37">
         <Properties>
           <string name="Name">flag03__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://134226259584391</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://96815935922179</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.02552</X>
             <Y>1.91701</Y>
@@ -1111,6 +1097,11 @@
             <Y>0.67567</Y>
             <Z>0.9475</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.0694030374</X>
+            <Y>0.675669968</Y>
+            <Z>0.947503448</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -1120,41 +1111,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX40">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://134226259584391</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://96815935922179</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>0.9999562353448237</X>
-              <Y>1.0000000473604</Y>
-              <Z>0.9999963609631107</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX41">
+    <Item class="Model" referent="RBX38">
       <Properties>
         <string name="Name">hull04</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX42">
+      <Item class="MeshPart" referent="RBX39">
         <Properties>
           <string name="Name">hull04__Paint__Body</string>
           <Content name="MeshId">
@@ -1205,11 +1175,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX43">
+    <Item class="Model" referent="RBX40">
       <Properties>
         <string name="Name">helm04</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX44">
+      <Item class="MeshPart" referent="RBX41">
         <Properties>
           <string name="Name">helm04__Helmet__Body</string>
           <Content name="MeshId">
@@ -1259,7 +1229,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX45">
+      <Item class="MeshPart" referent="RBX42">
         <Properties>
           <string name="Name">helm04__Visor__Visor</string>
           <Content name="MeshId">
@@ -1307,11 +1277,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX46">
+    <Item class="Model" referent="RBX43">
       <Properties>
         <string name="Name">cowl04</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX47">
+      <Item class="MeshPart" referent="RBX44">
         <Properties>
           <string name="Name">cowl04__Paint__Body</string>
           <Content name="MeshId">
@@ -1362,11 +1332,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX48">
+    <Item class="Model" referent="RBX45">
       <Properties>
         <string name="Name">whl04</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX49">
+      <Item class="MeshPart" referent="RBX46">
         <Properties>
           <string name="Name">whl04__Paint__Body</string>
           <Content name="MeshId">
@@ -1417,11 +1387,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX50">
+    <Item class="Model" referent="RBX47">
       <Properties>
         <string name="Name">flag04</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX51">
+      <Item class="MeshPart" referent="RBX48">
         <Properties>
           <string name="Name">flag04__Paint__Body</string>
           <Content name="MeshId">
@@ -1471,9 +1441,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX52">
+      <Item class="MeshPart" referent="RBX49">
         <Properties>
           <string name="Name">flag04__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://140544137313842</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://120456867568817</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.02994</X>
             <Y>1.91804</Y>
@@ -1493,6 +1469,11 @@
             <Y>0.67772</Y>
             <Z>0.90733</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.0721180364</X>
+            <Y>0.67771858</Y>
+            <Z>0.907328308</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -1502,41 +1483,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX53">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://140544137313842</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://120456867568817</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>1.0000272275854698</X>
-              <Y>1.0000020952649697</Y>
-              <Z>1.0000018648156186</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX54">
+    <Item class="Model" referent="RBX50">
       <Properties>
         <string name="Name">hull05</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX55">
+      <Item class="MeshPart" referent="RBX51">
         <Properties>
           <string name="Name">hull05__Paint__Body</string>
           <Content name="MeshId">
@@ -1587,11 +1547,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX56">
+    <Item class="Model" referent="RBX52">
       <Properties>
         <string name="Name">helm05</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX57">
+      <Item class="MeshPart" referent="RBX53">
         <Properties>
           <string name="Name">helm05__Helmet__Body</string>
           <Content name="MeshId">
@@ -1641,7 +1601,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX58">
+      <Item class="MeshPart" referent="RBX54">
         <Properties>
           <string name="Name">helm05__Visor__Visor</string>
           <Content name="MeshId">
@@ -1689,11 +1649,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX59">
+    <Item class="Model" referent="RBX55">
       <Properties>
         <string name="Name">cowl05</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX60">
+      <Item class="MeshPart" referent="RBX56">
         <Properties>
           <string name="Name">cowl05__Paint__Body</string>
           <Content name="MeshId">
@@ -1744,11 +1704,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX61">
+    <Item class="Model" referent="RBX57">
       <Properties>
         <string name="Name">whl05</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX62">
+      <Item class="MeshPart" referent="RBX58">
         <Properties>
           <string name="Name">whl05__Paint__Body</string>
           <Content name="MeshId">
@@ -1799,11 +1759,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX63">
+    <Item class="Model" referent="RBX59">
       <Properties>
         <string name="Name">flag05</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX64">
+      <Item class="MeshPart" referent="RBX60">
         <Properties>
           <string name="Name">flag05__Paint__Body</string>
           <Content name="MeshId">
@@ -1853,9 +1813,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX65">
+      <Item class="MeshPart" referent="RBX61">
         <Properties>
           <string name="Name">flag05__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://105624781648609</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://137373155215902</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.03185</X>
             <Y>1.91073</Y>
@@ -1875,6 +1841,11 @@
             <Y>0.6631</Y>
             <Z>0.87497</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.0691470876</X>
+            <Y>0.663097739</Y>
+            <Z>0.874965191</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -1884,41 +1855,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX66">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://105624781648609</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://137373155215902</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>1.0000421189105873</X>
-              <Y>1.0000034097537467</Y>
-              <Z>1.000005496218649</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX67">
+    <Item class="Model" referent="RBX62">
       <Properties>
         <string name="Name">hull06</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX68">
+      <Item class="MeshPart" referent="RBX63">
         <Properties>
           <string name="Name">hull06__Paint__Body</string>
           <Content name="MeshId">
@@ -1969,11 +1919,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX69">
+    <Item class="Model" referent="RBX64">
       <Properties>
         <string name="Name">helm06</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX70">
+      <Item class="MeshPart" referent="RBX65">
         <Properties>
           <string name="Name">helm06__Helmet__Body</string>
           <Content name="MeshId">
@@ -2023,7 +1973,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX71">
+      <Item class="MeshPart" referent="RBX66">
         <Properties>
           <string name="Name">helm06__Visor__Visor</string>
           <Content name="MeshId">
@@ -2071,11 +2021,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX72">
+    <Item class="Model" referent="RBX67">
       <Properties>
         <string name="Name">cowl06</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX73">
+      <Item class="MeshPart" referent="RBX68">
         <Properties>
           <string name="Name">cowl06__Paint__Body</string>
           <Content name="MeshId">
@@ -2126,11 +2076,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX74">
+    <Item class="Model" referent="RBX69">
       <Properties>
         <string name="Name">whl06</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX75">
+      <Item class="MeshPart" referent="RBX70">
         <Properties>
           <string name="Name">whl06__Paint__Body</string>
           <Content name="MeshId">
@@ -2181,11 +2131,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX76">
+    <Item class="Model" referent="RBX71">
       <Properties>
         <string name="Name">flag06</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX77">
+      <Item class="MeshPart" referent="RBX72">
         <Properties>
           <string name="Name">flag06__Paint__Body</string>
           <Content name="MeshId">
@@ -2235,9 +2185,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX78">
+      <Item class="MeshPart" referent="RBX73">
         <Properties>
           <string name="Name">flag06__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://118908369636827</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://97379741272769</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.03334</X>
             <Y>1.89764</Y>
@@ -2257,6 +2213,11 @@
             <Y>0.63691</Y>
             <Z>0.86284</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.0660185218</X>
+            <Y>0.636914909</Y>
+            <Z>0.862839818</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -2266,41 +2227,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX79">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://118908369636827</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://97379741272769</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>1.000022390686124</X>
-              <Y>0.9999922925340093</Y>
-              <Z>1.0000002109313877</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX80">
+    <Item class="Model" referent="RBX74">
       <Properties>
         <string name="Name">hull07</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX81">
+      <Item class="MeshPart" referent="RBX75">
         <Properties>
           <string name="Name">hull07__Paint__Body</string>
           <Content name="MeshId">
@@ -2351,11 +2291,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX82">
+    <Item class="Model" referent="RBX76">
       <Properties>
         <string name="Name">helm07</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX83">
+      <Item class="MeshPart" referent="RBX77">
         <Properties>
           <string name="Name">helm07__Helmet__Body</string>
           <Content name="MeshId">
@@ -2405,7 +2345,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX84">
+      <Item class="MeshPart" referent="RBX78">
         <Properties>
           <string name="Name">helm07__Visor__Visor</string>
           <Content name="MeshId">
@@ -2453,11 +2393,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX85">
+    <Item class="Model" referent="RBX79">
       <Properties>
         <string name="Name">cowl07</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX86">
+      <Item class="MeshPart" referent="RBX80">
         <Properties>
           <string name="Name">cowl07__Paint__Body</string>
           <Content name="MeshId">
@@ -2508,11 +2448,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX87">
+    <Item class="Model" referent="RBX81">
       <Properties>
         <string name="Name">whl07</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX88">
+      <Item class="MeshPart" referent="RBX82">
         <Properties>
           <string name="Name">whl07__Paint__Body</string>
           <Content name="MeshId">
@@ -2563,11 +2503,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX89">
+    <Item class="Model" referent="RBX83">
       <Properties>
         <string name="Name">flag07</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX90">
+      <Item class="MeshPart" referent="RBX84">
         <Properties>
           <string name="Name">flag07__Paint__Body</string>
           <Content name="MeshId">
@@ -2617,9 +2557,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX91">
+      <Item class="MeshPart" referent="RBX85">
         <Properties>
           <string name="Name">flag07__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://90550664826717</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://131422939197167</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.03497</X>
             <Y>1.88334</Y>
@@ -2639,6 +2585,11 @@
             <Y>0.65168</Y>
             <Z>0.87561</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.0627923012</X>
+            <Y>0.651683509</Y>
+            <Z>0.875607491</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -2648,41 +2599,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX92">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://90550664826717</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://131422939197167</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>0.9999633521951573</X>
-              <Y>0.9999946154844314</Y>
-              <Z>1.0000028654391675</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX93">
+    <Item class="Model" referent="RBX86">
       <Properties>
         <string name="Name">hull08</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX94">
+      <Item class="MeshPart" referent="RBX87">
         <Properties>
           <string name="Name">hull08__Paint__Body</string>
           <Content name="MeshId">
@@ -2733,11 +2663,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX95">
+    <Item class="Model" referent="RBX88">
       <Properties>
         <string name="Name">helm08</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX96">
+      <Item class="MeshPart" referent="RBX89">
         <Properties>
           <string name="Name">helm08__Helmet__Body</string>
           <Content name="MeshId">
@@ -2787,7 +2717,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX97">
+      <Item class="MeshPart" referent="RBX90">
         <Properties>
           <string name="Name">helm08__Visor__Visor</string>
           <Content name="MeshId">
@@ -2835,11 +2765,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX98">
+    <Item class="Model" referent="RBX91">
       <Properties>
         <string name="Name">cowl08</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX99">
+      <Item class="MeshPart" referent="RBX92">
         <Properties>
           <string name="Name">cowl08__Paint__Body</string>
           <Content name="MeshId">
@@ -2890,11 +2820,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX100">
+    <Item class="Model" referent="RBX93">
       <Properties>
         <string name="Name">whl08</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX101">
+      <Item class="MeshPart" referent="RBX94">
         <Properties>
           <string name="Name">whl08__Paint__Body</string>
           <Content name="MeshId">
@@ -2945,11 +2875,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX102">
+    <Item class="Model" referent="RBX95">
       <Properties>
         <string name="Name">flag08</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX103">
+      <Item class="MeshPart" referent="RBX96">
         <Properties>
           <string name="Name">flag08__Paint__Body</string>
           <Content name="MeshId">
@@ -2999,9 +2929,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX104">
+      <Item class="MeshPart" referent="RBX97">
         <Properties>
           <string name="Name">flag08__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://87055413865533</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://118476883035125</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.03655</X>
             <Y>1.87283</Y>
@@ -3021,6 +2957,11 @@
             <Y>0.67271</Y>
             <Z>0.90837</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.0597719327</X>
+            <Y>0.6727072</Y>
+            <Z>0.908366323</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -3030,41 +2971,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX105">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://87055413865533</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://118476883035125</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>0.9999676654256823</X>
-              <Y>1.0000041622863558</Y>
-              <Z>1.0000040479263783</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX106">
+    <Item class="Model" referent="RBX98">
       <Properties>
         <string name="Name">hull09</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX107">
+      <Item class="MeshPart" referent="RBX99">
         <Properties>
           <string name="Name">hull09__Paint__Body</string>
           <Content name="MeshId">
@@ -3115,11 +3035,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX108">
+    <Item class="Model" referent="RBX100">
       <Properties>
         <string name="Name">helm09</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX109">
+      <Item class="MeshPart" referent="RBX101">
         <Properties>
           <string name="Name">helm09__Helmet__Body</string>
           <Content name="MeshId">
@@ -3169,7 +3089,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX110">
+      <Item class="MeshPart" referent="RBX102">
         <Properties>
           <string name="Name">helm09__Visor__Visor</string>
           <Content name="MeshId">
@@ -3217,11 +3137,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX111">
+    <Item class="Model" referent="RBX103">
       <Properties>
         <string name="Name">cowl09</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX112">
+      <Item class="MeshPart" referent="RBX104">
         <Properties>
           <string name="Name">cowl09__Paint__Body</string>
           <Content name="MeshId">
@@ -3272,11 +3192,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX113">
+    <Item class="Model" referent="RBX105">
       <Properties>
         <string name="Name">whl09</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX114">
+      <Item class="MeshPart" referent="RBX106">
         <Properties>
           <string name="Name">whl09__Paint__Body</string>
           <Content name="MeshId">
@@ -3327,11 +3247,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX115">
+    <Item class="Model" referent="RBX107">
       <Properties>
         <string name="Name">flag09</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX116">
+      <Item class="MeshPart" referent="RBX108">
         <Properties>
           <string name="Name">flag09__Paint__Body</string>
           <Content name="MeshId">
@@ -3381,9 +3301,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX117">
+      <Item class="MeshPart" referent="RBX109">
         <Properties>
           <string name="Name">flag09__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://100583179467672</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://136191451034732</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.04316</X>
             <Y>1.86977</Y>
@@ -3403,6 +3329,11 @@
             <Y>0.67881</Y>
             <Z>0.9975</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.0818374306</X>
+            <Y>0.678812027</Y>
+            <Z>0.997500002</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -3412,41 +3343,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX118">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://100583179467672</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://136191451034732</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>1.000031396391372</X>
-              <Y>0.9999970139008748</Y>
-              <Z>0.9999999979949875</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX119">
+    <Item class="Model" referent="RBX110">
       <Properties>
         <string name="Name">hull10</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX120">
+      <Item class="MeshPart" referent="RBX111">
         <Properties>
           <string name="Name">hull10__Paint__Body</string>
           <Content name="MeshId">
@@ -3497,11 +3407,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX121">
+    <Item class="Model" referent="RBX112">
       <Properties>
         <string name="Name">helm10</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX122">
+      <Item class="MeshPart" referent="RBX113">
         <Properties>
           <string name="Name">helm10__Helmet__Body</string>
           <Content name="MeshId">
@@ -3551,7 +3461,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX123">
+      <Item class="MeshPart" referent="RBX114">
         <Properties>
           <string name="Name">helm10__Visor__Visor</string>
           <Content name="MeshId">
@@ -3599,11 +3509,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX124">
+    <Item class="Model" referent="RBX115">
       <Properties>
         <string name="Name">cowl10</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX125">
+      <Item class="MeshPart" referent="RBX116">
         <Properties>
           <string name="Name">cowl10__Paint__Body</string>
           <Content name="MeshId">
@@ -3654,11 +3564,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX126">
+    <Item class="Model" referent="RBX117">
       <Properties>
         <string name="Name">whl10</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX127">
+      <Item class="MeshPart" referent="RBX118">
         <Properties>
           <string name="Name">whl10__Paint__Body</string>
           <Content name="MeshId">
@@ -3709,11 +3619,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX128">
+    <Item class="Model" referent="RBX119">
       <Properties>
         <string name="Name">flag10</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX129">
+      <Item class="MeshPart" referent="RBX120">
         <Properties>
           <string name="Name">flag10__Paint__Body</string>
           <Content name="MeshId">
@@ -3763,9 +3673,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX130">
+      <Item class="MeshPart" referent="RBX121">
         <Properties>
           <string name="Name">flag10__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://80563866628914</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://123715030987261</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.03231</X>
             <Y>1.87525</Y>
@@ -3785,6 +3701,11 @@
             <Y>0.66787</Y>
             <Z>0.9975</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.0943722129</X>
+            <Y>0.667865455</Y>
+            <Z>0.997500002</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -3794,41 +3715,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX131">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://80563866628914</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://123715030987261</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>0.9999765513604905</X>
-              <Y>1.0000068052628952</Y>
-              <Z>0.9999999979949875</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX132">
+    <Item class="Model" referent="RBX122">
       <Properties>
         <string name="Name">hull11</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX133">
+      <Item class="MeshPart" referent="RBX123">
         <Properties>
           <string name="Name">hull11__Paint__Body</string>
           <Content name="MeshId">
@@ -3879,11 +3779,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX134">
+    <Item class="Model" referent="RBX124">
       <Properties>
         <string name="Name">helm11</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX135">
+      <Item class="MeshPart" referent="RBX125">
         <Properties>
           <string name="Name">helm11__Helmet__Body</string>
           <Content name="MeshId">
@@ -3933,7 +3833,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX136">
+      <Item class="MeshPart" referent="RBX126">
         <Properties>
           <string name="Name">helm11__Visor__Visor</string>
           <Content name="MeshId">
@@ -3981,11 +3881,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX137">
+    <Item class="Model" referent="RBX127">
       <Properties>
         <string name="Name">cowl11</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX138">
+      <Item class="MeshPart" referent="RBX128">
         <Properties>
           <string name="Name">cowl11__Paint__Body</string>
           <Content name="MeshId">
@@ -4036,11 +3936,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX139">
+    <Item class="Model" referent="RBX129">
       <Properties>
         <string name="Name">whl11</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX140">
+      <Item class="MeshPart" referent="RBX130">
         <Properties>
           <string name="Name">whl11__Paint__Body</string>
           <Content name="MeshId">
@@ -4091,11 +3991,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX141">
+    <Item class="Model" referent="RBX131">
       <Properties>
         <string name="Name">flag11</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX142">
+      <Item class="MeshPart" referent="RBX132">
         <Properties>
           <string name="Name">flag11__Paint__Body</string>
           <Content name="MeshId">
@@ -4145,9 +4045,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX143">
+      <Item class="MeshPart" referent="RBX133">
         <Properties>
           <string name="Name">flag11__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://121024756557992</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://131069894757686</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.02172</X>
             <Y>1.88733</Y>
@@ -4167,6 +4073,11 @@
             <Y>0.64369</Y>
             <Z>0.9975</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.105284497</X>
+            <Y>0.643691361</Y>
+            <Z>0.997500002</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -4176,41 +4087,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX144">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://121024756557992</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://131069894757686</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>0.9999572871588112</X>
-              <Y>0.9999978856326456</Y>
-              <Z>0.9999999979949875</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX145">
+    <Item class="Model" referent="RBX134">
       <Properties>
         <string name="Name">hull12</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX146">
+      <Item class="MeshPart" referent="RBX135">
         <Properties>
           <string name="Name">hull12__Paint__Body</string>
           <Content name="MeshId">
@@ -4261,11 +4151,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX147">
+    <Item class="Model" referent="RBX136">
       <Properties>
         <string name="Name">helm12</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX148">
+      <Item class="MeshPart" referent="RBX137">
         <Properties>
           <string name="Name">helm12__Helmet__Body</string>
           <Content name="MeshId">
@@ -4315,7 +4205,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX149">
+      <Item class="MeshPart" referent="RBX138">
         <Properties>
           <string name="Name">helm12__Visor__Visor</string>
           <Content name="MeshId">
@@ -4363,11 +4253,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX150">
+    <Item class="Model" referent="RBX139">
       <Properties>
         <string name="Name">cowl12</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX151">
+      <Item class="MeshPart" referent="RBX140">
         <Properties>
           <string name="Name">cowl12__Paint__Body</string>
           <Content name="MeshId">
@@ -4418,11 +4308,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX152">
+    <Item class="Model" referent="RBX141">
       <Properties>
         <string name="Name">whl12</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX153">
+      <Item class="MeshPart" referent="RBX142">
         <Properties>
           <string name="Name">whl12__Paint__Body</string>
           <Content name="MeshId">
@@ -4473,11 +4363,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX154">
+    <Item class="Model" referent="RBX143">
       <Properties>
         <string name="Name">flag12</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX155">
+      <Item class="MeshPart" referent="RBX144">
         <Properties>
           <string name="Name">flag12__Paint__Body</string>
           <Content name="MeshId">
@@ -4527,9 +4417,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX156">
+      <Item class="MeshPart" referent="RBX145">
         <Properties>
           <string name="Name">flag12__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://72578503282693</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://75943593839336</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.01574</X>
             <Y>1.90181</Y>
@@ -4549,6 +4445,11 @@
             <Y>0.64527</Y>
             <Z>0.9975</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.107907377</X>
+            <Y>0.645265579</Y>
+            <Z>0.997500002</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -4558,41 +4459,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX157">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://72578503282693</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://75943593839336</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>1.0000243078839735</X>
-              <Y>1.0000068514424818</Y>
-              <Z>0.9999999979949875</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX158">
+    <Item class="Model" referent="RBX146">
       <Properties>
         <string name="Name">hull13</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX159">
+      <Item class="MeshPart" referent="RBX147">
         <Properties>
           <string name="Name">hull13__Paint__Body</string>
           <Content name="MeshId">
@@ -4643,11 +4523,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX160">
+    <Item class="Model" referent="RBX148">
       <Properties>
         <string name="Name">helm13</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX161">
+      <Item class="MeshPart" referent="RBX149">
         <Properties>
           <string name="Name">helm13__Helmet__Body</string>
           <Content name="MeshId">
@@ -4697,7 +4577,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX162">
+      <Item class="MeshPart" referent="RBX150">
         <Properties>
           <string name="Name">helm13__Visor__Visor</string>
           <Content name="MeshId">
@@ -4745,11 +4625,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX163">
+    <Item class="Model" referent="RBX151">
       <Properties>
         <string name="Name">cowl13</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX164">
+      <Item class="MeshPart" referent="RBX152">
         <Properties>
           <string name="Name">cowl13__Paint__Body</string>
           <Content name="MeshId">
@@ -4800,11 +4680,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX165">
+    <Item class="Model" referent="RBX153">
       <Properties>
         <string name="Name">whl13</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX166">
+      <Item class="MeshPart" referent="RBX154">
         <Properties>
           <string name="Name">whl13__Paint__Body</string>
           <Content name="MeshId">
@@ -4855,11 +4735,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX167">
+    <Item class="Model" referent="RBX155">
       <Properties>
         <string name="Name">flag13</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX168">
+      <Item class="MeshPart" referent="RBX156">
         <Properties>
           <string name="Name">flag13__Paint__Body</string>
           <Content name="MeshId">
@@ -4909,9 +4789,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX169">
+      <Item class="MeshPart" referent="RBX157">
         <Properties>
           <string name="Name">flag13__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://131964090715527</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://71776027686663</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.01316</X>
             <Y>1.91362</Y>
@@ -4931,6 +4817,11 @@
             <Y>0.66889</Y>
             <Z>0.9975</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.103008956</X>
+            <Y>0.668889761</Y>
+            <Z>0.997500002</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -4940,41 +4831,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX170">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://131964090715527</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://71776027686663</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>1.0000101350410735</X>
-              <Y>1.0000003573085043</Y>
-              <Z>0.9999999979949875</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX171">
+    <Item class="Model" referent="RBX158">
       <Properties>
         <string name="Name">hull14</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX172">
+      <Item class="MeshPart" referent="RBX159">
         <Properties>
           <string name="Name">hull14__Paint__Body</string>
           <Content name="MeshId">
@@ -5025,11 +4895,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX173">
+    <Item class="Model" referent="RBX160">
       <Properties>
         <string name="Name">helm14</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX174">
+      <Item class="MeshPart" referent="RBX161">
         <Properties>
           <string name="Name">helm14__Helmet__Body</string>
           <Content name="MeshId">
@@ -5079,7 +4949,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX175">
+      <Item class="MeshPart" referent="RBX162">
         <Properties>
           <string name="Name">helm14__Visor__Visor</string>
           <Content name="MeshId">
@@ -5127,11 +4997,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX176">
+    <Item class="Model" referent="RBX163">
       <Properties>
         <string name="Name">cowl14</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX177">
+      <Item class="MeshPart" referent="RBX164">
         <Properties>
           <string name="Name">cowl14__Paint__Body</string>
           <Content name="MeshId">
@@ -5182,11 +5052,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX178">
+    <Item class="Model" referent="RBX165">
       <Properties>
         <string name="Name">whl14</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX179">
+      <Item class="MeshPart" referent="RBX166">
         <Properties>
           <string name="Name">whl14__Paint__Body</string>
           <Content name="MeshId">
@@ -5237,11 +5107,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX180">
+    <Item class="Model" referent="RBX167">
       <Properties>
         <string name="Name">flag14</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX181">
+      <Item class="MeshPart" referent="RBX168">
         <Properties>
           <string name="Name">flag14__Paint__Body</string>
           <Content name="MeshId">
@@ -5291,9 +5161,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX182">
+      <Item class="MeshPart" referent="RBX169">
         <Properties>
           <string name="Name">flag14__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://91165083640689</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://90621496126079</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.01081</X>
             <Y>1.91864</Y>
@@ -5313,6 +5189,11 @@
             <Y>0.67893</Y>
             <Z>0.9975</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.0984941721</X>
+            <Y>0.678928673</Y>
+            <Z>0.997500002</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -5322,41 +5203,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX183">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://91165083640689</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://90621496126079</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>0.9999576411485974</X>
-              <Y>1.0000019545499443</Y>
-              <Z>0.9999999979949875</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX184">
+    <Item class="Model" referent="RBX170">
       <Properties>
         <string name="Name">hull15</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX185">
+      <Item class="MeshPart" referent="RBX171">
         <Properties>
           <string name="Name">hull15__Paint__Body</string>
           <Content name="MeshId">
@@ -5407,11 +5267,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX186">
+    <Item class="Model" referent="RBX172">
       <Properties>
         <string name="Name">helm15</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX187">
+      <Item class="MeshPart" referent="RBX173">
         <Properties>
           <string name="Name">helm15__Helmet__Body</string>
           <Content name="MeshId">
@@ -5461,7 +5321,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX188">
+      <Item class="MeshPart" referent="RBX174">
         <Properties>
           <string name="Name">helm15__Visor__Visor</string>
           <Content name="MeshId">
@@ -5509,11 +5369,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX189">
+    <Item class="Model" referent="RBX175">
       <Properties>
         <string name="Name">cowl15</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX190">
+      <Item class="MeshPart" referent="RBX176">
         <Properties>
           <string name="Name">cowl15__Paint__Body</string>
           <Content name="MeshId">
@@ -5564,11 +5424,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX191">
+    <Item class="Model" referent="RBX177">
       <Properties>
         <string name="Name">whl15</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX192">
+      <Item class="MeshPart" referent="RBX178">
         <Properties>
           <string name="Name">whl15__Paint__Body</string>
           <Content name="MeshId">
@@ -5619,11 +5479,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX193">
+    <Item class="Model" referent="RBX179">
       <Properties>
         <string name="Name">flag15</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX194">
+      <Item class="MeshPart" referent="RBX180">
         <Properties>
           <string name="Name">flag15__Paint__Body</string>
           <Content name="MeshId">
@@ -5673,9 +5533,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX195">
+      <Item class="MeshPart" referent="RBX181">
         <Properties>
           <string name="Name">flag15__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://131134612924235</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://77449950379272</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.00828</X>
             <Y>1.91512</Y>
@@ -5695,6 +5561,11 @@
             <Y>0.67188</Y>
             <Z>0.9975</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.0935381576</X>
+            <Y>0.671875358</Y>
+            <Z>0.997500002</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -5704,41 +5575,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX196">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://131134612924235</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://77449950379272</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>1.0000196967745278</X>
-              <Y>1.0000069090195745</Y>
-              <Z>0.9999999979949875</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX197">
+    <Item class="Model" referent="RBX182">
       <Properties>
         <string name="Name">hull16</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX198">
+      <Item class="MeshPart" referent="RBX183">
         <Properties>
           <string name="Name">hull16__Paint__Body</string>
           <Content name="MeshId">
@@ -5789,11 +5639,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX199">
+    <Item class="Model" referent="RBX184">
       <Properties>
         <string name="Name">helm16</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX200">
+      <Item class="MeshPart" referent="RBX185">
         <Properties>
           <string name="Name">helm16__Helmet__Body</string>
           <Content name="MeshId">
@@ -5843,7 +5693,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX201">
+      <Item class="MeshPart" referent="RBX186">
         <Properties>
           <string name="Name">helm16__Visor__Visor</string>
           <Content name="MeshId">
@@ -5891,11 +5741,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX202">
+    <Item class="Model" referent="RBX187">
       <Properties>
         <string name="Name">cowl16</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX203">
+      <Item class="MeshPart" referent="RBX188">
         <Properties>
           <string name="Name">cowl16__Paint__Body</string>
           <Content name="MeshId">
@@ -5946,11 +5796,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX204">
+    <Item class="Model" referent="RBX189">
       <Properties>
         <string name="Name">whl16</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX205">
+      <Item class="MeshPart" referent="RBX190">
         <Properties>
           <string name="Name">whl16__Paint__Body</string>
           <Content name="MeshId">
@@ -6001,11 +5851,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX206">
+    <Item class="Model" referent="RBX191">
       <Properties>
         <string name="Name">flag16</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX207">
+      <Item class="MeshPart" referent="RBX192">
         <Properties>
           <string name="Name">flag16__Paint__Body</string>
           <Content name="MeshId">
@@ -6055,9 +5905,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX208">
+      <Item class="MeshPart" referent="RBX193">
         <Properties>
           <string name="Name">flag16__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://124807023076420</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://136326907396552</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.00608</X>
             <Y>1.90428</Y>
@@ -6077,6 +5933,11 @@
             <Y>0.65019</Y>
             <Z>0.9975</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.0891551673</X>
+            <Y>0.65019381</Y>
+            <Z>0.997500002</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -6086,41 +5947,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX209">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://124807023076420</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://136326907396552</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>1.000054205495277</X>
-              <Y>0.999994140208748</Y>
-              <Z>0.9999999979949875</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX210">
+    <Item class="Model" referent="RBX194">
       <Properties>
         <string name="Name">hull17</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX211">
+      <Item class="MeshPart" referent="RBX195">
         <Properties>
           <string name="Name">hull17__Paint__Body</string>
           <Content name="MeshId">
@@ -6171,11 +6011,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX212">
+    <Item class="Model" referent="RBX196">
       <Properties>
         <string name="Name">helm17</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX213">
+      <Item class="MeshPart" referent="RBX197">
         <Properties>
           <string name="Name">helm17__Helmet__Body</string>
           <Content name="MeshId">
@@ -6225,7 +6065,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX214">
+      <Item class="MeshPart" referent="RBX198">
         <Properties>
           <string name="Name">helm17__Visor__Visor</string>
           <Content name="MeshId">
@@ -6273,11 +6113,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX215">
+    <Item class="Model" referent="RBX199">
       <Properties>
         <string name="Name">cowl17</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX216">
+      <Item class="MeshPart" referent="RBX200">
         <Properties>
           <string name="Name">cowl17__Paint__Body</string>
           <Content name="MeshId">
@@ -6328,11 +6168,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX217">
+    <Item class="Model" referent="RBX201">
       <Properties>
         <string name="Name">whl17</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX218">
+      <Item class="MeshPart" referent="RBX202">
         <Properties>
           <string name="Name">whl17__Paint__Body</string>
           <Content name="MeshId">
@@ -6383,11 +6223,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX219">
+    <Item class="Model" referent="RBX203">
       <Properties>
         <string name="Name">flag17</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX220">
+      <Item class="MeshPart" referent="RBX204">
         <Properties>
           <string name="Name">flag17__Paint__Body</string>
           <Content name="MeshId">
@@ -6437,9 +6277,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX221">
+      <Item class="MeshPart" referent="RBX205">
         <Properties>
           <string name="Name">flag17__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://130865151521391</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://127000000373942</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>-0.0002</X>
             <Y>1.89068</Y>
@@ -6459,6 +6305,11 @@
             <Y>0.63699</Y>
             <Z>0.9975</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.106308892</X>
+            <Y>0.636991739</Y>
+            <Z>0.997500002</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -6468,41 +6319,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX222">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://130865151521391</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://127000000373942</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>1.0000104224583584</X>
-              <Y>0.999997269980294</Y>
-              <Z>0.9999999979949875</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX223">
+    <Item class="Model" referent="RBX206">
       <Properties>
         <string name="Name">hull18</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX224">
+      <Item class="MeshPart" referent="RBX207">
         <Properties>
           <string name="Name">hull18__Paint__Body</string>
           <Content name="MeshId">
@@ -6553,11 +6383,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX225">
+    <Item class="Model" referent="RBX208">
       <Properties>
         <string name="Name">helm18</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX226">
+      <Item class="MeshPart" referent="RBX209">
         <Properties>
           <string name="Name">helm18__Helmet__Body</string>
           <Content name="MeshId">
@@ -6607,7 +6437,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX227">
+      <Item class="MeshPart" referent="RBX210">
         <Properties>
           <string name="Name">helm18__Visor__Visor</string>
           <Content name="MeshId">
@@ -6655,11 +6485,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX228">
+    <Item class="Model" referent="RBX211">
       <Properties>
         <string name="Name">cowl18</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX229">
+      <Item class="MeshPart" referent="RBX212">
         <Properties>
           <string name="Name">cowl18__Paint__Body</string>
           <Content name="MeshId">
@@ -6710,11 +6540,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX230">
+    <Item class="Model" referent="RBX213">
       <Properties>
         <string name="Name">whl18</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX231">
+      <Item class="MeshPart" referent="RBX214">
         <Properties>
           <string name="Name">whl18__Paint__Body</string>
           <Content name="MeshId">
@@ -6765,11 +6595,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX232">
+    <Item class="Model" referent="RBX215">
       <Properties>
         <string name="Name">flag18</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX233">
+      <Item class="MeshPart" referent="RBX216">
         <Properties>
           <string name="Name">flag18__Paint__Body</string>
           <Content name="MeshId">
@@ -6819,9 +6649,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX234">
+      <Item class="MeshPart" referent="RBX217">
         <Properties>
           <string name="Name">flag18__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://128977594853444</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://84395224111692</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.01485</X>
             <Y>1.8815</Y>
@@ -6841,6 +6677,11 @@
             <Y>0.65537</Y>
             <Z>0.9975</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.122615322</X>
+            <Y>0.655368865</Y>
+            <Z>0.997500002</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -6850,41 +6691,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX235">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://128977594853444</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://84395224111692</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>1.0000381518388053</X>
-              <Y>1.000001731849132</Y>
-              <Z>0.9999999979949875</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX236">
+    <Item class="Model" referent="RBX218">
       <Properties>
         <string name="Name">hull19</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX237">
+      <Item class="MeshPart" referent="RBX219">
         <Properties>
           <string name="Name">hull19__Paint__Body</string>
           <Content name="MeshId">
@@ -6935,11 +6755,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX238">
+    <Item class="Model" referent="RBX220">
       <Properties>
         <string name="Name">helm19</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX239">
+      <Item class="MeshPart" referent="RBX221">
         <Properties>
           <string name="Name">helm19__Helmet__Body</string>
           <Content name="MeshId">
@@ -6989,7 +6809,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX240">
+      <Item class="MeshPart" referent="RBX222">
         <Properties>
           <string name="Name">helm19__Visor__Visor</string>
           <Content name="MeshId">
@@ -7037,11 +6857,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX241">
+    <Item class="Model" referent="RBX223">
       <Properties>
         <string name="Name">cowl19</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX242">
+      <Item class="MeshPart" referent="RBX224">
         <Properties>
           <string name="Name">cowl19__Paint__Body</string>
           <Content name="MeshId">
@@ -7092,11 +6912,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX243">
+    <Item class="Model" referent="RBX225">
       <Properties>
         <string name="Name">whl19</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX244">
+      <Item class="MeshPart" referent="RBX226">
         <Properties>
           <string name="Name">whl19__Paint__Body</string>
           <Content name="MeshId">
@@ -7147,11 +6967,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX245">
+    <Item class="Model" referent="RBX227">
       <Properties>
         <string name="Name">flag19</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX246">
+      <Item class="MeshPart" referent="RBX228">
         <Properties>
           <string name="Name">flag19__Paint__Body</string>
           <Content name="MeshId">
@@ -7201,9 +7021,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX247">
+      <Item class="MeshPart" referent="RBX229">
         <Properties>
           <string name="Name">flag19__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://72351747485234</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://136542420322564</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.02869</X>
             <Y>1.87461</Y>
@@ -7223,6 +7049,11 @@
             <Y>0.66914</Y>
             <Z>0.9975</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.13836956</X>
+            <Y>0.669140875</Y>
+            <Z>0.997500002</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -7232,41 +7063,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX248">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://72351747485234</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://136542420322564</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>1.0000031798901434</X>
-              <Y>0.9999986923530864</Y>
-              <Z>0.9999999979949875</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX249">
+    <Item class="Model" referent="RBX230">
       <Properties>
         <string name="Name">hull20</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX250">
+      <Item class="MeshPart" referent="RBX231">
         <Properties>
           <string name="Name">hull20__Paint__Body</string>
           <Content name="MeshId">
@@ -7317,11 +7127,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX251">
+    <Item class="Model" referent="RBX232">
       <Properties>
         <string name="Name">helm20</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX252">
+      <Item class="MeshPart" referent="RBX233">
         <Properties>
           <string name="Name">helm20__Helmet__Body</string>
           <Content name="MeshId">
@@ -7371,7 +7181,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX253">
+      <Item class="MeshPart" referent="RBX234">
         <Properties>
           <string name="Name">helm20__Visor__Visor</string>
           <Content name="MeshId">
@@ -7419,11 +7229,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX254">
+    <Item class="Model" referent="RBX235">
       <Properties>
         <string name="Name">cowl20</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX255">
+      <Item class="MeshPart" referent="RBX236">
         <Properties>
           <string name="Name">cowl20__Paint__Body</string>
           <Content name="MeshId">
@@ -7474,11 +7284,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX256">
+    <Item class="Model" referent="RBX237">
       <Properties>
         <string name="Name">whl20</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX257">
+      <Item class="MeshPart" referent="RBX238">
         <Properties>
           <string name="Name">whl20__Paint__Body</string>
           <Content name="MeshId">
@@ -7529,11 +7339,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX258">
+    <Item class="Model" referent="RBX239">
       <Properties>
         <string name="Name">flag20</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX259">
+      <Item class="MeshPart" referent="RBX240">
         <Properties>
           <string name="Name">flag20__Paint__Body</string>
           <Content name="MeshId">
@@ -7583,9 +7393,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX260">
+      <Item class="MeshPart" referent="RBX241">
         <Properties>
           <string name="Name">flag20__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://75611310765842</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://74160148712665</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.03717</X>
             <Y>1.87612</Y>
@@ -7605,6 +7421,11 @@
             <Y>0.66612</Y>
             <Z>0.9975</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.141667932</X>
+            <Y>0.666122079</Y>
+            <Z>0.997500002</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -7614,41 +7435,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX261">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://75611310765842</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://74160148712665</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>1.0000145975166772</X>
-              <Y>0.9999968789504725</Y>
-              <Z>0.9999999979949875</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX262">
+    <Item class="Model" referent="RBX242">
       <Properties>
         <string name="Name">hull21</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX263">
+      <Item class="MeshPart" referent="RBX243">
         <Properties>
           <string name="Name">hull21__Paint__Body</string>
           <Content name="MeshId">
@@ -7699,11 +7499,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX264">
+    <Item class="Model" referent="RBX244">
       <Properties>
         <string name="Name">helm21</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX265">
+      <Item class="MeshPart" referent="RBX245">
         <Properties>
           <string name="Name">helm21__Helmet__Body</string>
           <Content name="MeshId">
@@ -7753,7 +7553,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX266">
+      <Item class="MeshPart" referent="RBX246">
         <Properties>
           <string name="Name">helm21__Visor__Visor</string>
           <Content name="MeshId">
@@ -7801,11 +7601,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX267">
+    <Item class="Model" referent="RBX247">
       <Properties>
         <string name="Name">cowl21</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX268">
+      <Item class="MeshPart" referent="RBX248">
         <Properties>
           <string name="Name">cowl21__Paint__Body</string>
           <Content name="MeshId">
@@ -7856,11 +7656,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX269">
+    <Item class="Model" referent="RBX249">
       <Properties>
         <string name="Name">whl21</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX270">
+      <Item class="MeshPart" referent="RBX250">
         <Properties>
           <string name="Name">whl21__Paint__Body</string>
           <Content name="MeshId">
@@ -7911,11 +7711,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX271">
+    <Item class="Model" referent="RBX251">
       <Properties>
         <string name="Name">flag21</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX272">
+      <Item class="MeshPart" referent="RBX252">
         <Properties>
           <string name="Name">flag21__Paint__Body</string>
           <Content name="MeshId">
@@ -7965,9 +7765,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX273">
+      <Item class="MeshPart" referent="RBX253">
         <Properties>
           <string name="Name">flag21__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://114884171026593</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://132220215001202</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.04036</X>
             <Y>1.8855</Y>
@@ -7987,6 +7793,11 @@
             <Y>0.64737</Y>
             <Z>0.9975</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.136268988</X>
+            <Y>0.64736706</Y>
+            <Z>0.997500002</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -7996,41 +7807,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX274">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://114884171026593</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://132220215001202</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>1.0000074264879695</X>
-              <Y>1.0000045414729628</Y>
-              <Z>0.9999999979949875</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX275">
+    <Item class="Model" referent="RBX254">
       <Properties>
         <string name="Name">hull22</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX276">
+      <Item class="MeshPart" referent="RBX255">
         <Properties>
           <string name="Name">hull22__Paint__Body</string>
           <Content name="MeshId">
@@ -8081,11 +7871,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX277">
+    <Item class="Model" referent="RBX256">
       <Properties>
         <string name="Name">helm22</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX278">
+      <Item class="MeshPart" referent="RBX257">
         <Properties>
           <string name="Name">helm22__Helmet__Body</string>
           <Content name="MeshId">
@@ -8135,7 +7925,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX279">
+      <Item class="MeshPart" referent="RBX258">
         <Properties>
           <string name="Name">helm22__Visor__Visor</string>
           <Content name="MeshId">
@@ -8183,11 +7973,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX280">
+    <Item class="Model" referent="RBX259">
       <Properties>
         <string name="Name">cowl22</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX281">
+      <Item class="MeshPart" referent="RBX260">
         <Properties>
           <string name="Name">cowl22__Paint__Body</string>
           <Content name="MeshId">
@@ -8238,11 +8028,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX282">
+    <Item class="Model" referent="RBX261">
       <Properties>
         <string name="Name">whl22</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX283">
+      <Item class="MeshPart" referent="RBX262">
         <Properties>
           <string name="Name">whl22__Paint__Body</string>
           <Content name="MeshId">
@@ -8293,11 +8083,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX284">
+    <Item class="Model" referent="RBX263">
       <Properties>
         <string name="Name">flag22</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX285">
+      <Item class="MeshPart" referent="RBX264">
         <Properties>
           <string name="Name">flag22__Paint__Body</string>
           <Content name="MeshId">
@@ -8347,9 +8137,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX286">
+      <Item class="MeshPart" referent="RBX265">
         <Properties>
           <string name="Name">flag22__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://89977585038817</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://116060699166754</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.04361</X>
             <Y>1.89212</Y>
@@ -8369,6 +8165,11 @@
             <Y>0.63477</Y>
             <Z>0.9975</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.129495293</X>
+            <Y>0.63477391</Y>
+            <Z>0.997500002</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -8378,41 +8179,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX287">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://89977585038817</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://116060699166754</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>1.0000363488115356</X>
-              <Y>0.9999938403265501</Y>
-              <Z>0.9999999979949875</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX288">
+    <Item class="Model" referent="RBX266">
       <Properties>
         <string name="Name">hull23</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX289">
+      <Item class="MeshPart" referent="RBX267">
         <Properties>
           <string name="Name">hull23__Paint__Body</string>
           <Content name="MeshId">
@@ -8463,11 +8243,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX290">
+    <Item class="Model" referent="RBX268">
       <Properties>
         <string name="Name">helm23</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX291">
+      <Item class="MeshPart" referent="RBX269">
         <Properties>
           <string name="Name">helm23__Helmet__Body</string>
           <Content name="MeshId">
@@ -8517,7 +8297,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX292">
+      <Item class="MeshPart" referent="RBX270">
         <Properties>
           <string name="Name">helm23__Visor__Visor</string>
           <Content name="MeshId">
@@ -8565,11 +8345,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX293">
+    <Item class="Model" referent="RBX271">
       <Properties>
         <string name="Name">cowl23</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX294">
+      <Item class="MeshPart" referent="RBX272">
         <Properties>
           <string name="Name">cowl23__Paint__Body</string>
           <Content name="MeshId">
@@ -8620,11 +8400,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX295">
+    <Item class="Model" referent="RBX273">
       <Properties>
         <string name="Name">whl23</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX296">
+      <Item class="MeshPart" referent="RBX274">
         <Properties>
           <string name="Name">whl23__Paint__Body</string>
           <Content name="MeshId">
@@ -8675,11 +8455,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX297">
+    <Item class="Model" referent="RBX275">
       <Properties>
         <string name="Name">flag23</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX298">
+      <Item class="MeshPart" referent="RBX276">
         <Properties>
           <string name="Name">flag23__Paint__Body</string>
           <Content name="MeshId">
@@ -8729,9 +8509,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX299">
+      <Item class="MeshPart" referent="RBX277">
         <Properties>
           <string name="Name">flag23__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://87525521062194</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://104505102126086</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.04659</X>
             <Y>1.89761</Y>
@@ -8751,6 +8537,11 @@
             <Y>0.63686</Y>
             <Z>0.9975</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.123690009</X>
+            <Y>0.636859179</Y>
+            <Z>0.997500002</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -8760,41 +8551,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX300">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://87525521062194</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://104505102126086</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>0.9999999272374537</X>
-              <Y>1.0000012891389918</Y>
-              <Z>0.9999999979949875</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX301">
+    <Item class="Model" referent="RBX278">
       <Properties>
         <string name="Name">hull24</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX302">
+      <Item class="MeshPart" referent="RBX279">
         <Properties>
           <string name="Name">hull24__Paint__Body</string>
           <Content name="MeshId">
@@ -8845,11 +8615,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX303">
+    <Item class="Model" referent="RBX280">
       <Properties>
         <string name="Name">helm24</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX304">
+      <Item class="MeshPart" referent="RBX281">
         <Properties>
           <string name="Name">helm24__Helmet__Body</string>
           <Content name="MeshId">
@@ -8899,7 +8669,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX305">
+      <Item class="MeshPart" referent="RBX282">
         <Properties>
           <string name="Name">helm24__Visor__Visor</string>
           <Content name="MeshId">
@@ -8947,11 +8717,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX306">
+    <Item class="Model" referent="RBX283">
       <Properties>
         <string name="Name">cowl24</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX307">
+      <Item class="MeshPart" referent="RBX284">
         <Properties>
           <string name="Name">cowl24__Paint__Body</string>
           <Content name="MeshId">
@@ -9002,11 +8772,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX308">
+    <Item class="Model" referent="RBX285">
       <Properties>
         <string name="Name">whl24</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX309">
+      <Item class="MeshPart" referent="RBX286">
         <Properties>
           <string name="Name">whl24__Paint__Body</string>
           <Content name="MeshId">
@@ -9057,11 +8827,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX310">
+    <Item class="Model" referent="RBX287">
       <Properties>
         <string name="Name">flag24</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX311">
+      <Item class="MeshPart" referent="RBX288">
         <Properties>
           <string name="Name">flag24__Paint__Body</string>
           <Content name="MeshId">
@@ -9111,9 +8881,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX312">
+      <Item class="MeshPart" referent="RBX289">
         <Properties>
           <string name="Name">flag24__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://111163584194066</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://130820137510014</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.05546</X>
             <Y>1.89998</Y>
@@ -9133,6 +8909,11 @@
             <Y>0.64159</Y>
             <Z>0.9975</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.145864055</X>
+            <Y>0.641591132</Y>
+            <Z>0.997500002</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -9142,41 +8923,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX313">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://111163584194066</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://130820137510014</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>0.9999722001421117</X>
-              <Y>0.9999982356364614</Y>
-              <Z>0.9999999979949875</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX314">
+    <Item class="Model" referent="RBX290">
       <Properties>
         <string name="Name">hull25</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX315">
+      <Item class="MeshPart" referent="RBX291">
         <Properties>
           <string name="Name">hull25__Paint__Body</string>
           <Content name="MeshId">
@@ -9227,11 +8987,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX316">
+    <Item class="Model" referent="RBX292">
       <Properties>
         <string name="Name">helm25</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX317">
+      <Item class="MeshPart" referent="RBX293">
         <Properties>
           <string name="Name">helm25__Helmet__Body</string>
           <Content name="MeshId">
@@ -9281,7 +9041,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX318">
+      <Item class="MeshPart" referent="RBX294">
         <Properties>
           <string name="Name">helm25__Visor__Visor</string>
           <Content name="MeshId">
@@ -9329,11 +9089,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX319">
+    <Item class="Model" referent="RBX295">
       <Properties>
         <string name="Name">cowl25</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX320">
+      <Item class="MeshPart" referent="RBX296">
         <Properties>
           <string name="Name">cowl25__Paint__Body</string>
           <Content name="MeshId">
@@ -9384,11 +9144,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX321">
+    <Item class="Model" referent="RBX297">
       <Properties>
         <string name="Name">whl25</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX322">
+      <Item class="MeshPart" referent="RBX298">
         <Properties>
           <string name="Name">whl25__Paint__Body</string>
           <Content name="MeshId">
@@ -9439,11 +9199,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX323">
+    <Item class="Model" referent="RBX299">
       <Properties>
         <string name="Name">flag25</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX324">
+      <Item class="MeshPart" referent="RBX300">
         <Properties>
           <string name="Name">flag25__Paint__Body</string>
           <Content name="MeshId">
@@ -9493,9 +9253,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX325">
+      <Item class="MeshPart" referent="RBX301">
         <Properties>
           <string name="Name">flag25__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://114917834160202</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://109623812946055</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.05514</X>
             <Y>1.90051</Y>
@@ -9515,6 +9281,11 @@
             <Y>0.64267</Y>
             <Z>0.9975</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.129898667</X>
+            <Y>0.642667234</Y>
+            <Z>0.997500002</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -9524,41 +9295,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX326">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://114917834160202</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://109623812946055</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>1.000010261845104</X>
-              <Y>1.0000043039381092</Y>
-              <Z>0.9999999979949875</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX327">
+    <Item class="Model" referent="RBX302">
       <Properties>
         <string name="Name">hull26</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX328">
+      <Item class="MeshPart" referent="RBX303">
         <Properties>
           <string name="Name">hull26__Paint__Body</string>
           <Content name="MeshId">
@@ -9609,11 +9359,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX329">
+    <Item class="Model" referent="RBX304">
       <Properties>
         <string name="Name">helm26</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX330">
+      <Item class="MeshPart" referent="RBX305">
         <Properties>
           <string name="Name">helm26__Helmet__Body</string>
           <Content name="MeshId">
@@ -9663,7 +9413,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX331">
+      <Item class="MeshPart" referent="RBX306">
         <Properties>
           <string name="Name">helm26__Visor__Visor</string>
           <Content name="MeshId">
@@ -9711,11 +9461,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX332">
+    <Item class="Model" referent="RBX307">
       <Properties>
         <string name="Name">cowl26</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX333">
+      <Item class="MeshPart" referent="RBX308">
         <Properties>
           <string name="Name">cowl26__Paint__Body</string>
           <Content name="MeshId">
@@ -9766,11 +9516,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX334">
+    <Item class="Model" referent="RBX309">
       <Properties>
         <string name="Name">whl26</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX335">
+      <Item class="MeshPart" referent="RBX310">
         <Properties>
           <string name="Name">whl26__Paint__Body</string>
           <Content name="MeshId">
@@ -9821,11 +9571,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX336">
+    <Item class="Model" referent="RBX311">
       <Properties>
         <string name="Name">flag26</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX337">
+      <Item class="MeshPart" referent="RBX312">
         <Properties>
           <string name="Name">flag26__Paint__Body</string>
           <Content name="MeshId">
@@ -9875,9 +9625,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX338">
+      <Item class="MeshPart" referent="RBX313">
         <Properties>
           <string name="Name">flag26__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://119649649157013</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://93499806363915</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.03421</X>
             <Y>1.8969</Y>
@@ -9897,6 +9653,11 @@
             <Y>0.63959</Y>
             <Z>0.9975</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.156228825</X>
+            <Y>0.639588177</Y>
+            <Z>0.997500002</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -9906,41 +9667,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX339">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://119649649157013</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://93499806363915</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>1.0000075210192487</X>
-              <Y>1.0000028502715739</Y>
-              <Z>0.9999999979949875</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX340">
+    <Item class="Model" referent="RBX314">
       <Properties>
         <string name="Name">hull27</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX341">
+      <Item class="MeshPart" referent="RBX315">
         <Properties>
           <string name="Name">hull27__Paint__Body</string>
           <Content name="MeshId">
@@ -9991,11 +9731,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX342">
+    <Item class="Model" referent="RBX316">
       <Properties>
         <string name="Name">helm27</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX343">
+      <Item class="MeshPart" referent="RBX317">
         <Properties>
           <string name="Name">helm27__Helmet__Body</string>
           <Content name="MeshId">
@@ -10045,7 +9785,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX344">
+      <Item class="MeshPart" referent="RBX318">
         <Properties>
           <string name="Name">helm27__Visor__Visor</string>
           <Content name="MeshId">
@@ -10093,11 +9833,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX345">
+    <Item class="Model" referent="RBX319">
       <Properties>
         <string name="Name">cowl27</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX346">
+      <Item class="MeshPart" referent="RBX320">
         <Properties>
           <string name="Name">cowl27__Paint__Body</string>
           <Content name="MeshId">
@@ -10148,11 +9888,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX347">
+    <Item class="Model" referent="RBX321">
       <Properties>
         <string name="Name">whl27</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX348">
+      <Item class="MeshPart" referent="RBX322">
         <Properties>
           <string name="Name">whl27__Paint__Body</string>
           <Content name="MeshId">
@@ -10203,11 +9943,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX349">
+    <Item class="Model" referent="RBX323">
       <Properties>
         <string name="Name">flag27</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX350">
+      <Item class="MeshPart" referent="RBX324">
         <Properties>
           <string name="Name">flag27__Paint__Body</string>
           <Content name="MeshId">
@@ -10257,9 +9997,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX351">
+      <Item class="MeshPart" referent="RBX325">
         <Properties>
           <string name="Name">flag27__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://73649937883851</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://90711772858597</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.01731</X>
             <Y>1.89035</Y>
@@ -10279,6 +10025,11 @@
             <Y>0.63978</Y>
             <Z>0.9975</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.173666239</X>
+            <Y>0.639780104</Y>
+            <Z>0.997500002</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -10288,41 +10039,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX352">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://73649937883851</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://90711772858597</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>1.0000216564832731</X>
-              <Y>0.9999998374441479</Y>
-              <Z>0.9999999979949875</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX353">
+    <Item class="Model" referent="RBX326">
       <Properties>
         <string name="Name">hull28</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX354">
+      <Item class="MeshPart" referent="RBX327">
         <Properties>
           <string name="Name">hull28__Paint__Body</string>
           <Content name="MeshId">
@@ -10372,7 +10102,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX355">
+      <Item class="MeshPart" referent="RBX328">
         <Properties>
           <string name="Name">hull28__Gold__Gold</string>
           <Content name="MeshId">
@@ -10420,11 +10150,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX356">
+    <Item class="Model" referent="RBX329">
       <Properties>
         <string name="Name">helm28</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX357">
+      <Item class="MeshPart" referent="RBX330">
         <Properties>
           <string name="Name">helm28__Helmet__Body</string>
           <Content name="MeshId">
@@ -10474,7 +10204,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX358">
+      <Item class="MeshPart" referent="RBX331">
         <Properties>
           <string name="Name">helm28__HelmetStripe__Gold</string>
           <Content name="MeshId">
@@ -10521,7 +10251,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX359">
+      <Item class="MeshPart" referent="RBX332">
         <Properties>
           <string name="Name">helm28__Visor__Visor</string>
           <Content name="MeshId">
@@ -10569,11 +10299,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX360">
+    <Item class="Model" referent="RBX333">
       <Properties>
         <string name="Name">cowl28</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX361">
+      <Item class="MeshPart" referent="RBX334">
         <Properties>
           <string name="Name">cowl28__Paint__Body</string>
           <Content name="MeshId">
@@ -10623,7 +10353,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX362">
+      <Item class="MeshPart" referent="RBX335">
         <Properties>
           <string name="Name">cowl28__Gold__Gold</string>
           <Content name="MeshId">
@@ -10671,11 +10401,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX363">
+    <Item class="Model" referent="RBX336">
       <Properties>
         <string name="Name">whl28</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX364">
+      <Item class="MeshPart" referent="RBX337">
         <Properties>
           <string name="Name">whl28__Paint__Body</string>
           <Content name="MeshId">
@@ -10725,7 +10455,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX365">
+      <Item class="MeshPart" referent="RBX338">
         <Properties>
           <string name="Name">whl28__Gold__Gold</string>
           <Content name="MeshId">
@@ -10773,11 +10503,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX366">
+    <Item class="Model" referent="RBX339">
       <Properties>
         <string name="Name">flag28</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX367">
+      <Item class="MeshPart" referent="RBX340">
         <Properties>
           <string name="Name">flag28__Paint__Body</string>
           <Content name="MeshId">
@@ -10827,7 +10557,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX368">
+      <Item class="MeshPart" referent="RBX341">
         <Properties>
           <string name="Name">flag28__Gold__Gold</string>
           <Content name="MeshId">
@@ -10874,9 +10604,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX369">
+      <Item class="MeshPart" referent="RBX342">
         <Properties>
           <string name="Name">flag28__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://118598096885925</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://119036947418307</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>0.00469</X>
             <Y>1.82486</Y>
@@ -10896,6 +10632,11 @@
             <Y>0.76865</Y>
             <Z>1.1571</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.211025923</X>
+            <Y>0.768648684</Y>
+            <Z>1.15709996</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -10905,41 +10646,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX370">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://118598096885925</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://119036947418307</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>1.0000193199012806</X>
-              <Y>1.0000017120955613</Y>
-              <Z>1.0000000345691828</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX371">
+    <Item class="Model" referent="RBX343">
       <Properties>
         <string name="Name">hull29</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX372">
+      <Item class="MeshPart" referent="RBX344">
         <Properties>
           <string name="Name">hull29__Paint__Body</string>
           <Content name="MeshId">
@@ -10989,7 +10709,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX373">
+      <Item class="MeshPart" referent="RBX345">
         <Properties>
           <string name="Name">hull29__Gold__Gold</string>
           <Content name="MeshId">
@@ -11037,11 +10757,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX374">
+    <Item class="Model" referent="RBX346">
       <Properties>
         <string name="Name">helm29</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX375">
+      <Item class="MeshPart" referent="RBX347">
         <Properties>
           <string name="Name">helm29__Helmet__Body</string>
           <Content name="MeshId">
@@ -11091,7 +10811,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX376">
+      <Item class="MeshPart" referent="RBX348">
         <Properties>
           <string name="Name">helm29__HelmetStripe__Gold</string>
           <Content name="MeshId">
@@ -11138,7 +10858,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX377">
+      <Item class="MeshPart" referent="RBX349">
         <Properties>
           <string name="Name">helm29__Visor__Visor</string>
           <Content name="MeshId">
@@ -11186,11 +10906,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX378">
+    <Item class="Model" referent="RBX350">
       <Properties>
         <string name="Name">cowl29</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX379">
+      <Item class="MeshPart" referent="RBX351">
         <Properties>
           <string name="Name">cowl29__Paint__Body</string>
           <Content name="MeshId">
@@ -11240,7 +10960,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX380">
+      <Item class="MeshPart" referent="RBX352">
         <Properties>
           <string name="Name">cowl29__Gold__Gold</string>
           <Content name="MeshId">
@@ -11288,11 +11008,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX381">
+    <Item class="Model" referent="RBX353">
       <Properties>
         <string name="Name">whl29</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX382">
+      <Item class="MeshPart" referent="RBX354">
         <Properties>
           <string name="Name">whl29__Paint__Body</string>
           <Content name="MeshId">
@@ -11342,7 +11062,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX383">
+      <Item class="MeshPart" referent="RBX355">
         <Properties>
           <string name="Name">whl29__Gold__Gold</string>
           <Content name="MeshId">
@@ -11390,11 +11110,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX384">
+    <Item class="Model" referent="RBX356">
       <Properties>
         <string name="Name">flag29</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX385">
+      <Item class="MeshPart" referent="RBX357">
         <Properties>
           <string name="Name">flag29__Paint__Body</string>
           <Content name="MeshId">
@@ -11444,7 +11164,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX386">
+      <Item class="MeshPart" referent="RBX358">
         <Properties>
           <string name="Name">flag29__Gold__Gold</string>
           <Content name="MeshId">
@@ -11491,9 +11211,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX387">
+      <Item class="MeshPart" referent="RBX359">
         <Properties>
           <string name="Name">flag29__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://138456834333088</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://75500042788200</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>-0.00183</X>
             <Y>1.78843</Y>
@@ -11513,6 +11239,11 @@
             <Y>0.84149</Y>
             <Z>0.97755</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.199299276</X>
+            <Y>0.841490805</Y>
+            <Z>0.97755003</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -11522,41 +11253,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX388">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://138456834333088</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://75500042788200</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>1.0000036327276975</X>
-              <Y>0.9999990433644727</Y>
-              <Z>0.9999999693110337</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX389">
+    <Item class="Model" referent="RBX360">
       <Properties>
         <string name="Name">hull30</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX390">
+      <Item class="MeshPart" referent="RBX361">
         <Properties>
           <string name="Name">hull30__Paint__Body</string>
           <Content name="MeshId">
@@ -11606,7 +11316,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX391">
+      <Item class="MeshPart" referent="RBX362">
         <Properties>
           <string name="Name">hull30__Gold__Gold</string>
           <Content name="MeshId">
@@ -11654,11 +11364,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX392">
+    <Item class="Model" referent="RBX363">
       <Properties>
         <string name="Name">helm30</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX393">
+      <Item class="MeshPart" referent="RBX364">
         <Properties>
           <string name="Name">helm30__Helmet__Body</string>
           <Content name="MeshId">
@@ -11708,7 +11418,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX394">
+      <Item class="MeshPart" referent="RBX365">
         <Properties>
           <string name="Name">helm30__HelmetStripe__Gold</string>
           <Content name="MeshId">
@@ -11755,7 +11465,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX395">
+      <Item class="MeshPart" referent="RBX366">
         <Properties>
           <string name="Name">helm30__Visor__Visor</string>
           <Content name="MeshId">
@@ -11803,11 +11513,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX396">
+    <Item class="Model" referent="RBX367">
       <Properties>
         <string name="Name">cowl30</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX397">
+      <Item class="MeshPart" referent="RBX368">
         <Properties>
           <string name="Name">cowl30__Paint__Body</string>
           <Content name="MeshId">
@@ -11857,7 +11567,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX398">
+      <Item class="MeshPart" referent="RBX369">
         <Properties>
           <string name="Name">cowl30__Gold__Gold</string>
           <Content name="MeshId">
@@ -11905,11 +11615,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX399">
+    <Item class="Model" referent="RBX370">
       <Properties>
         <string name="Name">whl30</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX400">
+      <Item class="MeshPart" referent="RBX371">
         <Properties>
           <string name="Name">whl30__Paint__Body</string>
           <Content name="MeshId">
@@ -11959,7 +11669,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX401">
+      <Item class="MeshPart" referent="RBX372">
         <Properties>
           <string name="Name">whl30__Gold__Gold</string>
           <Content name="MeshId">
@@ -12007,11 +11717,11 @@
         </Properties>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX402">
+    <Item class="Model" referent="RBX373">
       <Properties>
         <string name="Name">flag30</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX403">
+      <Item class="MeshPart" referent="RBX374">
         <Properties>
           <string name="Name">flag30__Paint__Body</string>
           <Content name="MeshId">
@@ -12061,7 +11771,7 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="MeshPart" referent="RBX404">
+      <Item class="MeshPart" referent="RBX375">
         <Properties>
           <string name="Name">flag30__Gold__Gold</string>
           <Content name="MeshId">
@@ -12108,9 +11818,15 @@
           <token name="RenderFidelity">0</token>
         </Properties>
       </Item>
-      <Item class="Part" referent="RBX405">
+      <Item class="MeshPart" referent="RBX376">
         <Properties>
           <string name="Name">flag30__Fabric__Fabric</string>
+          <Content name="MeshId">
+            <url>rbxassetid://97903177891011</url>
+          </Content>
+          <Content name="TextureID">
+            <url>rbxassetid://76511889804112</url>
+          </Content>
           <CoordinateFrame name="CFrame">
             <X>-0.00492</X>
             <Y>1.76355</Y>
@@ -12130,6 +11846,11 @@
             <Y>0.89127</Y>
             <Z>1.18703</Z>
           </Vector3>
+          <Vector3 name="InitialSize">
+            <X>0.193095282</X>
+            <Y>0.891265273</Y>
+            <Z>1.18702507</Z>
+          </Vector3>
           <Color3 name="Color">
             <R>1.0</R>
             <G>1.0</G>
@@ -12139,41 +11860,20 @@
           <float name="Reflectance">0</float>
           <float name="Transparency">0</float>
           <bool name="Anchored">true</bool>
+          <bool name="DoubleSided">true</bool>
           <bool name="CastShadow">false</bool>
           <bool name="CanCollide">false</bool>
           <bool name="CanTouch">false</bool>
           <bool name="CanQuery">false</bool>
           <token name="RenderFidelity">0</token>
         </Properties>
-        <Item class="SpecialMesh" referent="RBX406">
-          <Properties>
-            <string name="Name">Mesh</string>
-            <token name="MeshType">5</token>
-            <Content name="MeshId">
-              <url>rbxassetid://97903177891011</url>
-            </Content>
-            <Content name="TextureId">
-              <url>rbxassetid://76511889804112</url>
-            </Content>
-            <Vector3 name="Scale">
-              <X>1.0000244335332853</X>
-              <Y>1.0000053036959289</Y>
-              <Z>1.0000041532399986</Z>
-            </Vector3>
-            <Vector3 name="VertexColor">
-              <X>1.0</X>
-              <Y>1.0</Y>
-              <Z>1.0</Z>
-            </Vector3>
-          </Properties>
-        </Item>
       </Item>
     </Item>
-    <Item class="Model" referent="RBX407">
+    <Item class="Model" referent="RBX377">
       <Properties>
         <string name="Name">plates</string>
       </Properties>
-      <Item class="MeshPart" referent="RBX408">
+      <Item class="MeshPart" referent="RBX378">
         <Properties>
           <string name="Name">SidePlates__NumberPlate__Plate</string>
           <Content name="MeshId">

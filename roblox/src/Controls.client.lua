@@ -609,11 +609,12 @@ local function drawGuide(x, z, lift, now)
         end
     end
 end
--- 一時停止(ブラウザ版の ⏸)。1人で走るフリーレースだけ。P キーでも止める・再開する
+-- メニュー(右上)。1人で走るフリーレースだけ。押すとレースが止まり、「再開する・やり直す・タイトルへ戻る」を選べる。
+-- 大時計が回り始めてから押せる(スタート前でも、大時計ごと止まる)。P キーでも開く・閉じる
 local pauseButton = tiltButton:Clone()
 pauseButton.Name = "Pause"
 pauseButton.Size = UDim2.fromOffset(112,40)
-pauseButton.Text = "一時停止"
+pauseButton.Text = "≡ メニュー"
 pauseButton.Visible = false
 pauseButton.Parent = gui
 local pauseScreen = Instance.new("Frame")
@@ -627,28 +628,44 @@ pauseScreen.Parent = gui
 local pauseTitle = Instance.new("TextLabel")
 pauseTitle.BackgroundTransparency = 1
 pauseTitle.AnchorPoint = Vector2.new(0.5,0.5)
-pauseTitle.Position = UDim2.fromScale(0.5,0.38)
+pauseTitle.Position = UDim2.new(0.5,0,0.5,-120)
 pauseTitle.Size = UDim2.fromOffset(320,50)
 pauseTitle.Font, pauseTitle.TextSize = Enum.Font.GothamBlack, 34
 pauseTitle.TextColor3 = Color3.fromRGB(255,210,60)
 pauseTitle.Text = "一時停止中"
 pauseTitle.ZIndex = 31
 pauseTitle.Parent = pauseScreen
-local function pauseChoice(name, text, x, action)
+-- レースを離れる時(ロビーへ・やり直し)は、エンジン・水・観客の音をすぐ止める(移動の間も鳴り続けないように)
+local leavingAt = -100
+local function leaveRace()
+    leavingAt = os.clock()
+    roomRemote:FireServer("return")
+    return true
+end
+local function pauseChoice(name, text, y, action, primary)
     local b = tiltButton:Clone()
     b.Name = name
     b.Text = text
     b.AnchorPoint = Vector2.new(0.5,0.5)
-    b.Position = UDim2.new(0.5,x,0.52,0)
-    b.Size = UDim2.fromOffset(180,48)
+    b.Position = UDim2.new(0.5,0,0.5,y)
+    b.Size = UDim2.fromOffset(240,50)
     b.ZIndex = 31
     b.Visible = true
+    if primary then
+        b.BackgroundColor3 = Color3.new(1,1,1)
+        b.TextColor3 = Color3.fromRGB(26,18,0)
+        local g = Instance.new("UIGradient"); g.Color = ColorSequence.new(Color3.fromRGB(255,224,102),Color3.fromRGB(245,164,0)); g.Rotation = 90; g.Parent = b
+    end
     b.Parent = pauseScreen
-    b.Activated:Connect(function() roomRemote:FireServer(action) end)
+    b.Activated:Connect(function()
+        if action == "return" then leavingAt = os.clock() end
+        roomRemote:FireServer(action)
+    end)
     return b
 end
-pauseChoice("Resume","再開する",-96,"resume")
-pauseChoice("Quit","ロビーへ戻る",96,"return")
+pauseChoice("Resume","再開する",-46,"resume",true)
+pauseChoice("Restart","やり直す（最初から）",14,"restart")
+pauseChoice("Quit","タイトルへ戻る",74,"return")
 pauseButton.Activated:Connect(function() roomRemote:FireServer("pause") end)
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed or input.KeyCode ~= Enum.KeyCode.P then return end
@@ -852,8 +869,16 @@ if devCombined then
     end)
     devShow()
 end
+-- レースの音(エンジン・水・観客)を止める。ホームを見ている間・ロビーへ移る途中・一時停止中
+local function muteRaceSounds()
+    for i = 1, 6 do
+        if wakes[i] and wakes[i].engine then wakes[i].engine.Volume = 0 end
+    end
+    if waterLoop then waterLoop.Volume = 0 end
+    if crowdLoop then crowdLoop.Volume = 0 end
+end
 RunService.RenderStepped:Connect(function(dt)
-    if devAway() then return end
+    if devAway() then muteRaceSounds(); return end
     local openingClock = (serverClock or 0) + math.min(os.clock() - snapshotAt, 0.25)
     -- 会場に1人なら、サーバーが待ってくれるので最初から全部見せる。大勢なら残りの時間だけ
     local solo = #Players:GetPlayers() == 1
@@ -888,6 +913,7 @@ RunService.RenderStepped:Connect(function(dt)
         return
     end
     if roundChanged then
+        leavingAt = -100
         viewing.reset()
         controls.throttle,controls.steer=0,0
         table.clear(activeTouches)
@@ -899,6 +925,12 @@ RunService.RenderStepped:Connect(function(dt)
     local reason = mine and mine[17] or ""
     local driving = running and mine and reason=="" and not mine[19]
     local watching = running and (boatNumber==0 or (reason~="" and serverClock-mine[18]>=3))
+    -- 対戦で失格した後の観戦: 「ロビーへ」でレースを離れられる(着は失格のまま)。観戦だけの人と1人のレースは「退出」(観戦をやめる)
+    local matchMode = world:GetAttribute("MatchMode")
+    local leaveToLobby = boatNumber > 0 and reason ~= "" and (matchMode == "ranked" or matchMode == "online" or matchMode == "event"
+        or matchMode == "room" or matchMode == "gp")
+    viewing.leaveText = leaveToLobby and "ロビーへ" or "退出"
+    viewing.onLeave = leaveToLobby and leaveRace or nil
     viewing.update(watching,latest)
     gui.Steering.Visible=driving==true
     gui.Throttle.Visible=driving==true
@@ -1150,12 +1182,18 @@ RunService.RenderStepped:Connect(function(dt)
     local screenW = gui.AbsoluteSize.X
     camButton.Visible = driving==true and (time >= 0 or screenW >= (tiltLocked and 920 or 840))
     camButton.Position = time < 0 and UDim2.new(1,tiltLocked and -282 or -244,0,12) or UDim2.new(1,-124,0,12)
-    -- 一時停止: 1人で走るフリーレースの、スタートの後・ゴール前だけ(視点のボタンの左)
+    -- メニュー: 1人で走るフリーレースの、大時計が回り始めてから結果が出るまで(沈没した後も、やり直し・タイトルへ戻るに使う)。
+    -- 走っている間は視点のボタンの左。スタート前は、視点のボタンが出ていればその左、出ていなければその場所
     local paused = world:GetAttribute("Paused") == true
     pauseScreen.Visible = paused
-    pauseButton.Visible = driving==true and time >= 0 and not paused and world:GetAttribute("MatchMode") == "single"
-        and #Players:GetPlayers() == 1
-    pauseButton.Position = UDim2.new(1,-244,0,12)
+    pauseButton.Visible = running and boatNumber > 0 and time >= -14 and not paused and not resultRows
+        and world:GetAttribute("MatchMode") == "single" and #Players:GetPlayers() == 1
+    if time >= 0 then
+        pauseButton.Position = UDim2.new(1,-244,0,12)
+    else
+        local camX = tiltLocked and -282 or -244
+        pauseButton.Position = UDim2.new(1, camButton.Visible and camX-120 or camX, 0, 12)
+    end
     -- レバーを落とす合図: 練習の補助と同じく、フリーレース・フレンド・タイムアタックで、設定がオンの時だけ
     local helpModes = {single=true, room=true, ta=true}
     local liftOn = driving==true and time >= 0 and helpModes[world:GetAttribute("MatchMode") or ""] == true
@@ -1200,7 +1238,12 @@ RunService.RenderStepped:Connect(function(dt)
         local key = table.concat({tostring(predictionRace), #resultRows, extra, tostring(phase), tostring(eliminated), tostring(boatNumber)}, "|")
         if resultView.key ~= key then
             local buttons = {}
-            local function fire(action) return function() roomRemote:FireServer(action) end end
+            local function fire(action)
+                return function()
+                    if action == "return" or action == "requeue" then leavingAt = os.clock() end
+                    roomRemote:FireServer(action)
+                end
+            end
             -- スタート練習: 大きな文字は自分の ST。評価の言葉と、何番目のスタートか(ブラウザ版と同じ)
             local opts = nil
             if world:GetAttribute("Practice") then
@@ -1230,6 +1273,9 @@ RunService.RenderStepped:Connect(function(dt)
                 buttons = {{"Again","もう一度走る",true,fire("again")},{"Lobby","ロビーへ",false,fire("return")}}
             elseif mode == "gp" and eliminated then
                 buttons = {{"WatchFinal","優勝戦を観戦する",true,fire("watchFinal")},{"Lobby","ロビーへ",false,fire("return")}}
+            elseif (mode == "ranked" or mode == "online" or mode == "event") and phase == "finished" then
+                -- 対戦の後: もう一度同じモードで走る(ロビーへ戻って、自動で待ち合わせに入る)か、ロビーへ
+                buttons = {{"Again","もう一度レース",true,fire("requeue")},{"Lobby","ロビーへ",false,fire("return")}}
             elseif mode and phase == "finished" then
                 buttons = {{"Lobby","ロビーへ戻る",true,fire("return")}}
             end
@@ -1409,6 +1455,8 @@ RunService.RenderStepped:Connect(function(dt)
             end
         end
     end
+    -- ロビーへ移る途中(押してから15秒)と一時停止中は、レースの音を止めておく
+    if os.clock() - leavingAt < 15 or world:GetAttribute("Paused") then muteRaceSounds() end
     hud:update({
         gaps = gaps,
         visible = not (watching and viewing.exited),

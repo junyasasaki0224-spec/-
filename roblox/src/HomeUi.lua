@@ -353,20 +353,31 @@ function Ui.logo(parent, x, y, w, size)
 end
 
 -- レース選択のカード(上に名前の帯、中に場面の絵、下に説明と札)。押すとそのモードへ
+-- 角はすべて丸く: 帯はカード自身の色の段(四角い板を重ねると、丸い角の外へ帯の角がとがって出るため)、
+-- 絵も角を丸めて金の細枠を付ける(ClipsDescendants は丸い角では切り取らない)
 function Ui.modeCard(parent, name, title, image, description, tag, x, y, w, h, selected, onPress)
     local c = baseButton(parent, name)
     place(c, x, y, w, h)
     c.BackgroundColor3 = Ui.WHITE
     c.ClipsDescendants = true
-    Ui.gradient(c, Color3.fromRGB(20, 48, 95), Color3.fromRGB(8, 26, 54), 90)
+    -- 上の 42px が帯の色(明るい紺→紺)、その下がカードの色(紺→濃い紺)
+    local edge = math.clamp(42 / h, 0.02, 0.5)
+    local g = Instance.new("UIGradient")
+    g.Rotation = 90
+    g.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(29, 68, 134)),
+        ColorSequenceKeypoint.new(edge, Color3.fromRGB(18, 48, 95)),
+        ColorSequenceKeypoint.new(math.min(edge + 0.001, 0.999), Color3.fromRGB(20, 48, 95)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 26, 54)),
+    })
+    g.Parent = c
     Ui.corner(c, 18)
     Ui.stroke(c, Ui.GOLD, selected and 3 or 2, selected and 0 or 0.2)
     local band = Instance.new("Frame")
     band.Name = "Band"
-    band.BackgroundColor3 = Ui.WHITE
+    band.BackgroundTransparency = 1
     band.BorderSizePixel = 0
     place(band, 0, 0, w, 42)
-    Ui.gradient(band, Color3.fromRGB(29, 68, 134), Color3.fromRGB(18, 48, 95), 90)
     band.Parent = c
     local line = Instance.new("Frame")
     line.BackgroundColor3 = Ui.GOLD
@@ -384,15 +395,26 @@ function Ui.modeCard(parent, name, title, image, description, tag, x, y, w, h, s
     if type(image)=="string" and image:match("^rbxassetid://[1-9]%d*$") then
         local art = Instance.new("ImageLabel")
         art.Name = "Art"
-        art.BackgroundTransparency=1
+        art.BackgroundColor3 = Color3.fromRGB(8, 26, 54)
+        art.BackgroundTransparency = 0
         art.Image = image
         art.ScaleType = Enum.ScaleType.Crop
         art.BorderSizePixel = 0
-        place(art, 0, 44, w, artH)
+        -- 少し内側に置き、角を丸めて金の細枠(カードの角と同じ丸み)
+        place(art, 8, 50, w - 16, artH - 10)
+        Ui.corner(art, 12)
+        Ui.stroke(art, Ui.GOLD, 1, 0.45)
         art.Parent = c
-        local function loaded() drawing.Visible=not art.IsLoaded end
+        -- 読み込むまでは、絵の上に仮の印を出す(絵を透明にすると読み込みが始まらないので、透明にはしない)
+        local function loaded()
+            drawing.Visible = not art.IsLoaded
+        end
         art:GetPropertyChangedSignal("IsLoaded"):Connect(loaded)
         loaded()
+        drawing.ZIndex = 2
+        for _, f in drawing:GetChildren() do
+            f.ZIndex = 2
+        end
     end
     local d = Ui.text(c, "Description", description, w < 200 and 13 or 15, Ui.BOLD, Ui.PALE)
     d.TextXAlignment = Enum.TextXAlignment.Center

@@ -1,4 +1,5 @@
--- Local viewing controls; selecting a boat or leaving this view sends no remote event.
+-- 観戦の操作(見る艇・視点)。艇を選ぶ・観戦をやめるはこの画面の中だけ。
+-- 対戦で失格した人の「ロビーへ」だけは、レースの画面が渡す view.onLeave が合図を送る
 local Input = game:GetService("UserInputService")
 local names = {"追尾","接近","オンボード","上空","自由"}
 local navy = Color3.fromRGB(11,29,58)
@@ -66,10 +67,10 @@ return function(gui)
         local compact=w<550 or gui.AbsoluteSize.X<gui.AbsoluteSize.Y
         bar.Size=UDim2.fromOffset(w,compact and 104 or 54)
         position(title,5,5,64)
-        position(leave,w-61,5,56)
-        position(camera,w-173,5,106)
+        position(leave,w-73,5,68)
+        position(camera,w-185,5,106)
         local start=compact and 5 or 74
-        local space=(compact and w-10 or w-253)/6
+        local space=(compact and w-10 or w-265)/6
         for i,btn in ipairs(buttons) do
             position(btn,start+(i-1)*space,compact and 55 or 5,math.max(44,space-4))
         end
@@ -115,7 +116,11 @@ return function(gui)
     end)
     Input.WindowFocusReleased:Connect(clearGesture)
     camera.Activated:Connect(function() view.mode=view.mode%#names+1; clearGesture() end)
-    leave.Activated:Connect(function() view.exited=true; bar.Visible=false; clearGesture() end)
+    -- 退出: 観戦をやめる。対戦で失格した人は、レースの画面が onLeave を渡す(ロビーへ戻る)
+    leave.Activated:Connect(function()
+        if view.onLeave and view.onLeave() then clearGesture(); return end
+        view.exited=true; bar.Visible=false; clearGesture()
+    end)
 
     function view.reset()
         view.mode,view.lane,view.exited=1,1,false
@@ -135,6 +140,7 @@ return function(gui)
             strokes[i].Enabled=enabled and i==view.lane or false
         end
         camera.Text="視点　"..names[view.mode]
+        leave.Text=view.leaveText or "退出"
     end
     function view.camera(cf)
         local forward=Vector3.new(cf.LookVector.X,0,cf.LookVector.Z).Unit

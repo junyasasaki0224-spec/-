@@ -96,6 +96,8 @@ roomRemote.Name = "MinatoRoomRace"
 roomRemote.Parent = ReplicatedStorage
 -- 一時停止(1人で走るフリーレースだけ。対戦では止められない)
 local racePaused = false
+-- フリーレースのやり直しを待っているか(始める時にオープニングを飛ばす)
+local quickRestart = false
 -- 走行ガイド: AI が考えたこの艇の理想のライン(点の並び)を、本人の画面にだけ送る(練習の補助と同じモードだけ)
 local guideRemote = Instance.new("RemoteEvent")
 guideRemote.Name = "MinatoGuide"
@@ -917,10 +919,12 @@ saveResults = function()
     end
 end
 roomRemote.OnServerEvent:Connect(function(player, action)
-    -- 一時停止: 会場に1人だけのフリーレース(スタート練習を含む)で、スタートの後・ゴール前だけ
+    -- 一時停止: 会場に1人だけのフリーレース(スタート練習を含む)で、大時計が回り始めてから・ゴール前だけ
+    -- (メニューを開くと止まる。スタート前に止めても、大時計ごと止まるのでフライングにはならない)
+    local soloSingle = matchKind() == "single" and #Players:GetPlayers() == 1 and (roomMembers[player] or not isRoom)
     if action == "pause" or action == "resume" then
-        local solo = matchKind() == "single" and #Players:GetPlayers() == 1 and (roomMembers[player] or not isRoom)
-        if action == "pause" and solo and assigned and not roomWaiting and elapsed >= 0
+        local solo = soloSingle
+        if action == "pause" and solo and assigned and not roomWaiting and elapsed >= -14
             and world:GetAttribute("RankedPhase") ~= "finished" then
             racePaused = true
             world:SetAttribute("Paused", true)
@@ -937,6 +941,16 @@ roomRemote.OnServerEvent:Connect(function(player, action)
             openingVotes[player] = true
             skipOpeningIfAgreed()
         end
+        return
+    end
+    -- フリーレースのやり直し(メニューから。いつでも): 今の走りは結果を付けずに止め、同じ出走表で大時計の場面から走り直す
+    if action == "restart" and soloSingle and not singlePending and world:GetAttribute("RankedPhase") ~= "waiting" then
+        racePaused = false
+        world:SetAttribute("Paused", nil)
+        roomWaiting = true
+        world:SetAttribute("RoomWaiting", true)
+        world:SetAttribute("RankedPhase", "waiting")
+        singlePending, quickRestart = true, true
         return
     end
     -- タイムアタック: 同じ会場でもう一度走る
@@ -962,11 +976,31 @@ roomRemote.OnServerEvent:Connect(function(player, action)
     end
     local phase = world:GetAttribute("RankedPhase")
     local over = phase == "finished" or phase == "incomplete"
-    local mayReturn = ((ONLINE[roomKind] or roomKind == "ta" or roomKind == "single") and over and roomMembers[player])
-        or (racePaused and roomKind == "single" and roomMembers[player])
+    -- 自分の艇が沈没・フライングで失格しているか(失格した人は、レースの途中でもロビーへ戻れる。着は失格のまま)
+    local myBoat, myBoatOut = nil, false
+    for _, b in ipairs(boats) do
+        if b.player == player then myBoat, myBoatOut = b, b.out ~= nil end
+    end
+    local mayReturn = ((ONLINE[roomKind] or roomKind == "ta") and over and roomMembers[player])
+        -- 対戦: 失格した後(観戦中)か、艇に乗っていない観戦の人は、途中でも戻れる
+        or ((ONLINE[roomKind] or roomKind == "room") and roomMembers[player] and (myBoatOut or not myBoat))
+        -- フリーレース(1人): いつでもタイトル(ロビー)へ戻れる。途中なら結果は付かない
+        or (roomKind == "single" and roomMembers[player])
         or (roomKind == "gp" and (over or not roomMembers[player]))
+    -- 対戦の後の「もう一度レース」: ロビーへ戻り、同じモードの待ち合わせに自動で入る(入れるかはロビーが確かめる)
+    if action == "requeue" and ONLINE[roomKind] and over and roomMembers[player] and rankedLobbyPlace and not returning[player] then
+        returning[player] = true
+        task.spawn(function()
+            local options = Instance.new("TeleportOptions")
+            options:SetTeleportData({again = roomKind})
+            local ok = pcall(TeleportService.TeleportAsync, TeleportService, rankedLobbyPlace, {player}, options)
+            if not ok and player.Parent == Players then roomRemote:FireClient(player,"ロビーへ戻れません。もう一度お試しください") end
+            returning[player] = nil
+        end)
+        return
+    end
     -- 検証用: 「ロビーへ」でホームに戻る(走っている途中なら、結果を付けずに止めて待ちに戻す)
-    if devCombined and action == "return" and (over or racePaused) then
+    if devCombined and action == "return" then
         if racePaused then
             racePaused = false
             world:SetAttribute("Paused", nil)
@@ -1008,6 +1042,13 @@ local function step()
             if not singlePending or not present then return end
             singlePending = false
             startRoomRace()
+            -- やり直しはオープニングを飛ばして、すぐ大時計の場面(-14秒)から
+            if quickRestart then
+                quickRestart = false
+                elapsed, assignAt, openingHold = -14, -14, nil
+                raceClock = elapsed
+                world:SetAttribute("Opening", nil)
+            end
         end
     end
     if roomWaiting and matchKind() == "gp" then
