@@ -600,19 +600,22 @@ local function redrawNow()
     local portrait=w<h
     if toast.Text~="" then placeToast() end
     local grade=Meta.grade(m.rate);local g=Meta.GRADES[grade];local nextGrade=Meta.GRADES[grade+1]
+    -- 見せる級(A1 でランキング上位200人なら S)
+    local gradeName=Meta.gradeName(m)
     if page=="ホーム" then
         -- ブラウザ版のホームと同じ配置(左上: 選手の札・コイン・パス / 上中央: 題字 / 右上: メール・設定 /
         -- 左: タイル4つ / 右: タイル2つ / 右下: 今のモードと「レース」)。縦持ちはタイルを下に横並び
         local short=not portrait and h<450
         local misCount=0
         for _,mis in ipairs(Meta.MISSIONS) do if not m.misDone[mis.id] and (m.mis[mis.id] or 0)>=mis.goal then misCount+=1 end end
-        local stats="RATE "..m.rate..(nextGrade and "　"..nextGrade.name.."まで あと"..(nextGrade.rate-m.rate).."点" or "　最高級")
+        local topText=gradeName=="S" and "S（上位"..Meta.S_TOP.."人）" or "S は上位"..Meta.S_TOP.."人"
+        local stats="RATE "..m.rate..(nextGrade and "　"..nextGrade.name.."まで あと"..(nextGrade.rate-m.rate).."点" or "　"..topText)
         -- 細い画面では短い書き方にする
-        if w<420 then stats="RATE "..m.rate..(nextGrade and "・"..nextGrade.name.."まで"..(nextGrade.rate-m.rate).."点" or "・最高級") end
+        if w<420 then stats="RATE "..m.rate..(nextGrade and "・"..nextGrade.name.."まで"..(nextGrade.rate-m.rate).."点" or "・"..topText) end
         local progress=nextGrade and (m.rate-g.rate)/(nextGrade.rate-g.rate) or 1
         local name=Run:IsStudio() and "テストレーサー" or player.DisplayName
         if portrait then
-            Ui.profile(root,12,8,w-24-136,g.name,name,stats,progress)
+            Ui.profile(root,12,8,w-24-136,gradeName,name,stats,progress,function() go("ランク") end)
             Ui.headButton(root,"Mail","メール",w-12-124,17,64,function() go("メール") end,#m.mail)
             Ui.headButton(root,"Settings","設定",w-12-56,17,56,function() go("設定") end)
             Ui.pill(root,"Coins",tostring(m.coins),12,78,110,36,nil,true)
@@ -646,7 +649,7 @@ local function redrawNow()
             return
         end
         local pw=short and 210 or 236
-        Ui.profile(root,16,short and 8 or 14,pw,g.name,name,stats,progress)
+        Ui.profile(root,16,short and 8 or 14,pw,gradeName,name,stats,progress,function() go("ランク") end)
         Ui.pill(root,"Coins",tostring(m.coins),16+pw+12,short and 20 or 26,96,36,nil,true)
         -- シーズンパスの札は、メールのボタンの手前まで(狭い時は「パス 3段」)
         local passW=math.clamp((w-16-72-8-92-10)-(16+pw+116),92,156)
@@ -717,7 +720,7 @@ local function redrawNow()
         scroller.Parent=root
         local names={"season","online","ta","friend","gp","event","single","practice"}
         local texts={
-            {"ランク戦。着順でレートと級が動く","B2 → A1 を目指す"},{"6人のカジュアル戦。レートなし","空きは AI（達人）"},
+            {"ランク戦。着順で RATE とランクが動く","D3 → A1・S を目指す"},{"6人のカジュアル戦。レートなし","空きは AI（達人）"},
             {"枠を選んで1艇で3周。ベストを狙う","コースごとに記録"},{"合言葉で部屋を作って対戦","フレンドと"},
             {"予選2走＋優勝戦。自分で開催も","優勝を目指す"},{"日替わりの特別レース","コイン2倍"},
             {"好きな枠で気軽に1レース","気軽に"},{"スタートだけを何度でも","STを磨く"},
@@ -854,18 +857,67 @@ local function redrawNow()
             if not ok or not can then roomStatus="招待を開けません。合言葉を友達に伝えてください";if page=="フレンド" then redraw() end end
         end);y+=58
         if roomStatus~="" then y=row("部屋の案内",roomStatus,y) end
+    elseif page=="ランク" then
+        -- 今のランク(大きな札)・RATE・次の級まで
+        local big=math.min(96,math.floor(width*.22))
+        Ui.gradeBadge(list,gradeName,8,y,big,true)
+        local tx=big+20
+        local head=label(list,"今のランク　"..gradeName,tx,y+2,width-tx-8,30,20);head.TextColor3=gold
+        local nextText=nextGrade and (nextGrade.name.."まで あと "..(nextGrade.rate-m.rate).." 点")
+            or (gradeName=="S" and "S（今シーズンのランキング上位"..Meta.S_TOP.."人）" or "A1 のうち、ランキング上位"..Meta.S_TOP.."人に入ると S")
+        Ui.fit(label(list,"RATE "..m.rate.."　"..nextText,tx,y+34,width-tx-8,24,15),11).TextColor3=pale
+        local titles=type(m.titles)=="table" and m.titles or {}
+        Ui.fit(label(list,#titles>0 and ("称号　"..table.concat(titles,"・")) or "称号　まだありません（S で「"..Meta.S_TITLE.."」）",tx,y+60,width-tx-8,24,14),11).TextColor3=#titles>0 and gold or pale
+        y+=big+14
+        -- 降級の守り
+        if type(m.guard)=="number" and m.guard>0 then
+            y=row("昇級の守り","あと "..m.guard.." レースは、"..g.name.." より下がりません",y)
+        end
+        -- バッジ(一度でも届いた級。S も)
+        label(list,"バッジ",8,y,width-16,26,16).TextColor3=gold;y+=30
+        do
+            local names={}
+            for _,gr in ipairs(Meta.GRADES) do table.insert(names,gr.name) end
+            table.insert(names,"S")
+            local size=math.min(64,math.floor((width-16-6*8)/7))
+            local columns=math.max(1,math.floor((width-16+8)/(size+8)))
+            for i,name in ipairs(names) do
+                local earned=type(m.badges)=="table" and table.find(m.badges,name)~=nil
+                Ui.gradeBadge(list,name,8+((i-1)%columns)*(size+8),y+math.floor((i-1)/columns)*(size+8),size,earned)
+            end
+            y+=math.ceil(#names/columns)*(size+8)+8
+        end
+        -- 決まり
+        local deltas={}
+        for i,d in ipairs(Meta.SEASON_DELTA) do table.insert(deltas,i.."着 "..(d>0 and "+" or "")..d) end
+        y=row("RATE の増え方（ランク戦）",table.concat(deltas,"　").."　失格 "..Meta.SEASON_OUT.."。AI も含めた6艇の中の着順で決まります",y)
+        y=row("下がらない時","D3 の間は下がりません。昇級した後の "..Meta.PROMOTION_GUARD.." レースは、その級より下がりません",y)
+        local steps={}
+        for _,gr in ipairs(Meta.GRADES) do table.insert(steps,gr.name.." "..gr.rate) end
+        y=row("ランクと RATE",table.concat(steps," / ").."。S は A1 のうち、今シーズンのランキング上位"..Meta.S_TOP.."人だけ（S は S だけで段はありません）",y)
+        y=row("S のごほうび","称号「"..Meta.S_TITLE.."」と S のバッジ、1000 コイン（初めての時）",y)
+        y=row("シーズン",(m.season or Meta.seasonOf(Meta.today())).." シーズン　ランク戦 "..(m.seasonRaces or 0).." 回・1着 "..(m.seasonWins or 0).." 回。毎月1日（日本時間）に新しいシーズンになり、RATE は半分から始まります。最高ランクに合わせたコインがメールで届きます",y)
+        if type(m.history)=="table" and #m.history>0 then
+            label(list,"これまでのシーズン",8,y,width-16,26,16).TextColor3=gold;y+=30
+            for _,h in ipairs(m.history) do
+                y=row(tostring(h.season).."　最高 "..tostring(h.grade),"ランク戦 "..tostring(h.races).." 回・1着 "..tostring(h.wins).." 回",y)
+            end
+        end
     elseif page=="ランキング" then
         refreshBoard(false)
         local bw=math.floor((width-32)/3)
-        for i,tab in {{"rating","レート"},{"wins","勝利数"},{"bestTime","タイム"}} do
+        for i,tab in {{"rating","RATE"},{"wins","勝利数"},{"bestTime","タイム"}} do
             button(list,tab[2],8+(i-1)*(bw+8),y,bw,function() boardKind=tab[1];redraw() end,boardKind==tab[1])
         end
         y+=56
+        if boardKind=="rating" then
+            y=row("今シーズンの RATE",Meta.seasonOf(Meta.today()).." シーズン（毎月1日に新しくなります）。A1 で上位"..Meta.S_TOP.."人に入ると S",y)
+        end
         local info=board and board.boards and board.boards[boardKind]
         if info then
             local profile=board.profile
             if profile then
-                y=row("自分の成績",string.format("レート %d　出走 %d　1着 %d　ベスト %s",profile.rating,profile.races,profile.wins,formatTime(profile.bestTime)),y)
+                y=row("自分の成績",string.format("RATE %d（%s）　出走 %d　1着 %d　ベスト %s",m.rate,Meta.gradeName(m),profile.races,profile.wins,formatTime(profile.bestTime)),y)
             end
             local own=info.rank and info.rank.."位" or info.below and info.below.."位以下"
                 or info.error and "読み込み待ち" or info.busy and "集計中"

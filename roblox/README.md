@@ -145,7 +145,7 @@ Studioのホームは表示名を「テストレーサー」にして、レビ�
 
 公開していない Studio では MemoryStore と会場への移動が使えないため、同じ決まりをロビーのサーバーの中だけで動かし、組が決まると「出走が決まりました（人 1・AI 5）。Studio では会場へ移動しません」と出ます。会場側の動き（AI 達人・イベントの水面・出走表と結果）は、レース会場のプロジェクトを同期した place で、ワークスペースに文字列の属性 `MinatoTestMode` を `event`（または `ranked` / `online`）として付けてから遊ぶと確かめられます。
 
-AI がいるレースのレートは人間どうしの着順だけで決まります（1人なら動きません）。イベントはコイン2倍・レートなしです。計算のテストは `luau roblox/tests/online-rules.spec.luau` と `luau roblox/tests/match-policy.spec.luau`、達人の AI だけの60レースは `python roblox/tools/run_sim.py 60 4` です。
+ランク戦の RATE は AI も含めた6艇の中の着順で動きます（1着 +25・2着 +15・3着 +8・4着 -10・5着 -15・6着 -20・失格 -25。D3 の間と昇級直後の5レースは下がりません）。ランクは D3〜A1 の12段と、A1 のうち今シーズンの RATE ランキング上位200人だけの S。シーズンは毎月1日に変わり、RATE は半分から始まります。内部レート（相手探し用・見せない）は AI を1500として数えます。イベントはコイン2倍・レートなしです。計算のテストは `luau roblox/tests/online-rules.spec.luau` と `luau roblox/tests/match-policy.spec.luau`、達人の AI だけの60レースは `python roblox/tools/run_sim.py 60 4` です。
 
 公開した会場での複数人の待ち合わせ・移動・結果の保存は、`LobbyConfig.racePlaceId` を設定したテスト公開で確かめてください。
 

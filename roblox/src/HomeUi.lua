@@ -296,8 +296,43 @@ function Ui.headButton(parent, name, value, x, y, w, onPress, count)
     return b
 end
 
--- 左上の選手の札(級別の金の札、名前、RATE、次の級までの棒)
-function Ui.profile(parent, x, y, w, gradeName, name, stats, progress)
+-- 級の札の色(上の色, 下の色, 文字の色)。D は灰、C は緑、B は青、A は金、S は桃から紫
+function Ui.gradeColors(gradeName)
+    local letter = string.sub(gradeName or "", 1, 1)
+    if letter == "S" then
+        return Color3.fromRGB(255, 130, 200), Color3.fromRGB(140, 70, 255), Ui.WHITE
+    elseif letter == "A" then
+        return Color3.fromRGB(255, 224, 102), Color3.fromRGB(245, 164, 0), Ui.DARK
+    elseif letter == "B" then
+        return Color3.fromRGB(125, 185, 255), Color3.fromRGB(40, 100, 220), Ui.WHITE
+    elseif letter == "C" then
+        return Color3.fromRGB(115, 222, 172), Color3.fromRGB(28, 150, 110), Ui.WHITE
+    end
+    return Color3.fromRGB(196, 204, 218), Color3.fromRGB(112, 122, 142), Ui.DARK
+end
+
+-- 級のバッジ(角の丸い札に級の名前)。earned が false なら暗くして、まだ届いていない印
+function Ui.gradeBadge(parent, gradeName, x, y, size, earned)
+    local top, bottom, ink = Ui.gradeColors(gradeName)
+    local b = Instance.new("Frame")
+    b.Name = "Badge" .. gradeName
+    b.BackgroundColor3 = Ui.WHITE
+    b.BorderSizePixel = 0
+    place(b, x, y, size, size)
+    Ui.gradient(b, top, bottom, 110)
+    Ui.corner(b, math.floor(size * 0.26))
+    Ui.stroke(b, gradeName == "S" and Ui.GOLD or Ui.WHITE, gradeName == "S" and 2 or 1, earned and 0.2 or 0.75)
+    b.BackgroundTransparency = earned and 0 or 0.78
+    b.Parent = parent
+    local t = Ui.text(b, "Text", gradeName, math.floor(size * 0.42), Ui.HEAVY_ITALIC, ink)
+    t.TextXAlignment = Enum.TextXAlignment.Center
+    t.TextTransparency = earned and 0 or 0.6
+    place(t, 0, 0, size, size)
+    return b
+end
+
+-- 左上の選手の札(級別の札、名前、RATE、次の級までの棒)。押すと onPress(ランクとバッジの画面)
+function Ui.profile(parent, x, y, w, gradeName, name, stats, progress, onPress)
     local p = Instance.new("Frame")
     p.Name = "Profile"
     place(p, x, y, w, 62)
@@ -311,10 +346,11 @@ function Ui.profile(parent, x, y, w, gradeName, name, stats, progress)
     badge.Name = "Grade"
     badge.BackgroundColor3 = Ui.WHITE
     place(badge, 8, 8, 46, 46)
-    Ui.gradient(badge, Color3.fromRGB(255, 224, 102), Color3.fromRGB(245, 164, 0), 110)
+    local top, bottom, ink = Ui.gradeColors(gradeName)
+    Ui.gradient(badge, top, bottom, 110)
     Ui.corner(badge, 12)
     badge.Parent = p
-    local g = Ui.text(badge, "Text", gradeName, 20, Ui.HEAVY_ITALIC, Ui.DARK)
+    local g = Ui.text(badge, "Text", gradeName, 20, Ui.HEAVY_ITALIC, ink)
     g.TextXAlignment = Enum.TextXAlignment.Center
     place(g, 0, 0, 46, 46)
     local n = Ui.fit(Ui.text(p, "Name", name, 17, Ui.HEAVY), 12)
@@ -336,6 +372,12 @@ function Ui.profile(parent, x, y, w, gradeName, name, stats, progress)
     Ui.gradient(fill, Color3.fromRGB(255, 224, 102), Color3.fromRGB(245, 164, 0), 0)
     Ui.corner(fill, 2)
     fill.Parent = track
+    if onPress then
+        local hit = baseButton(p, "Open")
+        hit.BackgroundTransparency = 1
+        hit.Size = UDim2.fromScale(1, 1)
+        hit.Activated:Connect(onPress)
+    end
     return p
 end
 

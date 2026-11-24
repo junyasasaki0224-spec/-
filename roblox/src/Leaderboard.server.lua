@@ -3,10 +3,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local PAGE_SIZE = 50
 local MAX_PAGES = 5
 
+local Meta = require(ReplicatedStorage:WaitForChild("Meta"))
+
 local remote = Instance.new("RemoteFunction")
 remote.Name = "MinatoLeaderboard"
 remote.Parent = ReplicatedStorage
+-- S の線: 今シーズンの RATE の順位表で、上位200人目の RATE(200人いなければ 0)。ロビーの持ち物の処理(MetaService)が見る
 if game:GetService("RunService"):IsStudio() and (game.GameId == 0 or not workspace:GetAttribute("MinatoLiveData")) then
+    -- Studio の試し(保存しない): 順位表がないので、A1 になれば S になる
+    ReplicatedStorage:SetAttribute("MinatoSCutoff", 0)
     remote.OnServerInvoke = function() return {studio=true} end
     return
 end
@@ -53,15 +58,19 @@ local function refresh(kind)
         local profile = profiles[player.UserId]
         if profile and (kind ~= "bestTime" or profile.bestTime) then wanted[player.UserId]=true end
     end
-    local ok,pages = pcall(function() return Stats.ordered[kind]:GetSortedAsync(kind=="bestTime",PAGE_SIZE) end)
+    -- 「RATE」は今シーズンの表(シーズンが変わると新しい表になる)
+    local store = kind == "rating" and Stats.rateStore(Meta.seasonOf(Meta.today())) or Stats.ordered[kind]
+    local ok,pages = pcall(function() return store:GetSortedAsync(kind=="bestTime",PAGE_SIZE) end)
     if not ok then board.busy=false; board.error=true; return end
     local results,ranks,index = {},{},0
     local pageCount,lastValue = 0,nil
+    local cutoff = nil
     repeat
         pageCount += 1
         for _, entry in ipairs(pages:GetCurrentPage()) do
             index += 1
             lastValue = entry.value
+            if kind == "rating" and index == Meta.S_TOP then cutoff = displayValue(kind, entry.value) end
             local id=tonumber(entry.key)
             if id then
                 if index <= 50 then
@@ -81,12 +90,17 @@ local function refresh(kind)
         for id in pairs(wanted) do
             if not Players:GetPlayerByUserId(id) then wanted[id]=nil end
         end
-        if not next(wanted) or pages.IsFinished then break end
+        -- RATE の表は、S の線(200人目)まで読む
+        if pages.IsFinished then
+            if kind == "rating" and not cutoff then cutoff = 0 end
+            break
+        end
+        if not next(wanted) and (kind ~= "rating" or cutoff) then break end
         if pageCount >= MAX_PAGES then
             local below = {}
             for id in pairs(wanted) do
                 if Players:GetPlayerByUserId(id) then
-                    local found,score = pcall(function() return Stats.ordered[kind]:GetAsync(tostring(id)) end)
+                    local found,score = pcall(function() return store:GetAsync(tostring(id)) end)
                     if found and type(score)=="number" and lastValue and
                         ((kind=="bestTime" and score>=lastValue) or (kind~="bestTime" and score<=lastValue)) then
                         below[id]=index+1
@@ -101,6 +115,7 @@ local function refresh(kind)
         ok = pcall(function() pages:AdvanceToNextPageAsync() end)
         if not ok then board.error=true; break end
     until false
+    if kind == "rating" and cutoff and not board.error then ReplicatedStorage:SetAttribute("MinatoSCutoff", cutoff) end
     board.busy=false
 end
 
@@ -137,7 +152,8 @@ remote.OnServerInvoke = function(player)
     if lastRequest[player.UserId] and now-lastRequest[player.UserId] < 1 then return nil end
     lastRequest[player.UserId]=now
     local saved = profiles[player.UserId]
-    local publicProfile = saved and {rating=saved.rating,races=saved.races,wins=saved.wins,bestTime=saved.bestTime,version=saved.version} or nil
+    -- 内部レート(相手探し用)は出さない。順位表の「RATE」は今シーズンのランク戦の RATE
+    local publicProfile = saved and {races=saved.races,wins=saved.wins,bestTime=saved.bestTime,version=saved.version} or nil
     local response = {profile=publicProfile,boards={}}
     for kind,board in pairs(boards) do
         local entries={}

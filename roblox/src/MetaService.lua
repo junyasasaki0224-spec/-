@@ -34,16 +34,52 @@ local function mark(v,userId)
     v.meta.testUnlock=testUnlock(userId) or nil
     return v
 end
+-- Roblox のバッジ(ShopConfig.badges に番号がある物だけ)を、届いた級のぶん渡す。渡し終えた物は meta.awarded に覚える
+local BadgeService=game:GetService("BadgeService")
+local badgeIds=require(game:GetService("ReplicatedStorage"):WaitForChild("ShopConfig")).badges or {}
+local awarding={}
+local function awardBadges(userId,meta)
+    if awarding[userId] or type(meta.badges)~="table" then return end
+    local todo={}
+    for _,name in ipairs(meta.badges) do
+        local id=badgeIds[name]
+        if type(id)=="number" and id>0 and not (type(meta.awarded)=="table" and table.find(meta.awarded,name)) then table.insert(todo,{name=name,id=id}) end
+    end
+    if #todo==0 then return end
+    awarding[userId]=true
+    task.spawn(function()
+        local done={}
+        for _,b in ipairs(todo) do
+            local ok,has=pcall(BadgeService.UserHasBadgeAsync,BadgeService,userId,b.id)
+            if ok and not has then ok=pcall(BadgeService.AwardBadge,BadgeService,userId,b.id) end
+            if ok then table.insert(done,b.name) end
+        end
+        if #done>0 then
+            update(userId,function(v)
+                v=Meta.clone(v or {})
+                v.meta=Meta.normalize(v.meta)
+                if type(v.meta.awarded)~="table" then v.meta.awarded={} end
+                for _,name in ipairs(done) do if not table.find(v.meta.awarded,name) then table.insert(v.meta.awarded,name) end end
+                return mark(v,userId)
+            end)
+        end
+        awarding[userId]=nil
+    end)
+end
 function Service.get(userId)
     local token=HttpService:GenerateGUID(false)
     local today=day()
+    -- S の線(ロビーの順位表が出す。会場のサーバーにはないので、その時は S の印を変えない)
+    local cutoff=game:GetService("ReplicatedStorage"):GetAttribute("MinatoSCutoff")
     local data=update(userId,function(v)
         v=Meta.clone(v or {})
         v.meta=Meta.normalize(v.meta)
         v.meta.token=v.meta.token or token
         Meta.daily(v.meta,today)
+        Meta.updateS(v.meta,cutoff)
         return mark(v,userId)
     end)
+    if data and data.meta and userId>0 then awardBadges(userId,data.meta) end
     return data and data.meta
 end
 function Service.action(userId,token,action,arg)

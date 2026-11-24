@@ -12,10 +12,24 @@ local ordered = {
     bestTime = DataStoreService:GetOrderedDataStore("MinatoBestTimeMs"..suffix),
 }
 local VERSION_BASE = 1000000000
+-- ランキングの「RATE」はシーズン(日本時間の1か月)ごとの表。内部レート(rating)は相手探しだけに使い、順位表には出さない
+local rateStores = {}
+local function rateStore(season)
+    season = type(season) == "string" and season:match("^%d%d%d%d%-%d%d$") or nil
+    if not season then return nil end
+    local store = rateStores[season]
+    if not store then
+        store = DataStoreService:GetOrderedDataStore("MinatoRate"..season..suffix)
+        rateStores[season] = store
+    end
+    return store
+end
+-- AI の内部レート(ランク戦の AI は「達人」。人間が1人だけのレースでも、AI との勝ち負けで内部レートが動く)
+local AI_RATING = 1500
 local pending = 0
 local rankingJobs = {}
 local resultQueues = {}
-local Stats = {ordered = ordered, versionBase = VERSION_BASE}
+local Stats = {ordered = ordered, versionBase = VERSION_BASE, rateStore = rateStore}
 
 local function retry(action)
     local lastError
@@ -31,13 +45,19 @@ end
 local function updateRankings(userId, profile)
     local key = tostring(userId)
     -- The version prevents an older server's delayed write from replacing a newer rating.
-    local encoded = math.clamp(math.floor(profile.rating+0.5),0,1000000)*VERSION_BASE + profile.version
-    local okRating = retry(function()
-        return ordered.rating:UpdateAsync(key,function(old)
-            if old and old%VERSION_BASE >= profile.version then return old end
-            return encoded
+    -- 今シーズンにランク戦を走った人だけ、そのシーズンの RATE の表に書く
+    local meta = type(profile.meta) == "table" and profile.meta or nil
+    local store = meta and (tonumber(meta.seasonRaces) or 0) > 0 and rateStore(meta.season) or nil
+    local okRating = true
+    if store then
+        local encoded = math.clamp(math.floor((tonumber(meta.rate) or 0)+0.5),0,1000000)*VERSION_BASE + profile.version
+        okRating = retry(function()
+            return store:UpdateAsync(key,function(old)
+                if old and old%VERSION_BASE >= profile.version then return old end
+                return encoded
+            end)
         end)
-    end)
+    end
     local okWins = retry(function()
         return ordered.wins:UpdateAsync(key,function(old) return math.max(old or 0,profile.wins) end)
     end)
@@ -135,7 +155,8 @@ local function queueResult(result, raceId, change)
 end
 
 -- kind: 会場のモード("ranked" / "online" / "event" / nil)。以前の true は ranked として扱う
-function Stats.recordRace(raceId, participants, kind)
+-- aiPlaces: AI の艇の着(失格は 6)。ランク戦の内部レートは、AI も相手(AI_RATING)として数える
+function Stats.recordRace(raceId, participants, kind, aiPlaces)
     local ranked = kind == true or kind == "ranked"
     -- Loading every opponent can yield or fail; retry without blocking Heartbeat.
     pending += 1
@@ -154,7 +175,11 @@ function Stats.recordRace(raceId, participants, kind)
                 warn("Minato ranked ratings unavailable; retrying")
                 task.wait(20)
             end
+            for _, place in ipairs(type(aiPlaces) == "table" and aiPlaces or {}) do
+                if type(place) == "number" then eligible[#eligible+1] = {rating=AI_RATING, place=place} end
+            end
         end
+        -- 人間の分だけ使う(AI の分は捨てる。AI の内部レートはいつも同じ)
         local changes = ranked and calculateRating(eligible) or {}
         for i, result in ipairs(participants) do
             result.mode=ranked and "season" or (kind=="ta" and "ta" or "race")

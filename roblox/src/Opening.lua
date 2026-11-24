@@ -169,7 +169,7 @@ function Opening.play(options)
         corner(chip, 5)
         text(line, row.name ~= "" and row.name or "選手", 19, BOLD_FONT, WHITE, 12, 0, 230, 34)
         if row.cls and row.cls ~= "" then
-            local cls = text(line, row.cls, 15, NUMBER_FONT, row.cls == "A1" and GOLD or SUB, 246, 0, 44, 34)
+            local cls = text(line, row.cls, 15, NUMBER_FONT, (row.cls == "A1" or row.cls == "S") and GOLD or SUB, 246, 0, 44, 34)
             cls.TextXAlignment = Enum.TextXAlignment.Right
         end
         line.Visible = false

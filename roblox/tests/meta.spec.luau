@@ -62,9 +62,10 @@ for i,coins in ipairs({60,40,30,20,15,15}) do
  local n=M.new();M.result(n,{mode="race",place=i,st=.2})
  assert(n.coins==coins and n.mis.race1==1 and n.mis.st20==1)
 end
+-- ランク戦の1着は +25。D1(200)から C3(300)へ昇級すると、C3 のバッジとコイン(50×3)
 local n=M.new();n.rate=290;n.xp=90
 M.result(n,{mode="season",place=1,st=.1})
-assert(n.rate==320 and n.tier==1 and #n.mail==3 and n.mail[2].coins==200)
+assert(n.rate==315 and n.tier==1 and #n.mail==3 and n.mail[2].coins==150 and table.find(n.badges,"C3") and n.guard==5)
 M.action(n,"mission","race1");M.action(n,"mission","race1")
 assert(n.coins==110)
 local p={meta=M.new()}

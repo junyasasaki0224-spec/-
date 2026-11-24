@@ -466,6 +466,8 @@ local function assignPlayers()
                     player:SetAttribute("MinatoAssist",outfit.assist~=false)
                     player:SetAttribute("MinatoShake",outfit.shake~=false)
                     player:SetAttribute("MinatoOpening",outfit.opening~=false)
+                    -- 出走表の級は、その人のランク(D3〜A1・S)
+                    boat.model:SetAttribute("Class",Meta.gradeName(outfit))
                     boat.model:SetAttribute("Skin",outfit.skin)
                     boat.model:SetAttribute("HelmetStyle",outfit.helmet)
                     boat.model:SetAttribute("CowlStyle",outfit.cowl)
@@ -861,7 +863,7 @@ end
 saveResults = function()
     if resultsSaved or not assigned then return end
     resultsSaved = true
-    local results = {}
+    local results, aiPlaces = {}, {}
     finalRows = {}
     if practiceMode then
         -- スタート練習の結果: ST の早い順(フライングと、通過しなかった艇は後ろ)。成績・報酬には入れない
@@ -886,14 +888,15 @@ saveResults = function()
             boat.model:GetAttribute("Racer") or "",boat.humanUserId == nil,
             boat.model:GetAttribute("Skin") or "",boat.model:GetAttribute("HelmetStyle") or "",
             (not boat.out and boat.finished) and boat.finishTime or false, boat.startTime or false}
-        if boat.humanUserId then table.insert(results,Rules.entry(boat,position)) end
+        if boat.humanUserId then table.insert(results,Rules.entry(boat,position))
+        else table.insert(aiPlaces, boat.out and 6 or position) end
     end
-    -- レートは人間どうしの着順だけで決める(人間の数と、人間の中の順位をサーバーが付ける)
+    -- ランク戦の RATE は6艇の中の着順(AI も数える)。人間の数と人間の中の順位も付けておく(記録用)
     Rules.rankHumans(results)
     -- 本番では、サーバーが入場を確かめてモード(roomKind)が決まった会場の結果だけを保存する
     if #results > 0 and not localPractice and (roomKind or RunService:IsStudio()) then
         -- The mode was established only after server-side admission.
-        PlayerStats.recordRace(raceId,results,roomKind)
+        PlayerStats.recordRace(raceId,results,roomKind,aiPlaces)
     end
     if matchKind() == "ta" and taRecord then
         for _, boat in ipairs(boats) do

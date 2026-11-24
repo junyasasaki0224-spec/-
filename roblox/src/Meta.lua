@@ -5,7 +5,7 @@ local Meta = {["ITEMS"]={{["id"]="s0",["name"]="スタンダード",["r"]="N",["
     {["id"]="h0",["name"]="オレンジ",["r"]="N",["base"]=16742938,["stripe"]=1052688,["kind"]="helmet"}},["MISSIONS"]={{["id"]="race1",["name"]="レースに1回出る",["goal"]=1,["coins"]=50},
     {["id"]="top3",["name"]="3着以内に入る",["goal"]=1,["coins"]=80},
     {["id"]="st20",["name"]="ST 0.20 以内でスタートする",["goal"]=1,["coins"]=80},
-    {["id"]="race3",["name"]="レースに3回出る",["goal"]=3,["coins"]=120}},["GRADES"]={{["name"]="B2",["rate"]=0,["diff"]=0},{["name"]="B1",["rate"]=300,["diff"]=1},{["name"]="A2",["rate"]=800,["diff"]=2},{["name"]="A1",["rate"]=1500,["diff"]=3}},["RARITY"]={["N"]={["name"]="N",["rate"]=0.5,["dupe"]=10},["R"]={["name"]="R",["rate"]=0.3,["dupe"]=30},["SR"]={["name"]="SR",["rate"]=0.14,["dupe"]=100},["SSR"]={["name"]="SSR",["rate"]=0.045,["dupe"]=300},["UR"]={["name"]="UR",["rate"]=0.015,["dupe"]=1000}}}
+    {["id"]="race3",["name"]="レースに3回出る",["goal"]=3,["coins"]=120}},["RARITY"]={["N"]={["name"]="N",["rate"]=0.5,["dupe"]=10},["R"]={["name"]="R",["rate"]=0.3,["dupe"]=30},["SR"]={["name"]="SR",["rate"]=0.14,["dupe"]=100},["SSR"]={["name"]="SSR",["rate"]=0.045,["dupe"]=300},["UR"]={["name"]="UR",["rate"]=0.015,["dupe"]=1000}}}
 -- Roblox 版だけの品: VIP パスの特典。ランダムではなく、ガチャには出ない(ガチャの確率は今までと同じ)。速さや強さは変わらない見た目だけ
 for _,it in ipairs({
     {id="v1",name="VIPゴールド",r="SSR",hull=1710618,trim=15911244,deck=1118481,cowl=15911244,kind="skin",shop=true,vip=true},
@@ -35,6 +35,21 @@ Meta.SLOTS={
 }
 -- レア度の並び(低い順)
 Meta.RARITIES={"N","R","SR","SSR","UR"}
+-- ランク(級)。ランク戦の RATE で決まる。D3 から始まり A1 まで12段。
+-- S は別枠: A1 の人のうち、今シーズンの RATE のランキングで上位200人だけ(S は S だけで、段はない)
+Meta.GRADES={
+    {name="D3",rate=0},{name="D2",rate=100},{name="D1",rate=200},
+    {name="C3",rate=300},{name="C2",rate=400},{name="C1",rate=500},
+    {name="B3",rate=650},{name="B2",rate=800},{name="B1",rate=950},
+    {name="A3",rate=1100},{name="A2",rate=1300},{name="A1",rate=1500},
+}
+Meta.S_TOP=200
+Meta.S_TITLE="Sランカー"
+-- ランク戦の RATE の増減(6艇の中の着順。AI も数える)と失格。D3 の間は下がらない
+Meta.SEASON_DELTA={25,15,8,-10,-15,-20}
+Meta.SEASON_OUT=-25
+-- 昇級した後、この回数のランク戦は降級しない(その級のいちばん下で止まる)
+Meta.PROMOTION_GUARD=5
 -- 出走表などの小さな色見本(主な色, 差し色)。色だけの品は塗装・ヘルメットの色、着せ替えは模様の色
 function Meta.swatch(it)
     if not it then return 0xF2F2F0,0xF2F2F0 end
@@ -83,9 +98,65 @@ function Meta.grade(rate)
     for i,g in ipairs(Meta.GRADES) do if rate>=g.rate then index=i end end
     return index
 end
+-- シーズンは日本時間の1か月ごと("2026-11")
+function Meta.seasonOf(day)
+    return type(day)=="string" and day:sub(1,7) or ""
+end
+-- 今 S か(A1 で、今シーズンのランキング上位200人に入っているとロビーのサーバーが確かめた)
+function Meta.isS(m)
+    return m.sSeason~=nil and m.sSeason==m.season and Meta.grade(m.rate or 0)==#Meta.GRADES
+end
+-- 見せる級の名前(S なら "S")
+function Meta.gradeName(m)
+    if Meta.isS(m) then return "S" end
+    return Meta.GRADES[Meta.grade(m.rate or 0)].name
+end
+-- バッジ(一度でも届いた級。S も入る)を足す。新しく増えたら true
+local function addBadge(m,name)
+    if type(m.badges)~="table" then m.badges={} end
+    if table.find(m.badges,name) then return false end
+    table.insert(m.badges,name)
+    return true
+end
+Meta.addBadge=addBadge
+-- S かどうかを、ロビーのサーバーが調べた「上位200人目の RATE」(cutoff。200人いなければ 0)で決め直す。
+-- 初めて S になった時は、S のバッジと称号「Sランカー」とコインをメールで渡す。戻り値: 初めて S になったか
+function Meta.updateS(m,cutoff)
+    if type(cutoff)~="number" then return false end
+    local top=Meta.grade(m.rate or 0)==#Meta.GRADES and (m.seasonRaces or 0)>0 and m.rate>=cutoff
+    m.sSeason=top and m.season or nil
+    if not top then return false end
+    if type(m.titles)~="table" then m.titles={} end
+    if not table.find(m.titles,Meta.S_TITLE) then table.insert(m.titles,Meta.S_TITLE) end
+    if addBadge(m,"S") then
+        Meta.sendMail(m,"S ランク到達","今シーズンのランキング上位"..Meta.S_TOP.."人に入りました。称号「"..Meta.S_TITLE.."」と S のバッジを贈ります。",1000)
+        return true
+    end
+    return false
+end
+-- シーズンが変わった時: 前のシーズンの最高の級を記録し(バッジの記録)、級に応じたコインをメールで渡して、RATE を半分に戻す
+function Meta.newSeason(m,day)
+    local season=Meta.seasonOf(day)
+    if season=="" then return end
+    if type(m.season)~="string" or m.season=="" then m.season=season;return end
+    if season<=m.season then return end
+    if (m.seasonRaces or 0)>0 then
+        local best=Meta.GRADES[Meta.grade(m.peak or m.rate or 0)].name
+        local wasS=m.sSeason==m.season
+        if wasS then best="S" end
+        if type(m.history)~="table" then m.history={} end
+        table.insert(m.history,1,{season=m.season,grade=best,races=m.seasonRaces or 0,wins=m.seasonWins or 0})
+        while #m.history>24 do table.remove(m.history) end
+        local coins=wasS and 1000 or 30*Meta.grade(m.peak or m.rate or 0)
+        Meta.sendMail(m,m.season.." シーズンの結果","最高ランク "..best.."。シーズンのごほうびです。新しいシーズンは RATE が半分から始まります。",coins)
+    end
+    m.rate=math.floor((m.rate or 0)/2)
+    m.peak,m.seasonRaces,m.seasonWins,m.guard,m.sSeason=m.rate,0,0,0,nil
+    m.season=season
+end
 function Meta.new()
     return {volume=80,lever=40,quality="auto",assist=true,shake=true,opening=true,visor=false,coins=0,own={"s0","h0"},skin="s0",helmet="h0",cowl="c0",wheel="w0",flag="f0",rate=0,peak=0,seasonRaces=0,
-        seasonWins=0,xp=0,tier=0,ta={},day="",mis={},misDone={},pulls=0,mailSeq=1,
+        seasonWins=0,xp=0,tier=0,ta={},day="",mis={},misDone={},pulls=0,mailSeq=1,badges={"D3"},titles={},history={},guard=0,
         mail={{id="welcome",title="ようこそ みなとグランプリへ",body="出走の記念に、ガチャ5回ぶんのコインを贈ります。",coins=500}}}
 end
 function Meta.normalize(v)
@@ -93,6 +164,11 @@ function Meta.normalize(v)
     if type(v)=="table" then for k,x in pairs(v) do m[k]=clone(x) end end
     -- 持ち物の記録が壊れていたら、最初の持ち物に戻す
     if type(m.own)~="table" then m.own={"s0","h0"} end
+    -- ランクのバッジ・称号・シーズンの記録。今までの最高の級までのバッジはそろえておく
+    if type(m.badges)~="table" then m.badges={} end
+    if type(m.titles)~="table" then m.titles={} end
+    if type(m.history)~="table" then m.history={} end
+    for k=1,Meta.grade(math.max(tonumber(m.peak) or 0,tonumber(m.rate) or 0)) do addBadge(m,Meta.GRADES[k].name) end
     -- 今はない品(前の色だけのガチャの品など)や、持っていない品を装備していたら、スタンダードに戻す
     -- (検証用の「全部の品を解放」を止めた後に、借りていた品を着たままにならないように)
     for _,s in ipairs(Meta.SLOTS) do
@@ -108,6 +184,7 @@ function Meta.sendMail(m,title,body,coins)
 end
 function Meta.daily(m,day)
     day=day or m.day
+    Meta.newSeason(m,day)
     if day=="" or m.day>=day then return end
     m.day,m.mis,m.misDone=day,{},{}
     Meta.sendMail(m,"ログインボーナス",day.." の出走ボーナスです。",100)
@@ -189,18 +266,10 @@ end
 function Meta.today(now)
     return os.date("!%Y-%m-%d",(now or os.time())+9*3600)
 end
--- シーズンのレートの増減。オンライン(人間の数 humans がある時)は人間どうしの着順だけで決める:
--- 人間が1人なら動かない。2人以上なら、人間の中の順位を1〜6着の表に広げて当てはめる(AI に勝っても負けても変わらない)
-local SEASON_DELTA={30,20,10,0,-10,-15}
+-- ランク戦の RATE の増減: 6艇の中の着順(AI も数える)。失格は SEASON_OUT
 function Meta.seasonDelta(r)
-    if type(r.humans)=="number" then
-        if r.humans<2 then return 0 end
-        if r.out then return -20 end
-        local p=math.clamp(r.humanPlace or r.humans,1,r.humans)
-        return SEASON_DELTA[math.floor(1+(p-1)*5/(r.humans-1)+0.5)]
-    end
-    if r.out then return -20 end
-    return SEASON_DELTA[math.clamp(r.place or 6,1,6)]
+    if r.out then return Meta.SEASON_OUT end
+    return Meta.SEASON_DELTA[math.clamp(r.place or 6,1,6)]
 end
 function Meta.result(m,r)
     if r.mode=="practice" then return end
@@ -220,12 +289,28 @@ function Meta.result(m,r)
             local day=r.day or m.day
             if m.rankDay~=day then m.rankDay,m.rankCount=day,0 end
             m.rankCount=(type(m.rankCount)=="number" and m.rankCount or 0)+1
+            if m.season==nil or m.season=="" then m.season=Meta.seasonOf(day) end
             local before=Meta.grade(m.rate)
-            m.rate=math.max(0,m.rate+Meta.seasonDelta(r))
+            local delta=Meta.seasonDelta(r)
+            -- D3 の間は下がらない
+            if before==1 and delta<0 then delta=0 end
+            local rate=math.max(0,m.rate+delta)
+            -- 昇級した直後の数回は、その級のいちばん下より下がらない
+            local guard=type(m.guard)=="number" and m.guard or 0
+            if guard>0 then
+                rate=math.max(rate,Meta.GRADES[before].rate)
+                m.guard=guard-1
+            end
+            m.rate=rate
             m.peak=math.max(m.peak,m.rate);m.seasonRaces+=1
             if not r.out and pi==1 then m.seasonWins+=1 end
             local after=Meta.grade(m.rate)
-            if after>before then Meta.sendMail(m,Meta.GRADES[after].name.." 級に昇級","昇級おめでとうございます。記念のコインです。",200*(after-1)) end
+            if after>before then
+                m.guard=Meta.PROMOTION_GUARD
+                -- 届いた級のバッジ(途中の級を飛ばした時も、その級までのバッジを全部)
+                for k=before+1,after do addBadge(m,Meta.GRADES[k].name) end
+                Meta.sendMail(m,Meta.GRADES[after].name.." に昇級","昇級おめでとうございます。"..Meta.GRADES[after].name.." のバッジと記念のコインを贈ります。",50*(after-1))
+            end
         end
         for _,id in ipairs({"race1","race3"}) do m.mis[id]=(m.mis[id] or 0)+1 end
         if not r.out and pi<=3 then m.mis.top3=(m.mis.top3 or 0)+1 end
