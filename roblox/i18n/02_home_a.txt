@@ -13,23 +13,23 @@ ja|en|es|pt|id|fr|de|ko|zhcn|zhtw|th|vi
 ガチャ|Gacha|Gacha|Gacha|Gacha|Gacha|Gacha|가챠|扭蛋|扭蛋|กาชา|Gacha
 ミッション|Missions|Misiones|Missões|Misi|Missions|Missionen|미션|任务|任務|ภารกิจ|Nhiệm vụ
 ランキング|Rankings|Clasificación|Ranking|Peringkat|Classements|Ranglisten|랭킹|排行榜|排行榜|อันดับ|Bảng xếp hạng
-通信対戦|Multiplayer|Multijugador|Multijogador|Multipemain|Multijoueur|Mehrspieler|대전|联机对战|連線對戰|ผู้เล่นหลายคน|Nhiều người chơi
-遊び方|How to Play|Cómo jugar|Como jogar|Cara Bermain|Comment jouer|Anleitung|플레이 방법|玩法|玩法|วิธีเล่น|Cách chơi
+通信対戦|Multiplayer|Multijugador|Multijogador|Multipemain|Multijoueur|Mehrspieler|대전|联机对战|連線對戰|ผู้เล่นหลายคน|Chơi mạng
+遊び方|How to Play|Cómo jugar|Como jogar|Panduan|Tutoriel|Anleitung|플레이 방법|玩法|玩法|วิธีเล่น|Cách chơi
 ショップ|Shop|Tienda|Loja|Toko|Boutique|Shop|상점|商店|商店|ร้านค้า|Cửa hàng
 メール|Mail|Correo|Correio|Surat|Courrier|Post|우편|邮件|郵件|จดหมาย|Thư
-設定|Settings|Ajustes|Configurações|Pengaturan|Réglages|Einstellungen|설정|设置|設定|ตั้งค่า|Cài đặt
+設定|Settings|Ajustes|Opções|Pengaturan|Réglages|Optionen|설정|设置|設定|ตั้งค่า|Cài đặt
 シーズンパス|Season Pass|Pase de temporada|Passe de temporada|Season Pass|Passe de saison|Saisonpass|시즌 패스|赛季通行证|賽季通行證|ซีซันพาส|Thẻ mùa
 ランク|Rank|Rango|Rank|Peringkat|Rang|Rang|랭크|等级|等級|ระดับ|Hạng
 レースを選ぶ|Choose a Race|Elige carrera|Escolha a corrida|Pilih Balapan|Choisis une course|Rennen wählen|레이스 선택|选择比赛|選擇比賽|เลือกการแข่ง|Chọn cuộc đua
 大会を作る|Create Tournament|Crear torneo|Criar torneio|Buat Turnamen|Créer un tournoi|Turnier erstellen|대회 만들기|创建锦标赛|建立錦標賽|สร้างทัวร์นาเมนต์|Tạo giải đấu
 大会の確認|Review Tournament|Revisar torneo|Revisar torneio|Tinjau Turnamen|Vérifier le tournoi|Turnier prüfen|대회 확인|确认锦标赛|確認錦標賽|ตรวจสอบทัวร์นาเมนต์|Xem lại giải đấu
 大会の得点|Tournament Scores|Puntos del torneo|Pontos do torneio|Skor Turnamen|Scores du tournoi|Turnierpunkte|대회 점수|锦标赛积分|錦標賽積分|คะแนนทัวร์นาเมนต์|Điểm giải đấu
-着せ替え150点を集める|Collect 150 customizations|Colecciona 150 accesorios|Colecione 150 itens|Kumpulkan 150 kustomisasi|Collectionne 150 objets|Sammle 150 Designs|꾸미기 150종 모으기|收集 150 件装扮|收集 150 件裝扮|สะสมของแต่ง 150 ชิ้น|Sưu tầm 150 món
+着せ替え150点を集める|Collect 150 items|Colecciona 150 ítems|Colecione 150 itens|Koleksi 150 item|Collectionne 150 objets|Sammle 150 Designs|꾸미기 150종 모으기|收集 150 件装扮|收集 150 件裝扮|สะสมของแต่ง 150 ชิ้น|Sưu tầm 150 món
 5つの部分を着せ替える|Customize 5 parts|Personaliza 5 partes|Personalize 5 partes|Kustomisasi 5 bagian|Personnalise 5 parties|5 Teile anpassen|5개 부분 꾸미기|装扮 5 个部位|裝扮 5 個部位|แต่ง 5 ส่วน|Tùy chỉnh 5 phần
-毎日の目標でコイン|Daily goals for coins|Metas diarias por monedas|Metas diárias por moedas|Target harian untuk koin|Objectifs du jour = pièces|Tagesziele für Münzen|매일 목표로 코인|每日目标赚金币|每日目標賺金幣|เป้าหมายรายวันรับเหรียญ|Mục tiêu ngày nhận xu
-レート・タイム・戦績|Rate · Times · Record|Rating · Tiempos · Historial|Rating · Tempos · Histórico|Rating · Waktu · Rekor|Classement · Temps · Bilan|Wertung · Zeiten · Bilanz|레이트 · 타임 · 전적|评分 · 时间 · 战绩|評分 · 時間 · 戰績|เรต · เวลา · สถิติ|Điểm · Thời gian · Thành tích
+毎日の目標でコイン|Daily goals for coins|Monedas por retos|Moedas por metas|Misi harian: koin|Défis du jour : pièces|Tagesziele für Münzen|매일 목표로 코인|每日目标赚金币|每日目標賺金幣|เป้าหมายรายวันรับเหรียญ|Mục tiêu ngày nhận xu
+レート・タイム・戦績|Rate · Times · Record|Rating · Tiempos|Rating · Tempos|Rating · Waktu · Rekor|Rang · Temps · Bilan|Rang · Zeit · Bilanz|레이트 · 타임 · 전적|评分 · 时间 · 战绩|評分 · 時間 · 戰績|เรต · เวลา · สถิติ|Hạng · Thời gian
 オンライン・フレンド|Online · Friends|En línea · Amigos|Online · Amigos|Online · Teman|En ligne · Amis|Online · Freunde|온라인 · 친구|在线 · 好友|線上 · 好友|ออนไลน์ · เพื่อน|Trực tuyến · Bạn bè
-スタートとターンのコツ|Tips for starts and turns|Trucos para salidas y giros|Dicas de largada e curvas|Tips start dan belokan|Astuces départs et virages|Tipps für Start und Kurven|스타트와 턴 요령|起跑与转弯技巧|起跑與轉彎技巧|เคล็ดลับออกตัวและเลี้ยว|Mẹo xuất phát và vào cua
+スタートとターンのコツ|Start & turn tips|Salidas y giros|Largada e curvas|Tips start dan belokan|Départs et virages|Start- & Kurventipps|스타트와 턴 요령|起跑与转弯技巧|起跑與轉彎技巧|เคล็ดลับออกตัวและเลี้ยว|Xuất phát và vào cua
 コイン・VIP パス|Coins · VIP Pass|Monedas · Pase VIP|Moedas · Passe VIP|Koin · VIP Pass|Pièces · Passe VIP|Münzen · VIP-Pass|코인 · VIP 패스|金币 · VIP 通行证|金幣 · VIP 通行證|เหรียญ · VIP พาส|Xu · Thẻ VIP
 レース|Race|Correr|Correr|Balap|Course|Rennen|레이스|比赛|比賽|แข่ง|Đua
 モードを選んで出走|Choose a mode and race|Elige modo y corre|Escolha o modo e corra|Pilih mode dan balap|Choisis un mode et cours|Modus wählen und starten|모드를 골라 출전|选择模式出赛|選擇模式出賽|เลือกโหมดแล้วลงแข่ง|Chọn chế độ và đua

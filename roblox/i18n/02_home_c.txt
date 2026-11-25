@@ -2,7 +2,7 @@ ja|en|es|pt|id|fr|de|ko|zhcn|zhtw|th|vi
 # フリーレースの出走表
 出足・回り足|Accel · Turn|Acel. · Giro|Acel. · Curva|Akse. · Belok|Accél. · Virage|Antritt · Kurve|출발 · 선회|起步・回旋|起步・迴旋|เร่ง · เลี้ยว|Tốc · Cua
 バランス|Balanced|Equilibrado|Equilibrado|Seimbang|Équilibré|Ausgewogen|밸런스|均衡|均衡|สมดุล|Cân bằng
-伸び寄り|Speed lean|Más velocidad|Mais velocidade|Agak cepat|Plus vitesse|Eher Tempo|최고속 위주|偏极速|偏極速|เน้นเร็ว|Thiên tốc
+伸び寄り|Speed lean|Más velocidad|Mais veloz|Agak cepat|Plus vitesse|Eher Tempo|최고속 위주|偏极速|偏極速|เน้นเร็ว|Thiên tốc
 伸び特化|Max speed|Vel. máxima|Vel. máxima|Maks. cepat|Vitesse max|Volles Tempo|최고속 특화|极速特化|極速特化|เร็วสุด|Tốc tối đa
 {1}コース・スロー|Lane {1} · Slow|Carril {1} · Lenta|Raia {1} · Lenta|Lajur {1} · Lambat|Couloir {1} · Lent|Bahn {1} · Langsam|{1}코스 · 슬로|{1} 号道・慢速|{1} 號道・慢速|เลน {1} · ช้า|Làn {1} · Chậm
 {1}コース・ダッシュ|Lane {1} · Dash|Carril {1} · Lanzada|Raia {1} · Lançada|Lajur {1} · Lari|Couloir {1} · Lancé|Bahn {1} · Fliegend|{1}코스 · 대시|{1} 号道・冲刺|{1} 號道・衝刺|เลน {1} · พุ่ง|Làn {1} · Lao
@@ -33,7 +33,7 @@ ja|en|es|pt|id|fr|de|ko|zhcn|zhtw|th|vi
 難易度|Difficulty|Dificultad|Dificuldade|Kesulitan|Difficulté|Schwierigkeit|난이도|难度|難度|ความยาก|Độ khó
 初級|Beginner|Principiante|Iniciante|Pemula|Débutant|Anfänger|초급|初级|初級|เริ่มต้น|Sơ cấp
 中級|Intermediate|Intermedio|Intermediário|Menengah|Intermédiaire|Mittel|중급|中级|中級|กลาง|Trung cấp
-上級|Advanced|Avanzado|Avançado|Mahir|Avancé|Fortgeschritten|상급|高级|高級|สูง|Cao cấp
+上級|Advanced|Avanzado|Avançado|Mahir|Avancé|Profi|상급|高级|高級|สูง|Cao cấp
 達人|Expert|Experto|Especialista|Ahli|Expert|Experte|달인|高手|高手|เซียน|Cao thủ
 時間帯|Time of day|Hora del día|Período|Waktu|Moment|Tageszeit|시간대|时段|時段|ช่วงเวลา|Thời điểm
 デイ|Day|Día|Dia|Siang|Jour|Tag|데이|白天|白天|กลางวัน|Ngày

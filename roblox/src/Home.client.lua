@@ -316,11 +316,16 @@ end
 local function placeToast()
     local size=screenSize()
     local maxW=math.min(size.X-32,520)
-    toast.Size=UDim2.fromOffset(maxW,38)
-    local tw=math.min(maxW,toast.TextBounds.X+36)
+    -- 幅は訳した後の文で測る(文を入れ替えた直後の TextBounds は、前の文の幅のことがある)。
+    -- 1行に入らない長い知らせは2行にする
+    local need=math.ceil(TextService:GetTextSize(Lang.translate(toast.Text),toast.TextSize,toast.Font,Vector2.new(4000,100)).X)
+    local twoLines=need+40>maxW
+    local tw=math.min(maxW,need+40)
+    local th=twoLines and 58 or 38
+    toast.TextWrapped=twoLines
     local y=page=="ホーム" and (size.X<size.Y and 168 or 78) or 66
     toast.Position=UDim2.fromOffset(math.floor((size.X-tw)/2),y)
-    toast.Size=UDim2.fromOffset(tw,38)
+    toast.Size=UDim2.fromOffset(tw,th)
 end
 toast:GetPropertyChangedSignal("Text"):Connect(function()
     toastSeq+=1
@@ -624,10 +629,13 @@ local function redrawNow()
         if w<420 then stats="RATE "..m.rate..(nextGrade and "・"..nextGrade.name.."まで"..(nextGrade.rate-m.rate).."点" or "・"..topText) end
         local progress=nextGrade and (m.rate-g.rate)/(nextGrade.rate-g.rate) or 1
         local name=Run:IsStudio() and "テストレーサー" or player.DisplayName
+        -- 右上のメール・設定のボタンの幅は、訳した後の文で測る(「Einstellungen」などが言葉の途中で折り返さないように)
+        local function headW(text,base,size) return math.max(base,textWidth(text,size)+14) end
         if portrait then
-            Ui.profile(root,12,8,w-24-136,gradeName,name,stats,progress,function() go("ランク") end)
-            Ui.headButton(root,"Mail","メール",w-12-124,17,64,function() go("メール") end,#m.mail)
-            Ui.headButton(root,"Settings","設定",w-12-56,17,56,function() go("設定") end)
+            local setW,mailW=headW("設定",56,12),headW("メール",64,12)
+            Ui.profile(root,12,8,w-24-setW-4-mailW-12,gradeName,name,stats,progress,function() go("ランク") end)
+            Ui.headButton(root,"Mail","メール",w-12-setW-4-mailW,17,mailW,function() go("メール") end,#m.mail)
+            Ui.headButton(root,"Settings","設定",w-12-setW,17,setW,function() go("設定") end)
             Ui.pill(root,"Coins",tostring(m.coins),12,78,110,36,nil,true)
             local passW=math.min(160,w-12-122-(m.vip and 72 or 0)-12)
             Ui.pill(root,"Pass",(passW>=150 and "シーズンパス " or "パス ")..m.tier.."段",130,78,passW,36,function() go("シーズンパス") end)
@@ -661,13 +669,14 @@ local function redrawNow()
         local pw=short and 210 or 236
         Ui.profile(root,16,short and 8 or 14,pw,gradeName,name,stats,progress,function() go("ランク") end)
         Ui.pill(root,"Coins",tostring(m.coins),16+pw+12,short and 20 or 26,96,36,nil,true)
+        local setW,mailW=headW("設定",72,13),headW("メール",92,13)
         -- シーズンパスの札は、メールのボタンの手前まで(狭い時は「パス 3段」)
-        local passW=math.clamp((w-16-72-8-92-10)-(16+pw+116),92,156)
+        local passW=math.clamp((w-16-setW-8-mailW-10)-(16+pw+116),92,156)
         Ui.pill(root,"Pass",(passW>=150 and "シーズンパス " or "パス ")..m.tier.."段",16+pw+116,short and 20 or 26,passW,36,function() go("シーズンパス") end)
-        Ui.headButton(root,"Settings","設定",w-16-72,short and 8 or 14,72,function() go("設定") end)
-        Ui.headButton(root,"Mail","メール",w-16-72-8-92,short and 8 or 14,92,function() go("メール") end,#m.mail)
+        Ui.headButton(root,"Settings","設定",w-16-setW,short and 8 or 14,setW,function() go("設定") end)
+        Ui.headButton(root,"Mail","メール",w-16-setW-8-mailW,short and 8 or 14,mailW,function() go("メール") end,#m.mail)
         -- 題字は、左の札と右のボタンの間に入る時だけ
-        local logoLeft,logoRight=16+pw+280,w-16-180
+        local logoLeft,logoRight=16+pw+280,w-16-setW-8-mailW-8
         if logoRight-logoLeft>=300 then Ui.logo(root,logoLeft,short and 4 or 8,logoRight-logoLeft,short and 30 or 40) end
         local tw,th,gap=short and 186 or 214,short and (h<360 and 46 or 52) or 66,short and (h<360 and 6 or 7) or 12
         local total=4*th+3*gap
