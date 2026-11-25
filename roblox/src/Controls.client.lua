@@ -521,6 +521,9 @@ tiltButton.BackgroundColor3 = Color3.fromRGB(11,29,58)
 do local edge = Instance.new("UIStroke"); edge.Color = Color3.fromRGB(255,210,60); edge.Transparency = 0.2; edge.ApplyStrokeMode = Enum.ApplyStrokeMode.Border; edge.Parent = tiltButton end
 tiltButton.TextColor3 = Color3.new(1,1,1)
 tiltButton.Font,tiltButton.TextSize = Enum.Font.GothamBold,16
+-- 長い訳(「Cámara Seguir」など)は、ボタンに入る大きさまで小さくする。視点とメニューのボタンもこれを写して作る
+do local size = Instance.new("UITextSizeConstraint"); size.MaxTextSize, size.MinTextSize = 16, 10; size.Parent = tiltButton end
+tiltButton.TextScaled = true
 tiltButton.Parent = gui
 local tiltCorner = Instance.new("UICorner")
 tiltCorner.CornerRadius = UDim.new(0,8)

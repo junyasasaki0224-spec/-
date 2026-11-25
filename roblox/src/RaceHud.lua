@@ -109,14 +109,14 @@ function Hud.new(gui)
     self.posGradient.Rotation = 70
     self.posGradient.Parent = pos
     self.posN = text(pos, "Number", 46, NUMBER_FONT)
-    self.posN.Size = UDim2.new(0, 56, 1, 0)
-    self.posN.Position = UDim2.fromOffset(6, -2)
-    self.posN.TextXAlignment = Enum.TextXAlignment.Right
+    -- 大きな数字・失格の印は、枠に入りきらない時だけ小さくする(「Sunk」などの長い言葉)
+    self.posNSize = Instance.new("UITextSizeConstraint")
+    self.posNSize.MinTextSize = 12
+    self.posNSize.Parent = self.posN
     self.posUnit = text(pos, "Unit", 18)
-    self.posUnit.Size = UDim2.fromOffset(24, 30)
-    self.posUnit.Position = UDim2.fromOffset(62, 26)
     self.posUnit.Text = "着"
     self.pos = pos
+    self:layoutPos("suffix")
     self.lap = text(root, "Lap", 20)
     self.lap.Position = UDim2.fromOffset(120, 16)
     self.lap.Size = UDim2.fromOffset(240, 26)
@@ -204,8 +204,13 @@ function Hud.new(gui)
         local row = panel(order, "Row" .. i)
         corner(row, 8)
         local mark = text(row, "Mark", 14)
-        mark.Size = UDim2.fromOffset(16, 26)
-        mark.Position = UDim2.fromOffset(4, 0)
+        mark.Size = UDim2.fromOffset(18, 26)
+        mark.Position = UDim2.fromOffset(2, 0)
+        -- 沈・退の訳(Sunk・Out など)が長い時は、枠に入る大きさまで小さくする
+        local markSize = Instance.new("UITextSizeConstraint")
+        markSize.MaxTextSize, markSize.MinTextSize = 14, 7
+        markSize.Parent = mark
+        mark.TextScaled = true
         local c = chip(row, 1, 20)
         c.Position = UDim2.fromOffset(22, 3)
         local name = text(row, "Name", 14)
@@ -557,6 +562,42 @@ function Hud:setAssist(on)
     self:fitStart()
 end
 
+-- 左上の順位の箱の並び。言語によって「着」の置き方を変える
+--   suffix : 1文字の単位(着・위・名・º・e・.)は数字の右に(「3着」)
+--   caption: 長い単位(Pos・อันดับ・hạng)は数字の上に小さく(読む順も「อันดับ 3」になる)
+--   out    : 沈没・失格などの印だけを箱いっぱいに
+function Hud:layoutPos(kind)
+    if self.posKind == kind then
+        return
+    end
+    self.posKind = kind
+    local n, unit = self.posN, self.posUnit
+    unit.Visible = kind ~= "out"
+    if kind == "suffix" then
+        n.Size, n.Position = UDim2.new(0, 56, 1, 0), UDim2.fromOffset(6, -2)
+        n.TextXAlignment = Enum.TextXAlignment.Right
+        self.posNSize.MaxTextSize = 46
+        unit.Size, unit.Position, unit.TextSize = UDim2.fromOffset(24, 30), UDim2.fromOffset(62, 26), 18
+    elseif kind == "caption" then
+        unit.Size, unit.Position, unit.TextSize = UDim2.new(1, -12, 0, 16), UDim2.fromOffset(6, 4), 12
+        n.Size, n.Position = UDim2.new(1, -12, 1, -20), UDim2.fromOffset(6, 18)
+        n.TextXAlignment = Enum.TextXAlignment.Center
+        self.posNSize.MaxTextSize = 40
+    else
+        n.Size, n.Position = UDim2.new(1, -12, 1, -8), UDim2.fromOffset(6, 4)
+        n.TextXAlignment = Enum.TextXAlignment.Center
+        self.posNSize.MaxTextSize = 46
+    end
+    n.TextSize = self.posNSize.MaxTextSize
+end
+
+-- 順位の箱の大きな文字と単位を入れる。2文字以上の言葉(Sunk など)だけ、枠に入る大きさまで縮める
+-- (1文字の数字・沈・F は前と同じ大きさのまま)
+function Hud:setPosText(big, unit)
+    self.posN.Text, self.posUnit.Text = big, unit
+    self.posN.TextScaled = (utf8.len(big) or #big) > 1
+end
+
 -- 毎フレームの更新。info の中身は Controls.client.lua が作る
 function Hud:update(info)
     self.root.Visible = info.visible
@@ -566,10 +607,13 @@ function Hud:update(info)
     -- 順位(1着は金、失格は赤)
     local rank = info.rank
     if info.out then
-        self.posN.Text, self.posUnit.Text = T(info.out), ""
+        self:layoutPos("out")
+        self:setPosText(T(info.out), "")
         self.posGradient.Color = ColorSequence.new(Color3.fromRGB(150, 30, 30), Color3.fromRGB(90, 10, 10))
     else
-        self.posN.Text, self.posUnit.Text = tostring(rank or "-"), T("着")
+        local unit = T("着")
+        self:layoutPos((utf8.len(unit) or #unit) > 1 and "caption" or "suffix")
+        self:setPosText(tostring(rank or "-"), unit)
         if rank == 1 then
             self.posGradient.Color = ColorSequence.new(Color3.fromRGB(226, 164, 0), Color3.fromRGB(165, 95, 0))
         else

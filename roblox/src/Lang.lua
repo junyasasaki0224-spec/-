@@ -89,6 +89,8 @@ for i, code in data.langs do
 end
 local exact, templates, byTemplate = {}, {}, {}
 local cache, cacheSize = {}, 0
+-- 訳した後の文(毎コマ訳して入れた文を、画面の見張りがもう一度訳そうとした時に、すぐ返すため)
+local produced = {}
 local missing = {}
 
 -- 「{1}」入りの文を、当てはめ用の形にする
@@ -126,6 +128,7 @@ local function build(code: string)
 	table.clear(templates)
 	table.clear(byTemplate)
 	table.clear(cache)
+	table.clear(produced)
 	cacheSize = 0
 	local col = column[code]
 	if not col then
@@ -150,11 +153,11 @@ local function build(code: string)
 end
 
 local translate
--- 1つの行を訳す(depth は、{1} の中身を訳す深さ)
-local function translateLine(text: string, depth: number): string
+-- 1つの行を訳す(depth は、{1} の中身を訳す深さ)。2つ目の値は、表に当てはまったか
+local function translateLine(text: string, depth: number): (string, boolean)
 	local hit = exact[text]
 	if hit then
-		return hit
+		return hit, true
 	end
 	-- 当てはまる形のうち、{1} などに入る文字がいちばん少ない(決まった文字で多く当たる)形を使う
 	-- (「横風 {1}m」が「横風 1m　波 1cm」の終わりの m に当たって、波の部分まで {1} に入れないように)
@@ -177,13 +180,14 @@ local function translateLine(text: string, depth: number): string
 		local args = {}
 		for i, n in best.order do
 			local value = bestCaptures[i]
-			args[n] = depth < 2 and translateLine(value, depth + 1) or value
+			args[n] = depth < 2 and (translateLine(value, depth + 1)) or value
 		end
 		return (best.out:gsub("{(%d)}", function(n)
 			return args[tonumber(n)] or ""
-		end))
+		end)),
+			true
 	end
-	return text
+	return text, false
 end
 
 -- ひらがな・カタカナ・漢字があるか(全角の空白や「・」だけなら訳がなくてもよい)
@@ -205,18 +209,28 @@ function translate(text: string): string
 	if hit then
 		return hit
 	end
-	local out
+	if produced[text] then
+		return text
+	end
+	local out, matched
 	if text:find("\n") then
 		local lines = {}
+		matched = true
 		for line in (text .. "\n"):gmatch("(.-)\n") do
-			table.insert(lines, translateLine(line, 0))
+			local done, ok = translateLine(line, 0)
+			table.insert(lines, done)
+			matched = matched and (ok or line == "" or not hasJapanese(line))
 		end
 		out = table.concat(lines, "\n")
 	else
-		out = translateLine(text, 0)
+		out, matched = translateLine(text, 0)
+	end
+	-- 訳した後の文を覚えておく(それ自体が元の日本語の文でない時だけ)
+	if out ~= text and not exact[out] then
+		produced[out] = true
 	end
 	-- Studio では、訳がなかった日本語を覚えておく(表に足すため。属性 MinatoLangMissing で見られる)
-	if RunService:IsStudio() and out == text and not missing[text] and hasJapanese(text) then
+	if RunService:IsStudio() and not matched and not missing[text] and hasJapanese(text) then
 		missing[text] = true
 		local player = Players.LocalPlayer
 		if player then
@@ -229,6 +243,7 @@ function translate(text: string): string
 	end
 	if cacheSize > 3000 then
 		table.clear(cache)
+		table.clear(produced)
 		cacheSize = 0
 	end
 	cache[text] = out
@@ -247,6 +262,37 @@ function Lang.t(source: string, ...): string
 	end))
 end
 
+-- 訳した文が枠からはみ出す時は、その文字だけ枠に入る大きさまで小さくする(元の大きさより大きくはしない)。
+-- 日本語より長くなる言語(ドイツ語・タイ語など)で、ボタンや札の外へ文字が出ないようにするための守り
+local fitted = setmetatable({}, { __mode = "k" })
+local checking = setmetatable({}, { __mode = "k" })
+local function fitLater(obj)
+	if
+		Lang.code == "ja"
+		or fitted[obj]
+		or checking[obj]
+		or obj.TextScaled
+		or obj.TextWrapped
+		or obj.TextTruncate ~= Enum.TextTruncate.None
+		or obj.AutomaticSize ~= Enum.AutomaticSize.None
+	then
+		return
+	end
+	checking[obj] = true
+	-- 大きさと場所が決まった後(同じコマの終わり)に確かめる
+	task.defer(function()
+		checking[obj] = nil
+		if obj.Parent and not obj.TextScaled and obj.AbsoluteSize.X > 0 and obj.TextBounds.X > obj.AbsoluteSize.X + 1 then
+			fitted[obj] = true
+			local size = Instance.new("UITextSizeConstraint")
+			size.MaxTextSize = obj.TextSize
+			size.MinTextSize = math.min(obj.TextSize, math.max(8, math.floor(obj.TextSize * 0.6)))
+			size.Parent = obj
+			obj.TextScaled = true
+		end
+	end)
+end
+
 -- 画面の文字を見張って、変わるたびに訳す
 local origin = setmetatable({}, { __mode = "k" })
 local shown = setmetatable({}, { __mode = "k" })
@@ -263,6 +309,7 @@ local function apply(obj)
 	else
 		shown[obj] = nil
 	end
+	fitLater(obj)
 end
 local placeholders = setmetatable({}, { __mode = "k" })
 local function watchObject(obj)
@@ -304,6 +351,7 @@ function Lang.set(code: string?)
 			local out = translate(text)
 			shown[obj] = out
 			obj.Text = out
+			fitLater(obj)
 		end
 	end
 	for obj, text in placeholders do
