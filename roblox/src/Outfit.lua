@@ -21,9 +21,7 @@ if game:GetService("RunService"):IsClient() then
 	end)
 end
 
--- 着せ替えの艇外装に付く側面の板の色。艇番(1〜6号艇)では変えず、どの艇も倉庫で見た時と同じ白
-local PLATE = 0xf2f2f0
-
+-- 艇の色は、艇番(1〜6号艇)では変えない。どの艇も、着けている品(スキン)がデザインされたままの色で走る
 local function color(n: number): Color3
 	return Color3.fromRGB(bit32.rshift(n, 16), bit32.band(bit32.rshift(n, 8), 255), bit32.band(n, 255))
 end
@@ -140,25 +138,21 @@ local function attach(model: Model, id: string, kind: string)
 			if moved ~= nil then
 				p:SetAttribute("AvatarMoved", moved)
 			end
-			local material = materialOf(p)
-			-- 旗の布は模様そのまま(倉庫で見た旗が、どの艇番でも同じに見えるように)。布は両面で描く部品(Items.rbxmx)
-			if material == "NumberPlate" then
-				-- 側面の板も艇番で変えない
-				p.Color = color(PLATE)
-			end
+			-- 品の部品の色と模様は、デザインされたまま(側面の板・旗の布も塗り直さない)。布は両面で描く部品(Items.rbxmx)
 			p.Parent = parent
 		end
 	end
 end
 
--- 色だけの品(スタンダード・VIP)で元の部品を塗る
+-- 色だけの品(スタンダード・VIP)で元の部品を塗る。艇の部品はすべて、その品の色で塗る
+-- (前は操縦席まわりとモーターの色の部品 BoatColor を艇番の色で塗っていた。今はその品の差し色 cowl で塗る)
 local function paint(model: Model, skin: any, helmet: any)
 	-- 艇首と側面の板は、レースでも倉庫でも甲板の色にする
 	-- (艇番で色を変えない。VIP の黒い甲板で、旗の下に白い板だけが浮いて見えないように)
 	for _, p in model:GetDescendants() do
 		if p:IsA("MeshPart") and not p:GetAttribute("OutfitItem") then
 			local material = materialOf(p)
-			local key = ({ HullWhite = "hull", Trim = "trim", Deck = "deck", MotorRed = "cowl" })[material or ""]
+			local key = ({ HullWhite = "hull", Trim = "trim", Deck = "deck", MotorRed = "cowl", BoatColor = "cowl" })[material or ""]
 			if skin and skin.hull and key then
 				p.Color = color(skin[key])
 			end
