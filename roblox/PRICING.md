@@ -35,7 +35,7 @@ Roblox で遊んでいる人たちと、ほかの人気ゲームの値段を調�
 
 考え方:
 
-- **400 Robux の束1つで買える上限にする**:いちばん高い品(VIP パス・いちばん大きいコインの袋)を 399 Robux にした。
+- **400 Robux の束1つで買える上限にする**:いちばん高い品(いちばん大きいコインの袋)を 399 Robux にした。
   前の 599・600 Robux は、400 の束1つでは買えず、子どもには届きにくい。
 - **はじめての1回を安く**:いちばん小さい袋は 49 Robux(約80〜100円)。少しだけ残った Robux でも買える。
 - **大きい袋ほど少しだけお得**:おまけは 0% → 10% → 20% → 30%。
@@ -50,16 +50,23 @@ Roblox で遊んでいる人たちと、ほかの人気ゲームの値段を調�
 | c2 | 1000 + おまけ 100(10連 + 2回) | 99 Robux | 約160〜200円 | 11.1 コイン |
 | c3 | 2000 + おまけ 400(10連 ×2 + 6回) | 199 Robux | 約320〜400円 | 12.1 コイン |
 | c4 | 4000 + おまけ 1200(10連 ×5 + 7回) | 399 Robux | 約640〜800円 | 13.0 コイン |
-| VIP パス | ランク戦無制限・金の塗装とヘルメット・VIP の札・買った時 1000 コイン・毎日 100 コイン | 399 Robux | 約640〜800円 | — |
+| VIP 会員(毎月) | 会員の間だけ: ランク戦無制限・金の塗装とヘルメット・VIP の札・毎日 100 コイン。初めての時だけ 1000 コイン | 月 199 Robux | 約320〜400円 | 毎日入ると 15 コイン |
 
-- VIP パスは、ほかのゲームの VIP(375〜400 Robux)と同じくらいにした。
-  前に決めた「約1000円(600 Robux)」から下げた。
+- VIP は、1回払いのパス(399 Robux)をやめて、毎月払う **VIP 会員(サブスクリプション)** にした(2026-11-27)。
+  パスのままだと、毎日 100 コイン(1か月で約 3000 コイン ≒ 300 Robux ぶん)がずっと届き、2か月目からコインの袋を買う理由がなくなるため。
+- 月 199 Robux にした理由:
+  - 400 Robux の束1つで2か月ぶん。子どもの手元の Robux で続けやすい
+  - 毎日入ると1か月で 3000 コイン(1 Robux あたり 15 コイン)。いちばん大きい袋(13.0 コイン)より少しだけお得にして、続けて遊ぶ人の得にする
+  - 初めての時だけの 1000 コインは一人1回(やめてまた入っても届かない)
+- 日本では、円などのお金で払うサブスクリプションは使えない(Roblox の決まり)。そのため **Robux 払い** で作る。
+- 金の塗装とヘルメットは、会員が切れると使えなくなる(オーナーの決定)。ショップの画面で、買う前にそのことと、やめ方・返金されないことを出している。
+- Robux 払いの会員の値段は60日に1回だけ変えられる。上げる時は会員に30日前に知らせが届く。
 - レースの速さ・強さは、どの品でも変わらない(お金で勝てるようにはしない)。
 
 ## 4. 公開した後にすること
 
-- **パスの地域ごとの値段(Regional Pricing)を入れる**:物価の安い国では、Roblox が自動で値段を下げる(最低で元の 30%)。
-  パスを作る時に Creator Hub で選ぶ。開発者製品(コインの袋)には今はない。
+- **地域ごとの値段(Regional Pricing)**:物価の安い国では、Roblox が自動で値段を下げる。
+  Robux 払いのサブスクリプション(VIP 会員)には最初から入っていて止められない。開発者製品(コインの袋)には今はない。
 - **値段の試し(Price Optimization)**:人が増えてきたら、Creator Hub の値段の試しの機能で、
   いくつかの値段を比べて決め直す(上の値段は、はじめの目安)。
 - 急がせる売り方(「残りわずか」など、本当でないもの)はしない。
@@ -75,6 +82,8 @@ Roblox で遊んでいる人たちと、ほかの人気ゲームの値段を調�
 - [収益化(Roblox 公式)](https://create.roblox.com/docs/production/monetization)
 - [値段の試し(Roblox 公式)](https://create.roblox.com/docs/en-us/production/monetization/price-optimization)
 - [パスの地域ごとの値段(Roblox DevForum)](https://devforum.roblox.com/t/introducing-regional-pricing-for-passes/3621382)
+- [サブスクリプション(Roblox 公式)](https://create.roblox.com/docs/production/monetization/subscriptions)
+- [Robux 払いのサブスクリプション(Roblox DevForum)](https://devforum.roblox.com/t/let-your-players-pay-for-subscriptions-within-experiences-in-robux/4552995)
 - [パスの値段の相談(Roblox DevForum)](https://devforum.roblox.com/t/what-is-a-good-price-threshold-for-game-passes/3598052)
 - [Steal a Brainrot のパスの値段(BuffGet)](https://buffget.com/news/steal-a-brainrot-game-pass-prices-robux-2026)
 - [Blox Fruits のパス(Sportskeeda)](https://www.sportskeeda.com/roblox-news/everything-know-gamepasses-roblox-blox-fruits)

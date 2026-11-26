@@ -21,8 +21,8 @@ if game:GetService("RunService"):IsClient() then
 	end)
 end
 
--- 艇番の色(1〜6号艇)。艇外装の時の側面の艇番の板に使う
-local LANE = { 0xf2f2f0, 0x16161a, 0xd91e2e, 0x1b50d4, 0xf3d21b, 0x18a24c }
+-- 着せ替えの艇外装に付く側面の板の色。艇番(1〜6号艇)では変えず、どの艇も倉庫で見た時と同じ白
+local PLATE = 0xf2f2f0
 
 local function color(n: number): Color3
 	return Color3.fromRGB(bit32.rshift(n, 16), bit32.band(bit32.rshift(n, 8), 255), bit32.band(n, 255))
@@ -102,7 +102,7 @@ local function hideOriginal(model: Model, kind: string)
 end
 
 -- 品の部品を複製して付ける。部品の CFrame は「休みの姿勢の艇の原点から見た位置」(ヘルメットは元の殻から見た位置)
-local function attach(model: Model, id: string, kind: string, laneColor: Color3)
+local function attach(model: Model, id: string, kind: string)
 	local folder = Assets:FindFirstChild("Items")
 	local source = folder and folder:FindFirstChild(id)
 	if not source then
@@ -143,8 +143,8 @@ local function attach(model: Model, id: string, kind: string, laneColor: Color3)
 			local material = materialOf(p)
 			-- 旗の布は模様そのまま(倉庫で見た旗が、どの艇番でも同じに見えるように)。布は両面で描く部品(Items.rbxmx)
 			if material == "NumberPlate" then
-				-- 側面の艇番の板は艇番の色
-				p.Color = laneColor
+				-- 側面の板も艇番で変えない
+				p.Color = color(PLATE)
 			end
 			p.Parent = parent
 		end
@@ -153,9 +153,8 @@ end
 
 -- 色だけの品(スタンダード・VIP)で元の部品を塗る
 local function paint(model: Model, skin: any, helmet: any)
-	-- 艇番が決まっていない艇(ホーム・倉庫・ガチャの見本)は、艇首と側面の艇番の板を甲板の色にする
-	-- (VIP の黒い甲板で、旗の下に白い板だけが浮いて見えないように)
-	local noLane = model:GetAttribute("Lane") == nil
+	-- 艇首と側面の板は、レースでも倉庫でも甲板の色にする
+	-- (艇番で色を変えない。VIP の黒い甲板で、旗の下に白い板だけが浮いて見えないように)
 	for _, p in model:GetDescendants() do
 		if p:IsA("MeshPart") and not p:GetAttribute("OutfitItem") then
 			local material = materialOf(p)
@@ -163,7 +162,7 @@ local function paint(model: Model, skin: any, helmet: any)
 			if skin and skin.hull and key then
 				p.Color = color(skin[key])
 			end
-			if skin and skin.deck and noLane and material == "NumberPlate" and p.Parent and p.Parent.Name == "Plates" then
+			if skin and skin.deck and material == "NumberPlate" and p.Parent and p.Parent.Name == "Plates" then
 				p.Color = color(skin.deck)
 			end
 			if helmet and helmet.base and material == "Helmet" then
@@ -215,16 +214,14 @@ return function(model: Model, skinId: string?, helmetId: string?, cowlId: string
 	end
 	reset(model)
 	paint(model, skin, helmet)
-	local lane = model:GetAttribute("Lane")
-	local laneColor = color(LANE[typeof(lane) == "number" and lane or 1] or LANE[1])
 	-- 先にヘルメット以外(艇の組の位置は変わらない)、最後にヘルメット(元の殻を目印にする)
 	for _, kind in { "skin", "cowl", "wheel", "flag", "helmet" } do
 		local it = Meta.item(ids[kind])
 		if it and it.gacha and it.kind == kind then
 			hideOriginal(model, kind)
-			attach(model, it.id, kind, laneColor)
+			attach(model, it.id, kind)
 			if kind == "skin" then
-				attach(model, "plates", kind, laneColor)
+				attach(model, "plates", kind)
 			end
 		end
 	end

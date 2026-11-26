@@ -30,7 +30,7 @@ ja|en|es|pt|id|fr|de|ko|zhcn|zhtw|th|vi
 レート・タイム・戦績|Rate · Times · Record|Rating · Tiempos|Rating · Tempos|Rating · Waktu · Rekor|Rang · Temps · Bilan|Rang · Zeit · Bilanz|레이트 · 타임 · 전적|评分 · 时间 · 战绩|評分 · 時間 · 戰績|เรต · เวลา · สถิติ|Hạng · Thời gian
 オンライン・フレンド|Online · Friends|En línea · Amigos|Online · Amigos|Online · Teman|En ligne · Amis|Online · Freunde|온라인 · 친구|在线 · 好友|線上 · 好友|ออนไลน์ · เพื่อน|Trực tuyến · Bạn bè
 スタートとターンのコツ|Start & turn tips|Salidas y giros|Largada e curvas|Tips start dan belokan|Départs et virages|Start- & Kurventipps|스타트와 턴 요령|起跑与转弯技巧|起跑與轉彎技巧|เคล็ดลับออกตัวและเลี้ยว|Xuất phát và vào cua
-コイン・VIP パス|Coins · VIP Pass|Monedas · Pase VIP|Moedas · Passe VIP|Koin · VIP Pass|Pièces · Passe VIP|Münzen · VIP-Pass|코인 · VIP 패스|金币 · VIP 通行证|金幣 · VIP 通行證|เหรียญ · VIP พาส|Xu · Thẻ VIP
+コイン・VIP 会員|Coins · VIP Membership|Monedas · Membresía VIP|Moedas · Assinatura VIP|Koin · Langganan VIP|Pièces · Abonnement VIP|Münzen · VIP-Abo|코인 · VIP 멤버십|金币 · VIP 会员|金幣 · VIP 會員|เหรียญ · สมาชิก VIP|Xu · Hội viên VIP
 レース|Race|Correr|Correr|Balap|Course|Rennen|레이스|比赛|比賽|แข่ง|Đua
 モードを選んで出走|Choose a mode and race|Elige modo y corre|Escolha o modo e corra|Pilih mode dan balap|Choisis un mode et cours|Modus wählen und starten|모드를 골라 출전|选择模式出赛|選擇模式出賽|เลือกโหมดแล้วลงแข่ง|Chọn chế độ và đua
 {1} 待機中|{1} waiting|{1} en espera|{1} aguardando|{1} menunggu|{1} en attente|{1} wartet|{1} 대기 중|{1} 等待中|{1} 等待中|{1} กำลังรอ|{1} đang chờ

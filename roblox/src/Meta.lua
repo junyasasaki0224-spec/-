@@ -6,7 +6,8 @@ local Meta = {["ITEMS"]={{["id"]="s0",["name"]="スタンダード",["r"]="N",["
     {["id"]="top3",["name"]="3着以内に入る",["goal"]=1,["coins"]=80},
     {["id"]="st20",["name"]="ST 0.20 以内でスタートする",["goal"]=1,["coins"]=80},
     {["id"]="race3",["name"]="レースに3回出る",["goal"]=3,["coins"]=120}},["RARITY"]={["N"]={["name"]="N",["rate"]=0.5,["dupe"]=10},["R"]={["name"]="R",["rate"]=0.3,["dupe"]=30},["SR"]={["name"]="SR",["rate"]=0.14,["dupe"]=100},["SSR"]={["name"]="SSR",["rate"]=0.045,["dupe"]=300},["UR"]={["name"]="UR",["rate"]=0.015,["dupe"]=1000}}}
--- Roblox 版だけの品: VIP パスの特典。ランダムではなく、ガチャには出ない(ガチャの確率は今までと同じ)。速さや強さは変わらない見た目だけ
+-- Roblox 版だけの品: VIP 会員(サブスクリプション)の特典。会員の間だけ使える(持ち物の記録 own には入れない)。
+-- ランダムではなく、ガチャには出ない(ガチャの確率は今までと同じ)。速さや強さは変わらない見た目だけ
 for _,it in ipairs({
     {id="v1",name="VIPゴールド",r="SSR",hull=1710618,trim=15911244,deck=1118481,cowl=15911244,kind="skin",shop=true,vip=true},
     {id="v2",name="VIPゴールド",r="SSR",base=15911244,stripe=1710618,kind="helmet",shop=true,vip=true},
@@ -69,7 +70,7 @@ local function clone(v)
     return out
 end
 Meta.clone=clone
--- ランク戦は1日(日本時間)5回まで。VIP パスがあれば無制限
+-- ランク戦は1日(日本時間)5回まで。VIP 会員なら無制限
 Meta.RANKED_DAILY=5
 -- 今日あと何回ランク戦に出られるか。VIP は nil(無制限)
 function Meta.rankedLeft(m,day)
@@ -84,11 +85,21 @@ function Meta.pool(rar,kind)
     for _,it in ipairs(Meta.ITEMS) do if it.gacha and it.r==rar and (kind==nil or it.kind==kind) then table.insert(pool,it) end end
     return pool
 end
--- その品を使えるか(持っている品。検証用の「全部の品を解放」がオンなら全部)
+-- その品を使えるか(持っている品。検証用の「全部の品を解放」がオンなら全部)。
+-- VIP の品は、VIP 会員の間だけ(m.vip はロビーと会場のサーバーが Roblox に確かめて付ける)
 function Meta.owns(m,id)
     local it=Meta.item(id)
     if it and it.standard then return true end
-    return m.testUnlock==true and it~=nil or table.find(m.own,id)~=nil
+    if m.testUnlock==true and it~=nil then return true end
+    if it and it.vip then return m.vip==true end
+    return table.find(m.own,id)~=nil
+end
+-- VIP 会員かどうかを付け直す。会員でなくなったら、着ていた VIP の品をスタンダードに戻す
+function Meta.setVip(m,isVip)
+    m.vip=isVip==true
+    for _,s in ipairs(Meta.SLOTS) do
+        if not Meta.owns(m,m[s.kind]) then m[s.kind]=s.default end
+    end
 end
 local byId={}
 for _,it in ipairs(Meta.ITEMS) do byId[it.id]=it end
@@ -326,29 +337,31 @@ function Meta.result(m,r)
         Meta.sendMail(m,"シーズンパス "..m.tier.."段 到達","ごほうびのコインです。",m.tier%5==0 and 300 or 100)
     end
 end
--- Robux の購入(コインの袋・VIP パス)で品とコインを渡す。purchaseId ごとに1回だけ
+-- Robux の購入(コインの袋・VIP 会員の初めてのコイン)で品とコインを渡す。purchaseId ごとに1回だけ
 -- (ProcessReceipt は同じ購入が何度も届くことがあるため)。戻り値: "granted" / "already"
+-- VIP 会員の初めてのコインは "sub:welcome"(一人1回だけ。会員を一度やめてまた入っても、もう届かない)
+local function keep(r) return string.sub(r,1,5)=="pass:" or string.sub(r,1,4)=="sub:" end
 function Meta.grantPurchase(m,purchaseId,ids,coins)
     if type(m.receipts)~="table" then m.receipts={} end
     if table.find(m.receipts,purchaseId) then return "already" end
     if type(coins)=="number" and coins>0 and coins<=100000 then m.coins+=math.floor(coins) end
     for _,id in ipairs(ids) do
         local it=Meta.item(id)
-        if it and it.shop and not table.find(m.own,id) then table.insert(m.own,id) end
+        -- VIP の品は持ち物に入れない(会員の間だけ使える。Meta.owns)
+        if it and it.shop and not it.vip and not table.find(m.own,id) then table.insert(m.own,id) end
     end
-    if string.sub(purchaseId,1,5)=="pass:" then m.vip=true end
     table.insert(m.receipts,purchaseId)
-    -- 古い記録は消す(パスの記録は残す)
+    -- 古い記録は消す(VIP 会員の初めてのコインと、前のパスの記録は残す)
     while #m.receipts>200 do
         local removed=false
         for i,r in ipairs(m.receipts) do
-            if string.sub(r,1,5)~="pass:" then table.remove(m.receipts,i);removed=true;break end
+            if not keep(r) then table.remove(m.receipts,i);removed=true;break end
         end
         if not removed then break end
     end
     return "granted"
 end
--- VIP の毎日のボーナス(1日1回、メールで届く)
+-- VIP 会員の毎日のボーナス(1日1回、メールで届く。会員の間だけ)
 function Meta.vipDaily(m,day,coins)
     if m.vip~=true or type(day)~="string" or m.vipDay==day then return false end
     m.vipDay=day

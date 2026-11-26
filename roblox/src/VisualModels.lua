@@ -6,18 +6,8 @@ function Visuals.boat(parent,number)
     if not source or #source:GetDescendants()==0 then return nil end
     local model=source:Clone()
     model:SetAttribute("Detailed",true)
-    -- 艇番(1〜6)。着せ替えの艇首旗の布と側面の板の色に使う(Outfit)
-    if number then model:SetAttribute("Lane",number) end
-    for _,p in ipairs(model:GetDescendants()) do
-        if p:IsA("BasePart") and number then
-            local material=p.Name:match("__(.-)__")
-            if material=="BoatColor" or material=="Suit" or material=="NumberPlate" then
-                local colors={0xf2f2f0,0x16161a,0xd91e2e,0x1b50d4,0xf3d21b,0x18a24c}
-                local c=colors[number]
-                p.Color=Color3.fromRGB(bit32.rshift(c,16),bit32.band(bit32.rshift(c,8),255),bit32.band(c,255))
-            end
-        end
-    end
+    -- 艇番(1〜6)で色は変えない。レースでも、倉庫で見た自分の着せ替えのままの見た目で走る(色は Outfit が塗る)
+    local _=number
     -- 部品どうしの重なりを直す(元の模型の置き場所のずれ。前は -Z):
     --   ・風よけのガラスを少し前へ、ハンドルを少し後ろへ(ハンドルとレーサーの手がガラスに食い込まないように)
     --   ・艇番の板を少し上へ(艇首の甲板の山に板の真ん中が埋まり、暗い塗装で白い切れ端に見えていた)

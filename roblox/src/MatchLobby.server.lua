@@ -21,15 +21,18 @@ local ACTIONS = { join = "ranked", online = "online", event = "event" }
 local active, last, loading = {}, {}, {}
 local cancellations = { ranked = {}, online = {}, event = {} }
 
--- ランク戦は1日 Meta.RANKED_DAILY 回まで(VIP パスがあれば無制限)。もう出られなければ true
+-- ランク戦は1日 Meta.RANKED_DAILY 回まで(VIP 会員なら無制限)。もう出られなければ true
+-- 会員かどうかは、ShopService が Roblox に確かめて付けた MinatoVip を先に使う(まだ確かめていなければ保存の印)
 local function rankedUsedUp(player, meta)
-    if player:GetAttribute("MinatoVip") == true then
-        return false
+    local m = Meta.normalize(meta)
+    local live = player:GetAttribute("MinatoVip")
+    if type(live) == "boolean" then
+        m.vip = live
     end
-    local left = Meta.rankedLeft(Meta.normalize(meta), Meta.today())
+    local left = Meta.rankedLeft(m, Meta.today())
     return left ~= nil and left <= 0
 end
-local USED_UP = "今日のランク戦は" .. Meta.RANKED_DAILY .. "回走りました。日本時間0時にまた走れます(VIP パスなら無制限)"
+local USED_UP = "今日のランク戦は" .. Meta.RANKED_DAILY .. "回走りました。日本時間0時にまた走れます(VIP 会員なら無制限)"
 
 -- 待機をやめる(行列からは次の更新で消える)
 local function cancel(player, notify)

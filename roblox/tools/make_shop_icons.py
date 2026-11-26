@@ -1,7 +1,7 @@
 """ショップの品のアイコン(512x512 の PNG)を作る。
 
 使い方: python roblox/tools/make_shop_icons.py
-出力: roblox/assets/shop/c1.png … c4.png(コインの袋), vip.png(VIP パス)
+出力: roblox/assets/shop/c1.png … c4.png(コインの袋), vip.png(VIP 会員)
 numpy だけで描く(画像の部品は使わない)。
 """
 import os
@@ -115,7 +115,7 @@ def coins(img, stacks):
 
 
 def crown(img):
-    """VIP パスの金の冠"""
+    """VIP 会員の金の冠"""
     gold = rgb(GOLD)
     paint(img, ellipse(256, 400, 150, 16), (0, 0, 0), 0.35)
     body = poly([(120, 360), (106, 190), (186, 270), (256, 150), (326, 270), (406, 190), (392, 360)])

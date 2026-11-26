@@ -22,6 +22,7 @@ local function bump(userId)
     versions[userId]=(versions[userId] or 0)+1
 end
 -- 検証用: 全部の品(ガチャ・VIP の品)を倉庫で使えるようにする。Studio と、このゲームの持ち主だけ。
+-- (VIP 会員が切れた時に VIP の品が外れるかを Studio で試す時は、一時的に false にする)
 -- 持ち物の記録(own)は変えない(ガチャの重複などは本当の持ち物で決まる)。公開する前に false にする(PUBLISH.md)
 local TEST_UNLOCK_ALL=true
 local function testUnlock(userId)
@@ -108,6 +109,18 @@ function Service.grant(userId,purchaseId,ids,coins)
     end)
     if not data then return nil end
     return data.meta,result
+end
+-- VIP 会員かどうかの印を保存する(サーバーが Roblox に確かめた結果だけを入れる)。
+-- 会員でなくなったら、着ていた VIP の品をスタンダードに戻す(Meta.setVip)。保存できたら meta、できなければ nil
+function Service.setVip(userId,isVip)
+    bump(userId)
+    local data=update(userId,function(v)
+        v=Meta.clone(v or {})
+        v.meta=Meta.normalize(v.meta)
+        Meta.setVip(v.meta,isVip==true)
+        return v
+    end)
+    return data and data.meta
 end
 -- VIP の毎日のボーナスをメールで届けて保存する(その日にすでに届いていれば何もしない)。保存できたら true
 function Service.vipDaily(userId,coins,today)

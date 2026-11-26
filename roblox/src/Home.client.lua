@@ -30,12 +30,14 @@ local LANE_COLORS2={{Color3.fromRGB(242,242,240),Color3.fromRGB(17,17,17)},{Colo
 local outfit=require(RS:WaitForChild("Outfit"))
 local Visor=require(RS:WaitForChild("Visor"))
 local remote=RS:WaitForChild("MinatoMeta")
--- ショップ(Robux でコインの袋と VIP パスを買う)。値段は Roblox から取る。渡すのはサーバーだけ(ShopService)
+-- ショップ(Robux でコインの袋と VIP 会員を買う)。値段は Roblox から取る。渡すのはサーバーだけ(ShopService)
 local Marketplace=game:GetService("MarketplaceService")
 local ShopConfig=require(RS:WaitForChild("ShopConfig"))
 local shopEvent=RS:WaitForChild("MinatoShop",10)
 local ROBUX=utf8.char(0xE002)
 local prices,fetching,buying={},{},nil
+-- VIP 会員(サブスクリプション)の値段の文字(Roblox から取る。nil はまだ、false は読んでいる途中、"?" は読めない)
+local subInfo=nil
 local gui=Instance.new("ScreenGui")
 gui.Name="MinatoHome";gui.ResetOnSpawn=false;gui.ScreenInsets=Enum.ScreenInsets.CoreUISafeInsets
 gui.Parent=player:WaitForChild("PlayerGui")
@@ -687,7 +689,7 @@ local function redrawNow()
         end
         Ui.tile(root,"通信対戦","online","通信対戦","オンライン・フレンド",w-16-tw,short and 70 or 96,tw,th,false,function() go("通信対戦") end)
         Ui.tile(root,"遊び方","howto","遊び方","スタートとターンのコツ",w-16-tw,(short and 70 or 96)+th+gap,tw,th,false,function() go("遊び方") end)
-        Ui.tile(root,"ショップ","shop","ショップ","コイン・VIP パス",w-16-tw,(short and 70 or 96)+2*(th+gap),tw,th,false,function() go("ショップ") end)
+        Ui.tile(root,"ショップ","shop","ショップ","コイン・VIP 会員",w-16-tw,(short and 70 or 96)+2*(th+gap),tw,th,false,function() go("ショップ") end)
         -- VIP の札は、コインの札の下に小さく
         if m.vip then Ui.pill(root,"Vip","VIP",16+pw+12,(short and 20 or 26)+42,64,28) end
         local rw=math.min(300,math.floor(w*.44))
@@ -997,12 +999,12 @@ local function redrawNow()
             y=row("ランク戦","近いレートの選手から相手を探します",y)
             local left=Meta.rankedLeft(m,Meta.today())
             if left==nil then
-                y=row("今日のランク戦","VIP パス: 何回でも走れます",y)
+                y=row("今日のランク戦","VIP 会員: 何回でも走れます",y)
             elseif left>0 then
                 y=row("今日のランク戦","あと "..left.." 回（1日 "..Meta.RANKED_DAILY.." 回まで。日本時間0時に戻ります）",y)
             else
-                y=row("今日のランク戦","今日は "..Meta.RANKED_DAILY.." 回走りました。日本時間0時にまた走れます。VIP パスなら何回でも走れます",y,
-                    function() go("ショップ") end,"VIP パスを見る")
+                y=row("今日のランク戦","今日は "..Meta.RANKED_DAILY.." 回走りました。日本時間0時にまた走れます。VIP 会員なら何回でも走れます",y,
+                    function() go("ショップ") end,"VIP 会員を見る")
             end
         end
         y=row("待ち合わせ","2人以上なら30秒、1人なら60秒で、空きを AI（達人）で埋めて出走",y)
@@ -1362,7 +1364,7 @@ local function redrawNow()
             if prices[key]==nil and not fetching[key] then
                 fetching[key]=true
                 task.spawn(function()
-                    local ok,info=pcall(Marketplace.GetProductInfo,Marketplace,id,kind=="pass" and Enum.InfoType.GamePass or Enum.InfoType.Product)
+                    local ok,info=pcall(Marketplace.GetProductInfo,Marketplace,id,Enum.InfoType.Product)
                     prices[key]=ok and info and info.PriceInRobux or false
                     if page=="ショップ" then redraw() end
                 end)
@@ -1379,22 +1381,51 @@ local function redrawNow()
             task.delay(30,function() if buying==id then buying=nil;if page=="ショップ" then redraw() end end end)
             local ok=pcall(function()
                 if entry then shopEvent:FireServer("buy",entry.key)
-                elseif kind=="pass" then Marketplace:PromptGamePassPurchase(player,id)
                 else Marketplace:PromptProductPurchase(player,id) end
             end)
             if not ok then buying=nil;toast.Text="購入の画面を開けませんでした";redraw() end
         end
+        -- VIP 会員(サブスクリプション)の値段のボタンの文字: 会員・準備中・確認中・「毎月 値段」。番号は文字("EXP-…")
+        local function subPriceText(id,member)
+            if member then return "会員です" end
+            if type(id)~="string" or id=="" then return "準備中" end
+            if buying==id then return "確認中…" end
+            if subInfo==nil then
+                subInfo=false
+                task.spawn(function()
+                    local ok,info=pcall(Marketplace.GetSubscriptionProductInfoAsync,Marketplace,id)
+                    local text=nil
+                    if ok and type(info)=="table" then
+                        if type(info.DisplayPrice)=="string" and info.DisplayPrice~="" then text=info.DisplayPrice
+                        elseif type(info.PriceInRobux)=="number" then text=ROBUX.." "..info.PriceInRobux end
+                    end
+                    subInfo=text or "?"
+                    if page=="ショップ" then redraw() end
+                end)
+            end
+            if subInfo=="?" then return "値段を読めません" end
+            if subInfo then return "毎月 "..subInfo end
+            return ROBUX.." …"
+        end
+        -- VIP 会員になる: Roblox の確認画面を出すだけ。会員かどうかはサーバーが Roblox に確かめる(MinatoVip)
+        local function buySub(id,member)
+            if member or type(id)~="string" or id=="" or buying then return end
+            buying=id;redraw()
+            task.delay(30,function() if buying==id then buying=nil;if page=="ショップ" then redraw() end end end)
+            local ok=pcall(Marketplace.PromptSubscriptionPurchase,Marketplace,player,id)
+            if not ok then buying=nil;toast.Text="購入の画面を開けませんでした";redraw() end
+        end
         local coinsOk=coinShopOk()
         local vip=ShopConfig.vip
-        y=row("ショップ","Robux でガチャのコインと VIP パスを買えます。レースの速さや強さは変わりません。",y)
-        -- VIP パス(いちばん上に大きく): 名前・金の品・特典の一覧・値段
+        y=row("ショップ","Robux でガチャのコインと VIP 会員（毎月）を買えます。レースの速さや強さは変わりません。",y)
+        -- VIP 会員(いちばん上に大きく): 名前・金の品・特典の一覧・毎月の値段。特典は会員の間だけ
         local perks={
             "・ランク戦が何回でも走れる（ふつうは1日 "..Meta.RANKED_DAILY.." 回）",
             "・金の塗装とヘルメット「VIPゴールド」",
             "・ホームに VIP の札",
         }
         if coinsOk then
-            table.insert(perks,"・買った時に "..vip.welcomeCoins.." コイン、毎日 "..vip.dailyCoins.." コイン（毎日の分はメール）")
+            table.insert(perks,"・毎日 "..vip.dailyCoins.." コイン（メール）。初めて会員になった時に "..vip.welcomeCoins.." コイン")
         end
         local perkH=#perks*24
         local pw=math.min(130,math.floor((width-40)/2))
@@ -1402,7 +1433,7 @@ local function redrawNow()
         local vipCard=frame(list,"Vip",8,y,width-16,cardH);stroke(vipCard,gold,2)
         local grad=Instance.new("UIGradient");grad.Rotation=90
         grad.Color=ColorSequence.new(Color3.fromRGB(58,46,14),Color3.fromRGB(11,29,58));grad.Parent=vipCard
-        label(vipCard,"みなと VIP パス",12,8,width-40,28,18).TextColor3=gold
+        label(vipCard,"みなと VIP 会員",12,8,width-40,28,18).TextColor3=gold
         for k,id in ipairs(vip.items) do
             local it=Meta.item(id)
             if it then swatch(vipCard,it,12+(k-1)*(pw+8),40,pw,90,true) end
@@ -1410,8 +1441,14 @@ local function redrawNow()
         for k,text in ipairs(perks) do
             local line=Ui.fit(label(vipCard,text,12,138+(k-1)*24,width-40,24,14),11);line.TextColor3=pale
         end
-        button(vipCard,priceText("pass",vip.pass,m.vip),12,138+perkH+8,math.min(240,width-40),function() buy("pass",vip.pass,m.vip) end,not m.vip and vip.pass>0)
+        local member=m.vip==true
+        button(vipCard,subPriceText(vip.subscription,member),12,138+perkH+8,math.min(240,width-40),function() buySub(vip.subscription,member) end,
+            not member and vip.subscription~="")
         y+=cardH+12
+        -- 毎月続くこと・やめ方・切れた時のこと(買う前に見せる)
+        y=row("VIP 会員について","毎月 Robux で自動で続きます。やめる時は Roblox の設定の「サブスクリプション」から。"
+            .."やめても、払った期間の終わりまでは特典が使えます。切れると金の塗装とヘルメットは使えなくなり、スタンダードに戻ります。"
+            .."Robux で払った会員は返金されません。",y)
         -- コインの袋(何度でも買える)
         label(list,"ガチャのコイン",8,y,width-16,28,17).TextColor3=gold
         y+=34
@@ -1435,7 +1472,7 @@ local function redrawNow()
             y+=math.ceil(#ShopConfig.coins/columns)*170
             y=row("ガチャの確率",oddsText().."（5種類150点から引きます。1つあたり "..oddsEach().."）",y)
         end
-        y=row("購入について","購入は Roblox の確認画面で決まります。コインはすぐに届き、VIP の品は倉庫で着せ替えられます。",y)
+        y=row("購入について","購入は Roblox の確認画面で決まります。コインはすぐに届きます。VIP の品は、会員の間だけ倉庫で着せ替えられます。",y)
     elseif page=="倉庫" then
         -- 艇の眺めの使い方と「視点を戻す」(板の外、艇が見えている所の下)
         do
@@ -1511,7 +1548,7 @@ local function redrawNow()
             label(card,kindName(it.kind).." "..it.r,8,124,cw-16,20,12).TextColor3=rarity[it.r]
             -- 装備中は金のボタン(選んでいる印。押しても同じ)
             if owned then button(card,equipped and "✓ 装備中" or "装備する",8,146,cw-16,function() if not equipped then request("equip",it.id) end end,equipped)
-            elseif it.shop then button(card,it.vip and "VIP パスの特典" or "ショップで買えます",8,146,cw-16,function() go("ショップ") end)
+            elseif it.shop then button(card,it.vip and "VIP 会員の特典" or "ショップで買えます",8,146,cw-16,function() go("ショップ") end)
             else label(card,"未入手",8,149,cw-16,40,14) end
         end
         y+=math.ceil(#shown/columns)*206
@@ -1775,8 +1812,11 @@ end
 Marketplace.PromptProductPurchaseFinished:Connect(function(userId,productId,purchased)
     if userId==player.UserId then purchaseClosed(productId,purchased) end
 end)
-Marketplace.PromptGamePassPurchaseFinished:Connect(function(who,passId,purchased)
-    if who==player then purchaseClosed(passId,purchased) end
+-- VIP 会員の購入の画面が閉じた時(会員になったかは、サーバーが Roblox に確かめて MinatoVip で知らせる)
+pcall(function()
+    Marketplace.PromptSubscriptionPurchaseFinished:Connect(function(who,subscriptionId,didTry)
+        if who==player then purchaseClosed(subscriptionId,didTry) end
+    end)
 end)
 -- 検証用: その場のレースが始まったらホームを隠し、「ロビーへ」で戻ったら出し直す(コインなども読み直す)
 if devCombined then
@@ -1794,12 +1834,23 @@ if devCombined then
         end
     end)
 end
--- コインを買えるか(地域の決まり)・VIP がサーバーで確かめられたら、ショップとガチャの表示を直す
-for _,key in ipairs({"MinatoCoinShop","MinatoVip"}) do
-    player:GetAttributeChangedSignal(key):Connect(function()
-        if m and (page=="ショップ" or page=="ガチャ" or page=="ランク戦") then redraw() end
+-- コインを買えるか(地域の決まり)がサーバーで確かめられたら、ショップとガチャの表示を直す
+player:GetAttributeChangedSignal("MinatoCoinShop"):Connect(function()
+    if m and (page=="ショップ" or page=="ガチャ" or page=="ランク戦") then redraw() end
+end)
+-- VIP 会員かどうかが変わったら、持ち物を読み直す(切れた時は、サーバーが VIP の品をスタンダードに戻している)
+-- (入った時の最初の確かめでは知らせを出さない。会員でなかった人が、その場で会員になった時だけ出す)
+local wasVip=player:GetAttribute("MinatoVip")
+player:GetAttributeChangedSignal("MinatoVip"):Connect(function()
+    local now=player:GetAttribute("MinatoVip")
+    if buying==ShopConfig.vip.subscription then buying=nil end
+    task.spawn(function()
+        while pending do task.wait(.1) end
+        request("get")
     end)
-end
+    if now==true and wasVip==false then toast.Text="VIP 会員になりました" end
+    wasVip=now
+end)
 -- 品が届いた: 持ち物を読み直して、ガチャと同じ演出で見せる
 if shopEvent then
     shopEvent.OnClientEvent:Connect(function(kind,ids,coins)

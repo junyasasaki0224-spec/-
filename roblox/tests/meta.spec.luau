@@ -1,6 +1,6 @@
 local M=require("../src/Meta")
 local Rules=require("../src/ResultRules")
--- スタンダード5品(s0・h0・c0・w0・f0)+ VIP の2品 + ガチャの着せ替え150品(5種類×30)
+-- スタンダード5品(s0・h0・c0・w0・f0)+ VIP 会員の2品 + ガチャの着せ替え150品(5種類×30)
 assert(#M.ITEMS==157 and #M.MISSIONS==4)
 local m=M.new()
 M.daily(m,"2026-11-15")
@@ -90,13 +90,37 @@ M.result(q,{mode="season",place=1,day="2026-11-16"})
 assert(M.rankedLeft(q,"2026-11-16")==4)
 q.vip=true
 assert(M.rankedLeft(q,"2026-11-16")==nil)
--- 購入: コインは購入番号ごとに1回だけ。VIP パスで品と VIP の印
+-- 購入: コインは購入番号ごとに1回だけ。VIP 会員の初めてのコイン(sub:welcome)も一人1回。
+-- VIP の品は持ち物に入らない(会員の間だけ使える)。購入で VIP の印は付かない(印はサーバーが Roblox に確かめて付ける)
 local s=M.new()
 assert(M.grantPurchase(s,"p:1",{},1100)=="granted" and s.coins==1100)
 assert(M.grantPurchase(s,"p:1",{},1100)=="already" and s.coins==1100)
 assert(M.grantPurchase(s,"p:2",{},-5)=="granted" and s.coins==1100)
-assert(M.grantPurchase(s,"pass:9",{"v1","v2","s1"},1000)=="granted" and s.vip and s.coins==2100)
-assert(table.find(s.own,"v1") and table.find(s.own,"v2") and not table.find(s.own,"s1"))
+assert(M.grantPurchase(s,"sub:welcome",{"v1","v2","s1"},1000)=="granted" and not s.vip and s.coins==2100)
+assert(M.grantPurchase(s,"sub:welcome",{},1000)=="already" and s.coins==2100)
+assert(not table.find(s.own,"v1") and not table.find(s.own,"v2") and not table.find(s.own,"s1"))
+-- 会員の古い記録(sub:)は、購入の記録が多くなっても消えない
+for k=1,205 do M.grantPurchase(s,"p:x"..k,{},0) end
+assert(#s.receipts<=200 and table.find(s.receipts,"sub:welcome"))
+-- VIP の品は会員の間だけ使える。会員が切れたら、着ていた VIP の品はスタンダードに戻る(ガチャの品はそのまま)
+assert(not M.owns(s,"v1") and M.action(s,"equip","v1")~="VIPゴールドを装備しました" and s.skin=="s0")
+M.setVip(s,true)
+assert(M.owns(s,"v1") and M.owns(s,"v2"))
+M.action(s,"equip","v1");M.action(s,"equip","v2")
+table.insert(s.own,"flag01");M.action(s,"equip","flag01")
+assert(s.skin=="v1" and s.helmet=="v2" and s.flag=="flag01")
+M.setVip(s,false)
+assert(not s.vip and s.skin=="s0" and s.helmet=="h0" and s.flag=="flag01" and not M.owns(s,"v1"))
+-- 保存の印が会員のまま VIP の品を着ていても、印を外して読み直せばスタンダードに戻る
+s.vip,s.skin=true,"v1"
+local again=M.normalize(s)
+assert(again.skin=="v1")
+again.vip=false
+assert(M.normalize(again).skin=="s0")
+-- 検証用の「全部の品を解放」の間は、会員でなくても使える
+local t=M.new();t.testUnlock=true
+assert(M.owns(t,"v1"))
+M.setVip(s,true)
 -- VIP の毎日のボーナスは1日1回、メールで届く(VIP でなければ届かない)
 local mails=#s.mail
 assert(M.vipDaily(s,"2026-11-15",100) and not M.vipDaily(s,"2026-11-15",100) and #s.mail==mails+1 and s.mail[1].coins==100)

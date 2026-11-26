@@ -197,7 +197,8 @@ part(world,"CenterPole",Vector3.new(1.2,8,1.2),CFrame.new(0,3.5,4),c(244,220,48)
 local templates = Instance.new("Folder")
 templates.Name = "MinatoTemplates"
 templates.Parent = ReplicatedStorage
-local colors = {c(245,245,238),c(32,37,42),c(222,59,47),c(49,102,202),c(239,213,54),c(67,170,101)}
+-- 細かい模型がない時の箱の艇の色。艇番(1〜6)では変えない(どの艇も同じ。着せ替えは Outfit が塗る)
+local BOX = {hull=c(245,245,238), racer=c(204,13,20), helmet=c(229,229,229)}
 local visuals=require(ReplicatedStorage:WaitForChild("VisualModels"))
 local venue=visuals.venue(world)
 local setEnvironment = water.configure(venue)
@@ -211,13 +212,13 @@ local boats = {}
 for i=1,6 do
     local model = Instance.new("Model")
     model.Name = "Boat"..i
-    local hull = part(model,"Hull",Vector3.new(3.1,0.8,7),CFrame.new(),colors[i],Enum.Material.SmoothPlastic,nil,BOAT_SCALE)
+    local hull = part(model,"Hull",Vector3.new(3.1,0.8,7),CFrame.new(),BOX.hull,Enum.Material.SmoothPlastic,nil,BOAT_SCALE)
     model.PrimaryPart = hull
-    part(model,"Bow",Vector3.new(2.5,0.5,2),CFrame.new(0,0.15,-3.5),colors[i],nil,nil,BOAT_SCALE)
+    part(model,"Bow",Vector3.new(2.5,0.5,2),CFrame.new(0,0.15,-3.5),BOX.hull,nil,nil,BOAT_SCALE)
     part(model,"Deck",Vector3.new(2.5,0.3,3.8),CFrame.new(0,0.5,0.2),c(220,219,201),nil,nil,BOAT_SCALE)
     part(model,"Motor",Vector3.new(1.1,1.3,1.2),CFrame.new(0,0.5,3.3),c(45,48,50),Enum.Material.Metal,nil,BOAT_SCALE)
-    part(model,"Racer",Vector3.new(1.4,1.3,1.5),CFrame.new(0,1.2,0.5),colors[i],nil,nil,BOAT_SCALE)
-    part(model,"Helmet",Vector3.new(1.2,1.2,1.2),CFrame.new(0,2,0.2),colors[i],Enum.Material.SmoothPlastic,Enum.PartType.Ball,BOAT_SCALE)
+    part(model,"Racer",Vector3.new(1.4,1.3,1.5),CFrame.new(0,1.2,0.5),BOX.racer,nil,nil,BOAT_SCALE)
+    part(model,"Helmet",Vector3.new(1.2,1.2,1.2),CFrame.new(0,2,0.2),BOX.helmet,Enum.Material.SmoothPlastic,Enum.PartType.Ball,BOAT_SCALE)
     local detailed=visuals.boat(nil,i)
     if detailed then
         model:Destroy()
@@ -229,6 +230,8 @@ for i=1,6 do
 end
 
 local MetaService=require(script.Parent:WaitForChild("MetaService"))
+-- VIP 会員かどうかの確かめ(会場では購入は受け取らない。ShopService.start は呼ばない)
+local Shop=require(script.Parent:WaitForChild("ShopService"))
 local commands = {}
 local raceNumber = 0
 local tilts = RaceStep.TILTS
@@ -459,6 +462,8 @@ local function assignPlayers()
             local round=raceNumber
             task.spawn(function()
                 local outfit=MetaService.get(player.UserId)
+                -- VIP の品は会員の間だけ。会場でも確かめ、切れていたらスタンダードで走る(招待から直接来た人も)
+                outfit=Shop.ensureVip(player,outfit)
                 if outfit and raceNumber==round and boat.player==player then
                     player:SetAttribute("MinatoVolume",outfit.volume)
                     player:SetAttribute("MinatoLever",outfit.lever)
