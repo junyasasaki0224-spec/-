@@ -423,6 +423,38 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 for _, player in ipairs(Players:GetPlayers()) do preparePlayer(player) end
+-- AI の艇の着せ替え(見た目だけ。速さや強さは変わらない)。レースごとに、5つの種類それぞれを
+-- ガチャと同じ確率(Meta.RARITY)で、その種類のガチャの品から選ぶ。VIP の品・スタンダードは選ばない。
+-- 同じレースの中で、艇外装はなるべく重ならないようにする(艇を見分けやすいように)
+local AI_ATTR = {skin="Skin", helmet="HelmetStyle", cowl="CowlStyle", wheel="WheelStyle", flag="FlagStyle"}
+local aiRandom = Random.new()
+local function aiPick(kind)
+    local x, rar = aiRandom:NextNumber(), "N"
+    for r = #Meta.RARITIES, 1, -1 do
+        local name = Meta.RARITIES[r]
+        if x < Meta.RARITY[name].rate then rar = name; break end
+        x -= Meta.RARITY[name].rate
+    end
+    local pool = Meta.pool(rar, kind)
+    return #pool > 0 and pool[aiRandom:NextInteger(1, #pool)].id or nil
+end
+local function dressAI()
+    local usedSkins = {}
+    for _, b in ipairs(boats) do
+        if b.player == nil then
+            for _, slot in ipairs(Meta.SLOTS) do
+                local pick = aiPick(slot.kind)
+                -- 艇外装は、ほかの AI と同じ品なら数回まで選び直す
+                local tries = 0
+                while slot.kind == "skin" and pick and usedSkins[pick] and tries < 8 do
+                    pick = aiPick(slot.kind); tries += 1
+                end
+                if slot.kind == "skin" and pick then usedSkins[pick] = true end
+                b.model:SetAttribute(AI_ATTR[slot.kind], pick or slot.default)
+            end
+        end
+    end
+end
 local function assignPlayers()
     local players = {}
     for _, player in ipairs(Players:GetPlayers()) do
@@ -496,6 +528,8 @@ local function assignPlayers()
             end)
         end
     end
+    -- 人が乗らない艇(AI)にも着せ替えを着せる
+    dressAI()
     if #players > 6 then nextFirst = ((nextFirst+5) % #players)+1 else nextFirst = 1 end
 end
 input.OnServerEvent:Connect(function(player, throttle, steer, sequence, round)
